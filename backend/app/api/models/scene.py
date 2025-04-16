@@ -6,11 +6,50 @@ from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from .character import Character, character_scenes
 from .note import Note
 from .audio import SoundProfile, AudioSample, MusicPiece
-from .physics import PhysicsObject, Physics2D, Physics3D
+from .physics import PhysicsObject, Physics2D, Physics3D, PhysicsParameters
 
 # Import Universe only for type checking to avoid circular import
 if TYPE_CHECKING:
     from .universe import Universe
+
+# SceneNote class for associating notes specifically with scenes
+class SceneNote(BaseModel):
+    __tablename__ = 'scene_notes'
+    
+    title: Mapped[str] = mapped_column(db.String(100), nullable=False, index=True)
+    content: Mapped[Optional[str]] = mapped_column(db.Text)
+    scene_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), nullable=False, index=True)
+    type: Mapped[Optional[str]] = mapped_column(db.String(50), default='general')
+    importance: Mapped[Optional[str]] = mapped_column(db.String(50), default='normal')
+    order: Mapped[Optional[int]] = mapped_column(db.Integer, default=0)
+    is_public: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False)
+    
+    # Relationships
+    scene: Mapped[Optional["Scene"]] = relationship('Scene', back_populates='scene_notes')
+    
+    def __init__(self, title: str, scene_id: int, content: Optional[str] = None, type: Optional[str] = 'general', is_public: bool = False):
+        super().__init__()
+        self.title = title
+        self.scene_id = scene_id
+        self.content = content
+        self.type = type
+        self.is_public = is_public
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert scene note to dictionary."""
+        return {
+            'id': self.id,
+            'title': self.title,
+            'content': self.content,
+            'scene_id': self.scene_id,
+            'type': self.type,
+            'importance': self.importance,
+            'order': self.order,
+            'is_public': self.is_public,
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
+            'is_deleted': self.is_deleted
+        }
 
 class Scene(BaseModel):
     __tablename__ = 'scenes'
@@ -34,6 +73,7 @@ class Scene(BaseModel):
     # Relationships
     universe: Mapped[Optional["Universe"]] = relationship('Universe', foreign_keys=[universe_id], lazy=True)
     notes: Mapped[List[Note]] = relationship('Note', backref='scene', lazy=True, cascade='all, delete-orphan')
+    scene_notes: Mapped[List["SceneNote"]] = relationship('SceneNote', back_populates='scene', lazy=True, cascade='all, delete-orphan')
     characters: Mapped[List[Character]] = relationship('Character', secondary=character_scenes, lazy=True)
     physics_objects: Mapped[List[PhysicsObject]] = relationship('PhysicsObject', backref='scene', lazy=True, cascade='all, delete-orphan')
     physics_2d: Mapped[List[Physics2D]] = relationship('Physics2D', backref='scene', lazy=True, cascade='all, delete-orphan')

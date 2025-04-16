@@ -3,8 +3,8 @@ from ...extensions import db
 from .base import BaseModel
 from .user import User
 from .universe import Universe
-from .scene import Scene
-from .physics import PhysicsObject, Physics2D, Physics3D, PhysicsConstraint
+from .scene import Scene, SceneNote
+from .physics import PhysicsObject, Physics2D, Physics3D, PhysicsConstraint, PhysicsParameters
 from .audio import SoundProfile, AudioSample, MusicPiece, Harmony, MusicalTheme
 from .character import Character
 from .note import Note
@@ -14,10 +14,12 @@ __all__ = [
     'User',
     'Universe',
     'Scene',
+    'SceneNote',
     'PhysicsObject',
     'Physics2D',
     'Physics3D',
     'PhysicsConstraint',
+    'PhysicsParameters',
     'SoundProfile',
     'AudioSample',
     'MusicPiece',

@@ -9,6 +9,7 @@ import { log, logError } from '../utils/logger';
 import * as authServiceModule from './auth.service.mjs';
 import { demoUserService } from './demo-user.service.mjs';
 import { AUTH_CONFIG } from '../utils/config.mjs';
+import { refreshToken, getToken, logout } from './auth.service';
 
 // Determine if we need a CORS proxy for different environments
 const shouldUseCorsProxy = () => {
@@ -56,6 +57,8 @@ const axiosInstance = axios.create({
     'Accept': 'application/json',
   },
   withCredentials: true, // Important for CORS with credentials
+  xsrfCookieName: 'csrf_token',
+  xsrfHeaderName: 'X-CSRFToken',
 });
 
 // Log the base URL being used
@@ -122,7 +125,15 @@ const addAuthHeader = (config) => {
 
 // Request interceptor
 axiosInstance.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    // Get auth token
+    const token = getToken();
+    
+    // Add auth token to header if it exists
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     // Log request
     log('api', 'Sending request', {
       method: config.method?.toUpperCase() || 'Unknown method',
@@ -130,21 +141,23 @@ axiosInstance.interceptors.request.use(
       baseURL: config.baseURL,
     });
 
-    // Check if this is an auth refresh request that might need CORS handling
+    // Ensure Origin header is properly set for CORS
+    if (!config.headers['Origin'] && typeof window !== 'undefined') {
+      config.headers['Origin'] = window.location.origin;
+    }
+    
+    // Ensure mode is set to 'cors' for all requests
+    config.mode = 'cors';
+    
+    // Special handling for auth requests
     if (config.url && 
         (config.url.includes('/auth/refresh') || 
-         config.url.includes('/auth/validate'))) {
+         config.url.includes('/auth/validate') ||
+         config.url.includes('/auth/login') ||
+         config.url.includes('/auth/register'))) {
       
       // Add special CORS handling for auth requests
       console.log('Auth request detected, ensuring CORS compatibility');
-      
-      // Make sure Origin header is properly set for CORS
-      if (!config.headers['Origin'] && typeof window !== 'undefined') {
-        config.headers['Origin'] = window.location.origin;
-      }
-      
-      // Set mode to 'cors' for fetch-based requests
-      config.mode = 'cors';
       
       // Apply CORS proxy if needed
       if (shouldUseCorsProxy() && config.url.startsWith('http')) {
@@ -152,8 +165,7 @@ axiosInstance.interceptors.request.use(
       }
     }
 
-    // Add auth token if available
-    return addAuthHeader(config);
+    return config;
   },
   (error) => {
     log('api', 'Request failed', { error: error.message });
@@ -169,6 +181,29 @@ axiosInstance.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    
+    // If error is 401 (Unauthorized) and request hasn't been retried yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Use the refreshToken function that prevents race conditions
+        const refreshResponse = await refreshToken();
+        
+        if (refreshResponse.error) {
+          // If refresh failed, log out user and reject with original error
+          logout();
+          return Promise.reject(error);
+        }
+        
+        // If token refreshed successfully, retry the original request
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        // If token refresh threw an error, log out user
+        logout();
+        return Promise.reject(refreshError);
+      }
+    }
     
     // If the error is a network error, don't attempt to refresh
     if (!error.response) {
@@ -188,132 +223,10 @@ axiosInstance.interceptors.response.use(
       return axiosInstance(originalRequest);
     }
     
-    // Handle authentication errors (401 and 403)
-    if (error.response.status === 401 || error.response.status === 403) {
-      console.log('Authentication error detected, attempting token refresh');
-      
-      // Check if this is a logout request to avoid infinite loops
-      if (originalRequest.url?.includes('/logout')) {
-        console.log('Logout request failed, clearing auth data');
-        authServiceModule.clearAuthData();
-        return Promise.reject(error);
-      }
-      
-      // Check if we've already retried this request
-      if (originalRequest._retry) {
-        console.log('Request already retried, clearing auth data');
-        authServiceModule.clearAuthData();
-        return Promise.reject(error);
-      }
-      
-      try {
-        // Use the enhanced refreshTokenAndRetry function
-        return await refreshTokenAndRetry(originalRequest);
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError.message);
-        
-        // If the refresh failed, clear auth data
-        authServiceModule.clearAuthData();
-        
-        // Forward the original error with additional context
-        const enhancedError = new Error('Authentication error after failed token refresh');
-        enhancedError.originalError = error;
-        enhancedError.refreshError = refreshError;
-        return Promise.reject(enhancedError);
-      }
-    }
-    
     // For all other errors, pass them through
     return Promise.reject(error);
   }
 );
-
-/**
- * Refresh the token and retry the original request
- * @param {Object} originalRequest - The original request configuration
- * @returns {Promise<Object>} - The response from the retried request
- */
-export async function refreshTokenAndRetry(originalRequest) {
-  // Check if we already have a refresh token
-  let refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-  
-  // Create a temporary refresh token if none exists
-  if (!refreshToken && token) {
-    console.warn('No refresh token available for token refresh, creating a temporary one');
-    refreshToken = `temp_refresh_${token.substring(0, 20)}`;
-    localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refreshToken);
-  } else if (!token) {
-    console.error('No token available for token refresh');
-    authServiceModule.clearAuthData();
-    throw new Error('Authentication failed: No token available');
-  }
-
-  // Prevent multiple retry attempts for the same request
-  if (originalRequest._retry) {
-    console.warn('Request already retried once, not attempting again');
-    throw new Error('Authentication failed: Token refresh failed');
-  }
-  
-  // Mark this request as having been retried
-  originalRequest._retry = true;
-  
-  console.log('Attempting to refresh token and retry request');
-  
-  // Set up a timeout for the token refresh process
-  const tokenRefreshTimeout = new Promise((_, reject) => {
-    setTimeout(() => {
-      reject(new Error('Token refresh timed out after 10 seconds'));
-    }, 10000);
-  });
-  
-  try {
-    // Race the token refresh against the timeout
-    const refreshResult = await Promise.race([
-      authServiceModule.refreshToken(),
-      tokenRefreshTimeout
-    ]);
-    
-    console.log('Token refresh completed, checking result');
-    
-    // Validate refresh result and ensure it contains a new token
-    if (!refreshResult) {
-      throw new Error('Token refresh failed: No response received');
-    }
-    
-    if (!refreshResult.success) {
-      throw new Error(`Token refresh failed: ${refreshResult.message || 'Unknown error'}`);
-    }
-    
-    if (!refreshResult.token) {
-      throw new Error('Token refresh failed: No token in response');
-    }
-    
-    // Log the successful token refresh
-    console.log('Token refreshed successfully, updating request and retrying');
-    
-    // Update the Authorization header with the new token
-    const newToken = refreshResult.token;
-    originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-    
-    // Retry the original request with the new token
-    return axiosInstance(originalRequest);
-  } catch (error) {
-    console.error('Error during token refresh or retry:', error);
-    
-    // Clear auth data to force a re-login
-    authServiceModule.clearAuthData();
-    
-    // Notify the app about the authentication failure
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('auth:refreshFailed', { 
-        detail: { error: error.message } 
-      }));
-    }
-    
-    throw error;
-  }
-}
 
 /**
  * Format a URL to include the API base if not already included

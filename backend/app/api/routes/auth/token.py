@@ -170,14 +170,15 @@ def refresh_token():
             response.headers.add('Access-Control-Allow-Origin', origin)
             response.headers.add('Access-Control-Allow-Headers', 
                                ','.join(current_app.config.get('CORS_HEADERS', 
-                                      ['Content-Type', 'Authorization', 'Accept'])))
+                                      ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'])))
             response.headers.add('Access-Control-Allow-Methods',
                                ','.join(current_app.config.get('CORS_METHODS',
-                                      ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])))
+                                      ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])))
             response.headers.add('Access-Control-Allow-Credentials', 'true')
             response.headers.add('Access-Control-Max-Age', 
                                str(current_app.config.get('CORS_MAX_AGE', 86400)))
         
+        current_app.logger.debug(f"Sending OPTIONS response with CORS headers: {dict(response.headers)}")
         return response, 200
         
     # Print request details for debugging

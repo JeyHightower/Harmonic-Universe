@@ -1,29 +1,29 @@
-from flask import Flask, jsonify, send_from_directory, Response, render_template, current_app, request, make_response
+import os
+import sys
+import logging
+import click
+from pathlib import Path
+from typing import Optional, Union, cast, Any, Dict, List, Tuple
+from logging.handlers import RotatingFileHandler
+from datetime import timedelta
+
+from flask import Flask, jsonify, request, make_response, send_from_directory, Response, current_app, redirect, url_for
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import JWTManager
-import os
-import logging
-import click
-from pathlib import Path
-from typing import Optional, Union, cast, Any
-from logging.handlers import RotatingFileHandler
-from .config import Config
 import hmac
 import hashlib
-from datetime import datetime, timedelta
 from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import partial
+from dotenv import load_dotenv
 
 from .extensions import db, migrate, jwt, limiter
 from .api.routes import api_bp
-from app.api.routes.auth.jwt_monkey_patch import apply_all_jwt_patches  # Use the existing JWT patch utility
-# from app.routes import register_routes  # This module doesn't exist
-from app.api import register_routes  # Use register_routes from app.api
 from app.config import config_by_name
 from app.extensions import init_extensions
+from app.utils.jwt_utils import apply_all_jwt_patches
 
 # Initialize caching
 try:
@@ -103,9 +103,31 @@ def setup_cors_handlers(app):
     which responds with appropriate CORS headers based on the app's configuration.
     """
     
-    # This function is kept for backward compatibility but we'll rely on Flask-CORS
-    # for all CORS handling to avoid duplications
-    pass
+    @app.before_request
+    def handle_preflight():
+        """Handle OPTIONS requests explicitly for CORS preflight."""
+        if request.method == "OPTIONS":
+            # Create a response with CORS headers
+            response = make_response()
+            
+            # Add CORS headers
+            origin = request.headers.get('Origin')
+            cors_origins = app.config.get('CORS_ORIGINS', ['*'])
+            
+            if origin and (origin in cors_origins or '*' in cors_origins):
+                response.headers.add('Access-Control-Allow-Origin', origin)
+                response.headers.add('Access-Control-Allow-Headers', 
+                                   ','.join(app.config.get('CORS_HEADERS', 
+                                          ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'])))
+                response.headers.add('Access-Control-Allow-Methods',
+                                   ','.join(app.config.get('CORS_METHODS',
+                                          ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])))
+                response.headers.add('Access-Control-Allow-Credentials', 'true')
+                response.headers.add('Access-Control-Max-Age', 
+                                   str(app.config.get('CORS_MAX_AGE', 86400)))
+            
+            app.logger.debug(f"CORS preflight response: {origin} -> {dict(response.headers)}")
+            return response, 200
 
 def setup_error_handlers(app):
     """Configure error handlers for the application."""
@@ -236,7 +258,7 @@ def configure_logging(app):
         app.logger.setLevel(logging.INFO)
         app.logger.info('Harmonic Universe startup')
 
-def create_app(config_name="development"):
+def create_app(config_name=None):
     """
     Create and configure the Flask application based on the specified configuration.
     
@@ -249,8 +271,29 @@ def create_app(config_name="development"):
     
     app = Flask(__name__, static_folder=None)
     
+    # Determine which config to use if not specified
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'development').lower()
+    
+    # Map environment names to config classes
+    config_mapping = {
+        'dev': 'DevelopmentConfig',
+        'development': 'DevelopmentConfig',
+        'test': 'TestingConfig',
+        'testing': 'TestingConfig',
+        'prod': 'ProductionConfig',
+        'production': 'ProductionConfig',
+        'default': 'DevelopmentConfig'
+    }
+    
+    # Get the config class name
+    config_class = config_mapping.get(config_name, 'DevelopmentConfig')
+    
     # Load the appropriate configuration
-    app.config.from_object(f"app.config.{config_name.capitalize()}Config")
+    app.config.from_object(f"app.config.{config_class}")
+    
+    # Log the configuration being used
+    app.logger.info(f"Using configuration: {config_class}")
     
     # Configure logging
     configure_logging(app)
@@ -265,15 +308,22 @@ def create_app(config_name="development"):
     migrate.init_app(app, db)
     limiter.init_app(app)
     
+    # Set up JWT handlers
+    setup_jwt_handlers(app)
+    
     # Import and apply JWT monkey patch
     try:
+        from app.utils.jwt_utils import apply_all_jwt_patches
         apply_all_jwt_patches()
         app.logger.info("JWT monkey patches applied successfully")
     except Exception as e:
         app.logger.warning(f"Failed to apply JWT monkey patches: {str(e)}")
     
-    # Set up CORS
+    # Set up CORS (before blueprints)
     setup_cors(app)
+    
+    # Set up CORS preflight handlers
+    setup_cors_handlers(app)
     
     # Set up static folders
     setup_static_folders(app)
@@ -294,6 +344,20 @@ def setup_cors(app):
     # Extract CORS configuration from app config
     origins = app.config.get('CORS_CONFIG', {}).get('ORIGINS', ['*'])
     
+    # Also check for CORS_ORIGINS in .env direct setting
+    env_origins = os.environ.get('CORS_ORIGINS')
+    if env_origins:
+        # Parse comma-separated origins from .env
+        env_origins_list = [origin.strip() for origin in env_origins.split(',')]
+        # Merge with existing origins
+        if '*' not in origins and '*' not in env_origins_list:
+            origins = list(set(origins + env_origins_list))
+        elif '*' in env_origins_list:
+            origins = ['*']  # If .env has wildcard, use it
+    
+    # Log the origins we're using
+    app.logger.info(f"CORS Origins configured: {origins}")
+    
     # Set explicit CORS_ORIGINS for use in other parts of the application
     app.config['CORS_ORIGINS'] = origins
     
@@ -301,10 +365,10 @@ def setup_cors(app):
     CORS(app, 
          resources={r"/api/*": {"origins": origins}},
          supports_credentials=app.config.get('CORS_SUPPORTS_CREDENTIALS', True),
-         methods=app.config.get('CORS_METHODS'),
-         allow_headers=app.config.get('CORS_HEADERS'),
-         expose_headers=app.config.get('CORS_EXPOSE_HEADERS'),
-         max_age=app.config.get('CORS_MAX_AGE'))
+         methods=app.config.get('CORS_METHODS', ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]),
+         allow_headers=app.config.get('CORS_HEADERS', ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]),
+         expose_headers=app.config.get('CORS_EXPOSE_HEADERS', ["Content-Length", "Content-Type", "Authorization"]),
+         max_age=app.config.get('CORS_MAX_AGE', 86400))
     
     return app
 

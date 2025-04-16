@@ -65,6 +65,8 @@ class Config:
             'http://127.0.0.1:5173',
             'http://localhost:5174',
             'http://127.0.0.1:5174',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
             'https://harmonic-universe.vercel.app',
             'https://harmonic-universe-git-main-someones-projects-4ec78d48.vercel.app'
         ],
