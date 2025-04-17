@@ -41,6 +41,8 @@ class Config:
     
     # JWT config
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-in-production'
+    # By default, use the same key for refresh tokens
+    JWT_REFRESH_SECRET_KEY = os.environ.get('JWT_REFRESH_SECRET_KEY') or JWT_SECRET_KEY
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
     JWT_BLACKLIST_ENABLED = True
@@ -56,7 +58,8 @@ class Config:
     
     # Log the secret key in development mode to help with debugging
     if os.environ.get('FLASK_ENV', 'development') == 'development' or os.environ.get('FLASK_DEBUG', 'False').lower() == 'true':
-        print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY}'")
+        print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY[:5]}...'")
+        print(f"DEBUG - JWT_REFRESH_SECRET_KEY: '{JWT_REFRESH_SECRET_KEY[:5]}...'")
     
     # CORS Configuration
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000,http://127.0.0.1:3000').split(',')

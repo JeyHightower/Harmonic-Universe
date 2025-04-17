@@ -127,16 +127,9 @@ def setup_cors(app):
          expose_headers=expose_headers,
          max_age=max_age)
     
-    # Add CORS preflight options handler to ensure preflight requests work
-    @app.after_request
-    def after_request(response):
-        if request.method == 'OPTIONS':
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            response.headers.add('Access-Control-Allow-Methods', ', '.join(methods))
-            response.headers.add('Access-Control-Allow-Headers', ', '.join(allow_headers))
-            
-        return response
-        
+    # Do not add another after_request handler for CORS
+    # Flask-CORS already adds the necessary headers
+    
     return app
 
 def setup_error_handlers(app):

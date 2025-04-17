@@ -38,22 +38,32 @@ def get_debug_jwt_info():
         return f"Token invalid: {str(e)}"
 
 @universes_bp.route('/', methods=['GET'])
-@jwt_required()
+@jwt_required(optional=True)
 def get_universes():
     try:
         # Debug JWT information
-        jwt_debug_info = get_debug_jwt_info()
-        current_app.logger.debug(f"JWT Debug Info: {jwt_debug_info}")
-        
-        # Get the actual JWT payload using Flask-JWT-Extended
-        jwt_payload = get_jwt()
-        current_app.logger.debug(f"JWT Payload from Flask-JWT-Extended: {jwt_payload}")
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            jwt_debug_info = get_debug_jwt_info()
+            current_app.logger.debug(f"JWT Debug Info: {jwt_debug_info}")
+            
+            # Get the actual JWT payload using Flask-JWT-Extended
+            try:
+                jwt_payload = get_jwt()
+                current_app.logger.debug(f"JWT Payload from Flask-JWT-Extended: {jwt_payload}")
+            except Exception as e:
+                current_app.logger.debug(f"Error getting JWT payload: {str(e)}")
         
         # Get query parameters
         public_only = request.args.get('public', 'false').lower() == 'true'
         user_only = request.args.get('user_only', 'false').lower() == 'true'
-        user_id = get_jwt_identity()
         
+        # Try to get user ID from JWT, but it's optional
+        try:
+            user_id = get_jwt_identity()
+        except Exception:
+            user_id = None
+            
         current_app.logger.info(f"Fetching universes for user {user_id}, public_only: {public_only}, user_only: {user_only}")
 
         try:
@@ -62,15 +72,16 @@ def get_universes():
             
             current_app.logger.debug(f"Base query: {str(query)}")
 
-            if user_only:
-                # Only include user's own universes when user_only is true
+            if user_id and user_only:
+                # Only include user's own universes when user_only is true and user is authenticated
                 current_app.logger.debug(f"Filtering by user_id: {user_id}")
                 query = query.filter_by(user_id=user_id)
-            elif public_only:
+            elif public_only or not user_id:
+                # Show only public universes if specifically requested or user is not authenticated
                 current_app.logger.debug(f"Filtering by public only")
                 query = query.filter_by(is_public=True)
             else:
-                # Include user's own universes and public universes
+                # Include user's own universes and public universes when authenticated
                 current_app.logger.debug(f"Filtering by user_id: {user_id} OR public=True")
                 query = query.filter(
                     (Universe.user_id == user_id) | (Universe.is_public == True)

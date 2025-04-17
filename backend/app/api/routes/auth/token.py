@@ -1,4 +1,4 @@
-from flask import request, jsonify, current_app # type: ignore
+from flask import request, jsonify, current_app, make_response # type: ignore
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token # type: ignore
 from ...models.user import User
 # Removed unused import
@@ -11,7 +11,21 @@ from . import auth_bp
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask import current_app
-from app.utils.jwt.config import get_jwt_secret_key
+from app.utils.jwt.config import get_jwt_secret_key, get_jwt_refresh_secret_key
+from flask_cors import cross_origin
+from app.utils.rate_limit import limiter
+from datetime import datetime, timedelta, timezone
+
+from app.utils.jwt.core import (
+    decode_token_without_verification, 
+    verify_token_signature, 
+    create_token,
+    is_token_expired,
+    decode_token
+)
+
+# Logger setup
+logger = logging.getLogger(__name__)
 
 # Note: This route can be rate-limited by Flask-Limiter and cause 429 errors
 # if too many requests occur in a short time frame. The frontend should handle
@@ -21,14 +35,8 @@ def validate_token():
     """Validate the JWT token and return user data."""
     # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
-        response = current_app.make_default_options_response()
-        # Add CORS headers for preflight
-        origin = request.headers.get('Origin', '*')
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
+        # Let Flask-CORS handle this automatically
+        return current_app.make_default_options_response()
 
     # Print request details for debugging
     current_app.logger.debug(f"Token validate request: Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
@@ -78,34 +86,34 @@ def validate_token():
 
         if not token:
             current_app.logger.warning("No token provided for validation")
-            response = jsonify({
+            return jsonify({
                 'message': 'No token provided', 
                 'valid': False
-            })
-            # Add CORS headers to response
-            origin = request.headers.get('Origin', '*')
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            return response, 401
+            }), 401
 
         # Validate token
         try:
-            secret_key = get_jwt_secret_key(None)
-            current_app.logger.debug(f"Using JWT secret key for validation (first 3 chars): {secret_key[:3]}...")
+            # First check token type without verification
+            unverified_payload = decode_token_without_verification(token)
+            token_type = unverified_payload.get('type', 'access')
+            
+            # Choose appropriate secret key based on token type
+            if token_type == 'refresh':
+                secret_key = get_jwt_refresh_secret_key()
+                current_app.logger.debug(f"Using JWT refresh secret key for validation (first 3 chars): {secret_key[:3]}...")
+            else:
+                secret_key = get_jwt_secret_key()
+                current_app.logger.debug(f"Using JWT access secret key for validation (first 3 chars): {secret_key[:3]}...")
 
             # Log token format for debugging
             token_parts = token.split('.')
             current_app.logger.debug(f'Token parts count: {len(token_parts)}')
             if len(token_parts) != 3:
                 current_app.logger.warning(f'Malformed token - expected 3 parts, got {len(token_parts)}')
-                response = jsonify({
+                return jsonify({
                     'message': 'Malformed token format', 
                     'valid': False
-                })
-                origin = request.headers.get('Origin', '*')
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                return response, 401
+                }), 401
 
             # Verify the token (including expiration)
             payload = jwt.decode(token, secret_key, algorithms=['HS256'])
@@ -113,14 +121,10 @@ def validate_token():
             
             if not user_id:
                 current_app.logger.error('Token missing user ID in payload')
-                response = jsonify({
+                return jsonify({
                     'message': 'Invalid token payload', 
                     'valid': False
-                })
-                origin = request.headers.get('Origin', '*')
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                return response, 401
+                }), 401
 
             # Convert user_id to int if it's a string (since DB expects integers for IDs)
             try:
@@ -133,14 +137,10 @@ def validate_token():
             user = User.query.get(user_id)
             if not user:
                 current_app.logger.error(f'User not found for ID: {user_id}')
-                response = jsonify({
+                return jsonify({
                     'message': 'User not found', 
                     'valid': False
-                })
-                origin = request.headers.get('Origin', '*')
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                return response, 404
+                }), 404
 
             # Set cookie with the token for better client handling
             response = jsonify({
@@ -149,18 +149,14 @@ def validate_token():
                 'user': user.to_dict()
             })
             
-            # Add CORS headers
-            origin = request.headers.get('Origin', '*')
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            
             # Set the token as a cookie with secure settings
             is_production = current_app.config.get('ENV') == 'production'
             same_site = 'Lax'  # 'None' works for cross-site but requires secure=True which may not work in development
             secure = is_production  # Only require secure in production
             
             # Only set cookie if not in development mode with localhost
-            if is_production or not origin or 'localhost' not in origin:
+            origin = request.headers.get('Origin', '')
+            if is_production or 'localhost' not in origin:
                 response.set_cookie(
                     'token',
                     token,
@@ -175,311 +171,220 @@ def validate_token():
             
         except jwt.ExpiredSignatureError:
             current_app.logger.info("Token has expired during validation")
-            response = jsonify({
+            return jsonify({
                 'message': 'Token has expired', 
                 'valid': False, 
                 'expired': True
-            })
-            origin = request.headers.get('Origin', '*')
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            return response, 401
+            }), 401
             
         except jwt.InvalidTokenError as e:
             current_app.logger.error(f'Invalid token during validation: {str(e)}')
-            response = jsonify({
+            return jsonify({
                 'message': 'Signature verification failed', 
                 'valid': False, 
                 'error': str(e)
-            })
-            origin = request.headers.get('Origin', '*')
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            return response, 401
+            }), 401
             
     except Exception as e:
         current_app.logger.error(f'Token validation error: {str(e)}')
-        response = jsonify({
+        return jsonify({
             'message': 'An error occurred during token validation', 
             'valid': False, 
             'error': str(e)
-        })
-        origin = request.headers.get('Origin', '*')
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response, 500
+        }), 500
 
-# Note: This route can be rate-limited by Flask-Limiter and cause 429 errors
-# if too many requests occur in a short time frame. The frontend should handle
-# this by implementing backoff and retry logic.
-@auth_bp.route('/refresh/', methods=['POST', 'GET', 'OPTIONS'])
-def refresh_token():
-    """Refresh an expired JWT token."""
-    # Handle OPTIONS requests for CORS preflight
-    if request.method == 'OPTIONS':
-        response = current_app.make_default_options_response()
-        # Add CORS headers for preflight
-        origin = request.headers.get('Origin', '*')
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
-        
-    # Print request details for debugging
-    current_app.logger.debug(f"Token refresh request: Method={request.method}, Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
-    current_app.logger.debug(f"Request args: {request.args}, Form: {request.form}, JSON: {request.get_json(silent=True)}")
+# Helper functions for token operations
+def get_token_from_request():
+    """
+    Extract the access token from the request in the following order:
+    1. Authorization header (Bearer token)
+    2. Cookies ('access_token')
+    3. JSON body ('access_token')
+    4. Form data ('access_token')
+    5. Query parameters ('access_token')
     
+    Returns:
+        str or None: The access token if found, None otherwise
+    """
+    # Check Authorization header
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        return auth_header.split(' ')[1]
+    
+    # Check cookies
+    token = request.cookies.get('access_token')
+    if token:
+        return token
+    
+    # Check JSON body
+    if request.is_json:
+        json_data = request.get_json(silent=True)
+        if json_data and 'access_token' in json_data:
+            return json_data.get('access_token')
+    
+    # Check form data
+    token = request.form.get('access_token')
+    if token:
+        return token
+    
+    # Check query parameters
+    token = request.args.get('access_token')
+    if token:
+        return token
+    
+    return None
+
+def get_refresh_token_from_request():
+    """
+    Extract the refresh token from the request in the following order:
+    1. Cookies ('refresh_token')
+    2. JSON body ('refresh_token')
+    3. Form data ('refresh_token')
+    4. Query parameters ('refresh_token')
+    
+    Returns:
+        str or None: The refresh token if found, None otherwise
+    """
+    # Check cookies
+    token = request.cookies.get('refresh_token')
+    if token:
+        return token
+    
+    # Check JSON body
+    if request.is_json:
+        json_data = request.get_json(silent=True)
+        if json_data and 'refresh_token' in json_data:
+            return json_data.get('refresh_token')
+    
+    # Check form data
+    token = request.form.get('refresh_token')
+    if token:
+        return token
+    
+    # Check query parameters
+    token = request.args.get('refresh_token')
+    if token:
+        return token
+    
+    return None
+
+# Token refresh route
+@auth_bp.route('/refresh', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def refresh():
+    """
+    Endpoint to refresh the access token using a valid refresh token.
+    
+    Returns:
+        Response: A JSON response with the new access token or an error message.
+    """
     try:
-        # Get token from request
-        token = None
-        refresh_token = None
-        
-        # Try to get token from Authorization header
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            token = auth_header.split(' ')[1]
-        
-        # Try to get refresh token from request body
-        if request.is_json:
-            data = request.get_json(silent=True) or {}
-            refresh_token = data.get('refresh_token')
-        else:
-            refresh_token = request.form.get('refresh_token')
-        
-        # If no token in header, try to get from request body
-        if not token and request.is_json:
-            data = request.get_json(silent=True) or {}
-            token = data.get('token')
-        elif not token:
-            token = request.form.get('token')
-        
-        # Check for tokens in cookies as well
-        if not token:
-            token = request.cookies.get('token')
+        refresh_token = get_refresh_token_from_request()
         
         if not refresh_token:
-            refresh_token = request.cookies.get('refresh_token')
+            logger.warning("Refresh token missing from request")
+            return jsonify({
+                'success': False,
+                'message': 'Refresh token is required'
+            }), 400
         
-        # Require at least one token
-        if not token and not refresh_token:
-            current_app.logger.warning("No token or refresh token provided")
-            response = jsonify({
-                'message': 'No token or refresh token provided',
-                'success': False
-            })
-            origin = request.headers.get('Origin', '*')
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            return response, 401
-        
-        # If we have a refresh token, use it
-        if refresh_token:
-            current_app.logger.debug("Using refresh token for refresh")
-            # Validate refresh token
-            try:
-                secret_key = get_jwt_secret_key(None)
-                
-                # Verify the refresh token
-                payload = jwt.decode(refresh_token, secret_key, algorithms=['HS256'])
-                user_id = payload.get('sub')
-                
-                if not user_id:
-                    current_app.logger.error('Refresh token missing user ID')
-                    response = jsonify({
-                        'message': 'Invalid refresh token',
-                        'success': False
-                    })
-                    origin = request.headers.get('Origin', '*')
-                    response.headers.add('Access-Control-Allow-Origin', origin)
-                    response.headers.add('Access-Control-Allow-Credentials', 'true')
-                    return response, 401
-                
-                # Find the user
-                user = User.query.get(user_id)
-                if not user:
-                    current_app.logger.error(f'User not found for refresh token: {user_id}')
-                    response = jsonify({
-                        'message': 'User not found',
-                        'success': False
-                    })
-                    origin = request.headers.get('Origin', '*')
-                    response.headers.add('Access-Control-Allow-Origin', origin)
-                    response.headers.add('Access-Control-Allow-Credentials', 'true')
-                    return response, 404
-                
-                # Create new tokens
-                access_token = create_access_token(identity=user.id)
-                new_refresh_token = create_refresh_token(identity=user.id)
-                
-                # Create response with new tokens
-                response = jsonify({
-                    'message': 'Token refreshed successfully',
-                    'token': access_token,
-                    'refresh_token': new_refresh_token,
-                    'user': user.to_dict(),
-                    'success': True
-                })
-                
-                # Add CORS headers
-                origin = request.headers.get('Origin', '*')
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                
-                # Set the tokens as cookies if appropriate
-                is_production = current_app.config.get('ENV') == 'production'
-                same_site = 'Lax'
-                secure = is_production
-                
-                if is_production or not origin or 'localhost' not in origin:
-                    response.set_cookie(
-                        'token',
-                        access_token,
-                        httponly=True,
-                        secure=secure,
-                        samesite=same_site,
-                        max_age=24 * 60 * 60,  # 24 hours
-                        path='/'
-                    )
-                    
-                    response.set_cookie(
-                        'refresh_token',
-                        new_refresh_token,
-                        httponly=True,
-                        secure=secure,
-                        samesite=same_site,
-                        max_age=30 * 24 * 60 * 60,  # 30 days
-                        path='/'
-                    )
-                
-                return response, 200
-                
-            except jwt.ExpiredSignatureError:
-                current_app.logger.info("Refresh token has expired")
-                response = jsonify({
-                    'message': 'Refresh token has expired',
-                    'success': False
-                })
-                origin = request.headers.get('Origin', '*')
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                return response, 401
-                
-            except jwt.InvalidTokenError as e:
-                current_app.logger.error(f'Invalid refresh token: {str(e)}')
-                response = jsonify({
-                    'message': 'Invalid refresh token',
+        # First decode without verification to check claims and expiration
+        try:
+            unverified_payload = decode_token_without_verification(refresh_token)
+            
+            # Check if it's a refresh token
+            token_type = unverified_payload.get('type')
+            if token_type != 'refresh':
+                logger.warning(f"Invalid token type for refresh: {token_type}")
+                return jsonify({
                     'success': False,
-                    'error': str(e)
-                })
-                origin = request.headers.get('Origin', '*')
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                return response, 401
-                
-        # If no refresh token but we have an access token, try to decode it to get user
-        elif token:
-            current_app.logger.debug("Using access token for refresh (fallback)")
-            try:
-                secret_key = get_jwt_secret_key(None)
-                
-                # Try to decode token, ignoring expiration
-                payload = jwt.decode(token, secret_key, algorithms=['HS256'], options={'verify_exp': False})
-                user_id = payload.get('sub')
-                
-                if not user_id:
-                    current_app.logger.error('Token missing user ID')
-                    response = jsonify({
-                        'message': 'Invalid token',
-                        'success': False
-                    })
-                    origin = request.headers.get('Origin', '*')
-                    response.headers.add('Access-Control-Allow-Origin', origin)
-                    response.headers.add('Access-Control-Allow-Credentials', 'true')
-                    return response, 401
-                
-                # Find the user
-                user = User.query.get(user_id)
-                if not user:
-                    current_app.logger.error(f'User not found for token: {user_id}')
-                    response = jsonify({
-                        'message': 'User not found',
-                        'success': False
-                    })
-                    origin = request.headers.get('Origin', '*')
-                    response.headers.add('Access-Control-Allow-Origin', origin)
-                    response.headers.add('Access-Control-Allow-Credentials', 'true')
-                    return response, 404
-                
-                # Create new tokens
-                access_token = create_access_token(identity=user.id)
-                new_refresh_token = create_refresh_token(identity=user.id)
-                
-                # Create response with new tokens
-                response = jsonify({
-                    'message': 'Token refreshed successfully',
-                    'token': access_token,
-                    'refresh_token': new_refresh_token,
-                    'user': user.to_dict(),
-                    'success': True
-                })
-                
-                # Add CORS headers
-                origin = request.headers.get('Origin', '*')
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                
-                # Set the tokens as cookies if appropriate
-                is_production = current_app.config.get('ENV') == 'production'
-                same_site = 'Lax'
-                secure = is_production
-                
-                if is_production or not origin or 'localhost' not in origin:
-                    response.set_cookie(
-                        'token',
-                        access_token,
-                        httponly=True,
-                        secure=secure,
-                        samesite=same_site,
-                        max_age=24 * 60 * 60,  # 24 hours
-                        path='/'
-                    )
-                    
-                    response.set_cookie(
-                        'refresh_token',
-                        new_refresh_token,
-                        httponly=True,
-                        secure=secure,
-                        samesite=same_site,
-                        max_age=30 * 24 * 60 * 60,  # 30 days
-                        path='/'
-                    )
-                
-                return response, 200
-                
-            except Exception as e:
-                current_app.logger.error(f'Failed to refresh using access token: {str(e)}')
-                response = jsonify({
-                    'message': 'Invalid token',
+                    'message': 'Invalid token type'
+                }), 401
+            
+            # Check if token is expired
+            if is_token_expired(refresh_token):
+                logger.warning("Refresh token has expired")
+                return jsonify({
                     'success': False,
-                    'error': str(e)
-                })
-                origin = request.headers.get('Origin', '*')
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                return response, 401
-                
-    except Exception as e:
-        current_app.logger.error(f'Token refresh error: {str(e)}')
-        response = jsonify({
-            'message': 'An error occurred during token refresh',
+                    'message': 'Refresh token has expired'
+                }), 401
+            
+            # Get refresh token secret key
+            refresh_secret_key = get_jwt_refresh_secret_key()
+            
+            # Verify token signature
+            if not verify_token_signature(refresh_token, refresh_secret_key):
+                logger.warning("Refresh token signature verification failed")
+                return jsonify({
+                    'success': False,
+                    'message': 'Invalid refresh token'
+                }), 401
+            
+            # Get fully verified payload
+            payload = decode_token(refresh_token, refresh_secret_key)
+            
+            # Create new access token
+            user_id = payload.get('sub')
+            
+            if not user_id:
+                logger.error("User ID missing in refresh token payload")
+                return jsonify({
+                    'success': False,
+                    'message': 'Invalid token payload'
+                }), 401
+            
+            # Create new access token
+            access_token_payload = {
+                'sub': user_id,
+                'type': 'access',
+                'iat': datetime.now(timezone.utc)
+            }
+            
+            access_secret_key = get_jwt_secret_key()
+            access_token = create_token(
+                payload=access_token_payload,
+                secret_key=access_secret_key,
+                expires_delta=timedelta(minutes=30)
+            )
+            
+            # Create response
+            response = make_response(jsonify({
+                'success': True,
+                'message': 'Token refreshed successfully',
+                'access_token': access_token
+            }))
+            
+            # Set cookies for cookie-based auth
+            max_age = 30 * 60  # 30 minutes in seconds
+            response.set_cookie(
+                'access_token',
+                access_token,
+                max_age=max_age,
+                httponly=True,
+                secure=current_app.config.get('JWT_COOKIE_SECURE', False),
+                samesite=current_app.config.get('JWT_COOKIE_SAMESITE', 'Lax')
+            )
+            
+            return response
+        except Exception as e:
+            logger.error(f"Error processing refresh token: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': 'Error processing refresh token'
+            }), 400
+            
+    except jwt.InvalidTokenError as e:
+        logger.error(f"Invalid refresh token: {str(e)}")
+        return jsonify({
             'success': False,
-            'error': str(e)
-        })
-        origin = request.headers.get('Origin', '*')
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response, 500
+            'message': 'Invalid refresh token'
+        }), 401
+    except Exception as e:
+        logger.error(f"Error refreshing token: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while refreshing the token'
+        }), 500
 
 @auth_bp.route('/me/', methods=['GET'])
 @jwt_required(optional=True)  # Make JWT optional so we can handle errors better

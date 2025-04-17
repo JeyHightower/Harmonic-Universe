@@ -311,7 +311,12 @@ export async function validateToken(token = null) {
           }
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError);
-          clearAuthData();
+          
+          // Don't clear auth data on network errors, as they might be temporary
+          if (!refreshError.message?.includes('Network Error')) {
+            clearAuthData();
+          }
+          
           return { valid: false, message: 'Token expired and refresh failed' };
         }
       }
@@ -322,6 +327,7 @@ export async function validateToken(token = null) {
     
     // Validate with server
     try {
+      // Use a smaller timeout for validation to fail faster
       const response = await httpClient.post(
         authEndpoints.validate,
         { token },
@@ -330,7 +336,8 @@ export async function validateToken(token = null) {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          withCredentials: true
+          withCredentials: true,
+          timeout: 5000 // 5 second timeout for faster failure
         }
       );
       
@@ -352,6 +359,23 @@ export async function validateToken(token = null) {
     } catch (validationError) {
       console.error('Server validation error:', validationError);
       
+      // If it's a network error (possibly CORS), use client-side validation as fallback
+      if (validationError.message?.includes('Network Error')) {
+        console.warn('Network error during validation, using client-side validation as fallback');
+        
+        try {
+          // We've already checked expiration above, so if we're here the token isn't expired
+          return { 
+            valid: true, 
+            user: JSON.parse(localStorage.getItem(USER_KEY) || '{}'),
+            clientSideOnly: true, 
+            message: 'Using client-side validation due to network error' 
+          };
+        } catch (e) {
+          console.error('Client-side validation failed:', e);
+        }
+      }
+      
       // If server returns 401, token is definitely invalid
       if (validationError.response && validationError.response.status === 401) {
         // Try to refresh the token
@@ -362,7 +386,10 @@ export async function validateToken(token = null) {
           }
         } catch (refreshError) {
           console.error('Token refresh after 401 failed:', refreshError);
-          clearAuthData();
+          // Don't clear auth on network errors
+          if (!refreshError.message?.includes('Network Error')) {
+            clearAuthData();
+          }
           return { valid: false, message: 'Token invalid and refresh failed' };
         }
       }
@@ -372,10 +399,12 @@ export async function validateToken(token = null) {
   } catch (error) {
     console.error('Token validation error:', error);
     
-    // Set verification failure flag
-    localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
+    // Don't set verification failure on network errors as they might be temporary
+    if (!error.message?.includes('Network Error')) {
+      localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
+    }
     
-    return { valid: false, message: error.message };
+    return { valid: false, message: error.message, isNetworkError: error.message?.includes('Network Error') };
   }
 }
 

@@ -30,6 +30,29 @@ def get_jwt_secret_key(app=None) -> str:
             current_app.config['JWT_SECRET_KEY'] = secret_key
     return secret_key
 
+def get_jwt_refresh_secret_key(app=None) -> str:
+    """
+    Get the JWT refresh secret key from config or environment variables.
+    If no specific refresh key is found, falls back to the access token secret key.
+    
+    Args:
+        app: Optional Flask application instance. If not provided, uses current_app.
+    
+    Returns:
+        str: The JWT refresh secret key
+    """
+    config = app.config if app else current_app.config
+    # First check if a specific refresh key exists
+    refresh_key = config.get('JWT_REFRESH_SECRET_KEY')
+    if not refresh_key:
+        refresh_key = os.environ.get('JWT_REFRESH_SECRET_KEY')
+    
+    # If no specific refresh key, use the access token key
+    if not refresh_key:
+        refresh_key = get_jwt_secret_key(app)
+        
+    return refresh_key
+
 def configure_jwt(app) -> None:
     """
     Configure JWT settings for the application.

@@ -7,41 +7,34 @@ from app.utils.jwt.config import get_jwt_secret_key
 import jwt
 
 @auth_bp.route('/logout/', methods=['POST'])
-@jwt_required(optional=True)
 def logout():
     """Logout the current user."""
     try:
-        # First try the standard way
-        try:
-            jwt_payload = get_jwt()
-            jti = jwt_payload['jti']
-        except Exception as e:
-            # If that fails, try manual extraction
-            auth_header = request.headers.get('Authorization')
-            if auth_header and auth_header.startswith('Bearer '):
-                token = auth_header.split(' ')[1]
-                try:
-                    secret_key = get_jwt_secret_key(None)
-                    payload = jwt.decode(token, secret_key, algorithms=['HS256'])
-                    # We don't have a JTI in manually decoded token, so use token itself
-                    jti = token
-                except Exception as e:
-                    current_app.logger.error(f"Error decoding token manually: {str(e)}")
-                    return jsonify({
-                        'success': False,
-                        'message': 'Invalid token',
-                        'status': 401
-                    }), 401
-            else:
-                return jsonify({
-                    'success': False,
-                    'message': 'No token provided',
-                    'status': 401
-                }), 401
+        # Try to get the JWT token
+        auth_header = request.headers.get('Authorization')
         
-        current_app.logger.info(f'Logging out user, revoking token with JTI: {jti}')
-        add_token_to_blocklist(jti)
-        
+        # If there's a token, try to revoke it, but don't require it for logout
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+            try:
+                # Try to decode it
+                secret_key = get_jwt_secret_key(None)
+                payload = jwt.decode(token, secret_key, algorithms=['HS256'], options={"verify_exp": False})
+                
+                # If we have a jti, add it to the blocklist
+                if 'jti' in payload:
+                    jti = payload['jti']
+                    add_token_to_blocklist(jti)
+                    current_app.logger.info(f'Revoked token with JTI: {jti}')
+                else:
+                    # If no jti in payload, use the token itself as key
+                    add_token_to_blocklist(token)
+                    current_app.logger.info(f'Revoked token (using token as key)')
+            except Exception as e:
+                # Log but continue - we want logout to succeed even if token is invalid
+                current_app.logger.warning(f"Error processing token during logout: {str(e)}")
+
+        # Return success even if we couldn't revoke the token
         return jsonify({
             'success': True,
             'message': 'Logout successful',
@@ -49,9 +42,12 @@ def logout():
         }), 200
     except Exception as e:
         current_app.logger.error(f'Logout error: {str(e)}')
+        
+        # Even on error, we want to tell the client that logout succeeded
+        # This ensures the client can clean up its local storage
         return jsonify({
-            'success': False,
-            'message': 'An error occurred during logout',
+            'success': True,
+            'message': 'Logout processed',
             'error': str(e),
-            'status': 500
-        }), 500 
+            'status': 200
+        }), 200 

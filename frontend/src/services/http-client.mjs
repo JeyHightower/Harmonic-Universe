@@ -147,6 +147,45 @@ const axiosInstance = axios.create({
   xsrfHeaderName: 'X-CSRFToken',
 });
 
+// Enable CORS debugging
+const enableCorsDebugging = () => {
+  if (typeof window !== 'undefined') {
+    // Only enable in development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log('CORS debugging enabled');
+      
+      // Monitor CORS-related console errors
+      const originalConsoleError = console.error;
+      console.error = function(...args) {
+        const errorMessage = args.join(' ');
+        if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
+          console.log('%c CORS ERROR DETECTED! ', 'background: #e74c3c; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;');
+          console.log('Request details:', {
+            baseURL: axiosInstance.defaults.baseURL,
+            withCredentials: axiosInstance.defaults.withCredentials,
+          });
+          
+          // Suggest enabling CORS proxy
+          console.log('%c Try enabling CORS proxy: localStorage.setItem("use_cors_proxy", "true") and refresh ', 'background: #3498db; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;');
+          
+          // Store info for debugging
+          if (window.apiDebug) {
+            window.apiDebug.corsErrors = window.apiDebug.corsErrors || [];
+            window.apiDebug.corsErrors.push({
+              time: new Date().toISOString(),
+              message: errorMessage
+            });
+          }
+        }
+        originalConsoleError.apply(console, args);
+      };
+    }
+  }
+};
+
+// Call to enable CORS debugging
+enableCorsDebugging();
+
 // Log the base URL being used
 logApiOperation('api-client-initialized', {
   baseURL: getBaseUrl(),
@@ -323,10 +362,32 @@ axiosInstance.interceptors.response.use(
         headers: error.config?.headers,
       });
 
+      // For debugging purposes
+      console.warn('CORS error detected for URL:', error.config?.url);
+      console.warn('Request details:', {
+        method: error.config?.method,
+        withCredentials: error.config?.withCredentials,
+        headers: error.config?.headers,
+      });
+
+      // Try to automatically enable CORS proxy if the error persists
+      const corsErrorCount = window.apiDebug?.corsErrors?.length || 0;
+      if (corsErrorCount > 3 && !localStorage.getItem('use_cors_proxy')) {
+        console.log('%c Automatically enabling CORS proxy after multiple errors ', 'background: #f39c12; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;');
+        localStorage.setItem('use_cors_proxy', 'true');
+        
+        // Show a notification to the user
+        if (typeof window !== 'undefined' && !window.corsproxy_notification_shown) {
+          window.corsproxy_notification_shown = true;
+          alert('Network connectivity issues detected. Enabling CORS proxy to improve connectivity. Please refresh the page.');
+        }
+      }
+
       // Try using CORS proxy if enabled
       if (shouldUseCorsProxy() && !error.config?.url?.includes('cors-anywhere')) {
         const proxyUrl = getCorsProxyUrl(error.config.url);
         error.config.url = proxyUrl;
+        console.log('Retrying request with CORS proxy:', proxyUrl);
         return axiosInstance(error.config);
       }
     }

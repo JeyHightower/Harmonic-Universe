@@ -1,6 +1,13 @@
 from flask import Blueprint
 
-auth_bp = Blueprint('auth', __name__)
+# Create blueprint
+auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+
+# Import route modules (after blueprint creation to avoid circular imports)
+from . import routes, token
+
+# Register token blueprint with auth blueprint
+auth_bp.register_blueprint(token.token_bp, url_prefix='/token')
 
 # Import route modules
 from .signup import *
@@ -20,9 +27,13 @@ def configure_jwt_secret_key(app):
     """
     import os
     
-    # Use the default key from config.py
-    # This is the value that actually works with the tokens
-    app.config['JWT_SECRET_KEY'] = 'jwt-secret-key'
-    app.logger.info(f"JWT secret key set to default value for consistent token validation")
+    # Use the JWT_SECRET_KEY from config instead of hardcoding
+    jwt_secret_key = app.config.get('JWT_SECRET_KEY')
+    if not jwt_secret_key:
+        jwt_secret_key = os.environ.get('JWT_SECRET_KEY', 'jwt-secure-key-please-change-in-production-1234567890')
+        # Update the config with this key
+        app.config['JWT_SECRET_KEY'] = jwt_secret_key
+    
+    app.logger.info(f"JWT secret key configured for consistent token validation")
     
     return app 
