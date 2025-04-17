@@ -44,6 +44,8 @@ export const API_SERVICE_CONFIG = {
   AUTH: {
     // Must use the exact same TOKEN_KEY from AUTH_CONFIG to maintain consistency
     TOKEN_KEY: AUTH_CONFIG.TOKEN_KEY,
+    REFRESH_TOKEN_KEY: AUTH_CONFIG.REFRESH_TOKEN_KEY,
+    USER_KEY: AUTH_CONFIG.USER_KEY,
     TOKEN_TYPE: 'Bearer',
   },
   

@@ -1,5 +1,5 @@
 from flask import request, jsonify, current_app
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, create_refresh_token
 from ...models.user import User
 from ....extensions import db
 
@@ -25,14 +25,16 @@ def login():
         if not user or not user.check_password(data['password']):
             return jsonify({'message': 'Invalid email or password'}), 401
         
-        # Generate token
+        # Generate tokens
         access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
         
         # Create response
         response = jsonify({
             'message': 'Login successful',
             'user': user.to_dict(),
-            'token': access_token
+            'token': access_token,
+            'refresh_token': refresh_token
         })
         
         # Set cookie for token (in addition to JSON response)

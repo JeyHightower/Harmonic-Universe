@@ -39,7 +39,43 @@ export const fetchUniverses = createAsyncThunk(
     try {
       console.log("Fetching universes with params:", params);
       
-      // First, check if there's already a token verification failure flag set
+      // First, import modules we'll need
+      const authModule = await import('../../services/auth.service.mjs');
+      const demoModule = await import('../../services/demo-user.service.mjs');
+      
+      // Check if this is a demo session
+      const isDemoSession = demoModule.isDemoSession();
+      if (isDemoSession) {
+        console.log("Demo session detected, using demo data");
+        
+        // Check if we need to refresh demo tokens
+        const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+        const refreshToken = localStorage.getItem("refreshToken");
+        
+        if (!token || !refreshToken) {
+          console.log("Demo tokens missing, regenerating");
+          demoModule.setupDemoSession();
+        }
+        
+        // Return demo universes data
+        return {
+          universes: [
+            {
+              id: 'demo-universe-1',
+              name: 'Demo Universe',
+              description: 'This is a demo universe for testing purposes',
+              user_id: 'demo-user',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_public: true,
+              tags: ['demo', 'test'],
+              scene_count: 5
+            }
+          ]
+        };
+      }
+      
+      // Check if there's already a token verification failure flag set
       const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
       if (tokenVerificationFailed === "true") {
         console.error("Token verification previously failed, aborting universes fetch");
@@ -52,81 +88,42 @@ export const fetchUniverses = createAsyncThunk(
         });
       }
       
-      // Add a check for the token's existence
-      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-      if (!token) {
-        console.error("No authentication token found");
-        return rejectWithValue({
-          message: "No authentication token found. Please log in again.",
-          status: 401,
-          authError: true
-        });
-      }
-      
-      // Check if it's a demo token - no need to validate with server
-      const isDemoToken = token && (token.startsWith('demo-') || token.includes('demo'));
-      
-      // Only perform validation for non-demo tokens
-      let shouldAttemptRefresh = false;
-      
-      if (!isDemoToken) {
-        try {
-          // Make a lightweight request to validate the token
-          await api.auth.validateToken();
-          console.log("Token validated successfully");
-        } catch (validationError) {
-          console.error("Token validation error:", validationError.message);
-          
-          // Specifically check for signature verification errors
-          if (validationError.message?.includes("Signature verification failed") ||
-              validationError.response?.data?.message?.includes("Signature verification failed")) {
-            
-            console.log("Token validation failed with signature verification error, attempting refresh");
-            shouldAttemptRefresh = true;
-          }
-        }
+      // Use local token validation first for faster check
+      const hasToken = authModule.hasValidToken();
+      if (!hasToken) {
+        console.log("No valid token found, attempting refresh before fetching universes");
         
-        // If token validation failed, try refreshing the token
-        if (shouldAttemptRefresh) {
-          try {
-            console.log("Attempting to refresh token before universe fetch");
-            
-            // Import auth service dynamically to avoid circular dependencies
-            const authModule = await import('../../services/auth.service.mjs');
-            const result = await authModule.refreshToken();
-            
-            if (result.success && result.data?.token) {
-              console.log("Token refreshed successfully, proceeding with universe fetch");
-              // No need to set anything, as token is already stored in localStorage
-            } else {
-              console.error("Token refresh failed:", result.message);
-              localStorage.setItem("token_verification_failed", "true");
-              
-              return rejectWithValue({
-                message: "Authentication failed and token refresh was unsuccessful. Please log in again.",
-                status: 401,
-                authError: true
-              });
-            }
-          } catch (refreshError) {
-            console.error("Error during token refresh:", refreshError);
-            localStorage.setItem("token_verification_failed", "true");
-            
+        try {
+          const newToken = await authModule.refreshToken();
+          if (!newToken) {
+            console.error("Token refresh failed - no token returned");
             return rejectWithValue({
-              message: "Authentication token refresh failed. Please log in again.",
+              message: "Authentication required - please log in again.",
               status: 401,
               authError: true
             });
           }
+          console.log("Token refreshed successfully, continuing to fetch universes");
+        } catch (refreshError) {
+          console.error("Error refreshing token:", refreshError.message);
+          
+          // Only redirect for auth errors, not network errors
+          if (refreshError.response?.status === 401 || 
+              refreshError.response?.status === 403 ||
+              refreshError.response?.status === 405) {
+            return rejectWithValue({
+              message: "Authentication failed. Please log in again.",
+              status: refreshError.response?.status || 401,
+              authError: true
+            });
+          }
+          
+          // For network errors, proceed with existing token as it might be a temporary issue
+          console.log("Network error during token refresh, proceeding with existing token");
         }
-      } else {
-        console.log("Using demo token, skipping server validation");
       }
       
-      // If we get here, either:
-      // 1. Token validated successfully
-      // 2. Token was refreshed successfully
-      // 3. It's a demo token which doesn't need validation
+      // Proceed with API call to load universes
       try {
         const response = await api.universes.getUniverses(params);
         console.log("Got universes response:", {

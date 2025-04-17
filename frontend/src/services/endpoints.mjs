@@ -27,13 +27,26 @@ const endpoint = (path) => {
 };
 
 /**
+ * Create endpoint without adding trailing slash
+ * Used for endpoints that explicitly don't want a trailing slash
+ */
+const endpointNoSlash = (path) => {
+  // Ensure path starts with a slash if not empty
+  const formattedPath = path.startsWith('/') ? path : `/${path}`;
+  
+  // Don't add API_PREFIX here as it will be added by formatUrl in http-client.mjs
+  console.log(`Endpoint (no slash): ${path} -> ${formattedPath}`);
+  return formattedPath;
+};
+
+/**
  * Authentication Endpoints
  */
 export const authEndpoints = {
   login: endpoint('/auth/login'),
   register: endpoint('/auth/signup'),
   demoLogin: endpoint('/auth/demo-login'),
-  refresh: endpoint('/auth/refresh/'),
+  refresh: endpointNoSlash('/auth/refresh'),
   logout: endpoint('/auth/logout/'),
   validate: endpoint('/auth/validate/'),
 };
@@ -187,4 +200,4 @@ export const getEndpoint = (group, name, params = []) => {
   return typeof endpointFn === 'function' ? endpointFn(...params) : endpointFn;
 };
 
-export default endpoints; 
+export default endpoints;

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { demoLogin, loginSuccess } from "../../../store/slices/authSlice";
-import { AUTH_CONFIG } from "../../../utils/config";
+import { demoLogin } from "../../../utils/demoLogin";
 import Logger from "../../../utils/logger";
 
 const LoginPage = () => {
@@ -32,91 +31,9 @@ const LoginPage = () => {
       setLoading(true);
       setError(null);
 
-      // For production deployments, use direct demo user creation
-      if (window.location.hostname.includes("render.com")) {
-        Logger.log("auth", "LoginPage - Production environment detected, creating demo user directly");
+      await demoLogin(dispatch);
 
-        // Create mock demo user
-        const demoUser = {
-          id: "demo-" + Math.floor(Math.random() * 10000),
-          username: "demo_user",
-          email: "demo@example.com",
-          role: "user",
-          createdAt: new Date().toISOString(),
-        };
-
-        // Create a proper JWT-like token with three parts
-        const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-        const now = Math.floor(Date.now() / 1000);
-        const payload = btoa(JSON.stringify({
-          sub: demoUser.id,
-          name: "Demo User",
-          iat: now,
-          exp: now + 3600, // 1 hour from now
-        }));
-        const signature = btoa('demo-signature');
-        
-        // Create token with header.payload.signature format
-        const mockToken = `${header}.${payload}.${signature}`;
-
-        // Store in localStorage
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);
-        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
-
-        // Update Redux state
-        dispatch(loginSuccess({ user: demoUser, token: mockToken }));
-
-        // Simulate a network delay
-        setTimeout(() => {
-          setLoading(false);
-          // Trigger storage event to notify other components
-          window.dispatchEvent(new CustomEvent("storage"));
-        }, 500);
-
-        return;
-      }
-
-      // Try to use the demo login action
-      Logger.log("auth", "LoginPage - Dispatching demoLogin action");
-      const resultAction = await dispatch(demoLogin());
-
-      if (
-        resultAction.meta &&
-        resultAction.meta.requestStatus === "fulfilled"
-      ) {
-        Logger.log("auth", "LoginPage - Demo login successful");
-        setLoading(false);
-      } else {
-        Logger.log("auth", "LoginPage - Demo login failed, falling back to direct method", { error: resultAction.error });
-        // Fall back to direct method
-        const demoUser = {
-          id: "demo-" + Math.floor(Math.random() * 10000),
-          username: "demo_user",
-          email: "demo@example.com",
-          role: "user",
-          createdAt: new Date().toISOString(),
-        };
-
-        // Create proper JWT-like token instead of the simple string
-        const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-        const now = Math.floor(Date.now() / 1000);
-        const payload = btoa(JSON.stringify({
-          sub: demoUser.id,
-          name: "Demo User",
-          iat: now,
-          exp: now + 3600, // 1 hour from now
-        }));
-        const signature = btoa('demo-signature');
-        
-        // Create token with proper JWT format
-        const mockToken = `${header}.${payload}.${signature}`;
-
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);
-        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));
-
-        dispatch(loginSuccess({ user: demoUser, token: mockToken }));
-        setLoading(false);
-      }
+      setLoading(false);
     } catch (error) {
       Logger.log("auth", "LoginPage - Error during demo login:", { error: error.message });
       setError("Failed to log in. Please try again.");

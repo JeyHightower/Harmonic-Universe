@@ -27,19 +27,21 @@ export const createDemoUser = () => {
 /**
  * Creates a properly formatted JWT-like token for demo mode
  * @param {string} userId - User ID to include in token
+ * @param {string} tokenType - Type of token ('access' or 'refresh')
  * @returns {string} JWT-like token
  */
-const createDemoToken = (userId) => {
+const createDemoToken = (userId, tokenType = 'access') => {
   // Create a header part (base64 encoded)
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   
-  // Create a payload part (base64 encoded)
+  // Create a payload part (base64 encoded) with token type
   const now = Math.floor(Date.now() / 1000);
   const payload = btoa(JSON.stringify({
     sub: userId,
     name: 'Demo User',
     iat: now,
-    exp: now + 3600, // 1 hour from now
+    exp: now + (tokenType === 'refresh' ? 86400 : 3600), // refresh: 24h, access: 1h
+    type: tokenType // Important: add token type for backend validation
   }));
   
   // Create a signature part (just a placeholder for demo)
@@ -58,8 +60,8 @@ export const setupDemoSession = () => {
   
   // Create demo user and tokens
   const demoUser = createDemoUser();
-  const token = createDemoToken(demoUser.id);
-  const refreshToken = createDemoToken(demoUser.id);
+  const token = createDemoToken(demoUser.id, 'access');
+  const refreshToken = createDemoToken(demoUser.id, 'refresh');
   
   // Store in localStorage
   localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
@@ -69,7 +71,12 @@ export const setupDemoSession = () => {
   // Clear any token verification failure flag
   localStorage.removeItem("token_verification_failed");
   
-  return { user: demoUser, token };
+  // Set auth header for axios
+  if (window.httpClient && window.httpClient.defaults) {
+    window.httpClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+  
+  return { user: demoUser, token, refresh_token: refreshToken };
 };
 
 /**

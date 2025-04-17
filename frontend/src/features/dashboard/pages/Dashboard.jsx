@@ -10,17 +10,12 @@ import {
   DialogContent,
   DialogActions,
   Tooltip,
-  DialogContentText,
-  TextField,
-  FormControlLabel,
-  Checkbox,
 } from "@mui/material";
 import {
   Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   Refresh as RefreshIcon,
   Logout as LogoutIcon,
+  RestartAlt as ResetIcon,
 } from "@mui/icons-material";
 
 // Import the UniverseModal and UniverseCard from features/universe
@@ -32,6 +27,7 @@ import { AUTH_CONFIG } from "../../../utils/config";
 import { logout } from "../../../store/thunks/authThunks";
 import api from "../../../services/api.adapter";
 import { authService } from "../../../services/auth.service.mjs";
+import { demoUserService } from "../../../services/demo-user.service.mjs";
 
 /**
  * Dashboard component for displaying and managing user's universes
@@ -41,7 +37,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { universes, loading, error } = useSelector((state) => state.universes);
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -49,7 +45,6 @@ const Dashboard = () => {
   const [sortOption, setSortOption] = useState("updated_at");
   const [filterOption, setFilterOption] = useState("all");
   const [newUniverseId, setNewUniverseId] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
 
   // Track last dashboard logout attempt
   let lastDashboardLogoutAttempt = 0;
@@ -57,85 +52,84 @@ const Dashboard = () => {
 
   // Enhanced function to load universes with better error handling and logging
   const loadUniverses = useCallback(() => {
-    console.log("Dashboard - Loading universes, attempt:", retryCount + 1);
+    console.log("Dashboard - Loading universes");
     
-    // Verify token and user before making request
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
-    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+    // Check if this is a demo session
+    const isDemoSession = demoUserService.isDemoSession();
     
-    // Enhanced logging for debugging purposes
-    console.log("Dashboard - Auth state check:", {
-      hasToken: !!token,
-      tokenLength: token?.length || 0,
-      tokenStart: token ? token.substring(0, 5) : null,
-      tokenVerificationFailed: tokenVerificationFailed === "true",
-      hasUser: !!userStr,
-      userValid: userStr ? !!JSON.parse(userStr) : false
-    });
-    
-    if (!token) {
-      console.error("Dashboard - No auth token found, cannot load universes");
-      // Instead of immediately redirecting, try to refresh the token first
-      return authService.refreshToken()
-        .then(() => {
-          // If refresh succeeds, retry loading universes
-          return dispatch(fetchUniverses());
-        })
-        .catch((refreshError) => {
-          console.error("Dashboard - Token refresh failed:", refreshError);
-          // Only redirect if refresh fails
-          navigate("/?modal=login", { replace: true });
-          return Promise.resolve({ error: "Authentication error" });
-        });
-    }
-    
-    if (tokenVerificationFailed === "true") {
-      console.error("Dashboard - Token verification previously failed");
-      // Clear the flag and try to refresh token
-      localStorage.removeItem("token_verification_failed");
-      return authService.refreshToken()
-        .then(() => {
-          return dispatch(fetchUniverses());
-        })
-        .catch((refreshError) => {
-          console.error("Dashboard - Token refresh failed after verification:", refreshError);
-          navigate("/?modal=login", { replace: true });
-          return Promise.resolve({ error: "Authentication error" });
-        });
-    }
-    
-    // Add Authorization header to axios manually to ensure it's available for this request
-    try {
-      const axiosInstance = api.auth.getAxiosInstance();
-      if (axiosInstance && axiosInstance.defaults) {
-        console.log("Dashboard - Manually setting Authorization header");
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    // If in demo mode and tokens are missing, regenerate them
+    if (isDemoSession) {
+      console.log("Dashboard - Demo session detected");
+      
+      // Check if we have both tokens
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      
+      if (!token || !refreshToken) {
+        console.log("Dashboard - Demo tokens missing, regenerating demo session");
+        demoUserService.setupDemoSession();
       }
-    } catch (err) {
-      console.warn("Dashboard - Could not manually set auth header:", err.message);
+      
+      // Continue to load universes using dispatch
+      return dispatch(fetchUniverses()).catch((error) => {
+        console.error("Dashboard - Error loading universes in demo mode:", error);
+        return Promise.resolve({ error: "Error loading demo universes" });
+      });
     }
     
-    // Proceed with loading universes
+    // Not in demo mode, check for valid token
+    if (!authService.hasValidToken()) {
+      console.log("Dashboard - No valid token found, attempting refresh");
+      
+      // Try to refresh the token
+      return authService.refreshToken()
+        .then(() => {
+          console.log("Dashboard - Token refreshed successfully, loading universes");
+          return dispatch(fetchUniverses());
+        })
+        .catch((error) => {
+          console.error("Dashboard - Token refresh failed:", error.message);
+          
+          // Only redirect for auth errors, not network errors
+          if (error.response?.status >= 400 || 
+              !error.message?.includes('Network Error')) {
+            console.log("Dashboard - Redirecting to login due to auth error");
+            navigate("/?modal=login", { replace: true });
+          } else {
+            console.log("Dashboard - Network error during token refresh, proceeding with existing token");
+            // Attempt to load universes with the existing token since it might be a temporary network issue
+            return dispatch(fetchUniverses());
+          }
+          
+          return Promise.resolve({ error: "Authentication error" });
+        });
+    }
+    
+    // Token is valid, proceed with loading universes
     return dispatch(fetchUniverses())
       .catch((error) => {
         console.error("Dashboard - Error loading universes:", error);
-        if (error.response?.status === 401) {
-          // If we get a 401, try to refresh the token
+        
+        // Handle specific error cases
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.log("Dashboard - Authentication error loading universes, attempting token refresh");
+          
+          // Try to refresh the token and retry
           return authService.refreshToken()
             .then(() => {
-              // If refresh succeeds, retry loading universes
+              console.log("Dashboard - Token refreshed, retrying universe load");
               return dispatch(fetchUniverses());
             })
-            .catch((refreshError) => {
-              console.error("Dashboard - Token refresh failed after 401:", refreshError);
+            .catch(() => {
+              console.log("Dashboard - Token refresh failed, redirecting to login");
               navigate("/?modal=login", { replace: true });
               return Promise.resolve({ error: "Authentication error" });
             });
         }
+        
         return Promise.resolve({ error: error.message });
       });
-  }, [dispatch, navigate, retryCount]);
+  }, [dispatch, navigate]);
 
   // Load universes on component mount
   useEffect(() => {
@@ -143,30 +137,30 @@ const Dashboard = () => {
     loadUniverses();
   }, [loadUniverses]);
 
-  // Debug log to check universes data
+  // Check for authentication and load data on component mount
   useEffect(() => {
-    if (universes) {
-      console.log("Dashboard - Current universes state:", {
-        count: Array.isArray(universes) ? universes.length : "not an array",
-        data: universes,
-        type: typeof universes,
-        isArray: Array.isArray(universes),
-        hasData: !!universes,
-      });
-    } else {
-      console.log("Dashboard - Universes state is null or undefined");
+    // First check if this is a demo session
+    const isDemoSession = demoUserService.isDemoSession();
+    
+    if (isDemoSession) {
+      console.log("Dashboard - Demo session detected, ensuring tokens are set");
+      // Ensure demo tokens are properly set up
+      if (!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY) || !localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY)) {
+        console.log("Demo tokens missing, regenerating");
+        demoUserService.setupDemoSession();
+      }
+      // Proceed to load universes
+      loadUniverses();
+      return;
     }
-  }, [universes]);
-
-  // Check for authentication and load data on component mount or retry
-  useEffect(() => {
+    
+    // Not in demo mode, check regular auth
     if (!isAuthenticated) {
       console.log("Not authenticated, redirecting to login");
       navigate("/?modal=login", { replace: true });
       return;
     }
     
-    // Verify token validity before fetching data
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (!token) {
       console.log("No token found, redirecting to login");
@@ -175,112 +169,33 @@ const Dashboard = () => {
       return;
     }
     
-    // Check if token had previously failed verification
-    const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
-    if (tokenVerificationFailed === "true") {
-      console.log("Token verification previously failed, refreshing authentication");
-      localStorage.removeItem("token_verification_failed");
-      
-      // Perform a complete auth cleanup and redirect
-      console.log("Cleaning up authentication state and redirecting to login");
-      handleRefreshAuth();
-      return;
-    }
-    
-    // Only fetch if we have a valid token and no previous verification failures
     console.log("Dashboard - Fetching universes...");
-    loadUniverses().then(result => {
-      if (result && result.error && (
-          result.error === "Authentication failed" || 
-          (typeof result.error === 'object' && result.error.authError) ||
-          result.error.includes && result.error.includes('Signature verification')
-         )) {
-        console.log("Authentication failed during universe fetch, redirecting to login");
-        handleRefreshAuth();
-      }
-    });
+    loadUniverses();
   }, [isAuthenticated, dispatch, navigate, loadUniverses]);
-
-  // Clear new universe highlight after delay
-  useEffect(() => {
-    if (newUniverseId) {
-      const timer = setTimeout(() => {
-        setNewUniverseId(null);
-      }, 5000); // Clear after 5 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [newUniverseId]);
 
   // Consistent logout handler that uses the auth service
   const handleLogout = () => {
     const now = Date.now();
     
-    // Prevent multiple rapid logout attempts
     if (now - lastDashboardLogoutAttempt < DASHBOARD_LOGOUT_COOLDOWN) {
       console.log("Dashboard - Logout throttled (multiple attempts)");
       return;
     }
     
-    // Update timestamp
     lastDashboardLogoutAttempt = now;
     
     console.log("Dashboard - Logging out user");
-    
-    // Disable the logout buttons temporarily to prevent multiple clicks
-    const logoutButtons = document.querySelectorAll('button[data-action="logout"]');
-    logoutButtons.forEach(button => {
-      if (button) {
-        button.disabled = true;
-        setTimeout(() => {
-          if (button) button.disabled = false;
-        }, DASHBOARD_LOGOUT_COOLDOWN);
-      }
-    });
-    
-    // Use the auth service for consistent logout
     authService.clearAuthData();
     dispatch(logout());
     navigate("/?modal=login", { replace: true });
   };
-  
-  // Consistent auth refresh handler that uses the auth service
-  const handleRefreshAuth = () => {
-    console.log("Dashboard - Refreshing authentication");
-    
-    // Remove any stale tokens or verification flags
-    localStorage.removeItem("token_verification_failed");
-    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-    
-    // Use the auth service for consistent cleanup
-    authService.clearAuthData();
-    
-    // Dispatch logout action to clear Redux state
+
+  // Reset authentication and redirect to login
+  const handleResetAuth = () => {
+    console.log("Dashboard - Resetting authentication state");
+    authService.resetAuth();
     dispatch(logout());
-    
-    // Remove any cached API responses
-    if (typeof window !== 'undefined' && window.localStorage) {
-      // Clear any items with "cache" in the key
-      Object.keys(localStorage).forEach(key => {
-        if (key.includes('cache') || key.includes('token') || key.includes('auth')) {
-          localStorage.removeItem(key);
-        }
-      });
-    }
-    
-    // Set a flag to show login modal
-    const loginFlag = 'show_login_modal';
-    localStorage.setItem(loginFlag, 'true');
-    
-    // Redirect to login page with modal
     navigate("/?modal=login", { replace: true });
-    
-    // Additional cleanup after navigation
-    setTimeout(() => {
-      console.log("Dashboard - Completed auth refresh cleanup");
-    }, 500);
   };
 
   const handleCreateClick = () => {
@@ -292,29 +207,24 @@ const Dashboard = () => {
     console.log("Dashboard - Create success with universe:", universe);
     setIsCreateModalOpen(false);
 
-    // Set the new universe ID to highlight it
     if (universe && universe.id) {
       setNewUniverseId(universe.id);
     }
 
-    // Refresh the list immediately
     loadUniverses();
   };
 
-  // Handle View Universe
   const handleViewUniverse = (universe) => {
     console.log("Viewing universe:", universe);
     navigate(`/universes/${universe.id}`);
   };
 
-  // Handle Edit Universe
   const handleEditUniverse = (universe) => {
     console.log("Editing universe:", universe);
     setSelectedUniverse(universe);
     setIsEditModalOpen(true);
   };
 
-  // Handle Edit Success
   const handleEditSuccess = (updatedUniverse) => {
     console.log("Universe updated:", updatedUniverse);
     setIsEditModalOpen(false);
@@ -322,14 +232,12 @@ const Dashboard = () => {
     loadUniverses();
   };
 
-  // Handle Delete Universe
   const handleDeleteUniverse = (universe) => {
     console.log("Deleting universe:", universe);
     setSelectedUniverse(universe);
     setIsDeleteModalOpen(true);
   };
 
-  // Handle Confirm Delete
   const handleConfirmDelete = async () => {
     if (selectedUniverse) {
       console.log("Confirming delete for universe:", selectedUniverse);
@@ -345,7 +253,6 @@ const Dashboard = () => {
     }
   };
 
-  // Sort universes based on selected option
   const getSortedUniverses = () => {
     if (!universes || !Array.isArray(universes)) {
       return [];
@@ -353,14 +260,12 @@ const Dashboard = () => {
 
     let filteredUniverses = [...universes];
 
-    // Apply filter
     if (filterOption === "public") {
       filteredUniverses = filteredUniverses.filter((u) => u.is_public);
     } else if (filterOption === "private") {
       filteredUniverses = filteredUniverses.filter((u) => !u.is_public);
     }
 
-    // Apply sort
     return filteredUniverses.sort((a, b) => {
       switch (sortOption) {
         case "name":
@@ -374,7 +279,6 @@ const Dashboard = () => {
     });
   };
 
-  // Render error state with auth error handling
   if (error) {
     const isAuthError = error.message?.includes("Signature verification") || 
                       error.message?.includes("Authentication") || 
@@ -393,7 +297,7 @@ const Dashboard = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleRefreshAuth}
+                  onClick={handleLogout}
                   startIcon={<RefreshIcon />}
                 >
                   Re-authenticate
@@ -468,7 +372,6 @@ const Dashboard = () => {
     );
   }
 
-  // Render loading state
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -480,7 +383,6 @@ const Dashboard = () => {
     );
   }
 
-  // Show empty state for new users
   if (!universes || universes.length === 0) {
     return (
       <div className="dashboard-container">
@@ -514,7 +416,6 @@ const Dashboard = () => {
     );
   }
 
-  // Render universes grid (main view)
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
@@ -547,9 +448,19 @@ const Dashboard = () => {
             <Button
               variant="outlined"
               color="secondary"
-              onClick={handleRefreshAuth}
+              onClick={handleLogout}
             >
               Re-authenticate
+            </Button>
+          </Tooltip>
+          <Tooltip title="Reset Auth (Fix Issues)">
+            <Button
+              variant="outlined"
+              color="warning"
+              startIcon={<ResetIcon />}
+              onClick={handleResetAuth}
+            >
+              Reset Auth
             </Button>
           </Tooltip>
           <Tooltip title="Logout">
@@ -606,7 +517,6 @@ const Dashboard = () => {
     </div>
   );
 
-  // Helper function to render modals
   function renderModals() {
     return (
       <>

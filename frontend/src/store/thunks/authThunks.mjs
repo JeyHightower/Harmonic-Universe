@@ -400,3 +400,72 @@ export const validateToken = createAsyncThunk(
     }
   }
 );
+
+// Refresh token
+export const refreshToken = createAsyncThunk(
+  "auth/refreshToken",
+  async (_, { dispatch, rejectWithValue }) => {
+    try {
+      console.debug("Refreshing token");
+      
+      // Import needed services
+      const { authService } = await import("../../services/auth.service.mjs");
+      const { demoUserService } = await import("../../services/demo-user.service.mjs");
+      
+      // Check if this is a demo session
+      const isDemoSession = demoUserService.isDemoSession();
+      if (isDemoSession) {
+        console.log("Demo session detected, regenerating demo tokens");
+        const demoData = demoUserService.setupDemoSession();
+        return { token: demoData.token };
+      }
+      
+      // Get refresh token from storage
+      const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      
+      // If no refresh token is available, return early
+      if (!refreshToken) {
+        console.error("No refresh token available");
+        return rejectWithValue("No refresh token available");
+      }
+      
+      // Validate token format before attempting to use
+      const tokenParts = refreshToken.split('.');
+      if (tokenParts.length !== 3) {
+        console.error("Invalid refresh token format - not a valid JWT token");
+        // Clear the invalid token
+        localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        return rejectWithValue("Invalid refresh token format");
+      }
+      
+      const response = await api.auth.refreshToken();
+      console.debug("Token refresh response:", response);
+
+      if (response.success === false) {
+        throw new Error(response.message || "Token refresh failed");
+      }
+
+      const newToken = response.data?.token || response.token || response.access_token;
+      const newRefreshToken = response.data?.refresh_token || response.refresh_token;
+
+      if (newToken) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+        
+        // Update refresh token if provided
+        if (newRefreshToken) {
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+        }
+        
+        // Clear any token verification failure flags
+        localStorage.removeItem("token_verification_failed");
+
+        return { token: newToken };
+      } else {
+        throw new Error("No token in refresh response");
+      }
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      return rejectWithValue(handleError(error));
+    }
+  }
+);

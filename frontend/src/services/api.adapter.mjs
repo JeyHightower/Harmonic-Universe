@@ -30,10 +30,31 @@ export const auth = {
   login: authService.login,
   register: authService.register,
   logout: authService.logout,
-  refreshToken: authService.refreshToken,
+  refreshToken: async () => {
+    // Wrap the auth service refresh token function to ensure proper response format
+    try {
+      const result = await authService.refreshToken();
+      // If a string is returned (which is the token), convert to expected format
+      if (typeof result === 'string') {
+        return {
+          success: true,
+          token: result,
+          message: 'Token refreshed successfully'
+        };
+      }
+      return result;
+    } catch (error) {
+      console.error('API adapter refreshToken error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to refresh token'
+      };
+    }
+  },
   validateToken: authService.validateToken,
   isAuthenticated: authService.isAuthenticated,
-  isDemoUser: authService.isDemoUser,
+  isDemoUser: authService.isDemoUser || (() => false),
+  resetAuth: authService.resetAuth,
   getAxiosInstance: () => httpClient.axiosInstance
 };
 

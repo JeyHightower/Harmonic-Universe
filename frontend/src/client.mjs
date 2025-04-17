@@ -230,16 +230,23 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem("refreshToken");
 
         if (refreshToken) {
+          // Validate refresh token format before attempting to use it
+          const tokenParts = refreshToken.split('.');
+          if (tokenParts.length !== 3) {
+            logApiOperation("token-refresh-invalid-format");
+            throw new Error("Invalid refresh token format");
+          }
+
           logApiOperation("token-refresh-request");
 
           try {
             // Try multiple refresh endpoints
             let response = null;
             const refreshEndpoints = [
-              "/api/auth/refresh/",
-              "/api/v1/auth/refresh/",
-              `${apiBaseUrl}/api/auth/refresh/`,
-              `${apiBaseUrl}/api/v1/auth/refresh/`,
+              "/api/auth/refresh",
+              "/api/v1/auth/refresh",
+              `${apiBaseUrl}/api/auth/refresh`,
+              `${apiBaseUrl}/api/v1/auth/refresh`,
             ];
 
             for (const endpoint of refreshEndpoints) {

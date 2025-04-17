@@ -11,6 +11,9 @@ import * as authServiceModule from './auth.service.mjs';
 import { demoUserService } from './demo-user.service.mjs';
 import { refreshToken, getToken, logout, clearAuthData } from './auth.service.mjs';
 
+let isRefreshing = false;
+let refreshPromise = null;
+
 // Debug helper for API operations
 const logApiOperation = (operation, data = {}) => {
   log('api', operation, data);
@@ -286,6 +289,37 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Handle Method Not Allowed (405) errors
+    if (error.response?.status === 405) {
+      logApiOperation("method-not-allowed", {
+        url: originalRequest.url,
+        method: originalRequest.method,
+      });
+      
+      // Check if this is an API endpoint that might be misconfigured
+      if (originalRequest.url.includes('/api/')) {
+        console.error(`Method Not Allowed (405) for ${originalRequest.method} ${originalRequest.url}`);
+        console.log('This may indicate a mismatch between frontend and backend endpoint configuration.');
+        
+        // Try to modify the URL by adding or removing trailing slash
+        const modifiedUrl = originalRequest.url.endsWith('/')
+          ? originalRequest.url.slice(0, -1)
+          : originalRequest.url + '/';
+          
+        console.log(`Attempting to retry with modified URL: ${modifiedUrl}`);
+        
+        // Create a new request with the modified URL
+        const retryRequest = { ...originalRequest };
+        retryRequest.url = modifiedUrl;
+        retryRequest._methodNotAllowedRetry = true;
+        
+        return axiosInstance(retryRequest).catch(retryError => {
+          console.error('Modified URL retry also failed:', retryError.message);
+          return Promise.reject(error); // Return the original error if retry fails
+        });
+      }
+    }
+
     // Handle rate limiting (429)
     if (error.response?.status === 429) {
       const retryAfter = error.response.headers['retry-after'];
@@ -307,6 +341,40 @@ axiosInstance.interceptors.response.use(
       logApiOperation("token-refresh-attempt");
 
       try {
+        // Check if we have a token to refresh
+        const currentToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+        if (!currentToken) {
+          logApiOperation("token-refresh-failed", { reason: "No token available to refresh" });
+          // Clear auth data and redirect to login
+          clearAuthData();
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+          return Promise.reject(new Error('Authentication required - no token available'));
+        }
+        
+        // Get refresh token and validate format
+        const refreshToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
+        if (!refreshToken) {
+          logApiOperation("token-refresh-failed", { reason: "No refresh token available" });
+          clearAuthData();
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+          return Promise.reject(new Error('Authentication required - no refresh token available'));
+        }
+
+        // Validate refresh token format before attempting to use it
+        const tokenParts = refreshToken.split('.');
+        if (tokenParts.length !== 3) {
+          logApiOperation("token-refresh-failed", { reason: "Invalid refresh token format" });
+          clearAuthData();
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+          return Promise.reject(new Error('Invalid refresh token format'));
+        }
+        
         // Check if we're already refreshing to prevent multiple refresh calls
         if (!isRefreshing) {
           isRefreshing = true;
