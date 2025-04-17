@@ -8,19 +8,26 @@ import os
 from flask import current_app
 from datetime import timedelta
 
-def get_jwt_secret_key() -> str:
+def get_jwt_secret_key(app=None) -> str:
     """
     Get the JWT secret key from config or environment variables.
     Ensures consistent access to the secret key across the application.
     
+    Args:
+        app: Optional Flask application instance. If not provided, uses current_app.
+    
     Returns:
         str: The JWT secret key
     """
-    secret_key = current_app.config.get('JWT_SECRET_KEY')
+    config = app.config if app else current_app.config
+    secret_key = config.get('JWT_SECRET_KEY')
     if not secret_key:
         secret_key = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
         # Store in config for consistency
-        current_app.config['JWT_SECRET_KEY'] = secret_key
+        if app:
+            app.config['JWT_SECRET_KEY'] = secret_key
+        else:
+            current_app.config['JWT_SECRET_KEY'] = secret_key
     return secret_key
 
 def configure_jwt(app) -> None:
@@ -31,7 +38,7 @@ def configure_jwt(app) -> None:
         app: The Flask application instance
     """
     # Set the JWT secret key
-    app.config['JWT_SECRET_KEY'] = get_jwt_secret_key()
+    app.config['JWT_SECRET_KEY'] = get_jwt_secret_key(app)
     
     # Configure token expiration
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)

@@ -7,6 +7,11 @@ from typing import Optional, Union, cast, Any, Dict, List, Tuple
 from logging.handlers import RotatingFileHandler
 from datetime import timedelta
 
+# Fix the import path to ensure PyJWT is used instead of the local JWT module
+jwt_module_path = next((p for p in sys.path if 'site-packages' in p), None)
+if jwt_module_path:
+    sys.path.insert(0, jwt_module_path)
+
 from flask import Flask, jsonify, request, make_response, send_from_directory, Response, current_app, redirect, url_for
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -18,6 +23,10 @@ import hashlib
 from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import partial
 from dotenv import load_dotenv
+
+# Restore original path order
+if jwt_module_path and sys.path[0] == jwt_module_path:
+    sys.path.pop(0)
 
 from .extensions import db, migrate, jwt, limiter
 from .api.routes import api_bp

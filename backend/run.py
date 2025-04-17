@@ -13,7 +13,11 @@ import logging
 import sys
 
 # Add the current directory to Python's path to ensure proper imports
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+current_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, current_dir)
+sys.path.insert(0, os.path.join(current_dir, 'app'))
+sys.path.insert(0, os.path.join(current_dir, 'app', 'api'))
+sys.path.insert(0, os.path.join(current_dir, 'app', 'utils'))
 
 # Load environment variables from .env file
 try:

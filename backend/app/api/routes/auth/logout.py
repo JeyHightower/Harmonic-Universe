@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
 from . import auth_bp
 from ....extensions import add_token_to_blocklist
-from .token import get_jwt_secret_key
+from app.utils.jwt.config import get_jwt_secret_key
 import jwt
 
 @auth_bp.route('/logout/', methods=['POST'])
@@ -21,7 +21,7 @@ def logout():
             if auth_header and auth_header.startswith('Bearer '):
                 token = auth_header.split(' ')[1]
                 try:
-                    secret_key = get_jwt_secret_key()
+                    secret_key = get_jwt_secret_key(None)
                     payload = jwt.decode(token, secret_key, algorithms=['HS256'])
                     # We don't have a JTI in manually decoded token, so use token itself
                     jti = token

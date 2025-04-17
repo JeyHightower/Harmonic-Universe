@@ -5,7 +5,6 @@ This module contains functions to patch PyJWT and Flask-JWT-Extended
 to ensure consistency in token handling, especially with numeric subject IDs.
 """
 
-from flask_jwt_extended import create_access_token as original_create_access_token
 import jwt
 from functools import wraps
 
@@ -13,6 +12,8 @@ def patch_create_access_token():
     """
     Patch create_access_token to ensure identity is always a string.
     """
+    from flask_jwt_extended import create_access_token as original_create_access_token
+    
     @wraps(original_create_access_token)
     def patched_create_access_token(*args, **kwargs):
         if 'identity' in kwargs and kwargs['identity'] is not None:

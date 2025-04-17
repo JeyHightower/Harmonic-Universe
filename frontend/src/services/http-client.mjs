@@ -4,12 +4,34 @@
  */
 
 import axios from 'axios';
-import { API_SERVICE_CONFIG } from './config';
-import { log, logError } from '../utils/logger';
+import { API_CONFIG, AUTH_CONFIG } from '../utils/config.mjs';
+import { log, logError } from '../utils/logger.mjs';
 import * as authServiceModule from './auth.service.mjs';
 import { demoUserService } from './demo-user.service.mjs';
-import { AUTH_CONFIG } from '../utils/config.mjs';
-import { refreshToken, getToken, logout } from './auth.service';
+import { refreshToken, getToken, logout } from './auth.service.mjs';
+
+// Debug helper for API operations
+const logApiOperation = (operation, data = {}) => {
+  log('api', operation, data);
+
+  // Initialize debug object if not exists
+  if (typeof window !== 'undefined' && !window.apiDebug) {
+    window.apiDebug = {
+      operations: [],
+      errors: [],
+      baseUrl: null,
+    };
+  }
+
+  // Add operation to log
+  if (typeof window !== 'undefined') {
+    window.apiDebug.operations.push({
+      time: new Date().toISOString(),
+      operation,
+      ...data,
+    });
+  }
+};
 
 // Determine if we need a CORS proxy for different environments
 const shouldUseCorsProxy = () => {
@@ -37,8 +59,7 @@ const getCorsProxyUrl = (url) => {
   // Determine which CORS proxy to use
   const preferredProxy = localStorage.getItem('cors_proxy_url');
   
-  // Add CORS proxy prefix
-  console.log(`Adding CORS proxy to URL: ${url}`);
+  logApiOperation('cors-proxy', { url, preferredProxy });
   
   if (preferredProxy) {
     return `${preferredProxy}${url}`;
@@ -48,13 +69,74 @@ const getCorsProxyUrl = (url) => {
   return `https://cors-anywhere.herokuapp.com/${url}`;
 };
 
+// Determine the base URL based on environment with enhanced detection
+const getBaseUrl = () => {
+  logApiOperation('getBaseUrl-started');
+
+  try {
+    // Try environment variable first
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl) {
+      logApiOperation('getBaseUrl-env', { url: envUrl });
+      return envUrl;
+    }
+
+    // Get information about current environment
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const port = window.location.port;
+    const origin = window.location.origin;
+
+    logApiOperation('getBaseUrl-environment', {
+      hostname,
+      protocol,
+      port,
+      origin,
+    });
+
+    // Handle production environments (including Render.com)
+    if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+      // For production, use relative API URLs (same domain)
+      logApiOperation('getBaseUrl-production', { url: '' });
+      window.apiDebug.baseUrl = '';
+      return '';
+    }
+
+    // Default for local development: use localhost:5001
+    const localUrl = 'http://localhost:5001';
+    logApiOperation('getBaseUrl-local', { url: localUrl });
+    window.apiDebug.baseUrl = localUrl;
+    return localUrl;
+  } catch (error) {
+    console.error('Error in getBaseUrl:', error);
+    logApiOperation('getBaseUrl-error', {
+      message: error.message,
+      stack: error.stack,
+    });
+
+    // Add to errors collection
+    if (window.apiDebug) {
+      window.apiDebug.errors.push({
+        time: new Date().toISOString(),
+        operation: 'getBaseUrl',
+        error: error.message,
+        stack: error.stack,
+      });
+    }
+
+    // Return empty string as fallback (same origin)
+    return '';
+  }
+};
+
 // Create axios instance with default config
 const axiosInstance = axios.create({
-  baseURL: API_SERVICE_CONFIG.BASE_URL,
-  timeout: API_SERVICE_CONFIG.TIMEOUT,
+  baseURL: getBaseUrl(),
+  timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'Origin': typeof window !== 'undefined' ? window.location.origin : '',
   },
   withCredentials: true, // Important for CORS with credentials
   xsrfCookieName: 'csrf_token',
@@ -62,11 +144,12 @@ const axiosInstance = axios.create({
 });
 
 // Log the base URL being used
-console.log(`API client initialized with baseURL: ${API_SERVICE_CONFIG.BASE_URL}`);
-console.log('Axios config:', {
-  withCredentials: true,
-  baseURL: API_SERVICE_CONFIG.BASE_URL,
-  timeout: API_SERVICE_CONFIG.TIMEOUT
+logApiOperation('api-client-initialized', {
+  baseURL: getBaseUrl(),
+  config: {
+    withCredentials: true,
+    timeout: API_CONFIG.TIMEOUT
+  }
 });
 
 // Simple in-memory cache for GET requests
@@ -77,7 +160,7 @@ const cache = new Map();
  */
 const clearCache = () => {
   cache.clear();
-  log('api', 'Cache cleared');
+  logApiOperation('cache-cleared');
 };
 
 /**
@@ -87,143 +170,79 @@ const clearCache = () => {
 const clearCacheForUrl = (url) => {
   if (cache.has(url)) {
     cache.delete(url);
-    log('api', 'Cache cleared for URL', { url });
+    logApiOperation('cache-cleared-url', { url });
   }
 };
 
-/**
- * Add authorization header to request
- * @param {object} config - Axios request config
- * @returns {object} - Updated config
- */
-const addAuthHeader = (config) => {
-  const token = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-  
-  if (token) {
-    try {
-      // Log token details for debugging (safely)
-      const tokenStart = token.substring(0, 5);
-      const tokenEnd = token.length > 10 ? token.substring(token.length - 5) : '...';
-      log('api', 'Adding auth token', { tokenFormat: `${tokenStart}...${tokenEnd}`, length: token.length });
-      
-      // Add proper Authorization header
-      config.headers['Authorization'] = `Bearer ${token}`;
-      
-      // Ensure Content-Type is set correctly
-      if (!config.headers['Content-Type'] && !config.headers['content-type']) {
-        config.headers['Content-Type'] = 'application/json';
-      }
-    } catch (err) {
-      log('api', 'Error adding auth token', { error: err.message });
-    }
-  } else {
-    log('api', 'No auth token available');
-  }
-  
-  return config;
-};
-
-// Request interceptor
+// Request interceptor for authentication
 axiosInstance.interceptors.request.use(
   async (config) => {
-    // Get auth token
-    const token = getToken();
-    
-    // Add auth token to header if it exists
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    // Log request
-    log('api', 'Sending request', {
-      method: config.method?.toUpperCase() || 'Unknown method',
+    logApiOperation('request-interceptor', {
       url: config.url,
-      baseURL: config.baseURL,
+      method: config.method,
+      headers: config.headers
     });
 
-    // Ensure Origin header is properly set for CORS
-    if (!config.headers['Origin'] && typeof window !== 'undefined') {
-      config.headers['Origin'] = window.location.origin;
+    // Add CORS proxy if needed
+    if (config.url && shouldUseCorsProxy()) {
+      config.url = getCorsProxyUrl(config.url);
+      logApiOperation('request-proxied', { url: config.url });
     }
-    
-    // Ensure mode is set to 'cors' for all requests
-    config.mode = 'cors';
-    
-    // Special handling for auth requests
-    if (config.url && 
-        (config.url.includes('/auth/refresh') || 
-         config.url.includes('/auth/validate') ||
-         config.url.includes('/auth/login') ||
-         config.url.includes('/auth/register'))) {
-      
-      // Add special CORS handling for auth requests
-      console.log('Auth request detected, ensuring CORS compatibility');
-      
-      // Apply CORS proxy if needed
-      if (shouldUseCorsProxy() && config.url.startsWith('http')) {
-        config.url = getCorsProxyUrl(config.url);
-      }
+
+    // Add authorization header if token exists
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      logApiOperation('request-auth', { hasToken: true });
     }
 
     return config;
   },
   (error) => {
-    log('api', 'Request failed', { error: error.message });
+    logApiOperation('request-error', {
+      error: error.message,
+      stack: error.stack
+    });
     return Promise.reject(error);
   }
 );
 
-// Response interceptor
+// Response interceptor for error handling
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Successful responses pass through
+    logApiOperation('response-success', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data
+    });
     return response;
   },
   async (error) => {
-    const originalRequest = error.config;
-    
-    // If error is 401 (Unauthorized) and request hasn't been retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
+    logApiOperation('response-error', {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.message
+    });
+
+    // Handle 401 Unauthorized errors
+    if (error.response?.status === 401) {
       try {
-        // Use the refreshToken function that prevents race conditions
-        const refreshResponse = await refreshToken();
-        
-        if (refreshResponse.error) {
-          // If refresh failed, log out user and reject with original error
-          logout();
-          return Promise.reject(error);
+        // Attempt to refresh the token
+        const newToken = await refreshToken();
+        if (newToken) {
+          // Retry the original request with new token
+          error.config.headers.Authorization = `Bearer ${newToken}`;
+          return axiosInstance(error.config);
         }
-        
-        // If token refreshed successfully, retry the original request
-        return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // If token refresh threw an error, log out user
+        logApiOperation('token-refresh-failed', {
+          error: refreshError.message
+        });
+        // If refresh fails, logout the user
         logout();
-        return Promise.reject(refreshError);
       }
     }
-    
-    // If the error is a network error, don't attempt to refresh
-    if (!error.response) {
-      console.error('Network error occurred:', error.message);
-      return Promise.reject(error);
-    }
-    
-    // Log the error status
-    console.log(`HTTP Error: ${error.response.status} ${error.response.statusText}`);
-    
-    // Handle rate limiting
-    if (error.response.status === 429) {
-      console.warn('Rate limit hit, backing off');
-      // Wait for the retry-after header value or default to 2 seconds
-      const retryAfter = error.response.headers['retry-after'] || 2;
-      await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-      return axiosInstance(originalRequest);
-    }
-    
-    // For all other errors, pass them through
+
     return Promise.reject(error);
   }
 );
@@ -244,7 +263,7 @@ const formatUrl = (url) => {
   }
 
   // If URL already includes the API_PREFIX
-  const hasApiPrefix = url.startsWith(API_SERVICE_CONFIG.API_PREFIX);
+  const hasApiPrefix = url.startsWith(API_CONFIG.API_PREFIX);
   
   // If URL does not start with a slash, add one
   if (!url.startsWith('/') && !hasApiPrefix) {
@@ -258,9 +277,9 @@ const formatUrl = (url) => {
   
   // If the URL already has the API prefix, make sure we don't duplicate it
   // The baseURL should not have /api at the end, but just in case
-  const baseUrl = API_SERVICE_CONFIG.BASE_URL.endsWith('/api') 
-    ? API_SERVICE_CONFIG.BASE_URL 
-    : API_SERVICE_CONFIG.BASE_URL;
+  const baseUrl = API_CONFIG.BASE_URL.endsWith('/api') 
+    ? API_CONFIG.BASE_URL 
+    : API_CONFIG.BASE_URL;
     
   const formattedUrl = hasApiPrefix ? url : url.startsWith('/api') ? url : url;
   console.log(`Formatted URL: ${formattedUrl}`);
@@ -275,14 +294,14 @@ const formatUrl = (url) => {
  */
 const getCachedResponse = (url, options) => {
   // Skip cache if disabled globally or in options
-  if (!API_SERVICE_CONFIG.CACHE.ENABLED || options.cache === false) {
+  if (!API_CONFIG.CACHE.ENABLED || options.cache === false) {
     return null;
   }
   
   const cached = cache.get(url);
   if (cached) {
     const now = Date.now();
-    if (now - cached.timestamp < API_SERVICE_CONFIG.CACHE.DURATION) {
+    if (now - cached.timestamp < API_CONFIG.CACHE.DURATION) {
       log('api', 'Cache hit', { url });
       return cached.data;
     } else {
@@ -301,7 +320,7 @@ const getCachedResponse = (url, options) => {
  */
 const cacheResponse = (url, data, options) => {
   // Skip caching if disabled globally or in options
-  if (!API_SERVICE_CONFIG.CACHE.ENABLED || options.cache === false) {
+  if (!API_CONFIG.CACHE.ENABLED || options.cache === false) {
     return;
   }
   
@@ -319,11 +338,11 @@ const cacheResponse = (url, data, options) => {
  * @returns {Promise<any>} - Response data
  */
 const withRetry = async (requestFn, options = {}) => {
-  const maxRetries = options.maxRetries || API_SERVICE_CONFIG.RETRY.MAX_RETRIES;
-  const initialRetryDelay = options.retryDelay || API_SERVICE_CONFIG.RETRY.RETRY_DELAY;
-  const retryStatuses = options.retryStatuses || API_SERVICE_CONFIG.RETRY.RETRY_STATUSES;
-  const backoffFactor = API_SERVICE_CONFIG.RETRY.BACKOFF_FACTOR || 2;
-  const rateLimitConfig = API_SERVICE_CONFIG.RETRY.RATE_LIMIT;
+  const maxRetries = options.maxRetries || API_CONFIG.RETRY.MAX_RETRIES;
+  const initialRetryDelay = options.retryDelay || API_CONFIG.RETRY.RETRY_DELAY;
+  const retryStatuses = options.retryStatuses || API_CONFIG.RETRY.RETRY_STATUSES;
+  const backoffFactor = API_CONFIG.RETRY.BACKOFF_FACTOR || 2;
+  const rateLimitConfig = API_CONFIG.RETRY.RATE_LIMIT;
   
   let lastError;
   let attempts = 0;
@@ -399,6 +418,122 @@ const withRetry = async (requestFn, options = {}) => {
   
   // If we've exhausted our retries, throw the last error
   throw lastError;
+};
+
+/**
+ * HTTP GET request with caching
+ * @param {string} url - The URL to request
+ * @param {Object} [config] - Axios request config
+ * @returns {Promise} - The response promise
+ */
+const get = async (url, config = {}) => {
+  logApiOperation('get-request', { url, config });
+
+  // Check cache first
+  if (cache.has(url)) {
+    logApiOperation('cache-hit', { url });
+    return cache.get(url);
+  }
+
+  try {
+    const response = await axiosInstance.get(url, config);
+    // Cache successful GET responses
+    cache.set(url, response);
+    return response;
+  } catch (error) {
+    logApiOperation('get-error', {
+      url,
+      error: error.message
+    });
+    throw error;
+  }
+};
+
+/**
+ * HTTP POST request
+ * @param {string} url - The URL to request
+ * @param {Object} data - The data to send
+ * @param {Object} [config] - Axios request config
+ * @returns {Promise} - The response promise
+ */
+const post = async (url, data, config = {}) => {
+  logApiOperation('post-request', { url, data, config });
+
+  try {
+    const response = await axiosInstance.post(url, data, config);
+    // Clear cache for this URL after successful POST
+    clearCacheForUrl(url);
+    return response;
+  } catch (error) {
+    logApiOperation('post-error', {
+      url,
+      error: error.message
+    });
+    throw error;
+  }
+};
+
+/**
+ * HTTP PUT request
+ * @param {string} url - The URL to request
+ * @param {Object} data - The data to send
+ * @param {Object} [config] - Axios request config
+ * @returns {Promise} - The response promise
+ */
+const put = async (url, data, config = {}) => {
+  logApiOperation('put-request', { url, data, config });
+
+  try {
+    const response = await axiosInstance.put(url, data, config);
+    // Clear cache for this URL after successful PUT
+    clearCacheForUrl(url);
+    return response;
+  } catch (error) {
+    logApiOperation('put-error', {
+      url,
+      error: error.message
+    });
+    throw error;
+  }
+};
+
+/**
+ * HTTP DELETE request
+ * @param {string} url - The URL to request
+ * @param {Object} [config] - Axios request config
+ * @returns {Promise} - The response promise
+ */
+const del = async (url, config = {}) => {
+  logApiOperation('delete-request', { url, config });
+
+  try {
+    const response = await axiosInstance.delete(url, config);
+    // Clear cache for this URL after successful DELETE
+    clearCacheForUrl(url);
+    return response;
+  } catch (error) {
+    logApiOperation('delete-error', {
+      url,
+      error: error.message
+    });
+    throw error;
+  }
+};
+
+/**
+ * Add authorization header to a request config
+ * @param {Object} config - The request config
+ * @returns {Object} - The updated config
+ */
+const addAuthHeader = (config = {}) => {
+  const token = getToken();
+  if (token) {
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${token}`
+    };
+  }
+  return config;
 };
 
 /**
@@ -590,6 +725,20 @@ export const httpClient = {
   clearCacheForUrl,
   formatUrl,
   axiosInstance
+};
+
+export {
+  axiosInstance,
+  get,
+  post,
+  put,
+  del,
+  clearCache,
+  clearCacheForUrl,
+  addAuthHeader,
+  shouldUseCorsProxy,
+  getCorsProxyUrl,
+  logApiOperation
 };
 
 export default httpClient; 

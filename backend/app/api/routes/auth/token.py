@@ -11,16 +11,7 @@ from . import auth_bp
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask import current_app
-
-# Function to get the JWT secret key consistently
-def get_jwt_secret_key():
-    """Get the JWT secret key from config or environment variables."""
-    secret_key = current_app.config.get('JWT_SECRET_KEY')
-    if not secret_key:
-        secret_key = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
-        # Store it in config for consistency
-        current_app.config['JWT_SECRET_KEY'] = secret_key
-    return secret_key
+from app.utils.jwt.config import get_jwt_secret_key
 
 # Note: This route can be rate-limited by Flask-Limiter and cause 429 errors
 # if too many requests occur in a short time frame. The frontend should handle
@@ -84,7 +75,7 @@ def validate_token():
 
         # Validate token
         try:
-            secret_key = get_jwt_secret_key()
+            secret_key = get_jwt_secret_key(None)
             current_app.logger.debug(f"Using JWT secret key for validation (first 3 chars): {secret_key[:3]}...")
 
             # Log token format for debugging
@@ -193,7 +184,7 @@ def refresh_token():
             current_app.logger.debug("Using refresh token for refresh")
             # Validate refresh token
             try:
-                secret_key = get_jwt_secret_key()
+                secret_key = get_jwt_secret_key(None)
                 current_app.logger.debug(f"Using JWT secret key for refresh (first 3 chars): {secret_key[:3]}...")
                 
                 # Verify the refresh token
@@ -263,7 +254,7 @@ def refresh_token():
         elif token:
             current_app.logger.debug("Using main token for refresh")
             try:
-                secret_key = get_jwt_secret_key()
+                secret_key = get_jwt_secret_key(None)
                 current_app.logger.debug(f"Using JWT secret key for refresh (first 3 chars): {secret_key[:3]}...")
                 
                 # Verify the token
@@ -354,7 +345,7 @@ def get_current_user():
             if auth_header and auth_header.startswith('Bearer '):
                 token = auth_header.split(' ')[1]
                 try:
-                    secret_key = get_jwt_secret_key()
+                    secret_key = get_jwt_secret_key(None)
                     payload = jwt.decode(token, secret_key, algorithms=['HS256'])
                     user_id = payload.get('sub')
                     if isinstance(user_id, str) and user_id.isdigit():

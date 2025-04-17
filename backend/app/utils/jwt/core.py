@@ -29,7 +29,7 @@ def create_token(user_id: int, expires_delta: timedelta = None) -> str:
         'type': 'access'
     }
     
-    secret_key = get_jwt_secret_key()
+    secret_key = get_jwt_secret_key(None)
     return jwt.encode(payload, secret_key, algorithm='HS256')
 
 def verify_token(token: str) -> tuple[bool, dict]:
@@ -43,7 +43,7 @@ def verify_token(token: str) -> tuple[bool, dict]:
         tuple: (is_valid, payload_or_error)
     """
     try:
-        secret_key = get_jwt_secret_key()
+        secret_key = get_jwt_secret_key(None)
         payload = jwt.decode(token, secret_key, algorithms=['HS256'])
         return True, payload
     except Exception as e:
@@ -61,7 +61,7 @@ def decode_token(token: str, verify: bool = True) -> dict:
         dict: The decoded token payload
     """
     options = {"verify_signature": verify}
-    secret_key = get_jwt_secret_key() if verify else None
+    secret_key = get_jwt_secret_key(None) if verify else None
     return jwt.decode(token, secret_key, algorithms=['HS256'], options=options)
 
 def get_token_from_header() -> str | None:
