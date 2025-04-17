@@ -3,11 +3,8 @@ from flask import Blueprint
 # Create blueprint
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
-# Import route modules (after blueprint creation to avoid circular imports)
-from . import routes, token
-
-# Register token blueprint with auth blueprint
-auth_bp.register_blueprint(token.token_bp, url_prefix='/token')
+# Import token module after blueprint creation
+from . import token
 
 # Import route modules
 from .signup import *

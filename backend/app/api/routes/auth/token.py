@@ -1,6 +1,7 @@
 from flask import request, jsonify, current_app, make_response # type: ignore
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token # type: ignore
 from ...models.user import User
+import logging
 # Removed unused import
 
 import jwt
@@ -13,7 +14,7 @@ from flask_limiter.util import get_remote_address
 from flask import current_app
 from app.utils.jwt.config import get_jwt_secret_key, get_jwt_refresh_secret_key
 from flask_cors import cross_origin
-from app.utils.rate_limit import limiter
+from app.extensions import limiter
 from datetime import datetime, timedelta, timezone
 
 from app.utils.jwt.core import (
@@ -115,8 +116,8 @@ def validate_token():
                     'valid': False
                 }), 401
 
-            # Verify the token (including expiration)
-            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+            # Use decode_token utility function instead of direct jwt.decode
+            payload = decode_token(token, secret_key)
             user_id = payload.get('sub')  # 'sub' is where Flask-JWT-Extended stores the identity
             
             if not user_id:
