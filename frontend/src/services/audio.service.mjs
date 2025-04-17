@@ -14,7 +14,18 @@ import { responseHandler } from './response-handler';
  */
 export const getAudioTracks = async (filters = {}) => {
   try {
-    const response = await httpClient.get(audioEndpoints.list, { params: filters });
+    // If universeId is provided in filters, use the tracks.list endpoint
+    if (filters.universeId) {
+      const response = await httpClient.get(audioEndpoints.tracks.list(filters.universeId), { 
+        params: { ...filters, universeId: undefined } 
+      });
+      return responseHandler.handleSuccess(response);
+    }
+    
+    // Otherwise, we need a general endpoint for all tracks
+    // This might not exist in the API, so we'll log a warning
+    console.log('audio', 'Warning: Fetching all audio tracks without universeId may not be supported');
+    const response = await httpClient.get('/audio-tracks/', { params: filters });
     return responseHandler.handleSuccess(response);
   } catch (error) {
     console.log('audio', 'Error fetching audio tracks', { error: error.message });
@@ -33,7 +44,18 @@ export const getAudioTrack = async (audioId) => {
       return responseHandler.handleError(new Error('Audio ID is required'));
     }
 
-    const response = await httpClient.get(audioEndpoints.get(audioId));
+    // Extract universeId from audioId or get it from the audioTrack
+    // This is a temporary solution - we should get the actual universeId
+    let universeId = 1; // Default fallback
+    let trackId = audioId;
+    
+    if (String(audioId).includes('-')) {
+      const parts = String(audioId).split('-');
+      universeId = parts[0];
+      trackId = parts[1];
+    }
+
+    const response = await httpClient.get(audioEndpoints.tracks.get(universeId, trackId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
     console.log('audio', 'Error fetching audio track', { 
@@ -55,7 +77,16 @@ export const createAudioTrack = async (audioData) => {
       return responseHandler.handleError(new Error('Audio data is required'));
     }
 
-    const response = await httpClient.post(audioEndpoints.create, audioData);
+    if (!audioData.universeId) {
+      return responseHandler.handleError(new Error('Universe ID is required to create an audio track'));
+    }
+
+    const universeId = audioData.universeId;
+    // Remove universeId from data if it's being sent in the URL
+    const dataToSend = { ...audioData };
+    delete dataToSend.universeId;
+
+    const response = await httpClient.post(audioEndpoints.tracks.create(universeId), dataToSend);
     
     console.log('audio', 'Audio track created successfully');
     return responseHandler.handleSuccess(response);
@@ -81,7 +112,21 @@ export const updateAudioTrack = async (audioId, audioData) => {
       return responseHandler.handleError(new Error('Audio data is required'));
     }
 
-    const response = await httpClient.put(audioEndpoints.update(audioId), audioData);
+    // Extract universeId from audioId or get it from the audioData
+    let universeId = audioData.universeId || 1; // Default fallback
+    let trackId = audioId;
+    
+    if (String(audioId).includes('-')) {
+      const parts = String(audioId).split('-');
+      universeId = parts[0];
+      trackId = parts[1];
+    }
+
+    // Remove universeId from data if it's being sent in the URL
+    const dataToSend = { ...audioData };
+    delete dataToSend.universeId;
+
+    const response = await httpClient.put(audioEndpoints.tracks.update(universeId, trackId), dataToSend);
     
     console.log('audio', 'Audio track updated successfully', { audioId });
     return responseHandler.handleSuccess(response);
@@ -105,7 +150,19 @@ export const deleteAudioTrack = async (audioId) => {
       return responseHandler.handleError(new Error('Audio ID is required'));
     }
 
-    const response = await httpClient.delete(audioEndpoints.delete(audioId));
+    // Extract universeId from audioId or get it from the audioTrack
+    // This is a temporary solution - we should get the actual universeId
+    // For now we'll just use the first part of the ID if it contains a separator
+    let universeId = 1; // Default fallback
+    let trackId = audioId;
+    
+    if (String(audioId).includes('-')) {
+      const parts = String(audioId).split('-');
+      universeId = parts[0];
+      trackId = parts[1];
+    }
+
+    const response = await httpClient.delete(audioEndpoints.tracks.delete(universeId, trackId));
     
     console.log('audio', 'Audio track deleted successfully', { audioId });
     return responseHandler.handleSuccess(response);
@@ -129,7 +186,7 @@ export const getAudioTracksByUniverse = async (universeId) => {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
 
-    const response = await httpClient.get(audioEndpoints.forUniverse(universeId));
+    const response = await httpClient.get(audioEndpoints.tracks.list(universeId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
     console.log('audio', 'Error fetching universe audio tracks', { 
@@ -151,7 +208,7 @@ export const getAudioTracksByScene = async (sceneId) => {
       return responseHandler.handleError(new Error('Scene ID is required'));
     }
 
-    const response = await httpClient.get(audioEndpoints.forScene(sceneId));
+    const response = await httpClient.get(audioEndpoints.tracks.byScene(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
     console.log('audio', 'Error fetching scene audio tracks', { 
@@ -173,7 +230,11 @@ export const generateMusic = async (params) => {
       return responseHandler.handleError(new Error('Generation parameters are required'));
     }
 
-    const response = await httpClient.post(audioEndpoints.generate, params);
+    if (!params.universeId) {
+      return responseHandler.handleError(new Error('Universe ID is required for music generation'));
+    }
+
+    const response = await httpClient.post(audioEndpoints.generate(params.universeId), params);
     
     console.log('audio', 'Music generated successfully');
     return responseHandler.handleSuccess(response);
@@ -195,8 +256,19 @@ export const downloadMusic = async (audioId, format = 'mp3') => {
       return responseHandler.handleError(new Error('Audio ID is required'));
     }
 
-    const response = await httpClient.get(audioEndpoints.download(audioId, format), {
-      responseType: 'blob'
+    // Extract universeId from audioId or get it from the audioTrack
+    // This is a temporary solution - we should get the actual universeId
+    let universeId = 1; // Default fallback
+    
+    if (String(audioId).includes('-')) {
+      const parts = String(audioId).split('-');
+      universeId = parts[0];
+    }
+
+    // Add format as a query parameter
+    const response = await httpClient.get(audioEndpoints.download(universeId), {
+      responseType: 'blob',
+      params: { format, audioId }
     });
     
     console.log('audio', 'Music downloaded successfully', { audioId, format });

@@ -59,17 +59,13 @@ class Config:
         print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY}'")
     
     # CORS Configuration
-    CORS_ORIGINS = [
-        'http://localhost:5173',  # Frontend development
-        'http://127.0.0.1:5173',  # Frontend development alternative
-        'https://harmonic-universe.vercel.app'  # Production
-    ]
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000,http://127.0.0.1:3000').split(',')
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
-    CORS_HEADERS = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]
+    CORS_HEADERS = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"]
     CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type", "Authorization"]
     CORS_MAX_AGE = 86400  # 24 hours
     CORS_SUPPORTS_CREDENTIALS = True
-    CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
+    CORS_RESOURCES = {r"/api/*": {"origins": "*" if os.environ.get('FLASK_ENV') == 'development' else CORS_ORIGINS}}
     
     # Security config
     SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV', 'development') == 'production'
@@ -78,9 +74,9 @@ class Config:
     
     # Rate limiting
     RATELIMIT_ENABLED = True
-    RATELIMIT_STORAGE_URL = "memory://"
-    RATELIMIT_STRATEGY = "fixed-window"
-    RATELIMIT_DEFAULT = "200 per day, 50 per hour"
+    RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL', "memory://")
+    RATELIMIT_STRATEGY = "moving-window"
+    RATELIMIT_DEFAULT = "1000 per day, 100 per hour" if os.environ.get('FLASK_ENV') == 'development' else "200 per day, 50 per hour"
     
     # API config
     API_PREFIX = '/api'
@@ -142,6 +138,25 @@ class DevelopmentConfig(Config):
             'http://127.0.0.1:3000'
         ],
     }
+    
+    # Override CORS settings for development
+    CORS_ORIGINS = [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5174',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ]
+    CORS_SUPPORTS_CREDENTIALS = True
+    CORS_RESOURCES = {r"/api/*": {"origins": "*"}}
+    
+    # More permissive rate limiting for development
+    RATELIMIT_DEFAULT = "1000 per day, 100 per hour"
+    
+    # JWT settings for development
+    JWT_COOKIE_SECURE = False
+    JWT_COOKIE_SAMESITE = 'Lax'
 
 class TestingConfig(Config):
     TESTING = True
@@ -171,6 +186,13 @@ class TestingConfig(Config):
     CORS_CONFIG = {
         'ORIGINS': ['*'],  # Allow all origins in testing
     }
+    
+    # Allow all origins in testing
+    CORS_ORIGINS = ['*']
+    CORS_RESOURCES = {r"/api/*": {"origins": "*"}}
+    
+    # Disable rate limiting in testing
+    RATELIMIT_ENABLED = False
 
 class ProductionConfig(Config):
     DEBUG = False
@@ -205,6 +227,21 @@ class ProductionConfig(Config):
             'https://harmonic-universe-git-main-someones-projects-4ec78d48.vercel.app'
         ],
     }
+    
+    # Strict CORS in production
+    CORS_ORIGINS = [
+        'https://harmonic-universe.vercel.app',
+        'https://harmonic-universe-git-main-someones-projects-4ec78d48.vercel.app'
+    ]
+    CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
+    CORS_SUPPORTS_CREDENTIALS = True
+    
+    # Production rate limiting
+    RATELIMIT_DEFAULT = "200 per day, 50 per hour"
+    
+    # Secure cookie settings
+    JWT_COOKIE_SECURE = True
+    JWT_COOKIE_SAMESITE = 'Strict'
 
 config_by_name = {
     'dev': DevelopmentConfig,

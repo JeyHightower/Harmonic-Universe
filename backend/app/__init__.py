@@ -105,38 +105,39 @@ def setup_static_folder(app):
                 print(f"Using alternative static folder: {app.static_folder}")
                 break
 
-def setup_cors_handlers(app):
-    """Set up CORS handlers for OPTIONS preflight requests.
+def setup_cors(app):
+    """Configure CORS for the application using Flask-CORS."""
+    # Get CORS configuration from app config
+    resources = app.config.get('CORS_RESOURCES', {r"/api/*": {"origins": "*"}})
+    supports_credentials = app.config.get('CORS_SUPPORTS_CREDENTIALS', True)
+    methods = app.config.get('CORS_METHODS', ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"])
+    allow_headers = app.config.get('CORS_HEADERS', ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"])
+    expose_headers = app.config.get('CORS_EXPOSE_HEADERS', ["Content-Length", "Content-Type", "Authorization"])
+    max_age = app.config.get('CORS_MAX_AGE', 86400)
     
-    This function adds a route handler specifically for OPTIONS requests to the API,
-    which responds with appropriate CORS headers based on the app's configuration.
-    """
+    # Log CORS configuration
+    app.logger.info(f"CORS configuration: origins={app.config.get('CORS_ORIGINS')}, credentials={supports_credentials}")
     
-    @app.before_request
-    def handle_preflight():
-        """Handle OPTIONS requests explicitly for CORS preflight."""
-        if request.method == "OPTIONS":
-            # Create a response with CORS headers
-            response = make_response()
+    # Configure CORS using Flask-CORS
+    CORS(app,
+         resources=resources,
+         supports_credentials=supports_credentials,
+         methods=methods,
+         allow_headers=allow_headers,
+         expose_headers=expose_headers,
+         max_age=max_age)
+    
+    # Add CORS preflight options handler to ensure preflight requests work
+    @app.after_request
+    def after_request(response):
+        if request.method == 'OPTIONS':
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Allow-Methods', ', '.join(methods))
+            response.headers.add('Access-Control-Allow-Headers', ', '.join(allow_headers))
             
-            # Add CORS headers
-            origin = request.headers.get('Origin')
-            cors_origins = app.config.get('CORS_ORIGINS', ['*'])
-            
-            if origin and (origin in cors_origins or '*' in cors_origins):
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Headers', 
-                                   ','.join(app.config.get('CORS_HEADERS', 
-                                          ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'])))
-                response.headers.add('Access-Control-Allow-Methods',
-                                   ','.join(app.config.get('CORS_METHODS',
-                                          ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])))
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                response.headers.add('Access-Control-Max-Age', 
-                                   str(app.config.get('CORS_MAX_AGE', 86400)))
-            
-            app.logger.debug(f"CORS preflight response: {origin} -> {dict(response.headers)}")
-            return response, 200
+        return response
+        
+    return app
 
 def setup_error_handlers(app):
     """Configure error handlers for the application."""
@@ -266,20 +267,6 @@ def configure_logging(app):
         
         app.logger.setLevel(logging.INFO)
         app.logger.info('Harmonic Universe startup')
-
-def setup_cors(app):
-    """Configure CORS for the application using Flask-CORS."""
-    # Configure CORS using Flask-CORS
-    CORS(app,
-         resources=app.config.get('CORS_RESOURCES'),
-         supports_credentials=app.config.get('CORS_SUPPORTS_CREDENTIALS', True),
-         methods=app.config.get('CORS_METHODS'),
-         allow_headers=app.config.get('CORS_HEADERS'),
-         expose_headers=app.config.get('CORS_EXPOSE_HEADERS'),
-         max_age=app.config.get('CORS_MAX_AGE'))
-    
-    app.logger.info(f"CORS configured with origins: {app.config.get('CORS_ORIGINS')}")
-    return app
 
 def setup_static_folders(app):
     """Configure static folders for the application."""

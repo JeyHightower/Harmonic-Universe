@@ -15,7 +15,8 @@ import { audioService } from './audio.service.mjs';
  */
 export const getAudio = (universeId, sceneId, audioId) => {
   console.log('Using legacy audioApi.getAudio, please update to audioService.getAudioTrack');
-  return audioService.getAudioTrack(audioId);
+  const trackId = audioId;
+  return audioService.getAudioTrack(trackId);
 };
 
 /**
@@ -27,7 +28,8 @@ export const getAudio = (universeId, sceneId, audioId) => {
  */
 export const deleteAudio = (universeId, sceneId, audioId) => {
   console.log('Using legacy audioApi.deleteAudio, please update to audioService.deleteAudioTrack');
-  return audioService.deleteAudioTrack(audioId);
+  const trackId = audioId;
+  return audioService.deleteAudioTrack(trackId);
 };
 
 /**
@@ -66,10 +68,17 @@ export const saveAudio = (universeId, sceneId, audioData) => {
  * Download audio file
  * @param {number|string} universeId - Universe ID
  * @param {string} format - File format (mp3, wav)
+ * @param {number|string} audioId - Optional audio ID
  * @returns {Promise<Blob>} - Audio file blob
  */
-export const downloadAudio = (universeId, format) => {
-  return audioService.downloadMusic(universeId, format);
+export const downloadAudio = (universeId, format, audioId) => {
+  console.log('Using legacy audioApi.downloadAudio, please update to audioService.downloadMusic');
+  
+  // If no specific audioId is provided, we'll construct a composite ID using the universeId
+  // This is a workaround until the API is updated to better handle this case
+  const trackIdToUse = audioId || universeId;
+  
+  return audioService.downloadMusic(trackIdToUse, format);
 };
 
 /**
@@ -78,7 +87,8 @@ export const downloadAudio = (universeId, format) => {
  * @returns {Promise<object>} - List of audio tracks
  */
 export const getAudioTracks = (universeId) => {
-  return audioService.getAudioTracks(universeId);
+  console.log('Using legacy audioApi.getAudioTracks, please update to audioService.getAudioTracks');
+  return audioService.getAudioTracks({ universeId });
 };
 
 /**
@@ -89,7 +99,11 @@ export const getAudioTracks = (universeId) => {
  * @returns {Promise<object>} - Updated audio track
  */
 export const updateAudio = (universeId, audioId, audioData) => {
-  return audioService.updateAudioTrack(universeId, audioId, audioData);
+  console.log('Using legacy audioApi.updateAudio, please update to audioService.updateAudioTrack');
+  return audioService.updateAudioTrack(audioId, {
+    ...audioData,
+    universeId,
+  });
 };
 
 // Create the audioApi object that's exported and used elsewhere

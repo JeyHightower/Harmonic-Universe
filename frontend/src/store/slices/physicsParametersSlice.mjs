@@ -1,14 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { API_CONFIG } from "../../utils";
-import httpClient from "../../services/http-client.mjs";
-
-const API_URL = `${API_CONFIG.BASE_URL}/physics-parameters`;
+import { httpClient } from "../../services/http-client.mjs";
 
 // Async thunks
 export const fetchPhysicsParameters = createAsyncThunk(
   "physicsParameters/fetchAll",
   async (universeId) => {
-    const response = await httpClient.get(`${API_URL}/universe/${universeId}`);
+    const response = await httpClient.get(`/api/physics-parameters/universe/${universeId}`);
     return response;
   }
 );
@@ -16,7 +14,7 @@ export const fetchPhysicsParameters = createAsyncThunk(
 export const createPhysicsParameters = createAsyncThunk(
   "physicsParameters/create",
   async (paramData) => {
-    const response = await httpClient.post(API_URL, paramData);
+    const response = await httpClient.post(`/api/physics-parameters`, paramData);
     return response;
   }
 );
@@ -24,7 +22,7 @@ export const createPhysicsParameters = createAsyncThunk(
 export const updatePhysicsParameters = createAsyncThunk(
   "physicsParameters/update",
   async ({ id, ...paramData }) => {
-    const response = await httpClient.put(`${API_URL}/${id}`, paramData);
+    const response = await httpClient.put(`/api/physics-parameters/${id}`, paramData);
     return response;
   }
 );
@@ -32,7 +30,7 @@ export const updatePhysicsParameters = createAsyncThunk(
 export const deletePhysicsParameters = createAsyncThunk(
   "physicsParameters/delete",
   async (id) => {
-    await httpClient.delete(`${API_URL}/${id}`);
+    await httpClient.delete(`/api/physics-parameters/${id}`);
     return id;
   }
 );
@@ -40,7 +38,7 @@ export const deletePhysicsParameters = createAsyncThunk(
 export const validateParameters = createAsyncThunk(
   "physicsParameters/validate",
   async (paramData) => {
-    const response = await httpClient.post(`${API_URL}/validate`, paramData);
+    const response = await httpClient.post(`/api/physics-parameters/validate`, paramData);
     return response;
   }
 );
@@ -50,7 +48,7 @@ export const fetchAllPresets = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await httpClient.get("/api/v1/presets");
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response ? error.response.data : error.message);
     }
@@ -62,7 +60,7 @@ export const savePreset = createAsyncThunk(
   async (presetData, { rejectWithValue }) => {
     try {
       const response = await httpClient.post("/api/v1/presets", presetData);
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response ? error.response.data : error.message);
     }
@@ -74,7 +72,7 @@ export const updatePreset = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await httpClient.put(`/api/v1/presets/${id}`, data);
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response ? error.response.data : error.message);
     }
@@ -86,7 +84,7 @@ export const deletePreset = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await httpClient.delete(`/api/v1/presets/${id}`);
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response ? error.response.data : error.message);
     }

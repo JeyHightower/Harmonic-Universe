@@ -137,6 +137,7 @@ export const audioEndpoints = {
     get: (universeId, trackId) => endpoint(`/universes/${universeId}/audio-tracks/${trackId}`),
     update: (universeId, trackId) => endpoint(`/universes/${universeId}/audio-tracks/${trackId}`),
     delete: (universeId, trackId) => endpoint(`/universes/${universeId}/audio-tracks/${trackId}`),
+    byScene: (sceneId) => endpoint(`/scenes/${sceneId}/audio-tracks`),
   },
   generate: (universeId) => endpoint(`/universes/${universeId}/generate-music`),
   download: (universeId) => endpoint(`/universes/${universeId}/download-music`),

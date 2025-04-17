@@ -9,7 +9,7 @@ import { API_SERVICE_CONFIG } from './config.mjs';
 import { log, logError } from '../utils/logger.mjs';
 import * as authServiceModule from './auth.service.mjs';
 import { demoUserService } from './demo-user.service.mjs';
-import { refreshToken, getToken, logout } from './auth.service.mjs';
+import { refreshToken, getToken, logout, clearAuthData } from './auth.service.mjs';
 
 // Debug helper for API operations
 const logApiOperation = (operation, data = {}) => {
@@ -76,12 +76,11 @@ const getBaseUrl = () => {
 
   try {
     // Try environment variable first
-    const envUrl = import.meta.env.VITE_API_URL;
+    const envUrl = import.meta.env.VITE_API_BASE_URL;
     if (envUrl) {
-      // Make sure it doesn't include /api
-      const url = envUrl.endsWith('/api') ? envUrl.slice(0, -4) : envUrl;
-      logApiOperation('getBaseUrl-env', { url });
-      return url;
+      // Don't include /api as it will be added by formatUrl
+      logApiOperation('getBaseUrl-env', { url: envUrl });
+      return envUrl;
     }
 
     // Get information about current environment
@@ -212,39 +211,123 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor with enhanced error handling
 axiosInstance.interceptors.response.use(
   (response) => {
-    logApiOperation('response-success', {
-      url: response.config.url,
+    logApiOperation("response-success", {
       status: response.status,
-      data: response.data
+      url: response.config.url,
+      data:
+        typeof response.data === "object"
+          ? Object.keys(response.data)
+          : typeof response.data,
     });
     return response;
   },
   async (error) => {
-    logApiOperation('response-error', {
-      url: error.config?.url,
+    logApiOperation("response-error", {
+      message: error.message,
       status: error.response?.status,
-      message: error.message
+      url: error.config?.url,
+      data: error.response?.data,
     });
 
-    // Handle 401 Unauthorized errors
-    if (error.response?.status === 401) {
+    // Add to errors collection
+    if (window.apiDebug) {
+      window.apiDebug.errors.push({
+        time: new Date().toISOString(),
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.message,
+      });
+    }
+
+    const originalRequest = error.config;
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    // Handle rate limiting (429)
+    if (error.response?.status === 429) {
+      const retryAfter = error.response.headers['retry-after'];
+      const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
+      
+      logApiOperation("rate-limit-hit", { waitTime, retryAfter });
+      
+      // Wait for the specified time then retry
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      
+      // Retry the request
+      return axiosInstance(originalRequest);
+    }
+
+    // Handle 401 Unauthorized errors with token refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      // Prevent infinite retry loops
+      originalRequest._retry = true;
+      logApiOperation("token-refresh-attempt");
+
       try {
-        // Attempt to refresh the token
-        const newToken = await refreshToken();
+        // Check if we're already refreshing to prevent multiple refresh calls
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = refreshToken();
+        }
+
+        // Wait for the refresh to complete
+        const newToken = await refreshPromise;
+        
+        // Reset refresh state
+        isRefreshing = false;
+        refreshPromise = null;
+
         if (newToken) {
-          // Retry the original request with new token
-          error.config.headers.Authorization = `Bearer ${newToken}`;
-          return axiosInstance(error.config);
+          // Update Authorization header
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+          
+          // Retry the original request
+          return axiosInstance(originalRequest);
+        } else {
+          // If no new token was returned, clear auth and redirect
+          clearAuthData();
+          window.location.href = '/login';
+          return Promise.reject(new Error('Token refresh failed - no new token'));
         }
       } catch (refreshError) {
-        logApiOperation('token-refresh-failed', {
-          error: refreshError.message
+        logApiOperation("token-refresh-failed", {
+          error: refreshError.message,
         });
-        // If refresh fails, logout the user
-        logout();
+        
+        // Reset refresh state
+        isRefreshing = false;
+        refreshPromise = null;
+        
+        // Clear auth data and redirect to login on refresh failure
+        clearAuthData();
+        
+        // Only redirect to login if not already on login page
+        const currentPath = window.location.pathname;
+        if (!currentPath.includes('/login')) {
+          window.location.href = '/login';
+        }
+        
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // Handle CORS errors
+    if (error.message?.includes('Network Error') || error.message?.includes('CORS')) {
+      logApiOperation("cors-error", {
+        url: error.config?.url,
+        headers: error.config?.headers,
+      });
+
+      // Try using CORS proxy if enabled
+      if (shouldUseCorsProxy() && !error.config?.url?.includes('cors-anywhere')) {
+        const proxyUrl = getCorsProxyUrl(error.config.url);
+        error.config.url = proxyUrl;
+        return axiosInstance(error.config);
       }
     }
 

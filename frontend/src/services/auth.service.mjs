@@ -179,7 +179,107 @@ export const logout = async () => {
 };
 
 /**
+ * Refresh the access token using the refresh token
+ * @returns {Promise<string>} New access token
+ */
+export async function refreshToken() {
+  try {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+    
+    // Use the correct endpoint from authEndpoints
+    const refreshEndpoint = authEndpoints.refresh;
+    console.log('Using refresh endpoint:', refreshEndpoint);
+    
+    // Get the current token for backup
+    const currentToken = localStorage.getItem(TOKEN_KEY);
+    
+    // Send refresh request with refresh token in body and current access token in header
+    const response = await httpClient.post(
+      refreshEndpoint,
+      { refresh_token: refreshToken },
+      {
+        headers: {
+          'Authorization': currentToken ? `Bearer ${currentToken}` : undefined,
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      }
+    );
+    
+    // Extract token from response - handle different response formats
+    const tokenData = response.data || response;
+    const newToken = tokenData.token || tokenData.access_token;
+    const newRefreshToken = tokenData.refresh_token;
+    
+    // Handle successful refresh
+    if (newToken) {
+      console.log('Token refreshed successfully');
+      
+      // Store new access token
+      localStorage.setItem(TOKEN_KEY, newToken);
+      
+      // Store new refresh token if provided
+      if (newRefreshToken) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+      }
+      
+      // Update user data if provided
+      if (tokenData.user) {
+        localStorage.setItem(USER_KEY, JSON.stringify(tokenData.user));
+      }
+      
+      // Clear any verification failure flags
+      localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+      
+      // Return the new token
+      return newToken;
+    } else {
+      console.error('No token in refresh response:', tokenData);
+      throw new Error('Invalid refresh response: No token returned');
+    }
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    
+    // Check if we should clear auth data
+    const shouldClearAuth = 
+      error.response?.status === 401 || // Unauthorized
+      error.response?.status === 403 || // Forbidden
+      error.message?.includes('No refresh token available') ||
+      error.message?.includes('Invalid refresh');
+    
+    if (shouldClearAuth) {
+      console.log('Clearing auth data due to refresh failure');
+      // Clear auth data if refresh failed due to auth issues
+      clearAuthData();
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Clear all authentication data from storage
+ */
+export function clearAuthData() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+  
+  // Clear auth headers
+  if (httpClient?.defaults?.headers?.common) {
+    delete httpClient.defaults.headers.common['Authorization'];
+  }
+}
+
+/**
  * Validate the current token
+ * @param {string} [token] - Optional token to validate (uses stored token if not provided)
+ * @returns {Promise<object>} Validation result
  */
 export async function validateToken(token = null) {
   if (!token) {
@@ -191,154 +291,93 @@ export async function validateToken(token = null) {
   }
   
   try {
-    // Improved detection for demo tokens with proper JWT format
-    const isDemoToken = isTokenDemo(token);
-    if (isDemoToken) {
-      console.log('Validated demo JWT token - considered valid without server check');
-      return { valid: true, demo: true };
-    }
-    
-    // Old check for backward compatibility with non-JWT formatted demo tokens
-    if (token.startsWith('demo-') || token.includes('demo_token_')) {
-      console.log('Validating legacy demo token - considered valid without server check');
-      return { valid: true, demo: true };
-    }
-    
-    // Use the correct endpoint from authEndpoints
-    const validateEndpoint = authEndpoints.validate;
-    console.log('Using validate endpoint:', validateEndpoint);
-    
-    // Send token in header with proper Bearer prefix
-    const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    
-    // Send validation request
-    const response = await httpClient.post(
-      validateEndpoint, 
-      { token }, // Include token in body as well for compatibility
-      { 
-        headers,
-        withCredentials: true // Ensure cookies are sent and received
-      }
-    );
-    
-    console.log('Token validation response:', response);
-    
-    if (response.valid === true || (response.data && response.data.valid === true)) {
-      // Get user data from response if available
-      const user = response.user || (response.data && response.data.user);
-      
-      // If user data was returned, update it in storage
-      if (user) {
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
+    // Check if token is expired by decoding without verification
+    try {
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error('Invalid token format');
       }
       
-      // Clear any verification failure flags
-      localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+      const decodedToken = JSON.parse(atob(tokenParts[1]));
+      const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
       
-      return { valid: true, user };
-    } else {
-      // Clear token and user data if invalid
-      clearAuthData();
-      localStorage.setItem(TOKEN_VERIFICATION_FAILED, "true");
-      return { valid: false, message: (response.message || response.data?.message) || 'Token invalid' };
+      // If token is expired, try to refresh before validation
+      if (Date.now() >= expirationTime) {
+        console.log('Token expired, attempting refresh');
+        try {
+          const newToken = await refreshToken();
+          if (newToken) {
+            return { valid: true, refreshed: true, token: newToken };
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          clearAuthData();
+          return { valid: false, message: 'Token expired and refresh failed' };
+        }
+      }
+    } catch (parseError) {
+      console.warn('Error parsing token:', parseError);
+      // Continue with validation even if parsing fails
+    }
+    
+    // Validate with server
+    try {
+      const response = await httpClient.post(
+        authEndpoints.validate,
+        { token },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
+        }
+      );
+      
+      const validationResult = response.data || response;
+      
+      if (validationResult.valid === true) {
+        // Update user data if provided
+        if (validationResult.user) {
+          localStorage.setItem(USER_KEY, JSON.stringify(validationResult.user));
+        }
+        
+        // Clear any verification failure flags
+        localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+        
+        return { valid: true, user: validationResult.user };
+      } else {
+        throw new Error(validationResult.message || 'Token validation failed');
+      }
+    } catch (validationError) {
+      console.error('Server validation error:', validationError);
+      
+      // If server returns 401, token is definitely invalid
+      if (validationError.response && validationError.response.status === 401) {
+        // Try to refresh the token
+        try {
+          const newToken = await refreshToken();
+          if (newToken) {
+            return { valid: true, refreshed: true, token: newToken };
+          }
+        } catch (refreshError) {
+          console.error('Token refresh after 401 failed:', refreshError);
+          clearAuthData();
+          return { valid: false, message: 'Token invalid and refresh failed' };
+        }
+      }
+      
+      throw validationError;
     }
   } catch (error) {
-    console.error('Error validating token:', error);
+    console.error('Token validation error:', error);
     
-    // Check for specific error conditions
-    if (error.response) {
-      if (error.response.status === 401) {
-        clearAuthData();
-        localStorage.setItem(TOKEN_VERIFICATION_FAILED, "true");
-        return { valid: false, message: 'Token expired or invalid' };
-      }
-      
-      // CORS or server error
-      if (error.response.status === 0 || error.response.status >= 500) {
-        // Don't clear auth data for server errors, might be temporary
-        return { valid: false, message: 'Server error during validation' };
-      }
-    }
+    // Set verification failure flag
+    localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
     
-    // Network error could be CORS issue
-    if (error.message && error.message.includes('Network Error')) {
-      return { valid: false, message: 'Network error (possibly CORS)' };
-    }
-    
-    // Default case: clear data and return invalid
-    clearAuthData();
-    localStorage.setItem(TOKEN_VERIFICATION_FAILED, "true");
-    return { valid: false, message: 'Unknown error during token validation' };
+    return { valid: false, message: error.message };
   }
 }
-
-/**
- * Helper function to determine if a JWT token is a demo token
- * @param {string} token - JWT token
- * @returns {boolean} - True if the token is a demo token
- */
-function isTokenDemo(token) {
-  try {
-    // Check if it's a properly formatted JWT (has 3 parts)
-    const parts = token.split('.');
-    if (parts.length !== 3) return false;
-    
-    // Decode the payload (middle part)
-    const payload = JSON.parse(atob(parts[1]));
-    
-    // Check if it's a demo token by looking at the subject
-    return payload.sub && (
-      payload.sub.includes('demo-') || 
-      payload.sub.includes('demo_') || 
-      payload.sub === 'demo-user'
-    );
-  } catch (error) {
-    console.error('Error checking if token is demo:', error);
-    return false;
-  }
-}
-
-/**
- * Refresh authentication token
- * @returns {Promise<Object>} - New token data
- */
-export const refreshToken = async () => {
-  // If a refresh is already in progress, wait for it to complete instead of starting a new one
-  if (isRefreshing) {
-    return refreshPromise;
-  }
-  
-  try {
-    // Set the flag to indicate a refresh is in progress
-    isRefreshing = true;
-    
-    // Create a promise that will be shared by all concurrent calls
-    refreshPromise = httpClient.post(authEndpoints.refresh)
-      .then(response => {
-        const result = responseHandler.handleSuccess(response);
-        return result;
-      })
-      .catch(error => {
-        console.error('Token refresh failed:', error);
-        return responseHandler.handleError(error);
-      })
-      .finally(() => {
-        // Reset the flag once the refresh is complete
-        isRefreshing = false;
-        refreshPromise = null;
-      });
-    
-    return refreshPromise;
-  } catch (error) {
-    isRefreshing = false;
-    refreshPromise = null;
-    console.error('Error in refreshToken:', error);
-    return responseHandler.handleError(error);
-  }
-};
 
 /**
  * Check if user is currently authenticated with better error handling
@@ -371,19 +410,6 @@ export const getToken = () => {
   } catch (error) {
     console.error('Error getting token:', error);
     return null;
-  }
-};
-
-/**
- * Clear all authentication data from storage
- */
-export const clearAuthData = () => {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-  } catch (error) {
-    console.error('Error clearing auth data:', error);
   }
 };
 

@@ -32,7 +32,6 @@ import { AUTH_CONFIG } from "../../../utils/config";
 import { logout } from "../../../store/thunks/authThunks";
 import api from "../../../services/api.adapter";
 import { authService } from "../../../services/auth.service.mjs";
-import httpClient from '../../../services/http-client.mjs';
 
 /**
  * Dashboard component for displaying and managing user's universes
@@ -108,7 +107,7 @@ const Dashboard = () => {
     
     // Add Authorization header to axios manually to ensure it's available for this request
     try {
-      const axiosInstance = httpClient.axiosInstance;
+      const axiosInstance = api.auth.getAxiosInstance();
       if (axiosInstance && axiosInstance.defaults) {
         console.log("Dashboard - Manually setting Authorization header");
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
