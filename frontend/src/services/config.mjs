@@ -11,15 +11,15 @@ const getApiBaseUrl = () => {
   // Check if we're in a production environment
   if (IS_PRODUCTION) {
     // In production, use relative URL (same origin)
-    console.log('Using production API URL: /api');
-    return '/api';
+    // Don't include /api as it will be added by formatUrl
+    console.log('Using production API URL: empty string (relative)');
+    return '';
   }
 
   // In development, use the full URL from config or environment
+  // Don't include /api as it will be added by formatUrl
   const baseUrl = 'http://localhost:5001';
   
-  // Ensure we don't have doubled /api in the URL
-  // Don't append /api here as it's added by the endpoint functions
   console.log(`Using development API URL: ${baseUrl}`);
   return baseUrl;
 };

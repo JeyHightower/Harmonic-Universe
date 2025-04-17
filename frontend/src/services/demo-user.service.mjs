@@ -31,7 +31,7 @@ export const createDemoUser = () => {
  */
 const createDemoToken = (userId) => {
   // Create a header part (base64 encoded)
-  const header = btoa(JSON.stringify({ alg: 'demo', typ: 'JWT' }));
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   
   // Create a payload part (base64 encoded)
   const now = Math.floor(Date.now() / 1000);
@@ -79,20 +79,35 @@ export const setupDemoSession = () => {
 export const isDemoSession = () => {
   try {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    // Check if token exists and is a demo token (now using properly formatted JWT-like tokens)
+    // Check if token exists
     if (!token) return false;
     
+    // First try to determine if it's a JWT-formatted demo token
     try {
-      // Try to decode the middle part (payload)
+      // Check if it's a properly formatted JWT (has 3 parts)
       const parts = token.split('.');
-      if (parts.length !== 3) return false;
-      
-      const payload = JSON.parse(atob(parts[1]));
-      return payload.sub && payload.sub.includes('demo-');
+      if (parts.length === 3) {
+        // Decode the payload (middle part)
+        const payload = JSON.parse(atob(parts[1]));
+        
+        // Check if it's a demo token by looking at the subject
+        if (payload.sub && (
+          payload.sub.includes('demo-') || 
+          payload.sub.includes('demo_') || 
+          payload.sub === 'demo-user'
+        )) {
+          return true;
+        }
+      }
     } catch (e) {
-      // If we can't decode it properly, check the old way
-      return token.startsWith('demo-') || token.includes('demo');
+      // Decoding failed, continue to legacy check
+      console.debug('JWT parsing failed during demo check:', e);
     }
+    
+    // Legacy check for backward compatibility
+    return token.startsWith('demo-') || 
+           token.includes('demo_token_') || 
+           token.includes('demo-token-');
   } catch (error) {
     console.error("Error checking demo session:", error);
     return false;

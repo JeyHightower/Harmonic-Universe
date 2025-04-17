@@ -4,7 +4,8 @@
  */
 
 import axios from 'axios';
-import { API_CONFIG, AUTH_CONFIG } from '../utils/config.mjs';
+import { API_CONFIG, AUTH_CONFIG } from '../utils/config';
+import { API_SERVICE_CONFIG } from './config.mjs';
 import { log, logError } from '../utils/logger.mjs';
 import * as authServiceModule from './auth.service.mjs';
 import { demoUserService } from './demo-user.service.mjs';
@@ -77,8 +78,10 @@ const getBaseUrl = () => {
     // Try environment variable first
     const envUrl = import.meta.env.VITE_API_URL;
     if (envUrl) {
-      logApiOperation('getBaseUrl-env', { url: envUrl });
-      return envUrl;
+      // Make sure it doesn't include /api
+      const url = envUrl.endsWith('/api') ? envUrl.slice(0, -4) : envUrl;
+      logApiOperation('getBaseUrl-env', { url });
+      return url;
     }
 
     // Get information about current environment
@@ -96,13 +99,15 @@ const getBaseUrl = () => {
 
     // Handle production environments (including Render.com)
     if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
-      // For production, use relative API URLs (same domain)
+      // For production, use relative URL (same domain)
+      // Don't include /api in the base URL as it will be added by formatUrl
       logApiOperation('getBaseUrl-production', { url: '' });
       window.apiDebug.baseUrl = '';
       return '';
     }
 
     // Default for local development: use localhost:5001
+    // Don't include /api in the base URL as it will be added by formatUrl
     const localUrl = 'http://localhost:5001';
     logApiOperation('getBaseUrl-local', { url: localUrl });
     window.apiDebug.baseUrl = localUrl;
@@ -136,7 +141,7 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Origin': typeof window !== 'undefined' ? window.location.origin : '',
+    // Remove Origin header as it's a protected header that can't be set manually
   },
   withCredentials: true, // Important for CORS with credentials
   xsrfCookieName: 'csrf_token',
@@ -248,7 +253,7 @@ axiosInstance.interceptors.response.use(
 );
 
 /**
- * Format a URL to include the API base if not already included
+ * Format a URL to include the API prefix if not already included
  * @param {string} url - URL to request
  * @returns {string} - Formatted URL
  */
@@ -262,28 +267,26 @@ const formatUrl = (url) => {
     return url;
   }
 
-  // If URL already includes the API_PREFIX
-  const hasApiPrefix = url.startsWith(API_CONFIG.API_PREFIX);
-  
-  // If URL does not start with a slash, add one
-  if (!url.startsWith('/') && !hasApiPrefix) {
+  // If URL doesn't start with /, add it first
+  if (!url.startsWith('/')) {
     url = '/' + url;
   }
+  
+  // Strip any existing /api prefix to prevent duplication
+  if (url.startsWith('/api/')) {
+    url = url.substring(4);  // Remove the '/api' part
+  }
+  
+  // Now add the /api prefix
+  url = '/api' + url;
   
   // Ensure trailing slash to prevent redirects
   if (!url.endsWith('/')) {
     url = url + '/';
   }
   
-  // If the URL already has the API prefix, make sure we don't duplicate it
-  // The baseURL should not have /api at the end, but just in case
-  const baseUrl = API_CONFIG.BASE_URL.endsWith('/api') 
-    ? API_CONFIG.BASE_URL 
-    : API_CONFIG.BASE_URL;
-    
-  const formattedUrl = hasApiPrefix ? url : url.startsWith('/api') ? url : url;
-  console.log(`Formatted URL: ${formattedUrl}`);
-  return formattedUrl;
+  console.log(`Formatted URL: ${url}`);
+  return url;
 };
 
 /**
@@ -294,14 +297,14 @@ const formatUrl = (url) => {
  */
 const getCachedResponse = (url, options) => {
   // Skip cache if disabled globally or in options
-  if (!API_CONFIG.CACHE.ENABLED || options.cache === false) {
+  if (!API_SERVICE_CONFIG.CACHE.ENABLED || options.cache === false) {
     return null;
   }
   
   const cached = cache.get(url);
   if (cached) {
     const now = Date.now();
-    if (now - cached.timestamp < API_CONFIG.CACHE.DURATION) {
+    if (now - cached.timestamp < API_SERVICE_CONFIG.CACHE.DURATION) {
       log('api', 'Cache hit', { url });
       return cached.data;
     } else {
@@ -320,7 +323,7 @@ const getCachedResponse = (url, options) => {
  */
 const cacheResponse = (url, data, options) => {
   // Skip caching if disabled globally or in options
-  if (!API_CONFIG.CACHE.ENABLED || options.cache === false) {
+  if (!API_SERVICE_CONFIG.CACHE.ENABLED || options.cache === false) {
     return;
   }
   
@@ -338,11 +341,11 @@ const cacheResponse = (url, data, options) => {
  * @returns {Promise<any>} - Response data
  */
 const withRetry = async (requestFn, options = {}) => {
-  const maxRetries = options.maxRetries || API_CONFIG.RETRY.MAX_RETRIES;
-  const initialRetryDelay = options.retryDelay || API_CONFIG.RETRY.RETRY_DELAY;
-  const retryStatuses = options.retryStatuses || API_CONFIG.RETRY.RETRY_STATUSES;
-  const backoffFactor = API_CONFIG.RETRY.BACKOFF_FACTOR || 2;
-  const rateLimitConfig = API_CONFIG.RETRY.RATE_LIMIT;
+  const maxRetries = options.maxRetries || API_SERVICE_CONFIG.RETRY.MAX_RETRIES;
+  const initialRetryDelay = options.retryDelay || API_SERVICE_CONFIG.RETRY.RETRY_DELAY;
+  const retryStatuses = options.retryStatuses || API_SERVICE_CONFIG.RETRY.RETRY_STATUSES;
+  const backoffFactor = API_SERVICE_CONFIG.RETRY.BACKOFF_FACTOR || 2;
+  const rateLimitConfig = API_SERVICE_CONFIG.RETRY.RATE_LIMIT;
   
   let lastError;
   let attempts = 0;

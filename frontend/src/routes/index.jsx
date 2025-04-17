@@ -4,6 +4,7 @@ import Layout from "../components/layout/Layout";
 import ProtectedRoute from "../components/routing/ProtectedRoute";
 import { ROUTES } from "../utils/routes";
 import { SceneModal } from "../features/scene/index.mjs";
+import { ModalProvider } from "../contexts/ModalContext";
 
 // Create a wrapper component for SceneModal in routes
 export const SceneCreateRoute = () => {
@@ -26,6 +27,13 @@ export const SceneCreateRoute = () => {
     />
   );
 };
+
+// Create a wrapped Layout component with ModalProvider
+const WrappedLayout = () => (
+  <ModalProvider>
+    <Layout />
+  </ModalProvider>
+);
 
 // Lazy load components
 const SettingsPage = lazy(() => import("../features/settings/pages/SettingsPage"));
@@ -163,7 +171,7 @@ const NoteDetail = lazy(() => import("../features/note/pages/NoteDetail"));
 const routes = [
   {
     path: ROUTES.HOME,
-    element: <Layout />,
+    element: <WrappedLayout />,
     children: [
       {
         index: true,

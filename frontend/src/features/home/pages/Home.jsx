@@ -127,7 +127,7 @@ function Home() {
     };
 
     // Create a proper JWT-like token with three parts
-    const header = btoa(JSON.stringify({ alg: 'demo', typ: 'JWT' }));
+    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const now = Math.floor(Date.now() / 1000);
     const payload = btoa(JSON.stringify({
       sub: demoUser.id,

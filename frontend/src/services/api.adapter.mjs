@@ -24,17 +24,17 @@ import {
 export { endpoints };
 
 /**
- * Create a compatibility wrapper for auth operations
+ * Authentication service wrapper
  */
-const auth = {
+export const auth = {
   login: authService.login,
   register: authService.register,
   logout: authService.logout,
-  demoLogin: authService.demoLogin,
-  validateToken: authService.validateToken,
   refreshToken: authService.refreshToken,
+  validateToken: authService.validateToken,
   isAuthenticated: authService.isAuthenticated,
-  getToken: authService.getToken
+  isDemoUser: authService.isDemoUser,
+  getAxiosInstance: () => httpClient.axiosInstance
 };
 
 /**

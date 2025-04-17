@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import errorService from "../services/errorService";
+import errorService from "../services/errorService.mjs";
 import { APP_CONFIG } from "../utils/config";
 
 // Define setTimeout for ESLint compatibility

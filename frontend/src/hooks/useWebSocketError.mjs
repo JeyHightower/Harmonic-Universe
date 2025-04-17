@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from "react";
-import errorService from "../services/errorService";
+import errorService from "../services/errorService.mjs";
 
 // Define WebSocket globally if it doesn't exist to prevent no-undef errors
 if (typeof WebSocket === 'undefined') {

@@ -16,19 +16,14 @@ const endpoint = (path) => {
   // Ensure path starts with a slash if not empty
   const formattedPath = path.startsWith('/') ? path : `/${path}`;
   
-  // Ensure the API prefix doesn't have a trailing slash
-  const prefix = API_PREFIX.endsWith('/') ? API_PREFIX.slice(0, -1) : API_PREFIX;
-  
   // Add trailing slash if not present to avoid redirects
   const pathWithTrailingSlash = formattedPath.endsWith('/') 
     ? formattedPath 
     : `${formattedPath}/`;
   
-  // Combine the prefix with the path
-  const fullEndpoint = `${prefix}${pathWithTrailingSlash}`;
-  
-  console.log(`Endpoint: ${path} -> ${fullEndpoint}`);
-  return fullEndpoint;
+  // Don't add API_PREFIX here as it will be added by formatUrl in http-client.mjs
+  console.log(`Endpoint: ${path} -> ${pathWithTrailingSlash}`);
+  return pathWithTrailingSlash;
 };
 
 /**

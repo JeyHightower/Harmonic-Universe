@@ -4,7 +4,7 @@
  * Redirects to the new audioService
  */
 
-import { audioService } from './audio.service';
+import { audioService } from './audio.service.mjs';
 
 /**
  * Get audio details

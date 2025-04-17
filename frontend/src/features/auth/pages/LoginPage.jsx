@@ -46,7 +46,7 @@ const LoginPage = () => {
         };
 
         // Create a proper JWT-like token with three parts
-        const header = btoa(JSON.stringify({ alg: 'demo', typ: 'JWT' }));
+        const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
         const now = Math.floor(Date.now() / 1000);
         const payload = btoa(JSON.stringify({
           sub: demoUser.id,
@@ -97,8 +97,19 @@ const LoginPage = () => {
           createdAt: new Date().toISOString(),
         };
 
-        const mockToken =
-          "demo_token_" + Math.random().toString(36).substring(2, 15);
+        // Create proper JWT-like token instead of the simple string
+        const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+        const now = Math.floor(Date.now() / 1000);
+        const payload = btoa(JSON.stringify({
+          sub: demoUser.id,
+          name: "Demo User",
+          iat: now,
+          exp: now + 3600, // 1 hour from now
+        }));
+        const signature = btoa('demo-signature');
+        
+        // Create token with proper JWT format
+        const mockToken = `${header}.${payload}.${signature}`;
 
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, mockToken);
         localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(demoUser));

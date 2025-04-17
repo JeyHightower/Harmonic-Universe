@@ -102,26 +102,50 @@ export const register = async (userData) => {
 };
 
 /**
- * Log in as a demo user
- * @returns {Promise<object>} - Demo login response
+ * Handle demo login (no server interaction)
  */
-export const demoLogin = async () => {
+export async function demoLogin() {
   try {
-    // Use the dedicated demo user service
-    const demoResponse = await demoUserService.performDemoLogin();
+    // Create a demo token with timestamp to make it unique
+    const timestamp = Date.now();
+    const demoToken = `demo-token-${timestamp}`;
     
-    if (demoResponse.success) {
-      Logger.log('auth', 'Demo user logged in successfully');
-      return responseHandler.handleSuccess(demoResponse.data);
-    } else {
-      Logger.logError('Demo login failed', demoResponse.error);
-      return responseHandler.handleError(new Error(demoResponse.error || 'Demo login failed'));
-    }
+    // Store the demo token in localStorage
+    localStorage.setItem(TOKEN_KEY, demoToken);
+    
+    // Create a demo user
+    const demoUser = {
+      id: 'demo-user',
+      username: 'demouser',
+      email: 'demo@example.com',
+      roles: ['user'],
+      demo: true
+    };
+    
+    // Store user data
+    localStorage.setItem(USER_KEY, JSON.stringify(demoUser));
+    
+    // Clear any verification failure flags
+    localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+    
+    // Setup auth headers for future requests
+    httpClient.defaults.headers.common['Authorization'] = `Bearer ${demoToken}`;
+    
+    console.log('Demo login successful');
+    return {
+      success: true,
+      token: demoToken,
+      user: demoUser,
+      message: 'Demo login successful'
+    };
   } catch (error) {
-    Logger.logError('Demo login failed', error, 'auth');
-    return responseHandler.handleError(error);
+    console.error('Demo login error:', error);
+    return { 
+      success: false, 
+      message: 'Error during demo login'
+    };
   }
-};
+}
 
 /**
  * Log the user out and clear all auth data
@@ -167,9 +191,16 @@ export async function validateToken(token = null) {
   }
   
   try {
-    // Check if token is a demo token using demoUserService
-    if (demoUserService.isDemoSession()) {
-      console.log('Validating demo token - considered valid without server check');
+    // Improved detection for demo tokens with proper JWT format
+    const isDemoToken = isTokenDemo(token);
+    if (isDemoToken) {
+      console.log('Validated demo JWT token - considered valid without server check');
+      return { valid: true, demo: true };
+    }
+    
+    // Old check for backward compatibility with non-JWT formatted demo tokens
+    if (token.startsWith('demo-') || token.includes('demo_token_')) {
+      console.log('Validating legacy demo token - considered valid without server check');
       return { valid: true, demo: true };
     }
     
@@ -177,38 +208,42 @@ export async function validateToken(token = null) {
     const validateEndpoint = authEndpoints.validate;
     console.log('Using validate endpoint:', validateEndpoint);
     
-    // Send token in multiple ways to ensure it's received by the backend
-    const response = await httpClient.post(validateEndpoint, 
-      { token }, // In body
+    // Send token in header with proper Bearer prefix
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    
+    // Send validation request
+    const response = await httpClient.post(
+      validateEndpoint, 
+      { token }, // Include token in body as well for compatibility
       { 
-        headers: { 
-          'Authorization': `Bearer ${token}`, // In header
-          'Content-Type': 'application/json' 
-        },
-        withCredentials: true, // Ensure cookies are sent and received
-        // Don't retry validation to avoid loops
-        maxRetries: 0
+        headers,
+        withCredentials: true // Ensure cookies are sent and received
       }
     );
     
     console.log('Token validation response:', response);
     
-    if (response.data && response.data.valid) {
+    if (response.valid === true || (response.data && response.data.valid === true)) {
+      // Get user data from response if available
+      const user = response.user || (response.data && response.data.user);
+      
       // If user data was returned, update it in storage
-      if (response.data.user) {
-        localStorage.setItem(USER_KEY, JSON.stringify(response.data.user));
+      if (user) {
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
       }
-      return { valid: true, user: response.data.user };
-    } else if (response.valid) {
-      // Handle different response format
-      if (response.user) {
-        localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-      }
-      return { valid: true, user: response.user };
+      
+      // Clear any verification failure flags
+      localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+      
+      return { valid: true, user };
     } else {
       // Clear token and user data if invalid
       clearAuthData();
-      return { valid: false, message: (response.data && response.data.message) || 'Token invalid' };
+      localStorage.setItem(TOKEN_VERIFICATION_FAILED, "true");
+      return { valid: false, message: (response.message || response.data?.message) || 'Token invalid' };
     }
   } catch (error) {
     console.error('Error validating token:', error);
@@ -217,6 +252,7 @@ export async function validateToken(token = null) {
     if (error.response) {
       if (error.response.status === 401) {
         clearAuthData();
+        localStorage.setItem(TOKEN_VERIFICATION_FAILED, "true");
         return { valid: false, message: 'Token expired or invalid' };
       }
       
@@ -234,7 +270,34 @@ export async function validateToken(token = null) {
     
     // Default case: clear data and return invalid
     clearAuthData();
+    localStorage.setItem(TOKEN_VERIFICATION_FAILED, "true");
     return { valid: false, message: 'Unknown error during token validation' };
+  }
+}
+
+/**
+ * Helper function to determine if a JWT token is a demo token
+ * @param {string} token - JWT token
+ * @returns {boolean} - True if the token is a demo token
+ */
+function isTokenDemo(token) {
+  try {
+    // Check if it's a properly formatted JWT (has 3 parts)
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    // Decode the payload (middle part)
+    const payload = JSON.parse(atob(parts[1]));
+    
+    // Check if it's a demo token by looking at the subject
+    return payload.sub && (
+      payload.sub.includes('demo-') || 
+      payload.sub.includes('demo_') || 
+      payload.sub === 'demo-user'
+    );
+  } catch (error) {
+    console.error('Error checking if token is demo:', error);
+    return false;
   }
 }
 
