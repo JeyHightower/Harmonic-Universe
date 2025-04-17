@@ -50,6 +50,11 @@ myenv/
 .env.test.local
 .env.production.local
 !.env.example
+# Exceptions for environment template files
+!.env-backend
+!.env-frontend
+!backend/.env-backend
+!frontend/.env-frontend
 
 # Build & Distribution
 /build/
@@ -181,6 +186,7 @@ config/*
 # Special exceptions - Files to keep
 !backend/requirements.txt
 !backend/app.py
+!scripts/setup-env.sh
 
 # Python-specific
 .python-version
@@ -195,6 +201,7 @@ backend/src/
 backend/static/
 backend/wsgi.py
 frontend/.env*
+!frontend/.env-frontend
 frontend/.npmrc
 frontend/.preinstallrc
 frontend/.render-buildcommands.yaml

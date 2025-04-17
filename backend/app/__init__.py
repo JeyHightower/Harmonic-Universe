@@ -23,7 +23,7 @@ from .extensions import db, migrate, jwt, limiter
 from .api.routes import api_bp
 from app.config import config_by_name
 from app.extensions import init_extensions
-from app.utils.jwt_utils import apply_all_jwt_patches
+from app.utils.jwt import apply_all_jwt_patches, configure_jwt
 
 # Initialize caching
 try:
@@ -258,6 +258,44 @@ def configure_logging(app):
         app.logger.setLevel(logging.INFO)
         app.logger.info('Harmonic Universe startup')
 
+def setup_cors(app):
+    """Configure CORS for the application using Flask-CORS."""
+    # Configure CORS using Flask-CORS
+    CORS(app,
+         resources=app.config.get('CORS_RESOURCES'),
+         supports_credentials=app.config.get('CORS_SUPPORTS_CREDENTIALS', True),
+         methods=app.config.get('CORS_METHODS'),
+         allow_headers=app.config.get('CORS_HEADERS'),
+         expose_headers=app.config.get('CORS_EXPOSE_HEADERS'),
+         max_age=app.config.get('CORS_MAX_AGE'))
+    
+    app.logger.info(f"CORS configured with origins: {app.config.get('CORS_ORIGINS')}")
+    return app
+
+def setup_static_folders(app):
+    """Configure static folders for the application."""
+    # Look for static folders in various locations
+    possible_static_folders = [
+        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'static')),
+        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')),
+        os.environ.get('STATIC_FOLDER'),
+        '/opt/render/project/src/static',
+        '/opt/render/project/src/backend/static'
+    ]
+    
+    for folder in possible_static_folders:
+        if folder and os.path.exists(folder) and os.path.isdir(folder):
+            app.static_folder = folder
+            app.logger.info(f"Using static folder: {app.static_folder}")
+            break
+    
+    return app
+
+def register_error_handlers(app):
+    """Register error handlers for the application."""
+    setup_error_handlers(app)
+    return app
+
 def create_app(config_name=None):
     """
     Create and configure the Flask application based on the specified configuration.
@@ -298,9 +336,8 @@ def create_app(config_name=None):
     # Configure logging
     configure_logging(app)
     
-    # Configure JWT token settings
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
-    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
+    # Configure JWT settings
+    configure_jwt(app)
     
     # Initialize extensions
     db.init_app(app)
@@ -313,7 +350,6 @@ def create_app(config_name=None):
     
     # Import and apply JWT monkey patch
     try:
-        from app.utils.jwt_utils import apply_all_jwt_patches
         apply_all_jwt_patches()
         app.logger.info("JWT monkey patches applied successfully")
     except Exception as e:
@@ -321,9 +357,6 @@ def create_app(config_name=None):
     
     # Set up CORS (before blueprints)
     setup_cors(app)
-    
-    # Set up CORS preflight handlers
-    setup_cors_handlers(app)
     
     # Set up static folders
     setup_static_folders(app)
@@ -337,61 +370,4 @@ def create_app(config_name=None):
     # Register main routes
     setup_routes(app)
     
-    return app
-
-def setup_cors(app):
-    """Configure CORS for the application."""
-    # Extract CORS configuration from app config
-    origins = app.config.get('CORS_CONFIG', {}).get('ORIGINS', ['*'])
-    
-    # Also check for CORS_ORIGINS in .env direct setting
-    env_origins = os.environ.get('CORS_ORIGINS')
-    if env_origins:
-        # Parse comma-separated origins from .env
-        env_origins_list = [origin.strip() for origin in env_origins.split(',')]
-        # Merge with existing origins
-        if '*' not in origins and '*' not in env_origins_list:
-            origins = list(set(origins + env_origins_list))
-        elif '*' in env_origins_list:
-            origins = ['*']  # If .env has wildcard, use it
-    
-    # Log the origins we're using
-    app.logger.info(f"CORS Origins configured: {origins}")
-    
-    # Set explicit CORS_ORIGINS for use in other parts of the application
-    app.config['CORS_ORIGINS'] = origins
-    
-    # Configure CORS
-    CORS(app, 
-         resources={r"/api/*": {"origins": origins}},
-         supports_credentials=app.config.get('CORS_SUPPORTS_CREDENTIALS', True),
-         methods=app.config.get('CORS_METHODS', ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]),
-         allow_headers=app.config.get('CORS_HEADERS', ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]),
-         expose_headers=app.config.get('CORS_EXPOSE_HEADERS', ["Content-Length", "Content-Type", "Authorization"]),
-         max_age=app.config.get('CORS_MAX_AGE', 86400))
-    
-    return app
-
-def setup_static_folders(app):
-    """Configure static folders for the application."""
-    # Look for static folders in various locations
-    possible_static_folders = [
-        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'static')),
-        os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')),
-        os.environ.get('STATIC_FOLDER'),
-        '/opt/render/project/src/static',
-        '/opt/render/project/src/backend/static'
-    ]
-    
-    for folder in possible_static_folders:
-        if folder and os.path.exists(folder) and os.path.isdir(folder):
-            app.static_folder = folder
-            app.logger.info(f"Using static folder: {app.static_folder}")
-            break
-    
-    return app
-
-def register_error_handlers(app):
-    """Register error handlers for the application."""
-    setup_error_handlers(app)
     return app

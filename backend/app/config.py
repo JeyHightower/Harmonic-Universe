@@ -59,23 +59,17 @@ class Config:
         print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY}'")
     
     # CORS Configuration
-    CORS_CONFIG = {
-        'ORIGINS': [
-            'http://localhost:5173',
-            'http://127.0.0.1:5173',
-            'http://localhost:5174',
-            'http://127.0.0.1:5174',
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-            'https://harmonic-universe.vercel.app',
-            'https://harmonic-universe-git-main-someones-projects-4ec78d48.vercel.app'
-        ],
-    }
+    CORS_ORIGINS = [
+        'http://localhost:5173',  # Frontend development
+        'http://127.0.0.1:5173',  # Frontend development alternative
+        'https://harmonic-universe.vercel.app'  # Production
+    ]
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
     CORS_HEADERS = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"]
     CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type", "Authorization"]
     CORS_MAX_AGE = 86400  # 24 hours
     CORS_SUPPORTS_CREDENTIALS = True
+    CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
     
     # Security config
     SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV', 'development') == 'production'

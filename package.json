@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "build": "cd frontend && vite build",
-    "start": "concurrently \"cd backend && source myenv/bin/activate && cross-env FLASK_APP=wsgi.py FLASK_ENV=development FLASK_DEBUG=1 AUTO_CREATE_TABLES=true python wsgi.py\" \"cd frontend && pnpm run dev\"",
-    "start-backend": "cd backend && source myenv/bin/activate && cross-env FLASK_APP=wsgi.py FLASK_ENV=development FLASK_DEBUG=1 AUTO_CREATE_TABLES=true python wsgi.py",
+    "start": "concurrently \"npm run start-backend\" \"npm run start-frontend\"",
+    "start-backend": "cd backend && source myenv/bin/activate && python run.py",
+    "start-frontend": "cd frontend && pnpm run dev",
     "dev": "vite --force --clearScreen=false",
     "lint": "eslint . --ignore-pattern \"build.test/**\"",
     "lint:fix": "eslint . --fix --ignore-pattern \"build.test/**\"",
     "frontend": "cd frontend && pnpm run dev",
-    "frontend:build": "cd frontend && pnpm run build"
+    "frontend:build": "cd frontend && pnpm run build",
+    "setup-env": "./scripts/setup-env.sh"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

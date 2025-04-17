@@ -30,7 +30,6 @@ def validate_token():
     """Validate the JWT token and return user data."""
     # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
-        # Let Flask-CORS handle the OPTIONS response
         return current_app.make_default_options_response()
 
     # Print request details for debugging
@@ -159,27 +158,7 @@ def refresh_token():
     """Refresh an expired JWT token."""
     # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
-        # Create a response with CORS headers
-        response = current_app.make_default_options_response()
-        
-        # Add CORS headers
-        origin = request.headers.get('Origin')
-        cors_origins = current_app.config.get('CORS_ORIGINS', ['*'])
-        
-        if origin and (origin in cors_origins or '*' in cors_origins):
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Headers', 
-                               ','.join(current_app.config.get('CORS_HEADERS', 
-                                      ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'])))
-            response.headers.add('Access-Control-Allow-Methods',
-                               ','.join(current_app.config.get('CORS_METHODS',
-                                      ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])))
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            response.headers.add('Access-Control-Max-Age', 
-                               str(current_app.config.get('CORS_MAX_AGE', 86400)))
-        
-        current_app.logger.debug(f"Sending OPTIONS response with CORS headers: {dict(response.headers)}")
-        return response, 200
+        return current_app.make_default_options_response()
         
     # Print request details for debugging
     current_app.logger.debug(f"Token refresh request: Method={request.method}, Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
