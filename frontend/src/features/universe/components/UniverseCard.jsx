@@ -93,7 +93,6 @@ const UniverseCard = ({ universe, isNew = false, onEdit, onDelete, onView }) => 
     </Card>
   );
 };
-
 UniverseCard.propTypes = {
   universe: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
