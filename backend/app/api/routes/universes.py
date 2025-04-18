@@ -275,95 +275,27 @@ def update_universe(universe_id):
 @universes_bp.route('/<int:universe_id>/', methods=['DELETE'])
 @jwt_required()
 def delete_universe(universe_id):
-    """Soft delete a universe by marking it and all related entities as deleted."""
+    """Redirect to the primary delete implementation in universes/delete_routes.py.
+
+    This maintains a single source of truth for the delete operation.
+    """
     try:
-        # Get the universe or return 404
-        universe = Universe.query.get_or_404(universe_id)
+        current_app.logger.info(f"Redirecting delete request for universe {universe_id} to the primary delete endpoint")
 
-        # Check user permission
-        user_id = get_jwt_identity()
+        # Import and use the primary implementation
+        from .universes.delete_routes import delete_universe as primary_delete_universe
 
-        # Convert both user IDs to integers for consistent comparison
-        try:
-            # Ensure both user IDs are treated as integers for comparison
-            jwt_user_id = int(user_id) if user_id is not None else None
-            universe_user_id = int(universe.user_id) if universe.user_id is not None else None
-
-            current_app.logger.info(f"===== DELETE UNIVERSE DEBUG =====")
-            current_app.logger.info(f"Universe ID: {universe_id}")
-            current_app.logger.info(f"JWT user_id: {jwt_user_id} (type: {type(jwt_user_id).__name__})")
-            current_app.logger.info(f"Universe user_id: {universe_user_id} (type: {type(universe_user_id).__name__})")
-
-            # Simple integer comparison
-            if jwt_user_id != universe_user_id:
-                current_app.logger.warning(f"Access denied: User {jwt_user_id} attempted to delete universe {universe_id} owned by {universe_user_id}")
-                return jsonify({
-                    'message': 'Access denied',
-                    'error': 'You do not have permission to delete this universe'
-                }), 403
-
-            # User is authorized to delete the universe
-            current_app.logger.info(f"Access granted to delete universe {universe_id}")
-
-            # Log the deletion attempt
-            current_app.logger.info(f"Attempting to delete universe {universe_id} by user {user_id}")
-
-            # Use a simpler approach: just mark as deleted
-            try:
-                # Mark the universe as deleted
-                current_app.logger.debug(f"Marking universe {universe_id} as deleted")
-                universe.is_deleted = True
-                db.session.flush()  # Flush to get immediate feedback on any DB issues
-
-                # Mark related entities as deleted using direct SQL updates with text()
-                # This avoids loading all related objects into memory and potential cascade issues
-                current_app.logger.debug(f"Marking scenes for universe {universe_id} as deleted")
-                db.session.execute(
-                    text("UPDATE scenes SET is_deleted = TRUE WHERE universe_id = :universe_id"),
-                    {"universe_id": universe_id}
-                )
-
-                current_app.logger.debug(f"Marking characters for universe {universe_id} as deleted")
-                db.session.execute(
-                    text("UPDATE characters SET is_deleted = TRUE WHERE universe_id = :universe_id"),
-                    {"universe_id": universe_id}
-                )
-
-                current_app.logger.debug(f"Marking notes for universe {universe_id} as deleted")
-                db.session.execute(
-                    text("UPDATE notes SET is_deleted = TRUE WHERE universe_id = :universe_id"),
-                    {"universe_id": universe_id}
-                )
-
-                # Commit all changes
-                db.session.commit()
-                current_app.logger.info(f"Successfully soft-deleted universe {universe_id} and all related entities")
-
-                return jsonify({'message': 'Universe deleted successfully'}), 200
-
-            except Exception as db_error:
-                db.session.rollback()
-                error_message = str(db_error)
-                current_app.logger.error(f"Database error while deleting universe {universe_id}: {error_message}")
-                current_app.logger.error(traceback.format_exc())
-
-                return jsonify({
-                    'message': 'Error deleting universe',
-                    'error': f"Database error: {error_message[:100]}..."
-                }), 500
-
-        except ValueError as e:
-            current_app.logger.error(f"Type conversion error during delete: {str(e)}")
-            return jsonify({
-                'message': 'Access denied due to ID type mismatch',
-                'error': str(e)
-            }), 403
+        # Call the implementation from delete_routes.py
+        return primary_delete_universe(universe_id)
 
     except Exception as e:
-        current_app.logger.error(f"Unexpected error deleting universe {universe_id}: {str(e)}")
+        current_app.logger.error(f"Error redirecting delete request for universe {universe_id}: {str(e)}")
         current_app.logger.error(traceback.format_exc())
 
-        return jsonify({'message': 'Error deleting universe', 'error': str(e)}), 500
+        return jsonify({
+            'message': 'Error processing delete request',
+            'error': str(e)
+        }), 500
 
 @universes_bp.route('/<int:universe_id>/characters', methods=['GET'])
 @universes_bp.route('/<int:universe_id>/characters/', methods=['GET'])
@@ -447,29 +379,37 @@ def get_universe_notes_route(universe_id):
         universe = Universe.query.get_or_404(universe_id)
         user_id = get_jwt_identity()
 
-        # Convert user_id to integer if it's a string
-        if isinstance(user_id, str) and user_id.isdigit():
-            user_id = int(user_id)
+        # Convert user_id and universe.user_id to integers for consistent comparison
+        try:
+            # Ensure both user IDs are treated as integers for comparison
+            jwt_user_id = int(user_id) if user_id is not None else None
+            universe_user_id = int(universe.user_id) if universe.user_id is not None else None
 
-        # Ensure universe.user_id is an integer for comparison
-        universe_user_id = int(universe.user_id) if universe.user_id is not None else None
+            # Check if user has access to this universe
+            if not universe.is_public and universe_user_id != jwt_user_id:
+                current_app.logger.warning(f'User {jwt_user_id} denied access to notes for universe {universe_id}')
+                return jsonify({
+                    'message': 'Access denied',
+                    'error': 'You do not have permission to access this universe'
+                }), 403
 
-        # Check if user has access to this universe
-        if not universe.is_public and universe_user_id != user_id:
+            # Get all notes for the universe
+            notes = Note.query.filter_by(
+                universe_id=universe_id,
+                is_deleted=False
+            ).all()
+
             return jsonify({
-                'message': 'Access denied'
+                'message': 'Notes retrieved successfully',
+                'notes': [note.to_dict() for note in notes]
+            }), 200
+
+        except ValueError as e:
+            current_app.logger.error(f"Type conversion error during access check: {str(e)}")
+            return jsonify({
+                'message': 'Access denied due to ID type mismatch',
+                'error': str(e)
             }), 403
-
-        # Get all notes for the universe
-        notes = Note.query.filter_by(
-            universe_id=universe_id,
-            is_deleted=False
-        ).all()
-
-        return jsonify({
-            'message': 'Notes retrieved successfully',
-            'notes': [note.to_dict() for note in notes]
-        }), 200
 
     except Exception as e:
         current_app.logger.error(f"Error retrieving notes for universe {universe_id}: {str(e)}")
@@ -490,29 +430,44 @@ def repair_universe(universe_id):
         # Get universe and check ownership
         universe = Universe.query.get_or_404(universe_id)
 
-        # Only the owner or admin can repair a universe
-        if universe.user_id != user_id:
+        # Convert user_id and universe.user_id to integers for consistent comparison
+        try:
+            # Ensure both user IDs are treated as integers for comparison
+            jwt_user_id = int(user_id) if user_id is not None else None
+            universe_user_id = int(universe.user_id) if universe.user_id is not None else None
+
+            # Only the owner or admin can repair a universe
+            if universe_user_id != jwt_user_id:
+                current_app.logger.warning(f"Access denied: User {jwt_user_id} attempted to repair universe {universe_id} owned by {universe_user_id}")
+                return jsonify({
+                    'message': 'Access denied - only the owner can repair a universe',
+                    'error': 'You do not have permission to repair this universe'
+                }), 403
+
+            # Run the repair method - use class method correctly
+            result = Universe.repair_universe(universe_id)
+
+            if result['success']:
+                # Log success
+                current_app.logger.info(f"Universe {universe_id} repaired: {result}")
+                return jsonify({
+                    'message': f"Universe {universe_id} repaired successfully",
+                    'details': result
+                }), 200
+            else:
+                # Log failure
+                current_app.logger.error(f"Failed to repair universe {universe_id}: {result}")
+                return jsonify({
+                    'message': f"Failed to repair universe {universe_id}",
+                    'error': result['message']
+                }), 500
+
+        except ValueError as e:
+            current_app.logger.error(f"Type conversion error during repair: {str(e)}")
             return jsonify({
-                'message': 'Access denied - only the owner can repair a universe'
+                'message': 'Access denied due to ID type mismatch',
+                'error': str(e)
             }), 403
-
-        # Run the repair method - use class method correctly
-        result = Universe.repair_universe(universe_id)
-
-        if result['success']:
-            # Log success
-            current_app.logger.info(f"Universe {universe_id} repaired: {result}")
-            return jsonify({
-                'message': f"Universe {universe_id} repaired successfully",
-                'details': result
-            }), 200
-        else:
-            # Log failure
-            current_app.logger.error(f"Failed to repair universe {universe_id}: {result}")
-            return jsonify({
-                'message': f"Failed to repair universe {universe_id}",
-                'error': result['message']
-            }), 500
 
     except Exception as e:
         current_app.logger.error(f"Error repairing universe {universe_id}: {str(e)}")
