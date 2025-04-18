@@ -1,28 +1,28 @@
-import PropTypes from "prop-types";
-import React, { useState, useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Form, Input, message } from "antd";
-import Button from "../../../components/common/Button";
-import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { login, demoLogin } from "../../../store/thunks/authThunks";
-import { AUTH_CONFIG, MODAL_CONFIG } from "../../../utils/config";
-import "../styles/Auth.css";
-import { log } from "../../../utils/logger";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Form, Input, message } from 'antd';
+import PropTypes from 'prop-types';
+import React, { useEffect, useId, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import Button from '../../../components/common/Button';
+import { login } from '../../../store/thunks/authThunks';
+import { log } from '../../../utils/logger';
+import '../styles/Auth.css';
 
 const LoginModal = ({ onClose }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const { error } = useSelector((state) => state.auth);
+  const instanceId = useId();
 
   // Force close function to ensure proper cleanup
   const forceClose = () => {
     // Reset modal state
-    document.body.classList.remove("modal-open");
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.width = "";
-    document.body.style.overflow = "";
+    document.body.classList.remove('modal-open');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
 
     // Call the provided onClose
     onClose();
@@ -31,19 +31,19 @@ const LoginModal = ({ onClose }) => {
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
-      log("auth", "Attempting login", { email: values.email });
+      log('auth', 'Attempting login', { email: values.email });
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(values.email)) {
-        message.error("Please enter a valid email address");
+        message.error('Please enter a valid email address');
         setLoading(false);
         return;
       }
 
       // Validate password
       if (!values.password || values.password.length < 6) {
-        message.error("Password must be at least 6 characters long");
+        message.error('Password must be at least 6 characters long');
         setLoading(false);
         return;
       }
@@ -58,8 +58,8 @@ const LoginModal = ({ onClose }) => {
       const resultAction = await dispatch(login(loginData));
 
       if (login.fulfilled.match(resultAction)) {
-        log("auth", "Login successful", { email: values.email });
-        message.success("Login successful!");
+        log('auth', 'Login successful', { email: values.email });
+        message.success('Login successful!');
 
         // Clear any stale form data
         form.resetFields();
@@ -69,31 +69,30 @@ const LoginModal = ({ onClose }) => {
           forceClose();
 
           // Dispatch a custom event to encourage components to refresh
-          window.dispatchEvent(new CustomEvent("storage"));
+          window.dispatchEvent(new CustomEvent('storage'));
         }, 500);
       } else {
-        const errorMessage =
-          resultAction.error?.message || "Invalid email or password";
-        log("auth", "Login failed", { error: errorMessage });
+        const errorMessage = resultAction.error?.message || 'Invalid email or password';
+        log('auth', 'Login failed', { error: errorMessage });
 
         // Handle specific error cases
-        if (errorMessage.includes("Invalid email or password")) {
-          message.error("Invalid email or password. Please try again.");
-        } else if (errorMessage.includes("Email and password are required")) {
-          message.error("Please enter both email and password.");
-        } else if (errorMessage.includes("Invalid JSON format")) {
-          message.error("An error occurred. Please try again.");
+        if (errorMessage.includes('Invalid email or password')) {
+          message.error('Invalid email or password. Please try again.');
+        } else if (errorMessage.includes('Email and password are required')) {
+          message.error('Please enter both email and password.');
+        } else if (errorMessage.includes('Invalid JSON format')) {
+          message.error('An error occurred. Please try again.');
         } else {
           message.error(errorMessage);
         }
 
-        form.setFieldValue("password", "");
+        form.setFieldValue('password', '');
       }
     } catch (error) {
-      const errorMessage = error.message || "Login failed. Please try again.";
-      log("auth", "Login failed", { error: errorMessage });
+      const errorMessage = error.message || 'Login failed. Please try again.';
+      log('auth', 'Login failed', { error: errorMessage });
       message.error(errorMessage);
-      form.setFieldValue("password", "");
+      form.setFieldValue('password', '');
     } finally {
       setLoading(false);
     }
@@ -107,11 +106,11 @@ const LoginModal = ({ onClose }) => {
   useEffect(() => {
     return () => {
       // Ensure body scroll is restored on unmount
-      document.body.classList.remove("modal-open");
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      document.body.style.overflow = "";
+      document.body.classList.remove('modal-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
     };
   }, []);
 
@@ -119,22 +118,17 @@ const LoginModal = ({ onClose }) => {
     <Dialog open={true} onClose={forceClose} maxWidth="sm" fullWidth>
       <DialogTitle>Login</DialogTitle>
       <DialogContent>
-        <Form
-          form={form}
-          onFinish={handleSubmit}
-          layout="vertical"
-          className="auth-form"
-        >
+        <Form form={form} onFinish={handleSubmit} layout="vertical" className="auth-form">
           <Form.Item
             label="Email"
             name="email"
             rules={[
-              { required: true, message: "Please input your email!" },
-              { type: "email", message: "Please enter a valid email!" },
+              { required: true, message: 'Please input your email!' },
+              { type: 'email', message: 'Please enter a valid email!' },
             ]}
           >
             <Input
-              id="email"
+              id={`login-email-${instanceId}`}
               placeholder="Enter your email"
               autoComplete="email"
               disabled={loading}
@@ -145,12 +139,12 @@ const LoginModal = ({ onClose }) => {
             label="Password"
             name="password"
             rules={[
-              { required: true, message: "Please input your password!" },
-              { min: 8, message: "Password must be at least 8 characters!" },
+              { required: true, message: 'Please input your password!' },
+              { min: 8, message: 'Password must be at least 8 characters!' },
             ]}
           >
             <Input.Password
-              id="password"
+              id={`login-password-${instanceId}`}
               placeholder="Enter your password"
               autoComplete="current-password"
               disabled={loading}

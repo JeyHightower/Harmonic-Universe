@@ -1,5 +1,5 @@
 .auth-form {
-  padding: 2rem;
+  padding: 1.5rem 0 0.5rem;
   width: 100%;
   max-width: 400px;
   margin: 0 auto;
@@ -141,7 +141,7 @@
 }
 
 .button-loading::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 20px;
   height: 20px;
@@ -180,5 +180,122 @@
 
   .demo-login-page h2 {
     font-size: 1.5rem;
+  }
+}
+
+/* MUI Dialog overrides for auth modals */
+.MuiDialog-paper {
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+  overflow: hidden !important;
+}
+
+.MuiDialogTitle-root {
+  padding: 1.25rem 1.5rem !important;
+  background-color: #f9fafb !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+}
+
+.MuiDialogContent-root {
+  padding: 0 1.5rem !important;
+}
+
+.MuiDialogActions-root {
+  padding: 1.25rem 1.5rem !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Form elements styling */
+.auth-form .ant-form-item {
+  margin-bottom: 1.25rem;
+}
+
+.auth-form .ant-form-item-label > label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.auth-form .ant-input,
+.auth-form .ant-input-password {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #333;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.auth-form .ant-input:focus,
+.auth-form .ant-input-password:focus,
+.auth-form .ant-input-affix-wrapper:focus,
+.auth-form .ant-input-affix-wrapper-focused {
+  outline: none;
+  border-color: #4361ee !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+}
+
+.auth-form .ant-input-affix-wrapper {
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.auth-form .ant-input-affix-wrapper .ant-input {
+  border: none;
+}
+
+.auth-form .ant-form-item-explain-error {
+  color: #e53e3e;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+/* Button styling */
+.auth-button {
+  min-width: 90px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .MuiDialogTitle-root {
+    background-color: #16213e !important;
+    border-bottom: 1px solid #2a2a3c !important;
+    color: #e2e8f0 !important;
+  }
+
+  .MuiDialogContent-root {
+    background-color: #1a1a2e !important;
+    color: #e2e8f0 !important;
+  }
+
+  .MuiDialogActions-root {
+    background-color: #1a1a2e !important;
+    border-top: 1px solid #2a2a3c !important;
+  }
+
+  .auth-form .ant-form-item-label > label {
+    color: #e2e8f0;
+  }
+
+  .auth-form .ant-input,
+  .auth-form .ant-input-password,
+  .auth-form .ant-input-affix-wrapper {
+    background-color: #16213e;
+    border-color: #2a2a3c;
+    color: #e2e8f0;
+  }
+
+  .auth-form .ant-input-affix-wrapper-focused,
+  .auth-form .ant-input:focus,
+  .auth-form .ant-input-password:focus {
+    border-color: #4361ee !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
   }
 }
