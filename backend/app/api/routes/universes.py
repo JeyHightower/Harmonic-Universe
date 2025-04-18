@@ -17,13 +17,13 @@ def get_universes():
         public_only = request.args.get('public', 'false').lower() == 'true'
         user_only = request.args.get('user_only', 'false').lower() == 'true'
         user_id = get_jwt_identity()
-        
+
         current_app.logger.info(f"Fetching universes for user {user_id}, public_only: {public_only}, user_only: {user_only}")
 
         try:
             # Build query
             query = Universe.query.filter_by(is_deleted=False)
-            
+
             current_app.logger.debug(f"Base query: {str(query)}")
 
             if user_only:
@@ -56,14 +56,14 @@ def get_universes():
                     current_app.logger.error(f"Universe ID: {universe.id}")
                     # Skip this universe but continue processing
                     continue
-            
+
             current_app.logger.info(f"Successfully formatted {len(universe_dicts)} universes")
-            
+
             return jsonify({
                 'message': 'Universes retrieved successfully',
                 'universes': universe_dicts
             }), 200
-            
+
         except Exception as inner_e:
             current_app.logger.error(f"Database error retrieving universes: {str(inner_e)}")
             current_app.logger.error(f"Traceback: {traceback.format_exc()}")
@@ -76,7 +76,7 @@ def get_universes():
         current_app.logger.error(f"Error retrieving universes: {str(e)}")
         current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         current_app.logger.error(f"Query parameters: public_only={request.args.get('public', 'false')}, user_only={request.args.get('user_only', 'false')}")
-        
+
         return jsonify({
             'message': 'Error retrieving universes',
             'error': str(e)
@@ -86,14 +86,30 @@ def get_universes():
 @jwt_required()
 def get_universe(universe_id):
     try:
-        universe = Universe.query.get_or_404(universe_id)
+        # Get the universe
+        universe = Universe.query.filter_by(id=universe_id, is_deleted=False).first()
+
+        # If universe doesn't exist or is deleted
+        if not universe:
+            current_app.logger.warning(f'Universe {universe_id} not found or deleted')
+            return jsonify({
+                'message': 'Universe not found',
+                'error': 'The requested universe does not exist or has been deleted'
+            }), 404
+
+        # Get user ID from JWT
         user_id = get_jwt_identity()
 
         # Check if user has access to this universe
         if not universe.is_public and universe.user_id != user_id:
+            current_app.logger.warning(f'User {user_id} denied access to universe {universe_id}')
             return jsonify({
-                'message': 'Access denied'
+                'message': 'Access denied',
+                'error': 'You do not have permission to access this universe'
             }), 403
+
+        # Log successful access
+        current_app.logger.info(f'User {user_id} accessed universe {universe_id}')
 
         return jsonify({
             'message': 'Universe retrieved successfully',
@@ -101,6 +117,7 @@ def get_universe(universe_id):
         }), 200
 
     except Exception as e:
+        current_app.logger.error(f'Error retrieving universe {universe_id}: {str(e)}')
         return jsonify({
             'message': 'Error retrieving universe',
             'error': str(e)
@@ -120,7 +137,7 @@ def create_universe():
 
         user_id = get_jwt_identity()
         current_app.logger.info(f'Creating universe for user {user_id}')
-        
+
         # Validate required fields
         name = data.get('name', '').strip()
         if not name:
@@ -129,7 +146,7 @@ def create_universe():
                 'message': 'Name is required',
                 'error': 'Universe name cannot be empty'
             }), 400
-            
+
         if len(name) > 100:
             current_app.logger.warning(f'Create universe attempt with too long name by user {user_id}')
             return jsonify({
@@ -157,7 +174,7 @@ def create_universe():
 
         db.session.add(universe)
         db.session.commit()
-        
+
         current_app.logger.info(f'Universe {universe.id} created successfully for user {user_id}')
         return jsonify({
             'message': 'Universe created successfully',
@@ -216,23 +233,23 @@ def delete_universe(universe_id):
     try:
         # Get the universe or return 404
         universe = Universe.query.get_or_404(universe_id)
-        
+
         # Check user permission
         user_id = get_jwt_identity()
         if universe.user_id != user_id:
             current_app.logger.warning(f"User {user_id} attempted to delete universe {universe_id} owned by user {universe.user_id}")
             return jsonify({'message': 'Access denied'}), 403
-        
+
         # Log the deletion attempt
         current_app.logger.info(f"Attempting to delete universe {universe_id} by user {user_id}")
-        
+
         # Use a simpler approach: just mark as deleted
         try:
             # Mark the universe as deleted
             current_app.logger.debug(f"Marking universe {universe_id} as deleted")
             universe.is_deleted = True
             db.session.flush()  # Flush to get immediate feedback on any DB issues
-            
+
             # Mark related entities as deleted using direct SQL updates with text()
             # This avoids loading all related objects into memory and potential cascade issues
             current_app.logger.debug(f"Marking scenes for universe {universe_id} as deleted")
@@ -240,36 +257,36 @@ def delete_universe(universe_id):
                 text("UPDATE scenes SET is_deleted = TRUE WHERE universe_id = :universe_id"),
                 {"universe_id": universe_id}
             )
-            
+
             current_app.logger.debug(f"Marking characters for universe {universe_id} as deleted")
             db.session.execute(
                 text("UPDATE characters SET is_deleted = TRUE WHERE universe_id = :universe_id"),
                 {"universe_id": universe_id}
             )
-            
+
             current_app.logger.debug(f"Marking notes for universe {universe_id} as deleted")
             db.session.execute(
                 text("UPDATE notes SET is_deleted = TRUE WHERE universe_id = :universe_id"),
                 {"universe_id": universe_id}
             )
-            
+
             # Commit all changes
             db.session.commit()
             current_app.logger.info(f"Successfully soft-deleted universe {universe_id} and all related entities")
-            
+
             return jsonify({'message': 'Universe deleted successfully'}), 200
-            
+
         except Exception as db_error:
             db.session.rollback()
             error_message = str(db_error)
             current_app.logger.error(f"Database error while deleting universe {universe_id}: {error_message}")
             current_app.logger.error(traceback.format_exc())
-            
+
             return jsonify({
-                'message': 'Error deleting universe', 
+                'message': 'Error deleting universe',
                 'error': f"Database error: {error_message[:100]}..."
             }), 500
-            
+
     except Exception as e:
         current_app.logger.error(f"Unexpected error deleting universe {universe_id}: {str(e)}")
         current_app.logger.error(traceback.format_exc())
@@ -310,19 +327,19 @@ def get_universe_characters(universe_id):
 def get_universe_scenes(universe_id):
     """
     Get scenes for a universe.
-    
+
     This endpoint redirects to the primary scenes endpoint to maintain a single source of truth.
     For new code, use /api/scenes/universe/<universe_id> instead.
     """
     try:
         current_app.logger.info(f"Redirecting scenes request for universe {universe_id} to the primary scenes endpoint")
-        
+
         # Redirect internally to the scenes endpoint
         from .scenes import get_scenes
-        
+
         # Call the primary endpoint directly
         return get_scenes(universe_id)
-        
+
     except Exception as e:
         current_app.logger.error(f"Error redirecting scenes request for universe {universe_id}: {str(e)}")
         current_app.logger.error(traceback.format_exc())
@@ -369,19 +386,19 @@ def repair_universe(universe_id):
     try:
         # Get user ID from token
         user_id = get_jwt_identity()
-        
+
         # Get universe and check ownership
         universe = Universe.query.get_or_404(universe_id)
-        
+
         # Only the owner or admin can repair a universe
         if universe.user_id != user_id:
             return jsonify({
                 'message': 'Access denied - only the owner can repair a universe'
             }), 403
-        
+
         # Run the repair method - use class method correctly
         result = Universe.repair_universe(universe_id)
-        
+
         if result['success']:
             # Log success
             current_app.logger.info(f"Universe {universe_id} repaired: {result}")
@@ -396,11 +413,11 @@ def repair_universe(universe_id):
                 'message': f"Failed to repair universe {universe_id}",
                 'error': result['message']
             }), 500
-            
+
     except Exception as e:
         current_app.logger.error(f"Error repairing universe {universe_id}: {str(e)}")
         current_app.logger.error(traceback.format_exc())
         return jsonify({
             'message': 'Error repairing universe',
             'error': str(e)
-        }), 500 
+        }), 500

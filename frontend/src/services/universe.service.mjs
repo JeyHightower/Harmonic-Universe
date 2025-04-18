@@ -3,8 +3,8 @@
  * Handles operations related to universes in the application
  */
 
-import { httpClient } from './http-client';
 import { universeEndpoints } from './endpoints';
+import { httpClient } from './http-client';
 import { responseHandler } from './response-handler';
 
 /**
@@ -30,7 +30,7 @@ export const getUniverseById = async (id) => {
     if (!id) {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
-    
+
     const response = await httpClient.get(universeEndpoints.get(id));
     return responseHandler.handleSuccess(response);
   } catch (error) {
@@ -64,7 +64,7 @@ export const updateUniverse = async (id, universeData) => {
     if (!id) {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
-    
+
     const response = await httpClient.put(universeEndpoints.update(id), universeData);
     console.log('universe', 'Universe updated successfully', { id });
     return responseHandler.handleSuccess(response);
@@ -83,7 +83,7 @@ export const deleteUniverse = async (id) => {
     if (!id) {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
-    
+
     const response = await httpClient.delete(universeEndpoints.delete(id));
     console.log('universe', 'Universe deleted successfully', { id });
     return responseHandler.handleSuccess(response);
@@ -102,7 +102,7 @@ export const getUniversePhysics = async (id) => {
     if (!id) {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
-    
+
     const response = await httpClient.get(universeEndpoints.physics(id));
     return responseHandler.handleSuccess(response);
   } catch (error) {
@@ -121,7 +121,7 @@ export const generateUniverseMusic = async (id, options = {}) => {
     if (!id) {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
-    
+
     const response = await httpClient.post(universeEndpoints.generateMusic(id), options);
     console.log('universe', 'Music generation initiated', { id });
     return responseHandler.handleSuccess(response);
@@ -141,7 +141,7 @@ export const downloadUniverseMusic = async (id, musicId) => {
     if (!id || !musicId) {
       return responseHandler.handleError(new Error('Universe ID and music ID are required'));
     }
-    
+
     const blob = await httpClient.download(universeEndpoints.getMusic(id, musicId));
     return responseHandler.handleSuccess(blob);
   } catch (error) {
@@ -163,4 +163,4 @@ export const universeService = {
   downloadUniverseMusic,
 };
 
-export default universeService; 
+export default universeService;

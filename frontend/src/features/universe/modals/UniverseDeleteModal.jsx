@@ -1,11 +1,10 @@
-import PropTypes from "prop-types";
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
-import Button from "../../../components/common/Button";
-import { ModalSystem } from "../../../components/modals/index.mjs";
-import { deleteUniverse } from "../../../store/thunks/universeThunks";
-import { MODAL_CONFIG } from "../../../utils/config";
-import "../styles/UniverseFormModal.css";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import PropTypes from 'prop-types';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import Button from '../../../components/common/Button';
+import { deleteUniverse } from '../../../store/thunks/universeThunks';
+import '../styles/UniverseFormModal.css';
 
 /**
  * Universe Delete Modal component
@@ -17,7 +16,7 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
 
   const handleDelete = async () => {
     if (!universe || !universe.id) {
-      setError("Invalid universe data");
+      setError('Invalid universe data');
       return;
     }
 
@@ -25,62 +24,54 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
     setError(null);
 
     try {
-      console.log("UniverseDeleteModal - Deleting universe:", universe.id);
+      console.log('UniverseDeleteModal - Deleting universe:', universe.id);
       await dispatch(deleteUniverse(universe.id)).unwrap();
-      console.log("UniverseDeleteModal - Universe deleted successfully");
+      console.log('UniverseDeleteModal - Universe deleted successfully');
 
       if (onSuccess) {
         onSuccess(universe.id);
       }
     } catch (err) {
-      console.error(
-        "UniverseDeleteModal - Failed to delete universe:",
-        err
-      );
-      setError(err.message || "Failed to delete universe. Please try again.");
+      console.error('UniverseDeleteModal - Failed to delete universe:', err);
+      setError(err.message || 'Failed to delete universe. Please try again.');
     } finally {
       setIsDeleting(false);
     }
   };
 
   return (
-    <ModalSystem
-      isOpen={isOpen}
+    <Dialog
+      open={isOpen}
       onClose={onClose}
-      title="Delete Universe"
+      maxWidth="sm"
+      fullWidth
       className="universe-delete-modal"
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
     >
-      <div className="delete-confirmation">
-        <p className="delete-message">
-          Are you sure you want to delete the universe &quot;{universe?.name}&quot;?
-        </p>
-        <p className="delete-warning">
-          This action cannot be undone and will delete all scenes, characters,
-          and notes associated with this universe.
-        </p>
+      <DialogTitle id="alert-dialog-title">{'Delete Universe'}</DialogTitle>
+      <DialogContent>
+        <div className="delete-confirmation">
+          <p className="delete-message">
+            Are you sure you want to delete the universe &quot;{universe?.name}&quot;?
+          </p>
+          <p className="delete-warning">
+            This action cannot be undone and will delete all scenes, characters, and notes
+            associated with this universe.
+          </p>
 
-        {error && <div className="error-message">{error}</div>}
-
-        <div className="modal-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-            disabled={isDeleting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="danger"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? "Deleting..." : "Delete Universe"}
-          </Button>
+          {error && <div className="error-message">{error}</div>}
         </div>
-      </div>
-    </ModalSystem>
+      </DialogContent>
+      <DialogActions>
+        <Button type="button" variant="secondary" onClick={onClose} disabled={isDeleting}>
+          Cancel
+        </Button>
+        <Button type="button" variant="danger" onClick={handleDelete} disabled={isDeleting}>
+          {isDeleting ? 'Deleting...' : 'Delete Universe'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
@@ -94,4 +85,4 @@ UniverseDeleteModal.propTypes = {
   }).isRequired,
 };
 
-export default UniverseDeleteModal; 
+export default UniverseDeleteModal;

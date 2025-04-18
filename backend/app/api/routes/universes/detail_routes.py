@@ -5,17 +5,29 @@ from ....extensions import db
 
 from . import universes_bp
 
-@universes_bp.route('/<int:universe_id>', methods=['GET'])
+@universes_bp.route('/<int:universe_id>/', methods=['GET'])
 @jwt_required()
 def get_universe(universe_id):
     try:
-        universe = Universe.query.get_or_404(universe_id)
+        # Get current user ID from JWT
         user_id = get_jwt_identity()
-
-        # Check if user has access to this universe
-        if not universe.is_public and universe.user_id != user_id:
+        if not user_id:
+            current_app.logger.error(f"Invalid JWT token for universe {universe_id}")
             return jsonify({
-                'message': 'Access denied'
+                'message': 'Invalid authentication token',
+                'error': 'invalid_token'
+            }), 401
+
+        # Get universe
+        universe = Universe.query.get_or_404(universe_id)
+
+        # Check access permissions
+        if not universe.is_public and universe.user_id != user_id:
+            current_app.logger.warning(f"Access denied for user {user_id} to universe {universe_id}")
+            return jsonify({
+                'message': 'Access denied',
+                'error': 'access_denied',
+                'details': 'You do not have permission to access this universe'
             }), 403
 
         return jsonify({
@@ -24,7 +36,8 @@ def get_universe(universe_id):
         }), 200
 
     except Exception as e:
+        current_app.logger.error(f"Error retrieving universe {universe_id}: {str(e)}")
         return jsonify({
             'message': 'Error retrieving universe',
             'error': str(e)
-        }), 500 
+        }), 500

@@ -1,27 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import Button from "../../../components/common/Button";
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { UniverseDeleteModal, UniverseModal } from '../';
+import Button from '../../../components/common/Button';
 import {
-  fetchScenesForUniverse,
   deleteScene,
-} from "../../../store/thunks/consolidated/scenesThunks";
-import { fetchUniverseById } from "../../../store/thunks/universeThunks";
-import "../styles/Universe.css";
-import { SceneCard, SceneModal } from "../../scene/index.mjs";
-import { UniverseModal, UniverseDeleteModal } from "../";
+  fetchScenesForUniverse,
+} from '../../../store/thunks/consolidated/scenesThunks';
+import { fetchUniverseById } from '../../../store/thunks/universeThunks';
+import { SceneCard, SceneModal } from '../../scene/index.mjs';
+import '../styles/Universe.css';
 
 const UniverseDetail = () => {
   const { id } = useParams();
   const location = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { currentUniverse, loading, error } = useSelector(
-    (state) => state.universes
-  );
-  const { scenes, loading: scenesLoading } = useSelector(
-    (state) => state.scenes
-  );
+  const { currentUniverse, loading, error } = useSelector((state) => state.universes);
+  const { scenes, loading: scenesLoading } = useSelector((state) => state.scenes);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -41,7 +37,7 @@ const UniverseDetail = () => {
 
   // Open edit modal automatically if accessed through the edit route
   useEffect(() => {
-    if (location.pathname.endsWith("/edit") && currentUniverse) {
+    if (location.pathname.endsWith('/edit') && currentUniverse) {
       setIsEditModalOpen(true);
     }
   }, [location.pathname, currentUniverse]);
@@ -53,7 +49,7 @@ const UniverseDetail = () => {
   const handleEditSuccess = () => {
     setIsEditModalOpen(false);
     // Redirect to the detail page if we're on the edit route
-    if (location.pathname.endsWith("/edit")) {
+    if (location.pathname.endsWith('/edit')) {
       navigate(`/universes/${id}`);
     } else {
       // Refresh universe data
@@ -68,7 +64,7 @@ const UniverseDetail = () => {
   const handleDeleteSuccess = () => {
     setIsDeleteModalOpen(false);
     // Navigate back to universes list after successful deletion
-    navigate("/universes");
+    navigate('/universes');
   };
 
   const handleCreateSceneClick = () => {
@@ -102,9 +98,7 @@ const UniverseDetail = () => {
   const handleDeleteScene = (scene) => {
     if (
       window.confirm(
-        `Are you sure you want to delete "${
-          scene.title || scene.name
-        }"? This cannot be undone.`
+        `Are you sure you want to delete "${scene.title || scene.name}"? This cannot be undone.`
       )
     ) {
       dispatch(deleteScene(scene.id))
@@ -112,7 +106,7 @@ const UniverseDetail = () => {
           dispatch(fetchScenesForUniverse(id));
         })
         .catch((error) => {
-          console.error("Error deleting scene:", error);
+          console.error('Error deleting scene:', error);
         });
     }
   };
@@ -121,15 +115,13 @@ const UniverseDetail = () => {
   const handleEditModalClose = () => {
     setIsEditModalOpen(false);
     // Redirect to detail page if accessed via edit route
-    if (location.pathname.endsWith("/edit")) {
+    if (location.pathname.endsWith('/edit')) {
       navigate(`/universes/${id}`);
     }
   };
 
   // Filter scenes for this universe
-  const universeScenes = scenes.filter(
-    (scene) => scene.universe_id === parseInt(id, 10)
-  );
+  const universeScenes = scenes.filter((scene) => scene.universe_id === parseInt(id, 10));
 
   if (loading && !currentUniverse) {
     return (
@@ -142,11 +134,11 @@ const UniverseDetail = () => {
 
   if (error) {
     // Format error message based on different possible error formats
-    let errorMessage = "Unknown error occurred";
+    let errorMessage = 'Unknown error occurred';
 
-    if (typeof error === "string") {
+    if (typeof error === 'string') {
       errorMessage = error;
-    } else if (typeof error === "object") {
+    } else if (typeof error === 'object') {
       errorMessage =
         error.message ||
         error.error ||
@@ -158,9 +150,7 @@ const UniverseDetail = () => {
       <div className="error-container">
         <h2>Error</h2>
         <p>{errorMessage}</p>
-        <Button onClick={() => navigate("/universes")}>
-          Back to Universes
-        </Button>
+        <Button onClick={() => navigate('/universes')}>Back to Universes</Button>
       </div>
     );
   }
@@ -170,12 +160,10 @@ const UniverseDetail = () => {
       <div className="not-found-container">
         <h2>Universe Not Found</h2>
         <p>
-          The universe you&apos;re looking for doesn&apos;t exist or you don&apos;t have
-          permission to view it.
+          The universe you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission
+          to view it.
         </p>
-        <Button onClick={() => navigate("/universes")}>
-          Back to Universes
-        </Button>
+        <Button onClick={() => navigate('/universes')}>Back to Universes</Button>
       </div>
     );
   }
@@ -187,11 +175,9 @@ const UniverseDetail = () => {
           <h1>{currentUniverse.name}</h1>
           <div className="universe-meta">
             <span
-              className={`universe-visibility ${
-                currentUniverse.is_public ? "public" : "private"
-              }`}
+              className={`universe-visibility ${currentUniverse.is_public ? 'public' : 'private'}`}
             >
-              {currentUniverse.is_public ? "Public" : "Private"}
+              {currentUniverse.is_public ? 'Public' : 'Private'}
             </span>
             {currentUniverse.theme && (
               <span className="universe-theme">{currentUniverse.theme}</span>
@@ -297,4 +283,4 @@ const UniverseDetail = () => {
   );
 };
 
-export default UniverseDetail; 
+export default UniverseDetail;

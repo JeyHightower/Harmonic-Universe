@@ -15,12 +15,10 @@ const { API_PREFIX } = API_SERVICE_CONFIG;
 const endpoint = (path) => {
   // Ensure path starts with a slash if not empty
   const formattedPath = path.startsWith('/') ? path : `/${path}`;
-  
+
   // Add trailing slash if not present to avoid redirects
-  const pathWithTrailingSlash = formattedPath.endsWith('/') 
-    ? formattedPath 
-    : `${formattedPath}/`;
-  
+  const pathWithTrailingSlash = formattedPath.endsWith('/') ? formattedPath : `${formattedPath}/`;
+
   // Don't add API_PREFIX here as it will be added by formatUrl in http-client.mjs
   console.log(`Endpoint: ${path} -> ${pathWithTrailingSlash}`);
   return pathWithTrailingSlash;
@@ -33,7 +31,7 @@ const endpoint = (path) => {
 const endpointNoSlash = (path) => {
   // Ensure path starts with a slash if not empty
   const formattedPath = path.startsWith('/') ? path : `/${path}`;
-  
+
   // Don't add API_PREFIX here as it will be added by formatUrl in http-client.mjs
   console.log(`Endpoint (no slash): ${path} -> ${formattedPath}`);
   return formattedPath;
@@ -137,7 +135,7 @@ export const physicsEndpoints = {
   parameters: {
     get: (universeId) => endpoint(`/universes/${universeId}/physics`),
     update: (universeId) => endpoint(`/universes/${universeId}/physics`),
-  }
+  },
 };
 
 /**
