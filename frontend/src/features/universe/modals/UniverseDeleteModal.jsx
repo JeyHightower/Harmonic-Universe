@@ -25,11 +25,19 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
 
     try {
       console.log('UniverseDeleteModal - Deleting universe:', universe.id);
-      await dispatch(deleteUniverse(universe.id)).unwrap();
-      console.log('UniverseDeleteModal - Universe deleted successfully');
+      // Execute the delete operation and wait for it to complete
+      const result = await dispatch(deleteUniverse(universe.id)).unwrap();
+      console.log('UniverseDeleteModal - Universe deleted successfully:', result);
 
+      // Call onSuccess callback with the deleted universe ID first
+      // This ensures parent components update their state before modal closes
       if (onSuccess) {
         onSuccess(universe.id);
+      }
+
+      // Then close the modal
+      if (onClose) {
+        onClose();
       }
     } catch (err) {
       console.error('UniverseDeleteModal - Failed to delete universe:', err);

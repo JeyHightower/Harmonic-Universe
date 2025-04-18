@@ -1,20 +1,19 @@
 /**
  * Universe Manager Component
- * 
+ *
  * This component provides a comprehensive interface for managing universes,
  * including listing, creating, editing, and deleting universes.
  */
 
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { fetchUniverses } from "../../../store/thunks/universeThunks";
-import Button from "../../../components/common/Button";
-import Icon from "../../../components/common/Icon";
-import { ModalSystem } from "../../../components/modals/index.mjs";
-import Spinner from "../../../components/common/Spinner";
-import "../styles/Universe.css";
-import { UniverseModal, UniverseDeleteModal } from "../";
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { UniverseDeleteModal, UniverseModal } from '../';
+import Button from '../../../components/common/Button';
+import Icon from '../../../components/common/Icon';
+import Spinner from '../../../components/common/Spinner';
+import { fetchUniverses } from '../../../store/thunks/universeThunks';
+import '../styles/Universe.css';
 
 const UniverseManager = () => {
   const dispatch = useDispatch();
@@ -36,25 +35,25 @@ const UniverseManager = () => {
 
   const handleCreateUniverse = () => {
     setSelectedUniverse(null);
-    setModalMode("create");
+    setModalMode('create');
     setIsModalVisible(true);
   };
 
   const handleViewUniverse = (universe) => {
     setSelectedUniverse(universe);
-    setModalMode("view");
+    setModalMode('view');
     setIsModalVisible(true);
   };
 
   const handleEditUniverse = (universe) => {
     setSelectedUniverse(universe);
-    setModalMode("edit");
+    setModalMode('edit');
     setIsModalVisible(true);
   };
 
   const handleDeleteUniverse = (universe) => {
     setSelectedUniverse(universe);
-    setModalMode("delete");
+    setModalMode('delete');
     setIsModalVisible(true);
   };
 
@@ -62,12 +61,25 @@ const UniverseManager = () => {
     setIsModalVisible(false);
   };
 
-  const handleModalSuccess = (action) => {
-    if (action === "delete") {
-      // No need to navigate, just refresh the list
-      handleRefresh();
-    } else if (action === "create" || action === "update") {
-      handleRefresh();
+  const handleModalSuccess = (universe, action) => {
+    // Log the successful operation first
+    console.log(`Universe ${action} successful:`, universe);
+
+    // No need to refresh the universe list after create/update/delete
+    // Redux already updates the store state which will reflect in the UI
+
+    // If it's a newly created universe, navigate to it after a short delay to ensure UI update
+    if (action === 'create' && universe && universe.id) {
+      // Close the modal
+      setIsModalVisible(false);
+
+      // Navigate to the new universe
+      setTimeout(() => {
+        handleNavigateToUniverse(universe.id);
+      }, 100); // Small delay to ensure Redux state is properly updated
+    } else {
+      // For other actions (edit, delete), just close the modal
+      setIsModalVisible(false);
     }
   };
 
@@ -125,7 +137,7 @@ const UniverseManager = () => {
             <div className="universe-item-content">
               <h3 className="universe-item-title">{universe.name}</h3>
               <p className="universe-item-description">
-                {universe.description || "No description"}
+                {universe.description || 'No description'}
               </p>
             </div>
             <div className="universe-item-actions">
@@ -171,11 +183,7 @@ const UniverseManager = () => {
           <h2>Universe Manager</h2>
         </div>
         <div className="universe-manager-actions">
-          <Button
-            variant="secondary"
-            onClick={handleRefresh}
-            disabled={loading}
-          >
+          <Button variant="secondary" onClick={handleRefresh} disabled={loading}>
             <Icon name="refresh" size="small" />
             Refresh
           </Button>
@@ -192,7 +200,7 @@ const UniverseManager = () => {
         <UniverseModal
           isOpen={isModalVisible}
           onClose={handleModalClose}
-          onSuccess={() => handleModalSuccess('create')}
+          onSuccess={(universe) => handleModalSuccess(universe, 'create')}
           isEdit={false}
         />
       )}
@@ -201,7 +209,7 @@ const UniverseManager = () => {
         <UniverseModal
           isOpen={isModalVisible}
           onClose={handleModalClose}
-          onSuccess={() => handleModalSuccess('update')}
+          onSuccess={(universe) => handleModalSuccess(universe, 'update')}
           universe={selectedUniverse}
           isEdit={true}
         />
@@ -211,7 +219,7 @@ const UniverseManager = () => {
         <UniverseDeleteModal
           isOpen={isModalVisible}
           onClose={handleModalClose}
-          onSuccess={() => handleModalSuccess('delete')}
+          onSuccess={(universe) => handleModalSuccess(universe, 'delete')}
           universe={selectedUniverse}
         />
       )}
@@ -219,4 +227,4 @@ const UniverseManager = () => {
   );
 };
 
-export default UniverseManager; 
+export default UniverseManager;

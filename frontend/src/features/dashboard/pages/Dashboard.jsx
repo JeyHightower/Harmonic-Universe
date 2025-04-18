@@ -209,13 +209,18 @@ const Dashboard = () => {
 
   const handleCreateSuccess = (universe) => {
     console.log('Dashboard - Create success with universe:', universe);
-    setIsCreateModalOpen(false);
 
+    // Set the new universe ID first so UI can highlight it
     if (universe && universe.id) {
       setNewUniverseId(universe.id);
     }
 
-    loadUniverses();
+    // Close modal after a small delay
+    setTimeout(() => {
+      setIsCreateModalOpen(false);
+    }, 50);
+
+    // No need to refetch - Redux state already has the new universe
   };
 
   const handleViewUniverse = (universe) => {
@@ -249,9 +254,14 @@ const Dashboard = () => {
 
   const handleEditSuccess = (updatedUniverse) => {
     console.log('Universe updated:', updatedUniverse);
-    setIsEditModalOpen(false);
-    setSelectedUniverse(null);
-    loadUniverses();
+
+    // Close modal after a small delay to ensure Redux state is updated first
+    setTimeout(() => {
+      setIsEditModalOpen(false);
+      setSelectedUniverse(null);
+    }, 50);
+
+    // No need to refetch - Redux state already has the updated universe
   };
 
   const handleDeleteUniverse = (universe) => {
@@ -264,14 +274,22 @@ const Dashboard = () => {
     if (selectedUniverse) {
       console.log('Confirming delete for universe:', selectedUniverse);
       try {
-        await dispatch(deleteUniverse(selectedUniverse.id));
+        await dispatch(deleteUniverse(selectedUniverse.id)).unwrap();
         console.log('Universe deleted successfully');
-        loadUniverses();
+
+        // Update UI after a small delay to ensure Redux updates are processed
+        setTimeout(() => {
+          setIsDeleteModalOpen(false);
+          setSelectedUniverse(null);
+        }, 50);
+
+        // No need to refetch - Redux state already removes the deleted universe
       } catch (error) {
         console.error('Error deleting universe:', error);
+        // Still close modal on error
+        setIsDeleteModalOpen(false);
+        setSelectedUniverse(null);
       }
-      setIsDeleteModalOpen(false);
-      setSelectedUniverse(null);
     }
   };
 

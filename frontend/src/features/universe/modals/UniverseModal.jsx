@@ -113,84 +113,45 @@ const UniverseModal = ({
     }
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
 
-    // Don't submit in view mode
-    if (isViewMode) {
-      onClose();
-      return;
-    }
+    const isValid = validateForm();
+    if (!isValid) return;
 
     setIsSubmitting(true);
     setErrors({});
 
-    // Validate form inputs
-    const isValid = validateForm();
-    if (!isValid) {
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      // Prepare the universe data for API submission
-      const universeData = {
-        name: formData.name.trim(),
-        description: formData.description.trim() || '',
-        genre: formData.genre?.trim() || '',
-        theme: formData.theme?.trim() || '',
-        is_public: formData.is_public,
-      };
+      console.log('UniverseModal - Submitting universe data:', formData);
 
-      // Call the appropriate API function based on mode
+      // Call the appropriate action based on whether we're creating or editing
       const result = isEditMode
-        ? await dispatch(updateUniverse({ id: universe.id, ...universeData })).unwrap()
-        : await dispatch(createUniverse(universeData)).unwrap();
+        ? await dispatch(updateUniverse({ id: universe.id, ...formData })).unwrap()
+        : await dispatch(createUniverse(formData)).unwrap();
 
-      console.log(`UniverseModal - ${isEditMode ? 'Update' : 'Create'} result:`, result);
+      console.log('UniverseModal - Universe saved successfully:', result);
 
-      // Close the modal
+      // Extract the universe data from the result
+      let resultUniverse = null;
+      if (result?.universe) {
+        resultUniverse = result.universe;
+      } else if (result?.id) {
+        resultUniverse = result;
+      }
+
+      // Call the success callback with the result first
+      if (onSuccess && resultUniverse) {
+        onSuccess(resultUniverse, isEditMode ? 'edit' : 'create');
+      }
+
+      // Then close the modal
       if (onClose) {
         onClose();
       }
-
-      // Call the success callback with the result
-      if (onSuccess) {
-        // Extract the universe data from the response
-        let universeData = null;
-
-        if (result && typeof result === 'object') {
-          // Handle different response formats
-          if (result.universe && typeof result.universe === 'object') {
-            universeData = result.universe;
-          } else if (result.data && result.data.universe) {
-            universeData = result.data.universe;
-          } else if (result.id) {
-            universeData = result;
-          } else if (
-            result.universes &&
-            Array.isArray(result.universes) &&
-            result.universes.length > 0
-          ) {
-            universeData = result.universes[0];
-          } else {
-            universeData = result;
-          }
-        } else {
-          universeData = result;
-        }
-
-        console.log('UniverseModal - Calling onSuccess with data:', universeData);
-        // For compatibility with both callback styles
-        if (isEditMode) {
-          onSuccess(universeData, 'edit');
-        } else {
-          onSuccess(universeData, 'create');
-        }
-      }
     } catch (err) {
       console.error('UniverseModal - Failed to save universe:', err);
-      // Set form-wide error message
       setErrors((prev) => ({
         ...prev,
         form: err.message || 'Failed to save universe. Please try again.',

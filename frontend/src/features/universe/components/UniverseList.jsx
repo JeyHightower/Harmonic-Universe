@@ -1,23 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
-import Button from "../../../components/common/Button";
-import { fetchUniverses } from "../../../store/thunks/universeThunks";
-import "../styles/UniverseList.css";
-import { UniverseModal, UniverseDeleteModal } from "../index.mjs";
-import UniverseCard from "./UniverseCard";
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
+import Button from '../../../components/common/Button';
+import { fetchUniverses } from '../../../store/thunks/universeThunks';
+import { UniverseDeleteModal, UniverseModal } from '../index.mjs';
+import '../styles/UniverseList.css';
+import UniverseCard from './UniverseCard';
 
 const UniverseList = () => {
   const dispatch = useDispatch();
   const { universes, loading, error } = useSelector((state) => state.universe);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [universeToDelete, setUniverseToDelete] = useState(null);
-  const [filter, setFilter] = useState("all"); // 'all', 'public', 'private'
-  const [sortBy, setSortBy] = useState("updated_at"); // 'name', 'created_at', 'updated_at'
-  const [sortOrder, setSortOrder] = useState("desc"); // 'asc', 'desc'
+  const [filter, setFilter] = useState('all'); // 'all', 'public', 'private'
+  const [sortBy, setSortBy] = useState('updated_at'); // 'name', 'created_at', 'updated_at'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
 
   useEffect(() => {
-    // Fetch universes when component mounts
+    // Fetch universes only once when component mounts
     dispatch(fetchUniverses());
   }, [dispatch]);
 
@@ -25,20 +25,26 @@ const UniverseList = () => {
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateSuccess = () => {
-    setIsCreateModalOpen(false);
-    // Refresh the list after creating a new universe
-    dispatch(fetchUniverses());
+  const handleCreateSuccess = (newUniverse) => {
+    console.log('Universe created successfully:', newUniverse);
+    // Add a small delay before closing the modal to ensure Redux state is updated first
+    setTimeout(() => {
+      setIsCreateModalOpen(false);
+    }, 50);
+    // No need to refetch - Redux state is already updated
   };
 
   const handleDeleteClick = (universe) => {
     setUniverseToDelete(universe);
   };
 
-  const handleDeleteSuccess = () => {
-    setUniverseToDelete(null);
-    // Refresh the list after deleting a universe
-    dispatch(fetchUniverses());
+  const handleDeleteSuccess = (deletedId) => {
+    console.log('Universe deleted successfully:', deletedId);
+    // Add a small delay before clearing state to ensure Redux update is processed
+    setTimeout(() => {
+      setUniverseToDelete(null);
+    }, 50);
+    // No need to refetch - Redux state is already updated
   };
 
   const handleSortChange = (e) => {
@@ -46,37 +52,36 @@ const UniverseList = () => {
   };
 
   const handleSortOrderToggle = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
   };
 
   // Filter and sort universes
   const filteredAndSortedUniverses = [...universes]
     .filter((universe) => {
-      if (filter === "all") return true;
-      if (filter === "public") return universe.is_public;
-      if (filter === "private") return !universe.is_public;
+      if (filter === 'all') return true;
+      if (filter === 'public') return universe.is_public;
+      if (filter === 'private') return !universe.is_public;
       return true;
     })
     .sort((a, b) => {
       let comparison = 0;
 
       switch (sortBy) {
-        case "name":
+        case 'name':
           comparison = a.name.localeCompare(b.name);
           break;
-        case "created_at":
+        case 'created_at':
           comparison = new Date(a.created_at) - new Date(b.created_at);
           break;
-        case "updated_at":
+        case 'updated_at':
           comparison =
-            new Date(a.updated_at || a.created_at) -
-            new Date(b.updated_at || b.created_at);
+            new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at);
           break;
         default:
           comparison = 0;
       }
 
-      return sortOrder === "asc" ? comparison : -comparison;
+      return sortOrder === 'asc' ? comparison : -comparison;
     });
 
   return (
@@ -86,34 +91,30 @@ const UniverseList = () => {
         <div className="universe-list-actions">
           <div className="filter-buttons">
             <Button
-              variant={filter === "all" ? "primary" : "secondary"}
+              variant={filter === 'all' ? 'primary' : 'secondary'}
               size="small"
-              onClick={() => setFilter("all")}
+              onClick={() => setFilter('all')}
             >
               All
             </Button>
             <Button
-              variant={filter === "public" ? "primary" : "secondary"}
+              variant={filter === 'public' ? 'primary' : 'secondary'}
               size="small"
-              onClick={() => setFilter("public")}
+              onClick={() => setFilter('public')}
             >
               Public
             </Button>
             <Button
-              variant={filter === "private" ? "primary" : "secondary"}
+              variant={filter === 'private' ? 'primary' : 'secondary'}
               size="small"
-              onClick={() => setFilter("private")}
+              onClick={() => setFilter('private')}
             >
               Private
             </Button>
           </div>
 
           <div className="sort-controls">
-            <select
-              value={sortBy}
-              onChange={handleSortChange}
-              className="sort-select"
-            >
+            <select value={sortBy} onChange={handleSortChange} className="sort-select">
               <option value="updated_at">Last Updated</option>
               <option value="created_at">Date Created</option>
               <option value="name">Name</option>
@@ -124,7 +125,7 @@ const UniverseList = () => {
               onClick={handleSortOrderToggle}
               className="sort-order-button"
             >
-              {sortOrder === "asc" ? "↑" : "↓"}
+              {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
 
@@ -150,16 +151,10 @@ const UniverseList = () => {
                 <Link to={`/universes/${universe.id}`} className="view-button">
                   View
                 </Link>
-                <Link
-                  to={`/universes/${universe.id}/edit`}
-                  className="edit-button"
-                >
+                <Link to={`/universes/${universe.id}/edit`} className="edit-button">
                   Edit
                 </Link>
-                <button
-                  className="delete-button"
-                  onClick={() => handleDeleteClick(universe)}
-                >
+                <button className="delete-button" onClick={() => handleDeleteClick(universe)}>
                   Delete
                 </button>
               </div>
@@ -197,4 +192,4 @@ const UniverseList = () => {
   );
 };
 
-export default UniverseList; 
+export default UniverseList;
