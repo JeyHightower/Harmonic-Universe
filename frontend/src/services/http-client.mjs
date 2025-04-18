@@ -4,12 +4,10 @@
  */
 
 import axios from 'axios';
-import { API_CONFIG, AUTH_CONFIG } from '../utils/config';
+import { API_CONFIG } from '../utils/config';
+import { log } from '../utils/logger.mjs';
+import { clearAuthData, getToken } from './auth.service.mjs';
 import { API_SERVICE_CONFIG } from './config.mjs';
-import { log, logError } from '../utils/logger.mjs';
-import * as authServiceModule from './auth.service.mjs';
-import { demoUserService } from './demo-user.service.mjs';
-import { refreshToken, getToken, logout, clearAuthData } from './auth.service.mjs';
 
 let isRefreshing = false;
 let refreshPromise = null;
@@ -44,10 +42,10 @@ const shouldUseCorsProxy = () => {
     // Only use the proxy if specifically enabled to avoid unnecessary proxying
     const forceCorsProxy = localStorage.getItem('force_cors_proxy') === 'true';
     const useCorsProxy = localStorage.getItem('use_cors_proxy') === 'true';
-    
+
     // For debugging authentication issues
     const useProxyForAuth = localStorage.getItem('use_proxy_for_auth') === 'true';
-    
+
     return forceCorsProxy || useCorsProxy || useProxyForAuth;
   }
   return false;
@@ -56,19 +54,19 @@ const shouldUseCorsProxy = () => {
 // Get the appropriate CORS proxy URL if needed
 const getCorsProxyUrl = (url) => {
   if (!shouldUseCorsProxy()) return url;
-  
+
   // Don't add proxy for URLs that already have it
   if (url.includes('https://cors-anywhere.herokuapp.com/')) return url;
-  
+
   // Determine which CORS proxy to use
   const preferredProxy = localStorage.getItem('cors_proxy_url');
-  
+
   logApiOperation('cors-proxy', { url, preferredProxy });
-  
+
   if (preferredProxy) {
     return `${preferredProxy}${url}`;
   }
-  
+
   // Default to cors-anywhere
   return `https://cors-anywhere.herokuapp.com/${url}`;
 };
@@ -142,7 +140,7 @@ const axiosInstance = axios.create({
   timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
     // Remove Origin header as it's a protected header that can't be set manually
   },
   withCredentials: true, // Important for CORS with credentials
@@ -156,27 +154,33 @@ const enableCorsDebugging = () => {
     // Only enable in development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       console.log('CORS debugging enabled');
-      
+
       // Monitor CORS-related console errors
       const originalConsoleError = console.error;
-      console.error = function(...args) {
+      console.error = function (...args) {
         const errorMessage = args.join(' ');
         if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
-          console.log('%c CORS ERROR DETECTED! ', 'background: #e74c3c; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;');
+          console.log(
+            '%c CORS ERROR DETECTED! ',
+            'background: #e74c3c; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;'
+          );
           console.log('Request details:', {
             baseURL: axiosInstance.defaults.baseURL,
             withCredentials: axiosInstance.defaults.withCredentials,
           });
-          
+
           // Suggest enabling CORS proxy
-          console.log('%c Try enabling CORS proxy: localStorage.setItem("use_cors_proxy", "true") and refresh ', 'background: #3498db; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;');
-          
+          console.log(
+            '%c Try enabling CORS proxy: localStorage.setItem("use_cors_proxy", "true") and refresh ',
+            'background: #3498db; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;'
+          );
+
           // Store info for debugging
           if (window.apiDebug) {
             window.apiDebug.corsErrors = window.apiDebug.corsErrors || [];
             window.apiDebug.corsErrors.push({
               time: new Date().toISOString(),
-              message: errorMessage
+              message: errorMessage,
             });
           }
         }
@@ -194,8 +198,8 @@ logApiOperation('api-client-initialized', {
   baseURL: getBaseUrl(),
   config: {
     withCredentials: true,
-    timeout: API_CONFIG.TIMEOUT
-  }
+    timeout: API_CONFIG.TIMEOUT,
+  },
 });
 
 // Simple in-memory cache for GET requests
@@ -226,7 +230,7 @@ axiosInstance.interceptors.request.use(
     logApiOperation('request-interceptor', {
       url: config.url,
       method: config.method,
-      headers: config.headers
+      headers: config.headers,
     });
 
     // Add CORS proxy if needed
@@ -247,7 +251,7 @@ axiosInstance.interceptors.request.use(
   (error) => {
     logApiOperation('request-error', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
     return Promise.reject(error);
   }
@@ -256,18 +260,15 @@ axiosInstance.interceptors.request.use(
 // Response interceptor with enhanced error handling
 axiosInstance.interceptors.response.use(
   (response) => {
-    logApiOperation("response-success", {
+    logApiOperation('response-success', {
       status: response.status,
       url: response.config.url,
-      data:
-        typeof response.data === "object"
-          ? Object.keys(response.data)
-          : typeof response.data,
+      data: typeof response.data === 'object' ? Object.keys(response.data) : typeof response.data,
     });
     return response;
   },
   async (error) => {
-    logApiOperation("response-error", {
+    logApiOperation('response-error', {
       message: error.message,
       status: error.response?.status,
       url: error.config?.url,
@@ -291,29 +292,33 @@ axiosInstance.interceptors.response.use(
 
     // Handle Method Not Allowed (405) errors
     if (error.response?.status === 405) {
-      logApiOperation("method-not-allowed", {
+      logApiOperation('method-not-allowed', {
         url: originalRequest.url,
         method: originalRequest.method,
       });
-      
+
       // Check if this is an API endpoint that might be misconfigured
       if (originalRequest.url.includes('/api/')) {
-        console.error(`Method Not Allowed (405) for ${originalRequest.method} ${originalRequest.url}`);
-        console.log('This may indicate a mismatch between frontend and backend endpoint configuration.');
-        
+        console.error(
+          `Method Not Allowed (405) for ${originalRequest.method} ${originalRequest.url}`
+        );
+        console.log(
+          'This may indicate a mismatch between frontend and backend endpoint configuration.'
+        );
+
         // Try to modify the URL by adding or removing trailing slash
         const modifiedUrl = originalRequest.url.endsWith('/')
           ? originalRequest.url.slice(0, -1)
           : originalRequest.url + '/';
-          
+
         console.log(`Attempting to retry with modified URL: ${modifiedUrl}`);
-        
+
         // Create a new request with the modified URL
         const retryRequest = { ...originalRequest };
         retryRequest.url = modifiedUrl;
         retryRequest._methodNotAllowedRetry = true;
-        
-        return axiosInstance(retryRequest).catch(retryError => {
+
+        return axiosInstance(retryRequest).catch((retryError) => {
           console.error('Modified URL retry also failed:', retryError.message);
           return Promise.reject(error); // Return the original error if retry fails
         });
@@ -324,12 +329,12 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 429) {
       const retryAfter = error.response.headers['retry-after'];
       const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
-      
-      logApiOperation("rate-limit-hit", { waitTime, retryAfter });
-      
+
+      logApiOperation('rate-limit-hit', { waitTime, retryAfter });
+
       // Wait for the specified time then retry
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+
       // Retry the request
       return axiosInstance(originalRequest);
     }
@@ -338,13 +343,13 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Prevent infinite retry loops
       originalRequest._retry = true;
-      logApiOperation("token-refresh-attempt");
+      logApiOperation('token-refresh-attempt');
 
       try {
         // Check if we have a token to refresh
         const currentToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
         if (!currentToken) {
-          logApiOperation("token-refresh-failed", { reason: "No token available to refresh" });
+          logApiOperation('token-refresh-failed', { reason: 'No token available to refresh' });
           // Clear auth data and redirect to login
           clearAuthData();
           if (!window.location.pathname.includes('/login')) {
@@ -352,11 +357,11 @@ axiosInstance.interceptors.response.use(
           }
           return Promise.reject(new Error('Authentication required - no token available'));
         }
-        
+
         // Get refresh token and validate format
         const refreshToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
         if (!refreshToken) {
-          logApiOperation("token-refresh-failed", { reason: "No refresh token available" });
+          logApiOperation('token-refresh-failed', { reason: 'No refresh token available' });
           clearAuthData();
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
@@ -367,14 +372,14 @@ axiosInstance.interceptors.response.use(
         // Validate refresh token format before attempting to use it
         const tokenParts = refreshToken.split('.');
         if (tokenParts.length !== 3) {
-          logApiOperation("token-refresh-failed", { reason: "Invalid refresh token format" });
+          logApiOperation('token-refresh-failed', { reason: 'Invalid refresh token format' });
           clearAuthData();
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
           return Promise.reject(new Error('Invalid refresh token format'));
         }
-        
+
         // Check if we're already refreshing to prevent multiple refresh calls
         if (!isRefreshing) {
           isRefreshing = true;
@@ -383,7 +388,7 @@ axiosInstance.interceptors.response.use(
 
         // Wait for the refresh to complete
         const newToken = await refreshPromise;
-        
+
         // Reset refresh state
         isRefreshing = false;
         refreshPromise = null;
@@ -392,7 +397,7 @@ axiosInstance.interceptors.response.use(
           // Update Authorization header
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-          
+
           // Retry the original request
           return axiosInstance(originalRequest);
         } else {
@@ -402,30 +407,30 @@ axiosInstance.interceptors.response.use(
           return Promise.reject(new Error('Token refresh failed - no new token'));
         }
       } catch (refreshError) {
-        logApiOperation("token-refresh-failed", {
+        logApiOperation('token-refresh-failed', {
           error: refreshError.message,
         });
-        
+
         // Reset refresh state
         isRefreshing = false;
         refreshPromise = null;
-        
+
         // Clear auth data and redirect to login on refresh failure
         clearAuthData();
-        
+
         // Only redirect to login if not already on login page
         const currentPath = window.location.pathname;
         if (!currentPath.includes('/login')) {
           window.location.href = '/login';
         }
-        
+
         return Promise.reject(refreshError);
       }
     }
 
     // Handle CORS errors
     if (error.message?.includes('Network Error') || error.message?.includes('CORS')) {
-      logApiOperation("cors-error", {
+      logApiOperation('cors-error', {
         url: error.config?.url,
         headers: error.config?.headers,
       });
@@ -441,13 +446,18 @@ axiosInstance.interceptors.response.use(
       // Try to automatically enable CORS proxy if the error persists
       const corsErrorCount = window.apiDebug?.corsErrors?.length || 0;
       if (corsErrorCount > 3 && !localStorage.getItem('use_cors_proxy')) {
-        console.log('%c Automatically enabling CORS proxy after multiple errors ', 'background: #f39c12; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;');
+        console.log(
+          '%c Automatically enabling CORS proxy after multiple errors ',
+          'background: #f39c12; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;'
+        );
         localStorage.setItem('use_cors_proxy', 'true');
-        
+
         // Show a notification to the user
         if (typeof window !== 'undefined' && !window.corsproxy_notification_shown) {
           window.corsproxy_notification_shown = true;
-          alert('Network connectivity issues detected. Enabling CORS proxy to improve connectivity. Please refresh the page.');
+          alert(
+            'Network connectivity issues detected. Enabling CORS proxy to improve connectivity. Please refresh the page.'
+          );
         }
       }
 
@@ -483,20 +493,20 @@ const formatUrl = (url) => {
   if (!url.startsWith('/')) {
     url = '/' + url;
   }
-  
+
   // Strip any existing /api prefix to prevent duplication
   if (url.startsWith('/api/')) {
-    url = url.substring(4);  // Remove the '/api' part
+    url = url.substring(4); // Remove the '/api' part
   }
-  
+
   // Now add the /api prefix
   url = '/api' + url;
-  
+
   // Ensure trailing slash to prevent redirects
   if (!url.endsWith('/')) {
     url = url + '/';
   }
-  
+
   console.log(`Formatted URL: ${url}`);
   return url;
 };
@@ -512,7 +522,7 @@ const getCachedResponse = (url, options) => {
   if (!API_SERVICE_CONFIG.CACHE.ENABLED || options.cache === false) {
     return null;
   }
-  
+
   const cached = cache.get(url);
   if (cached) {
     const now = Date.now();
@@ -538,100 +548,120 @@ const cacheResponse = (url, data, options) => {
   if (!API_SERVICE_CONFIG.CACHE.ENABLED || options.cache === false) {
     return;
   }
-  
+
   cache.set(url, {
     data,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
   log('api', 'Cached response', { url });
 };
 
 /**
- * Handle retry logic for rate limited requests
- * @param {Function} requestFn - The request function to call
- * @param {object} options - Request options
- * @returns {Promise<any>} - Response data
+ * Try alternative URLs if primary request fails for certain status codes
+ * @param {string} url - The original URL
+ * @param {string} method - The HTTP method
+ * @param {Error} error - The error from the original request
+ * @returns {string|null} - Alternative URL or null if no alternative
  */
+const getAlternativeUrl = (url, method, error) => {
+  // Only try alternatives for certain status codes
+  if (error.response?.status !== 404 && error.response?.status !== 405) {
+    return null;
+  }
+
+  logApiOperation('trying-alternative-url', {
+    originalUrl: url,
+    method,
+    status: error.response?.status,
+  });
+
+  // Special case for the refresh endpoint
+  if (url.includes('/auth/') && method.toLowerCase() === 'post') {
+    if (url.endsWith('/')) {
+      return url.slice(0, -1); // Remove trailing slash
+    } else {
+      return url + '/'; // Add trailing slash
+    }
+  }
+
+  // For universe endpoints
+  if (url.includes('/universes/') && !url.includes('/universes/list')) {
+    if (url.endsWith('/')) {
+      return url.slice(0, -1); // Remove trailing slash
+    } else {
+      return url + '/'; // Add trailing slash
+    }
+  }
+
+  return null;
+};
+
+// Update the withRetry function to use getAlternativeUrl
 const withRetry = async (requestFn, options = {}) => {
-  const maxRetries = options.maxRetries || API_SERVICE_CONFIG.RETRY.MAX_RETRIES;
-  const initialRetryDelay = options.retryDelay || API_SERVICE_CONFIG.RETRY.RETRY_DELAY;
-  const retryStatuses = options.retryStatuses || API_SERVICE_CONFIG.RETRY.RETRY_STATUSES;
-  const backoffFactor = API_SERVICE_CONFIG.RETRY.BACKOFF_FACTOR || 2;
-  const rateLimitConfig = API_SERVICE_CONFIG.RETRY.RATE_LIMIT;
-  
-  let lastError;
-  let attempts = 0;
-  
-  while (attempts <= maxRetries) {
+  const { maxRetries = API_CONFIG.MAX_RETRIES } = options;
+
+  let retries = 0;
+  let lastError = null;
+
+  while (retries <= maxRetries) {
     try {
       return await requestFn();
     } catch (error) {
       lastError = error;
-      
-      // Only retry on specific status codes
-      if (
-        error.response &&
-        retryStatuses.includes(error.response.status) &&
-        attempts < maxRetries
-      ) {
-        // Calculate base delay with exponential backoff and jitter
-        let delay = initialRetryDelay * Math.pow(backoffFactor, attempts) + (Math.random() * 500);
-        
-        // Special handling for rate limiting (429)
-        if (error.response.status === 429) {
-          log('api', 'Rate limit (429) detected, applying special handling');
-          
-          if (rateLimitConfig?.RESPECT_RETRY_AFTER) {
-            // Try to get Retry-After header
-            const retryAfter = error.response.headers?.['retry-after'];
-            if (retryAfter) {
-              // Retry-After can be seconds or a date
-              let retryAfterMs;
-              if (/^\d+$/.test(retryAfter)) {
-                // It's seconds
-                retryAfterMs = parseInt(retryAfter) * 1000;
-              } else {
-                // It's a date
-                const retryDate = new Date(retryAfter);
-                retryAfterMs = retryDate.getTime() - Date.now();
-              }
-              
-              if (retryAfterMs > 0) {
-                log('api', `Using server's Retry-After value: ${retryAfterMs}ms`);
-                delay = retryAfterMs;
-              }
-            } else {
-              // No Retry-After, use default
-              delay = rateLimitConfig.DEFAULT_RETRY_AFTER || 5000;
-              log('api', `No Retry-After header, using default delay: ${delay}ms`);
-            }
-          }
-          
-          // Add additional delay for rate limiting
-          if (rateLimitConfig?.ADDITIONAL_DELAY) {
-            delay += rateLimitConfig.ADDITIONAL_DELAY;
+
+      // Log the error details
+      logApiOperation('request-retry-error', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        retry: retries,
+        maxRetries,
+      });
+
+      // If we've hit the max retries, throw the error
+      if (retries >= maxRetries) {
+        throw error;
+      }
+
+      // Determine if we should try an alternative URL
+      if (error.config && (error.response?.status === 404 || error.response?.status === 405)) {
+        const alternativeUrl = getAlternativeUrl(error.config.url, error.config.method, error);
+
+        if (alternativeUrl) {
+          logApiOperation('trying-alternative-url', {
+            original: error.config.url,
+            alternative: alternativeUrl,
+          });
+
+          try {
+            // Create a new request with the alternative URL
+            error.config.url = alternativeUrl;
+            const response = await axios(error.config);
+            logApiOperation('alternative-url-success', { url: alternativeUrl });
+            return response;
+          } catch (altError) {
+            logApiOperation('alternative-url-failed', {
+              url: alternativeUrl,
+              status: altError.response?.status,
+            });
+            console.error('Modified URL retry also failed:', altError.message);
           }
         }
-        
-        log('api', `Request failed with status ${error.response.status}. Retrying in ${Math.round(delay)}ms (${attempts + 1}/${maxRetries})`, {
-          status: error.response.status,
-          url: error.config.url,
-          attempt: attempts + 1,
-          delay: Math.round(delay)
-        });
-        
-        // Wait for the calculated delay
-        await new Promise(resolve => setTimeout(resolve, delay));
-        attempts++;
-        continue;
       }
-      
-      // If we're not retrying, rethrow the error
-      throw error;
+
+      // Increase retry count
+      retries++;
+
+      // Exponential backoff with jitter
+      const baseDelay = 200; // 200ms base delay
+      const delay = baseDelay * Math.pow(2, retries) + Math.random() * 100;
+
+      console.log(`Retrying request (${retries}/${maxRetries}) after ${delay}ms delay...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
-  // If we've exhausted our retries, throw the last error
+
+  // If we've exhausted all retries, throw the last error
   throw lastError;
 };
 
@@ -658,7 +688,7 @@ const get = async (url, config = {}) => {
   } catch (error) {
     logApiOperation('get-error', {
       url,
-      error: error.message
+      error: error.message,
     });
     throw error;
   }
@@ -675,14 +705,61 @@ const post = async (url, data, config = {}) => {
   logApiOperation('post-request', { url, data, config });
 
   try {
-    const response = await axiosInstance.post(url, data, config);
+    const formattedUrl = formatUrl(url);
+
+    // Special handling for auth endpoints
+    const isAuthEndpoint = formattedUrl.includes('/auth/');
+
+    if (isAuthEndpoint && formattedUrl.includes('/logout')) {
+      // Handle logout specially - don't retry on 429
+      try {
+        const response = await axiosInstance.post(formattedUrl, data, config);
+        return response.data;
+      } catch (error) {
+        if (error.response && error.response.status === 429) {
+          log('api', 'Logout rate limited (429) - treating as successful', { url: formattedUrl });
+          return { success: true, message: 'Logged out successfully (client-side only)' };
+        }
+        throw error;
+      }
+    }
+
+    // Special handling for auth refresh endpoint to avoid 405 errors
+    if (isAuthEndpoint && formattedUrl.includes('/auth/refresh')) {
+      // Try to handle both potential endpoint formats (with and without trailing slash)
+      try {
+        console.log('Attempting token refresh with primary endpoint:', formattedUrl);
+        const response = await axiosInstance.post(formattedUrl, data, config);
+        return response.data;
+      } catch (error) {
+        // If we get a 405 Method Not Allowed, try the alternate endpoint format
+        if (error.response && error.response.status === 405) {
+          console.log('Method not allowed on primary endpoint, trying alternate format');
+
+          // Toggle the trailing slash
+          const alternateEndpoint = formattedUrl.endsWith('/')
+            ? formattedUrl.slice(0, -1)
+            : formattedUrl + '/';
+
+          console.log('Attempting with alternate endpoint:', alternateEndpoint);
+          const altResponse = await axiosInstance.post(alternateEndpoint, data, config);
+          return altResponse.data;
+        }
+        throw error;
+      }
+    }
+
+    // Make the request with retry logic for regular endpoints
+    const response = await withRetry(() => axiosInstance.post(formattedUrl, data, config), config);
+
     // Clear cache for this URL after successful POST
-    clearCacheForUrl(url);
-    return response;
+    clearCacheForUrl(formattedUrl);
+
+    return response.data;
   } catch (error) {
     logApiOperation('post-error', {
       url,
-      error: error.message
+      error: error.message,
     });
     throw error;
   }
@@ -695,19 +772,22 @@ const post = async (url, data, config = {}) => {
  * @param {Object} [config] - Axios request config
  * @returns {Promise} - The response promise
  */
-const put = async (url, data, config = {}) => {
-  logApiOperation('put-request', { url, data, config });
+const put = async (url, data = {}, options = {}) => {
+  const formattedUrl = formatUrl(url);
+
+  // Clear cache for this URL if it exists
+  clearCacheForUrl(formattedUrl);
 
   try {
-    const response = await axiosInstance.put(url, data, config);
-    // Clear cache for this URL after successful PUT
-    clearCacheForUrl(url);
-    return response;
+    // Make the request with retry logic
+    const response = await withRetry(() => axiosInstance.put(formattedUrl, data, options), options);
+    return response.data;
   } catch (error) {
-    logApiOperation('put-error', {
-      url,
-      error: error.message
-    });
+    // Check for 403 Forbidden errors
+    if (error.response && error.response.status === 403) {
+      console.error(`Permission denied for PUT ${formattedUrl}:`, error.response.data);
+    }
+    // Re-throw the error for other handlers
     throw error;
   }
 };
@@ -729,7 +809,7 @@ const del = async (url, config = {}) => {
   } catch (error) {
     logApiOperation('delete-error', {
       url,
-      error: error.message
+      error: error.message,
     });
     throw error;
   }
@@ -745,7 +825,7 @@ const addAuthHeader = (config = {}) => {
   if (token) {
     config.headers = {
       ...config.headers,
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     };
   }
   return config;
@@ -763,26 +843,23 @@ export const httpClient = {
    */
   get: async (url, options = {}) => {
     const formattedUrl = formatUrl(url);
-    
+
     // Check cache for GET requests
     const cachedResponse = getCachedResponse(formattedUrl, options);
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Make the request with retry logic for cacheable GET requests
-    const response = await withRetry(
-      () => axiosInstance.get(formattedUrl, options),
-      options
-    );
+    const response = await withRetry(() => axiosInstance.get(formattedUrl, options), options);
     const data = response.data;
-    
+
     // Cache successful response
     cacheResponse(formattedUrl, data, options);
-    
+
     return data;
   },
-  
+
   /**
    * Send a POST request
    * @param {string} url - URL to request
@@ -792,13 +869,13 @@ export const httpClient = {
    */
   post: async (url, data = {}, options = {}) => {
     const formattedUrl = formatUrl(url);
-    
+
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
-    
+
     // Special handling for auth endpoints
     const isAuthEndpoint = formattedUrl.includes('/auth/');
-    
+
     if (isAuthEndpoint && formattedUrl.includes('/logout')) {
       // Handle logout specially - don't retry on 429
       try {
@@ -807,21 +884,46 @@ export const httpClient = {
       } catch (error) {
         if (error.response && error.response.status === 429) {
           log('api', 'Logout rate limited (429) - treating as successful', { url: formattedUrl });
-          return { success: true, message: "Logged out successfully (client-side only)" };
+          return { success: true, message: 'Logged out successfully (client-side only)' };
         }
         throw error;
       }
     }
-    
-    // Make the request with retry logic
+
+    // Special handling for auth refresh endpoint to avoid 405 errors
+    if (isAuthEndpoint && formattedUrl.includes('/auth/refresh')) {
+      // Try to handle both potential endpoint formats (with and without trailing slash)
+      try {
+        console.log('Attempting token refresh with primary endpoint:', formattedUrl);
+        const response = await axiosInstance.post(formattedUrl, data, options);
+        return response.data;
+      } catch (error) {
+        // If we get a 405 Method Not Allowed, try the alternate endpoint format
+        if (error.response && error.response.status === 405) {
+          console.log('Method not allowed on primary endpoint, trying alternate format');
+
+          // Toggle the trailing slash
+          const alternateEndpoint = formattedUrl.endsWith('/')
+            ? formattedUrl.slice(0, -1)
+            : formattedUrl + '/';
+
+          console.log('Attempting with alternate endpoint:', alternateEndpoint);
+          const altResponse = await axiosInstance.post(alternateEndpoint, data, options);
+          return altResponse.data;
+        }
+        throw error;
+      }
+    }
+
+    // Make the request with retry logic for regular endpoints
     const response = await withRetry(
       () => axiosInstance.post(formattedUrl, data, options),
       options
     );
-    
+
     return response.data;
   },
-  
+
   /**
    * Send a PUT request
    * @param {string} url - URL to request
@@ -831,19 +933,16 @@ export const httpClient = {
    */
   put: async (url, data = {}, options = {}) => {
     const formattedUrl = formatUrl(url);
-    
+
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
-    
+
     // Make the request with retry logic
-    const response = await withRetry(
-      () => axiosInstance.put(formattedUrl, data, options),
-      options
-    );
-    
+    const response = await withRetry(() => axiosInstance.put(formattedUrl, data, options), options);
+
     return response.data;
   },
-  
+
   /**
    * Send a PATCH request
    * @param {string} url - URL to request
@@ -853,19 +952,19 @@ export const httpClient = {
    */
   patch: async (url, data = {}, options = {}) => {
     const formattedUrl = formatUrl(url);
-    
+
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
-    
+
     // Make the request with retry logic
     const response = await withRetry(
       () => axiosInstance.patch(formattedUrl, data, options),
       options
     );
-    
+
     return response.data;
   },
-  
+
   /**
    * Send a DELETE request
    * @param {string} url - URL to request
@@ -874,19 +973,16 @@ export const httpClient = {
    */
   delete: async (url, options = {}) => {
     const formattedUrl = formatUrl(url);
-    
+
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
-    
+
     // Make the request with retry logic
-    const response = await withRetry(
-      () => axiosInstance.delete(formattedUrl, options),
-      options
-    );
-    
+    const response = await withRetry(() => axiosInstance.delete(formattedUrl, options), options);
+
     return response.data;
   },
-  
+
   /**
    * Upload file(s)
    * @param {string} url - Upload URL
@@ -897,26 +993,26 @@ export const httpClient = {
    */
   upload: async (url, formData, onProgress = null, options = {}) => {
     const formattedUrl = formatUrl(url);
-    
+
     const uploadOptions = {
       ...options,
       headers: {
         ...options.headers,
-        'Content-Type': 'multipart/form-data'
-      }
+        'Content-Type': 'multipart/form-data',
+      },
     };
-    
+
     if (onProgress) {
       uploadOptions.onUploadProgress = (progressEvent) => {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         onProgress(percentCompleted);
       };
     }
-    
+
     const response = await axiosInstance.post(formattedUrl, formData, uploadOptions);
     return response.data;
   },
-  
+
   /**
    * Download a file
    * @param {string} url - File URL
@@ -925,35 +1021,35 @@ export const httpClient = {
    */
   download: async (url, options = {}) => {
     const formattedUrl = formatUrl(url);
-    
+
     const downloadOptions = {
       ...options,
-      responseType: 'blob'
+      responseType: 'blob',
     };
-    
+
     const response = await axiosInstance.get(formattedUrl, downloadOptions);
     return response.data;
   },
-  
+
   // Utility methods
   clearCache,
   clearCacheForUrl,
   formatUrl,
-  axiosInstance
+  axiosInstance,
 };
 
 export {
+  addAuthHeader,
   axiosInstance,
-  get,
-  post,
-  put,
-  del,
   clearCache,
   clearCacheForUrl,
-  addAuthHeader,
-  shouldUseCorsProxy,
+  del,
+  get,
   getCorsProxyUrl,
-  logApiOperation
+  logApiOperation,
+  post,
+  put,
+  shouldUseCorsProxy,
 };
 
-export default httpClient; 
+export default httpClient;

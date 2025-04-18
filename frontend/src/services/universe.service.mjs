@@ -31,9 +31,48 @@ export const getUniverseById = async (id) => {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
 
-    const response = await httpClient.get(universeEndpoints.get(id));
+    // Log this request for debugging
+    console.log(`Fetching universe with ID: ${id}`);
+
+    // Get the auth token from localStorage
+    const token = localStorage.getItem('auth_token');
+
+    // Make the request with explicit authorization header
+    const response = await httpClient.get(universeEndpoints.get(id), {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      withCredentials: true,
+    });
+
+    console.log(`Successfully fetched universe with ID: ${id}`);
     return responseHandler.handleSuccess(response);
   } catch (error) {
+    // Handle specific error codes with helpful messages
+    if (error.response) {
+      if (error.response.status === 403) {
+        console.error(`Permission denied to access universe ID: ${id}`);
+        return responseHandler.handleError({
+          ...error,
+          message:
+            'You do not have permission to access this universe. It may be private or belong to another user.',
+        });
+      } else if (error.response.status === 404) {
+        console.error(`Universe ID: ${id} not found`);
+        return responseHandler.handleError({
+          ...error,
+          message:
+            'The requested universe could not be found. It may have been deleted or never existed.',
+        });
+      } else if (error.response.status === 401) {
+        console.error(`Authentication required to access universe ID: ${id}`);
+        return responseHandler.handleError({
+          ...error,
+          message: 'Authentication required. Please log in to access this universe.',
+        });
+      }
+    }
+
     return responseHandler.handleError(error);
   }
 };

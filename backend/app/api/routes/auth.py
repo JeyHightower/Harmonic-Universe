@@ -15,15 +15,15 @@ def signup():
     """Sign up a new user."""
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         if not all(key in data for key in ["username", "email", "password"]):
             return jsonify({"message": "Missing required fields"}), 400
-            
+
         username = data.get("username", "").strip()
         email = data.get("email", "").strip().lower()
         password = data.get("password", "")
-        
+
         # Username validation
         if not username:
             return jsonify({"message": "Username is required"}), 400
@@ -33,7 +33,7 @@ def signup():
             return jsonify({"message": "Username must start with a letter"}), 400
         if not all(c.isalnum() or c in "_-" for c in username):
             return jsonify({"message": "Username can only contain letters, numbers, underscores, and hyphens"}), 400
-            
+
         # Email validation
         if not email:
             return jsonify({"message": "Email is required"}), 400
@@ -41,7 +41,7 @@ def signup():
             return jsonify({"message": "Email address is too long"}), 400
         if not re.match(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$", email):
             return jsonify({"message": "Please enter a valid email address"}), 400
-            
+
         # Password validation
         if not password:
             return jsonify({"message": "Password is required"}), 400
@@ -57,32 +57,32 @@ def signup():
             return jsonify({"message": "Password must contain at least one number"}), 400
         if not re.search(r"[@$!%*?&]", password):
             return jsonify({"message": "Password must contain at least one special character (@$!%*?&)"}), 400
-            
+
         # Check if user already exists
         if User.query.filter_by(email=email).first():
             return jsonify({"message": "Email already exists"}), 409
         if User.query.filter_by(username=username).first():
             return jsonify({"message": "Username already exists"}), 409
-            
+
         # Create new user
         new_user = User(
             username=username,
             email=email.lower(),
         )
         new_user.set_password(password)
-        
+
         db.session.add(new_user)
         db.session.commit()
-        
+
         # Generate token
         token = create_access_token(identity=new_user.id)
-        
+
         return jsonify({
             "message": "User signed up successfully",
             "token": token,
             "user": new_user.to_dict(),
         }), 201
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Signup error: {str(e)}")
@@ -97,26 +97,26 @@ def login():
         except Exception as e:
             current_app.logger.error(f'JSON decode error: {str(e)}')
             return jsonify({'message': 'Invalid JSON format'}), 400
-        
+
         # Validate required fields
         if not data or not data.get('email') or not data.get('password'):
             return jsonify({'message': 'Email and password are required'}), 400
-        
+
         # Find user by email
         user = User.query.filter_by(email=data['email'].lower()).first()
-        
+
         if not user or not user.check_password(data['password']):
             return jsonify({'message': 'Invalid email or password'}), 401
-        
+
         # Generate token
         access_token = create_access_token(identity=user.id)
-        
+
         return jsonify({
             'message': 'Login successful',
             'user': user.to_dict(),
             'token': access_token
         }), 200
-        
+
     except Exception as e:
         current_app.logger.error(f'Login error: {str(e)}')
         return jsonify({'message': 'An error occurred during login'}), 500
@@ -141,11 +141,11 @@ def demo_login():
         current_app.logger.info(f'Request method: {request.method}')
         current_app.logger.info(f'Request headers: {dict(request.headers)}')
         current_app.logger.info(f'Request origin: {request.headers.get("Origin")}')
-        
+
         # Check if demo user exists
         demo_user = User.query.filter_by(email='demo@example.com').first()
         current_app.logger.info(f'Demo user exists: {demo_user is not None}')
-        
+
         if not demo_user:
             try:
                 current_app.logger.info('Creating new demo user')
@@ -166,12 +166,12 @@ def demo_login():
                     'message': 'Failed to create demo user',
                     'error': str(e)
                 }), 500
-        
+
         try:
             current_app.logger.info('Generating access token')
             # Generate token
             access_token = create_access_token(identity=demo_user.id)
-            
+
             response_data = {
                 'message': 'Demo login successful',
                 'user': demo_user.to_dict(),
@@ -186,7 +186,7 @@ def demo_login():
                 'message': 'Failed to generate access token',
                 'error': str(e)
             }), 500
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Demo login error: {str(e)}')
@@ -203,18 +203,18 @@ def validate_token():
     try:
         # Get user ID from JWT token
         user_id = get_jwt_identity()
-        
+
         # Get user from database
         user = User.query.get(user_id)
-        
+
         if not user:
             return jsonify({'message': 'User not found'}), 404
-            
+
         return jsonify({
             'message': 'Token is valid',
             'user': user.to_dict()
         }), 200
-        
+
     except Exception as e:
         current_app.logger.error(f'Token validation error: {str(e)}')
-        return jsonify({'message': 'An error occurred during token validation'}), 500 
+        return jsonify({'message': 'An error occurred during token validation'}), 500

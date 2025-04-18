@@ -65,17 +65,17 @@ export const userEndpoints = {
 export const universeEndpoints = {
   list: endpoint('/universes/'),
   create: endpoint('/universes/'),
-  get: (id) => endpoint(`/universes/${id}/`),
-  update: (id) => endpoint(`/universes/${id}/`),
-  delete: (id) => endpoint(`/universes/${id}/`),
-  physics: (id) => endpoint(`/universes/${id}/physics/`),
-  audio: (id) => endpoint(`/universes/${id}/audio/`),
-  visualization: (id) => endpoint(`/universes/${id}/visualization/`),
-  generateMusic: (id) => endpoint(`/universes/${id}/generate-music/`),
-  saveMusic: (id) => endpoint(`/universes/${id}/save-music/`),
-  downloadMusic: (id) => endpoint(`/universes/${id}/download-music/`),
-  getMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}/`),
-  deleteMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}/`),
+  get: (id) => endpoint(`/universes/${id}`),
+  update: (id) => endpoint(`/universes/${id}`),
+  delete: (id) => endpoint(`/universes/${id}`),
+  physics: (id) => endpoint(`/universes/${id}/physics`),
+  audio: (id) => endpoint(`/universes/${id}/audio`),
+  visualization: (id) => endpoint(`/universes/${id}/visualization`),
+  generateMusic: (id) => endpoint(`/universes/${id}/generate-music`),
+  saveMusic: (id) => endpoint(`/universes/${id}/save-music`),
+  downloadMusic: (id) => endpoint(`/universes/${id}/download-music`),
+  getMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}`),
+  deleteMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}`),
 };
 
 /**

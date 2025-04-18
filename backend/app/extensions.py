@@ -23,6 +23,16 @@ def check_if_token_in_blocklist(jwt_header, jwt_payload):
     jti = jwt_payload['jti']  # JWT ID is used for blocklisting
     return jti in token_blocklist
 
+# Ensure user identity is consistently an integer
+@jwt.user_identity_loader
+def user_identity_loader(identity):
+    try:
+        # Convert identity to integer if possible
+        return int(identity)
+    except (ValueError, TypeError):
+        # Return original identity if conversion fails
+        return identity
+
 # Add token to blocklist
 def add_token_to_blocklist(jti):
     token_blocklist.add(jti)
@@ -67,4 +77,4 @@ def init_extensions(app):
     jwt.init_app(app)
     migrate.init_app(app, db)
     limiter.init_app(app)
-    return app 
+    return app

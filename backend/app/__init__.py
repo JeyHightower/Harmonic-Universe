@@ -114,10 +114,10 @@ def setup_cors(app):
     allow_headers = app.config.get('CORS_HEADERS', ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"])
     expose_headers = app.config.get('CORS_EXPOSE_HEADERS', ["Content-Length", "Content-Type", "Authorization"])
     max_age = app.config.get('CORS_MAX_AGE', 86400)
-    
+
     # Log CORS configuration
     app.logger.info(f"CORS configuration: origins={app.config.get('CORS_ORIGINS')}, credentials={supports_credentials}")
-    
+
     # Configure CORS using Flask-CORS
     CORS(app,
          resources=resources,
@@ -126,10 +126,10 @@ def setup_cors(app):
          allow_headers=allow_headers,
          expose_headers=expose_headers,
          max_age=max_age)
-    
+
     # Do not add another after_request handler for CORS
     # Flask-CORS already adds the necessary headers
-    
+
     return app
 
 def setup_error_handlers(app):
@@ -154,11 +154,11 @@ def setup_jwt_handlers(app):
     if not secret_key:
         secret_key = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key')
         app.config['JWT_SECRET_KEY'] = secret_key
-    
+
     # Log the JWT secret key for debugging in development
     if app.config.get('ENV') == 'development' or os.environ.get('FLASK_DEBUG', 'False').lower() == 'true':
         app.logger.debug(f"JWT secret key in use (first 3 chars): {secret_key[:3]}...")
-    
+
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
         return jsonify({
@@ -257,7 +257,7 @@ def configure_logging(app):
         ))
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
-        
+
         app.logger.setLevel(logging.INFO)
         app.logger.info('Harmonic Universe startup')
 
@@ -271,13 +271,13 @@ def setup_static_folders(app):
         '/opt/render/project/src/static',
         '/opt/render/project/src/backend/static'
     ]
-    
+
     for folder in possible_static_folders:
         if folder and os.path.exists(folder) and os.path.isdir(folder):
             app.static_folder = folder
             app.logger.info(f"Using static folder: {app.static_folder}")
             break
-    
+
     return app
 
 def register_error_handlers(app):
@@ -288,20 +288,20 @@ def register_error_handlers(app):
 def create_app(config_name=None):
     """
     Create and configure the Flask application based on the specified configuration.
-    
+
     Args:
         config_name: The configuration environment to use (development, testing, production)
-        
+
     Returns:
         The configured Flask application
     """
-    
+
     app = Flask(__name__, static_folder=None)
-    
+
     # Determine which config to use if not specified
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'development').lower()
-    
+
     # Map environment names to config classes
     config_mapping = {
         'dev': 'DevelopmentConfig',
@@ -312,51 +312,51 @@ def create_app(config_name=None):
         'production': 'ProductionConfig',
         'default': 'DevelopmentConfig'
     }
-    
+
     # Get the config class name
     config_class = config_mapping.get(config_name, 'DevelopmentConfig')
-    
+
     # Load the appropriate configuration
     app.config.from_object(f"app.config.{config_class}")
-    
+
     # Log the configuration being used
     app.logger.info(f"Using configuration: {config_class}")
-    
+
     # Configure logging
     configure_logging(app)
-    
+
     # Configure JWT settings
     configure_jwt(app)
-    
+
     # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
     migrate.init_app(app, db)
     limiter.init_app(app)
-    
+
     # Set up JWT handlers
     setup_jwt_handlers(app)
-    
+
     # Import and apply JWT monkey patch
     try:
         apply_all_jwt_patches()
         app.logger.info("JWT monkey patches applied successfully")
     except Exception as e:
         app.logger.warning(f"Failed to apply JWT monkey patches: {str(e)}")
-    
+
     # Set up CORS (before blueprints)
     setup_cors(app)
-    
+
     # Set up static folders
     setup_static_folders(app)
-    
+
     # Register API routes
     app.register_blueprint(api_bp, url_prefix='/api')
-    
+
     # Register error handlers
     register_error_handlers(app)
-    
+
     # Register main routes
     setup_routes(app)
-    
+
     return app

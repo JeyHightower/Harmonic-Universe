@@ -1,33 +1,32 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import {
-  CircularProgress,
-  Typography,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Tooltip,
-} from "@mui/material";
 import {
   Add as AddIcon,
-  Refresh as RefreshIcon,
   Logout as LogoutIcon,
+  Refresh as RefreshIcon,
   RestartAlt as ResetIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 // Import the UniverseModal and UniverseCard from features/universe
-import { UniverseModal, UniverseCard } from "../../universe";
+import { UniverseCard, UniverseModal } from '../../universe';
 
-import { fetchUniverses } from "../../../store/thunks/universeThunks";
-import { deleteUniverse } from "../../../store/thunks/universeThunks";
-import { AUTH_CONFIG } from "../../../utils/config";
-import { logout } from "../../../store/thunks/authThunks";
-import api from "../../../services/api.adapter";
-import { authService } from "../../../services/auth.service.mjs";
-import { demoUserService } from "../../../services/demo-user.service.mjs";
+import { message } from 'antd';
+import { authService } from '../../../services/auth.service.mjs';
+import { demoUserService } from '../../../services/demo-user.service.mjs';
+import { logout, validateAndRefreshToken } from '../../../store/thunks/authThunks';
+import { deleteUniverse, fetchUniverses } from '../../../store/thunks/universeThunks';
+import { AUTH_CONFIG } from '../../../utils/config';
 
 /**
  * Dashboard component for displaying and managing user's universes
@@ -42,8 +41,8 @@ const Dashboard = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUniverse, setSelectedUniverse] = useState(null);
-  const [sortOption, setSortOption] = useState("updated_at");
-  const [filterOption, setFilterOption] = useState("all");
+  const [sortOption, setSortOption] = useState('updated_at');
+  const [filterOption, setFilterOption] = useState('all');
   const [newUniverseId, setNewUniverseId] = useState(null);
 
   // Track last dashboard logout attempt
@@ -52,88 +51,90 @@ const Dashboard = () => {
 
   // Enhanced function to load universes with better error handling and logging
   const loadUniverses = useCallback(() => {
-    console.log("Dashboard - Loading universes");
-    
+    console.log('Dashboard - Loading universes');
+
     // Check if this is a demo session
     const isDemoSession = demoUserService.isDemoSession();
-    
+
     // If in demo mode and tokens are missing, regenerate them
     if (isDemoSession) {
-      console.log("Dashboard - Demo session detected");
-      
+      console.log('Dashboard - Demo session detected');
+
       // Check if we have both tokens
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-      
+
       if (!token || !refreshToken) {
-        console.log("Dashboard - Demo tokens missing, regenerating demo session");
+        console.log('Dashboard - Demo tokens missing, regenerating demo session');
         demoUserService.setupDemoSession();
       }
-      
+
       // Continue to load universes using dispatch
       return dispatch(fetchUniverses()).catch((error) => {
-        console.error("Dashboard - Error loading universes in demo mode:", error);
-        return Promise.resolve({ error: "Error loading demo universes" });
+        console.error('Dashboard - Error loading universes in demo mode:', error);
+        return Promise.resolve({ error: 'Error loading demo universes' });
       });
     }
-    
+
     // Not in demo mode, check for valid token
     if (!authService.hasValidToken()) {
-      console.log("Dashboard - No valid token found, attempting refresh");
-      
+      console.log('Dashboard - No valid token found, attempting refresh');
+
       // Try to refresh the token
-      return authService.refreshToken()
+      return authService
+        .refreshToken()
         .then(() => {
-          console.log("Dashboard - Token refreshed successfully, loading universes");
+          console.log('Dashboard - Token refreshed successfully, loading universes');
           return dispatch(fetchUniverses());
         })
         .catch((error) => {
-          console.error("Dashboard - Token refresh failed:", error.message);
-          
+          console.error('Dashboard - Token refresh failed:', error.message);
+
           // Only redirect for auth errors, not network errors
-          if (error.response?.status >= 400 || 
-              !error.message?.includes('Network Error')) {
-            console.log("Dashboard - Redirecting to login due to auth error");
-            navigate("/?modal=login", { replace: true });
+          if (error.response?.status >= 400 || !error.message?.includes('Network Error')) {
+            console.log('Dashboard - Redirecting to login due to auth error');
+            navigate('/?modal=login', { replace: true });
           } else {
-            console.log("Dashboard - Network error during token refresh, proceeding with existing token");
+            console.log(
+              'Dashboard - Network error during token refresh, proceeding with existing token'
+            );
             // Attempt to load universes with the existing token since it might be a temporary network issue
             return dispatch(fetchUniverses());
           }
-          
-          return Promise.resolve({ error: "Authentication error" });
+
+          return Promise.resolve({ error: 'Authentication error' });
         });
     }
-    
+
     // Token is valid, proceed with loading universes
-    return dispatch(fetchUniverses())
-      .catch((error) => {
-        console.error("Dashboard - Error loading universes:", error);
-        
-        // Handle specific error cases
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          console.log("Dashboard - Authentication error loading universes, attempting token refresh");
-          
-          // Try to refresh the token and retry
-          return authService.refreshToken()
-            .then(() => {
-              console.log("Dashboard - Token refreshed, retrying universe load");
-              return dispatch(fetchUniverses());
-            })
-            .catch(() => {
-              console.log("Dashboard - Token refresh failed, redirecting to login");
-              navigate("/?modal=login", { replace: true });
-              return Promise.resolve({ error: "Authentication error" });
-            });
-        }
-        
-        return Promise.resolve({ error: error.message });
-      });
+    return dispatch(fetchUniverses()).catch((error) => {
+      console.error('Dashboard - Error loading universes:', error);
+
+      // Handle specific error cases
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('Dashboard - Authentication error loading universes, attempting token refresh');
+
+        // Try to refresh the token and retry
+        return authService
+          .refreshToken()
+          .then(() => {
+            console.log('Dashboard - Token refreshed, retrying universe load');
+            return dispatch(fetchUniverses());
+          })
+          .catch(() => {
+            console.log('Dashboard - Token refresh failed, redirecting to login');
+            navigate('/?modal=login', { replace: true });
+            return Promise.resolve({ error: 'Authentication error' });
+          });
+      }
+
+      return Promise.resolve({ error: error.message });
+    });
   }, [dispatch, navigate]);
 
   // Load universes on component mount
   useEffect(() => {
-    console.log("Dashboard - Component mounted, loading universes");
+    console.log('Dashboard - Component mounted, loading universes');
     loadUniverses();
   }, [loadUniverses]);
 
@@ -141,70 +142,73 @@ const Dashboard = () => {
   useEffect(() => {
     // First check if this is a demo session
     const isDemoSession = demoUserService.isDemoSession();
-    
+
     if (isDemoSession) {
-      console.log("Dashboard - Demo session detected, ensuring tokens are set");
+      console.log('Dashboard - Demo session detected, ensuring tokens are set');
       // Ensure demo tokens are properly set up
-      if (!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY) || !localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY)) {
-        console.log("Demo tokens missing, regenerating");
+      if (
+        !localStorage.getItem(AUTH_CONFIG.TOKEN_KEY) ||
+        !localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY)
+      ) {
+        console.log('Demo tokens missing, regenerating');
         demoUserService.setupDemoSession();
       }
       // Proceed to load universes
       loadUniverses();
       return;
     }
-    
+
     // Not in demo mode, check regular auth
     if (!isAuthenticated) {
-      console.log("Not authenticated, redirecting to login");
-      navigate("/?modal=login", { replace: true });
+      console.log('Not authenticated, redirecting to login');
+      navigate('/?modal=login', { replace: true });
       return;
     }
-    
+
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (!token) {
-      console.log("No token found, redirecting to login");
+      console.log('No token found, redirecting to login');
       dispatch(logout());
-      navigate("/?modal=login", { replace: true });
+      navigate('/?modal=login', { replace: true });
       return;
     }
-    
-    console.log("Dashboard - Fetching universes...");
+
+    console.log('Dashboard - Fetching universes...');
     loadUniverses();
   }, [isAuthenticated, dispatch, navigate, loadUniverses]);
 
   // Consistent logout handler that uses the auth service
   const handleLogout = () => {
     const now = Date.now();
-    
+
     if (now - lastDashboardLogoutAttempt < DASHBOARD_LOGOUT_COOLDOWN) {
-      console.log("Dashboard - Logout throttled (multiple attempts)");
+      console.log('Dashboard - Logout throttled (multiple attempts)');
       return;
     }
-    
+
     lastDashboardLogoutAttempt = now;
-    
-    console.log("Dashboard - Logging out user");
+
+    console.log('Dashboard - Logging out user');
     authService.clearAuthData();
     dispatch(logout());
-    navigate("/?modal=login", { replace: true });
+    navigate('/?modal=login', { replace: true });
   };
 
   // Reset authentication and redirect to login
   const handleResetAuth = () => {
-    console.log("Dashboard - Resetting authentication state");
+    console.log('Dashboard - Resetting authentication state');
     authService.resetAuth();
     dispatch(logout());
-    navigate("/?modal=login", { replace: true });
+    navigate('/?modal=login', { replace: true });
   };
 
   const handleCreateClick = () => {
-    console.log("Dashboard - Create button clicked");
+    console.log('Dashboard - Create button clicked');
     setIsCreateModalOpen(true);
   };
 
   const handleCreateSuccess = (universe) => {
-    console.log("Dashboard - Create success with universe:", universe);
+    console.log('Dashboard - Create success with universe:', universe);
     setIsCreateModalOpen(false);
 
     if (universe && universe.id) {
@@ -215,38 +219,56 @@ const Dashboard = () => {
   };
 
   const handleViewUniverse = (universe) => {
-    console.log("Viewing universe:", universe);
-    navigate(`/universes/${universe.id}`);
+    console.log('Viewing universe:', universe);
+
+    // Ensure we have a fresh auth token before navigating
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    if (token) {
+      // Force token refresh to ensure it's valid
+      dispatch(validateAndRefreshToken())
+        .then(() => {
+          navigate(`/universes/${universe.id}`);
+        })
+        .catch((error) => {
+          console.error('Error refreshing token:', error);
+          // Show auth error message
+          message.error('Authentication error. Please log in again.');
+          dispatch(logout());
+        });
+    } else {
+      message.error('Authentication required. Please log in.');
+      dispatch(logout());
+    }
   };
 
   const handleEditUniverse = (universe) => {
-    console.log("Editing universe:", universe);
+    console.log('Editing universe:', universe);
     setSelectedUniverse(universe);
     setIsEditModalOpen(true);
   };
 
   const handleEditSuccess = (updatedUniverse) => {
-    console.log("Universe updated:", updatedUniverse);
+    console.log('Universe updated:', updatedUniverse);
     setIsEditModalOpen(false);
     setSelectedUniverse(null);
     loadUniverses();
   };
 
   const handleDeleteUniverse = (universe) => {
-    console.log("Deleting universe:", universe);
+    console.log('Deleting universe:', universe);
     setSelectedUniverse(universe);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
     if (selectedUniverse) {
-      console.log("Confirming delete for universe:", selectedUniverse);
+      console.log('Confirming delete for universe:', selectedUniverse);
       try {
         await dispatch(deleteUniverse(selectedUniverse.id));
-        console.log("Universe deleted successfully");
+        console.log('Universe deleted successfully');
         loadUniverses();
       } catch (error) {
-        console.error("Error deleting universe:", error);
+        console.error('Error deleting universe:', error);
       }
       setIsDeleteModalOpen(false);
       setSelectedUniverse(null);
@@ -260,19 +282,19 @@ const Dashboard = () => {
 
     let filteredUniverses = [...universes];
 
-    if (filterOption === "public") {
+    if (filterOption === 'public') {
       filteredUniverses = filteredUniverses.filter((u) => u.is_public);
-    } else if (filterOption === "private") {
+    } else if (filterOption === 'private') {
       filteredUniverses = filteredUniverses.filter((u) => !u.is_public);
     }
 
     return filteredUniverses.sort((a, b) => {
       switch (sortOption) {
-        case "name":
-          return (a.name || "").localeCompare(b.name || "");
-        case "created_at":
+        case 'name':
+          return (a.name || '').localeCompare(b.name || '');
+        case 'created_at':
           return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-        case "updated_at":
+        case 'updated_at':
         default:
           return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
       }
@@ -280,16 +302,17 @@ const Dashboard = () => {
   };
 
   if (error) {
-    const isAuthError = error.message?.includes("Signature verification") || 
-                      error.message?.includes("Authentication") || 
-                      error.message?.includes("token") ||
-                      error.status === 401;
-    
+    const isAuthError =
+      error.message?.includes('Signature verification') ||
+      error.message?.includes('Authentication') ||
+      error.message?.includes('token') ||
+      error.status === 401;
+
     return (
       <div className="dashboard-container">
         <div className="dashboard-header">
           <Typography variant="h4" component="h1">
-            {isAuthError ? "Authentication Error" : "Error Loading Universes"}
+            {isAuthError ? 'Authentication Error' : 'Error Loading Universes'}
           </Typography>
           <div className="dashboard-actions">
             {isAuthError ? (
@@ -329,18 +352,25 @@ const Dashboard = () => {
             </Tooltip>
           </div>
         </div>
-        
+
         <Typography color="error" className="error-message" style={{ margin: '20px 0' }}>
-          {isAuthError ? 
-            "Your session has expired or is invalid. Please re-authenticate to continue." : 
-            (typeof error === "object" ? JSON.stringify(error) : error)}
+          {isAuthError
+            ? 'Your session has expired or is invalid. Please re-authenticate to continue.'
+            : typeof error === 'object'
+              ? JSON.stringify(error)
+              : error}
         </Typography>
-        
+
         {isAuthError && (
-          <div style={{ margin: '20px 0', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-            <Typography variant="body1">
-              This issue is typically caused by:
-            </Typography>
+          <div
+            style={{
+              margin: '20px 0',
+              padding: '15px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '4px',
+            }}
+          >
+            <Typography variant="body1">This issue is typically caused by:</Typography>
             <ul>
               <li>Your session has expired</li>
               <li>The authentication token is invalid</li>
@@ -351,7 +381,7 @@ const Dashboard = () => {
             </Typography>
           </div>
         )}
-        
+
         {!isAuthError && universes?.length > 0 && (
           <div className="universes-grid">
             {getSortedUniverses().map((universe) => (
@@ -391,8 +421,7 @@ const Dashboard = () => {
             Welcome to Harmonic Universe!
           </Typography>
           <Typography variant="body1" paragraph>
-            Create your first universe to start exploring the connection between
-            music and physics.
+            Create your first universe to start exploring the connection between music and physics.
           </Typography>
           <Button
             variant="contained"
@@ -445,11 +474,7 @@ const Dashboard = () => {
             </Button>
           </Tooltip>
           <Tooltip title="Re-authenticate">
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={handleLogout}
-            >
+            <Button variant="outlined" color="secondary" onClick={handleLogout}>
               Re-authenticate
             </Button>
           </Tooltip>
@@ -526,7 +551,7 @@ const Dashboard = () => {
           onSuccess={handleCreateSuccess}
           mode="create"
         />
-        
+
         <UniverseModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
@@ -534,24 +559,18 @@ const Dashboard = () => {
           onSuccess={handleEditSuccess}
           mode="edit"
         />
-        
+
         {isDeleteModalOpen && selectedUniverse && (
-          <Dialog
-            open={isDeleteModalOpen}
-            onClose={() => setIsDeleteModalOpen(false)}
-          >
+          <Dialog open={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
             <DialogTitle>Confirm Delete</DialogTitle>
             <DialogContent>
               <Typography>
-                Are you sure you want to delete the universe "
-                {selectedUniverse.name}"? This action cannot be undone and will
-                delete all associated scenes, characters, and notes.
+                Are you sure you want to delete the universe "{selectedUniverse.name}"? This action
+                cannot be undone and will delete all associated scenes, characters, and notes.
               </Typography>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setIsDeleteModalOpen(false)}>
-                Cancel
-              </Button>
+              <Button onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
               <Button onClick={handleConfirmDelete} color="error">
                 Delete
               </Button>
