@@ -1,32 +1,12 @@
-import PropTypes from "prop-types";
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import "../styles/UniverseCard.css";
-import {
-  Card,
-  CardContent,
-  CardMedia,
-  CardActions,
-  Typography,
-  Button,
-  Box,
-} from "@mui/material";
-import {
-  PersonOutline,
-  NoteAlt,
-  Visibility,
-  Edit,
-  Delete,
-} from "@mui/icons-material";
-import defaultUniverseImage from "../../../assets/images/default-universe.svg";
+import PropTypes from 'prop-types';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../styles/UniverseCard.css';
+import { Card, CardContent, CardMedia, CardActions, Typography, Button, Box } from '@mui/material';
+import { PersonOutline, NoteAlt, Visibility, Edit, Delete } from '@mui/icons-material';
+import defaultUniverseImage from '../../../assets/images/default-universe.svg';
 
-const UniverseCard = ({
-  universe,
-  isNew = false,
-  onEdit,
-  onDelete,
-  onView,
-}) => {
+const UniverseCard = ({ universe, isNew = false, onEdit, onDelete, onView }) => {
   const navigate = useNavigate();
 
   const handleViewScenes = () => {
@@ -51,18 +31,10 @@ const UniverseCard = ({
         className="universe-card-media"
       />
       <CardContent className="universe-card-content">
-        <Typography
-          variant="h5"
-          component="div"
-          className="universe-card-title"
-        >
+        <Typography variant="h5" component="div" className="universe-card-title">
           {universe.name}
         </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          className="universe-card-description"
-        >
+        <Typography variant="body2" color="text.secondary" className="universe-card-description">
           {universe.description?.length > 100
             ? `${universe.description.substring(0, 100)}...`
             : universe.description}
@@ -97,11 +69,7 @@ const UniverseCard = ({
           </Button>
         </Box>
         <Box className="universe-card-feature-buttons">
-          <Button
-            size="small"
-            onClick={handleViewScenes}
-            className="universe-card-feature-button"
-          >
+          <Button size="small" onClick={handleViewScenes} className="universe-card-feature-button">
             Scenes
           </Button>
           <Button
@@ -143,4 +111,4 @@ UniverseCard.propTypes = {
   onView: PropTypes.func,
 };
 
-export default UniverseCard; 
+export default UniverseCard;

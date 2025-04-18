@@ -1,65 +1,56 @@
-import React from "react";
-import { useDispatch } from "react-redux";
 import {
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-  Button,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Visibility as ViewIcon,
+} from '@mui/icons-material';
+import {
   Box,
+  Card,
+  CardActions,
+  CardContent,
   IconButton,
   Tooltip,
-} from "@mui/material";
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
-} from "@mui/icons-material";
-import { openModal } from "../../../store/slices/characterSlice";
-import { deleteCharacter } from "../../../store/thunks/characterThunks";
-import "../styles/Character.css";
+  Typography,
+} from '@mui/material';
+import PropTypes from 'prop-types';
+import { useDispatch } from 'react-redux';
+import { openModal } from '../../../store/slices/characterSlice';
+import { deleteCharacter } from '../../../store/thunks/characterThunks';
+import '../styles/Character.css';
 
 const CharacterCard = ({ character }) => {
   const dispatch = useDispatch();
 
   const handleEdit = () => {
-    dispatch(openModal("edit", character));
+    dispatch(openModal('edit', character));
   };
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this character?")) {
+    if (window.confirm('Are you sure you want to delete this character?')) {
       dispatch(deleteCharacter(character.id));
     }
   };
 
   const handleView = () => {
-    dispatch(openModal("view"));
+    dispatch(openModal('view'));
   };
 
   return (
     <Card className="character-card">
       <CardContent>
-        <Typography
-          variant="h6"
-          component="h3"
-          className="character-card-title"
-        >
+        <Typography variant="h6" component="h3" className="character-card-title">
           {character.name}
         </Typography>
-        <Typography
-          variant="body2"
-          color="textSecondary"
-          className="character-card-description"
-        >
-          {character.description || "No description available"}
+        <Typography variant="body2" color="textSecondary" className="character-card-description">
+          {character.description || 'No description available'}
         </Typography>
       </CardContent>
       <CardActions className="character-card-actions">
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            width: "100%",
+            display: 'flex',
+            justifyContent: 'space-between',
+            width: '100%',
           }}
         >
           <Box>
@@ -67,11 +58,7 @@ const CharacterCard = ({ character }) => {
               <ViewIcon />
             </IconButton>
             <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={handleEdit}
-                title="Edit Character"
-              >
+              <IconButton size="small" onClick={handleEdit} title="Edit Character">
                 <EditIcon />
               </IconButton>
             </Tooltip>
@@ -95,4 +82,13 @@ const CharacterCard = ({ character }) => {
   );
 };
 
-export default CharacterCard; 
+CharacterCard.propTypes = {
+  character: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    created_at: PropTypes.string.isRequired,
+  }).isRequired,
+};
+
+export default CharacterCard;
