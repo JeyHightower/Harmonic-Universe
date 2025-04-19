@@ -32,7 +32,7 @@ export const getScenesByUniverse = async (universeId) => {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
 
-    const response = await httpClient.get(sceneEndpoints.forUniverse(universeId));
+    const response = await httpClient.get(sceneEndpoints.byUniverse(universeId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
     console.log('scenes', 'Error fetching universe scenes', {
@@ -54,8 +54,45 @@ export const getSceneById = async (sceneId) => {
       return responseHandler.handleError(new Error('Scene ID is required'));
     }
 
+    console.log('scene.service: Fetching scene by ID:', sceneId);
     const response = await httpClient.get(sceneEndpoints.get(sceneId));
-    return responseHandler.handleSuccess(response);
+
+    // Log the response to debug
+    console.log('scene.service: Raw response from getSceneById:', response);
+
+    // Check if response has expected format
+    if (!response) {
+      console.warn('scene.service: Empty response from API');
+      return responseHandler.handleError(new Error('Empty response from API'));
+    }
+
+    if (!response.data) {
+      console.warn('scene.service: Response missing data property');
+      return responseHandler.handleError(new Error('Invalid response format - missing data'));
+    }
+
+    // Normalize the response structure to ensure consistent format
+    let normalizedResponse = { ...response };
+
+    // If scene is directly in data, wrap it for consistent response format
+    if (response.data && !response.data.scene && typeof response.data === 'object') {
+      console.log('scene.service: Normalizing response format to include scene property');
+      normalizedResponse = {
+        ...response,
+        data: {
+          message: 'Scene retrieved successfully',
+          scene: response.data,
+        },
+      };
+    }
+
+    // Ensure scene data is clean
+    if (normalizedResponse.data?.scene) {
+      // Make sure is_deleted is explicitly set to false for consistency
+      normalizedResponse.data.scene.is_deleted = false;
+    }
+
+    return responseHandler.handleSuccess(normalizedResponse);
   } catch (error) {
     console.log('scenes', 'Error fetching scene by ID', {
       sceneId,
@@ -131,10 +168,45 @@ export const updateScene = async (sceneId, sceneData) => {
       return responseHandler.handleError(new Error('Scene data is required'));
     }
 
+    console.log('scenes', 'Updating scene with data:', { sceneId, sceneData });
     const response = await httpClient.put(sceneEndpoints.update(sceneId), sceneData);
 
-    console.log('scenes', 'Scene updated successfully', { sceneId });
-    return responseHandler.handleSuccess(response);
+    // Log the response to debug
+    console.log('scenes', 'Raw response from updateScene:', response);
+
+    // Check if response has expected format
+    if (!response) {
+      console.warn('scene.service: Empty response from API');
+      return responseHandler.handleError(new Error('Empty response from API'));
+    }
+
+    // Normalize the response structure to ensure consistent format
+    let normalizedResponse = { ...response };
+
+    // If scene is directly in data, wrap it for consistent response format
+    if (response.data && !response.data.scene && typeof response.data === 'object') {
+      console.log('scene.service: Normalizing response format to include scene property');
+      normalizedResponse = {
+        ...response,
+        data: {
+          message: 'Scene updated successfully',
+          scene: response.data,
+        },
+      };
+    }
+
+    // Ensure scene data is clean
+    if (normalizedResponse.data?.scene) {
+      // Make sure is_deleted is explicitly set to false for consistency
+      normalizedResponse.data.scene.is_deleted = false;
+    }
+
+    console.log('scenes', 'Scene updated successfully with normalized response', {
+      sceneId,
+      responseData: normalizedResponse.data,
+    });
+
+    return responseHandler.handleSuccess(normalizedResponse);
   } catch (error) {
     console.log('scenes', 'Error updating scene', {
       sceneId,

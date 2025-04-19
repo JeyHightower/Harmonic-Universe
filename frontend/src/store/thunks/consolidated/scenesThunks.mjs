@@ -123,22 +123,39 @@ export const fetchSceneById = createAsyncThunk(
       }
 
       // Make API call
-      const response = await sceneService.getScene(sceneId);
+      const response = await sceneService.getSceneById(sceneId);
       console.log('THUNK fetchSceneById: Received API response:', response);
 
-      // Check for valid scene data
-      if (!response.data || !response.data.scene) {
+      // Extract scene data from response, handling different response formats
+      let sceneData;
+
+      if (response.data?.scene) {
+        // Format: { data: { scene: {...} } }
+        sceneData = response.data.scene;
+        console.log('THUNK fetchSceneById: Scene data found in response.data.scene');
+      } else if (response.data) {
+        // Format: { data: {...} }
+        sceneData = response.data;
+        console.log('THUNK fetchSceneById: Scene data found directly in response.data');
+      } else {
+        // No data found at all
+        console.error('THUNK fetchSceneById: No scene data found in response:', response);
         throw new Error('Invalid response format - missing scene data');
       }
 
-      // Normalize response to ensure consistent structure
-      const sceneData = response.data.scene;
+      // Ensure we have at least minimal scene data
+      if (!sceneData.id) {
+        console.warn('THUNK fetchSceneById: Scene data missing ID, using requested ID:', sceneId);
+        sceneData.id = sceneId;
+      }
 
       // Ensure is_deleted is explicitly set to false
       const normalizedSceneData = normalizeSceneData({
         ...sceneData,
         is_deleted: false,
       });
+
+      console.log('THUNK fetchSceneById: Normalized scene data:', normalizedSceneData);
 
       // Return serializable data
       const serializedResponse = {

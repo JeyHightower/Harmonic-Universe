@@ -9,15 +9,15 @@ import { httpClient } from './http-client';
 // Import endpoints for direct access
 import { endpoints } from './endpoints';
 // Import individual services for direct access
-import { 
-  authService, 
-  universeService, 
-  sceneService, 
+import {
+  audioService,
+  authService,
   characterService,
   noteService,
+  sceneService,
+  systemService,
+  universeService,
   userService,
-  audioService,
-  systemService
 } from './index';
 
 // Re-export endpoints for components that import them directly
@@ -39,7 +39,7 @@ export const auth = {
         return {
           success: true,
           token: result,
-          message: 'Token refreshed successfully'
+          message: 'Token refreshed successfully',
         };
       }
       return result;
@@ -47,7 +47,7 @@ export const auth = {
       console.error('API adapter refreshToken error:', error);
       return {
         success: false,
-        message: error.message || 'Failed to refresh token'
+        message: error.message || 'Failed to refresh token',
       };
     }
   },
@@ -55,7 +55,7 @@ export const auth = {
   isAuthenticated: authService.isAuthenticated,
   isDemoUser: authService.isDemoUser || (() => false),
   resetAuth: authService.resetAuth,
-  getAxiosInstance: () => httpClient.axiosInstance
+  getAxiosInstance: () => httpClient.axiosInstance,
 };
 
 /**
@@ -68,7 +68,7 @@ const universes = {
   updateUniverse: universeService.updateUniverse,
   deleteUniverse: universeService.deleteUniverse,
   getUniverseScenes: (universeId) => sceneService.getScenesByUniverse(universeId),
-  getUniverseCharacters: (universeId) => characterService.getCharactersByUniverse(universeId)
+  getUniverseCharacters: (universeId) => characterService.getCharactersByUniverse(universeId),
 };
 
 /**
@@ -77,13 +77,14 @@ const universes = {
 const scenes = {
   getScenes: sceneService.getAllScenes,
   getScene: sceneService.getSceneById,
+  getSceneById: sceneService.getSceneById,
   createScene: sceneService.createScene,
   updateScene: sceneService.updateScene,
   deleteScene: sceneService.deleteScene,
   getScenesByUniverse: sceneService.getScenesByUniverse,
   reorderScenes: sceneService.reorderScenes,
   getSceneSettings: sceneService.getSceneSettings,
-  updateSceneSettings: sceneService.updateSceneSettings
+  updateSceneSettings: sceneService.updateSceneSettings,
 };
 
 /**
@@ -98,7 +99,7 @@ const characters = {
   getCharactersByUniverse: characterService.getCharactersByUniverse,
   getCharactersByScene: characterService.getCharactersByScene,
   getCharacterRelationships: characterService.getCharacterRelationships,
-  updateCharacterAttributes: characterService.updateCharacterAttributes
+  updateCharacterAttributes: characterService.updateCharacterAttributes,
 };
 
 /**
@@ -112,7 +113,7 @@ const notes = {
   deleteNote: noteService.deleteNote,
   getNotesByUniverse: noteService.getNotesByUniverse,
   getNotesByScene: noteService.getNotesByScene,
-  getNotesByCharacter: noteService.getNotesByCharacter
+  getNotesByCharacter: noteService.getNotesByCharacter,
 };
 
 /**
@@ -124,7 +125,7 @@ const user = {
   changePassword: userService.changePassword,
   deleteAccount: userService.deleteAccount,
   getPreferences: userService.getPreferences,
-  updatePreferences: userService.updatePreferences
+  updatePreferences: userService.updatePreferences,
 };
 
 /**
@@ -139,7 +140,7 @@ const audio = {
   getAudioTracksByUniverse: audioService.getAudioTracksByUniverse,
   getAudioTracksByScene: audioService.getAudioTracksByScene,
   generateMusic: audioService.generateMusic,
-  downloadMusic: audioService.downloadMusic
+  downloadMusic: audioService.downloadMusic,
 };
 
 /**
@@ -150,7 +151,7 @@ const system = {
   getVersion: systemService.getVersion,
   ping: systemService.ping,
   getSystemConfig: systemService.getSystemConfig,
-  getSystemMetrics: systemService.getSystemMetrics
+  getSystemMetrics: systemService.getSystemMetrics,
 };
 
 // Build the main API object with all the functionality
@@ -164,24 +165,24 @@ const api = {
   user,
   audio,
   system,
-  
+
   // Original endpoints reference
   endpoints,
 
   // Helper methods
   clearCache: httpClient.clearCache,
   formatUrl: httpClient.formatUrl,
-  
+
   // Convenience methods for HTTP operations
   get: httpClient.get,
   post: httpClient.post,
   put: httpClient.put,
   delete: httpClient.delete,
-  patch: httpClient.patch
+  patch: httpClient.patch,
 };
 
 // For older code that uses the named export
 export const apiClient = api;
 
 // For components that use the default export
-export default api; 
+export default api;

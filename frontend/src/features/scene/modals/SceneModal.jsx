@@ -63,7 +63,7 @@ const SceneModal = ({
           setLoading(true);
           setError(null);
 
-          const response = await apiClient.getScene(sceneId);
+          const response = await apiClient.scenes.getSceneById(sceneId);
           const sceneData = response.data?.scene || response.data;
 
           if (sceneData) {
@@ -188,7 +188,7 @@ const SceneModal = ({
       setLoading(true);
       setError(null);
 
-      await apiClient.deleteScene(sceneId);
+      await apiClient.scenes.deleteScene(sceneId);
 
       // Call success callback if provided
       if (onSuccess) {

@@ -3,8 +3,8 @@
  * Handles operations related to characters in the application
  */
 
-import { httpClient } from './http-client';
 import { characterEndpoints } from './endpoints';
+import { httpClient } from './http-client';
 import { responseHandler } from './response-handler';
 
 /**
@@ -35,9 +35,9 @@ export const getCharactersByUniverse = async (universeId) => {
     const response = await httpClient.get(characterEndpoints.forUniverse(universeId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('characters', 'Error fetching universe characters', { 
-      universeId, 
-      error: error.message 
+    console.log('characters', 'Error fetching universe characters', {
+      universeId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -57,9 +57,9 @@ export const getCharactersByScene = async (sceneId) => {
     const response = await httpClient.get(characterEndpoints.forScene(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('characters', 'Error fetching scene characters', { 
-      sceneId, 
-      error: error.message 
+    console.log('characters', 'Error fetching scene characters', {
+      sceneId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -79,9 +79,9 @@ export const getCharacterById = async (characterId) => {
     const response = await httpClient.get(characterEndpoints.get(characterId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('characters', 'Error fetching character by ID', { 
-      characterId, 
-      error: error.message 
+    console.log('characters', 'Error fetching character by ID', {
+      characterId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -98,13 +98,15 @@ export const createCharacter = async (characterData) => {
     if (!characterData) {
       return responseHandler.handleError(new Error('Character data is required'));
     }
-    
+
     if (!characterData.universeId) {
-      return responseHandler.handleError(new Error('Universe ID is required for character creation'));
+      return responseHandler.handleError(
+        new Error('Universe ID is required for character creation')
+      );
     }
 
     const response = await httpClient.post(characterEndpoints.create, characterData);
-    
+
     console.log('characters', 'Character created successfully');
     return responseHandler.handleSuccess(response);
   } catch (error) {
@@ -124,19 +126,19 @@ export const updateCharacter = async (characterId, characterData) => {
     if (!characterId) {
       return responseHandler.handleError(new Error('Character ID is required'));
     }
-    
+
     if (!characterData) {
       return responseHandler.handleError(new Error('Character data is required'));
     }
 
     const response = await httpClient.put(characterEndpoints.update(characterId), characterData);
-    
+
     console.log('characters', 'Character updated successfully', { characterId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('characters', 'Error updating character', { 
-      characterId, 
-      error: error.message 
+    console.log('characters', 'Error updating character', {
+      characterId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -154,13 +156,13 @@ export const deleteCharacter = async (characterId) => {
     }
 
     const response = await httpClient.delete(characterEndpoints.delete(characterId));
-    
+
     console.log('characters', 'Character deleted successfully', { characterId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('characters', 'Error deleting character', { 
-      characterId, 
-      error: error.message 
+    console.log('characters', 'Error deleting character', {
+      characterId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -180,9 +182,9 @@ export const getCharacterRelationships = async (characterId) => {
     const response = await httpClient.get(characterEndpoints.relationships(characterId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('characters', 'Error fetching character relationships', { 
-      characterId, 
-      error: error.message 
+    console.log('characters', 'Error fetching character relationships', {
+      characterId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -199,19 +201,21 @@ export const updateCharacterAttributes = async (characterId, attributes) => {
     if (!characterId) {
       return responseHandler.handleError(new Error('Character ID is required'));
     }
-    
+
     if (!attributes || Object.keys(attributes).length === 0) {
       return responseHandler.handleError(new Error('Attributes are required'));
     }
 
-    const response = await httpClient.patch(characterEndpoints.attributes(characterId), { attributes });
-    
+    const response = await httpClient.patch(characterEndpoints.attributes(characterId), {
+      attributes,
+    });
+
     console.log('characters', 'Character attributes updated successfully', { characterId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('characters', 'Error updating character attributes', { 
-      characterId, 
-      error: error.message 
+    console.log('characters', 'Error updating character attributes', {
+      characterId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -229,7 +233,7 @@ export const characterService = {
   updateCharacter,
   deleteCharacter,
   getCharacterRelationships,
-  updateCharacterAttributes
+  updateCharacterAttributes,
 };
 
 export default characterService;

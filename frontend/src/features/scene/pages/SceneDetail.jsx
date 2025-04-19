@@ -1,38 +1,35 @@
-import React, { useEffect, useState, useMemo } from "react";
-import PropTypes from "prop-types";
-import { useDispatch, useSelector } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
 import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  Alert,
-  Paper,
-  Grid,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
-} from "@mui/material";
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   ArrowBack as ArrowBackIcon,
   CalendarToday as CalendarIcon,
-  Update as UpdateIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
   Info as InfoIcon,
-} from "@mui/icons-material";
+  Update as UpdateIcon,
+} from '@mui/icons-material';
 import {
-  fetchSceneById,
-  deleteScene,
-} from "../../../store/thunks/consolidated/scenesThunks";
-import { formatDate } from "../../../utils";
-import "../styles/SceneDetail.css";
-import apiClient from "../../../services/api.adapter";
-import SceneForm from "./SceneForm";
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  Paper,
+  Typography,
+} from '@mui/material';
+import PropTypes from 'prop-types';
+import { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
+import apiClient from '../../../services/api.adapter';
+import { deleteScene, fetchSceneById } from '../../../store/thunks/consolidated/scenesThunks';
+import { formatDate } from '../../../utils';
+import '../styles/SceneDetail.css';
+import SceneForm from './SceneForm';
 
 const SceneDetail = ({ isEdit = false }) => {
   const dispatch = useDispatch();
@@ -72,7 +69,7 @@ const SceneDetail = ({ isEdit = false }) => {
   // If isEdit is true, automatically show the edit form
   useEffect(() => {
     if (isEdit && scene) {
-      console.log("Opening edit form automatically from route prop");
+      console.log('Opening edit form automatically from route prop');
       setShowEditForm(true);
     }
   }, [isEdit, scene]);
@@ -80,31 +77,59 @@ const SceneDetail = ({ isEdit = false }) => {
   useEffect(() => {
     if (sceneId) {
       // If sceneId is "new", redirect to create scene page
-      if (sceneId === "new") {
-        console.log("Redirecting to create scene page");
+      if (sceneId === 'new') {
+        console.log('Redirecting to create scene page');
         navigate(`/universes/${universeId}/scenes/create`);
         return;
       }
 
-      console.log("Fetching scene with ID:", sceneId);
-      dispatch(fetchSceneById(sceneId)).catch((error) => {
-        console.error("Error fetching scene:", error);
-        if (error.response?.status === 401) {
-          // Token issue - this will be handled by the API interceptor
-          console.warn(
-            "Authentication issue detected, might redirect to login"
-          );
-        }
-      });
+      console.log('Fetching scene with ID:', sceneId);
+
+      // Set loading state before fetching
+      dispatch({ type: 'scenes/fetchById/pending' });
+
+      // Use try/catch to handle errors more gracefully
+      try {
+        dispatch(fetchSceneById(sceneId))
+          .unwrap()
+          .then((result) => {
+            console.log('Scene fetch successful:', result);
+            // Ensure we've set the scene in the Redux store
+            if (result?.scene) {
+              dispatch({
+                type: 'scenes/setCurrentScene',
+                payload: result.scene,
+              });
+            }
+          })
+          .catch((error) => {
+            console.error('Error fetching scene:', error);
+
+            // Don't navigate away on error, just show the error message
+            dispatch({
+              type: 'scenes/setError',
+              payload: `Failed to load scene: ${error.message || 'Unknown error'}`,
+            });
+
+            if (error.response?.status === 401) {
+              // Token issue - this will be handled by the API interceptor
+              console.warn('Authentication issue detected, might redirect to login');
+            }
+          });
+      } catch (error) {
+        console.error('Exception in scene fetch:', error);
+        // Set error state to show error message
+        dispatch({
+          type: 'scenes/setError',
+          payload: `Exception fetching scene: ${error.message || 'Unknown error'}`,
+        });
+      }
     }
   }, [dispatch, sceneId, universeId, navigate]);
 
   const handleEdit = () => {
     try {
-      console.log(
-        "SceneDetail: Navigating to edit page for scene ID:",
-        sceneId
-      );
+      console.log('SceneDetail: Navigating to edit page for scene ID:', sceneId);
 
       // Make sure we have the universeId
       const targetUniverseId = universeId || scene?.universe_id;
@@ -113,18 +138,18 @@ const SceneDetail = ({ isEdit = false }) => {
         // Use the correct route format with universeId included
         navigate(`/universes/${targetUniverseId}/scenes/${sceneId}/edit`);
       } else {
-        console.warn("Missing universeId, cannot navigate to edit scene page");
+        console.warn('Missing universeId, cannot navigate to edit scene page');
         // Fallback - try to navigate using just the sceneId
         navigate(`/scenes/${sceneId}/edit`);
       }
     } catch (error) {
-      console.error("Error navigating to edit page:", error);
+      console.error('Error navigating to edit page:', error);
     }
   };
 
   const handleDelete = async () => {
     try {
-      console.log("Deleting scene with ID:", sceneId);
+      console.log('Deleting scene with ID:', sceneId);
       await dispatch(deleteScene(sceneId));
 
       // Determine where to navigate after deletion
@@ -134,11 +159,11 @@ const SceneDetail = ({ isEdit = false }) => {
         navigate(`/universes/${targetUniverseId}/scenes`);
       } else {
         // Fallback to dashboard if we don't have a universe_id
-        console.warn("No universe_id found for scene, navigating to dashboard");
-        navigate("/dashboard");
+        console.warn('No universe_id found for scene, navigating to dashboard');
+        navigate('/dashboard');
       }
     } catch (error) {
-      console.error("Error deleting scene:", error);
+      console.error('Error deleting scene:', error);
     } finally {
       setShowDeleteDialog(false);
     }
@@ -153,13 +178,13 @@ const SceneDetail = ({ isEdit = false }) => {
         navigate(`/universes/${targetUniverseId}/scenes`);
       } else {
         // Fallback to universes list if we don't have a universe_id
-        console.warn("No universe_id found for scene, navigating to dashboard");
-        navigate("/dashboard");
+        console.warn('No universe_id found for scene, navigating to dashboard');
+        navigate('/dashboard');
       }
     } catch (error) {
-      console.error("Error navigating back:", error);
+      console.error('Error navigating back:', error);
       // Ultimate fallback
-      navigate("/dashboard");
+      navigate('/dashboard');
     }
   };
 
@@ -170,12 +195,7 @@ const SceneDetail = ({ isEdit = false }) => {
   if (loading) {
     return (
       <Container className="scene-detail-container">
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          minHeight="200px"
-        >
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
           <CircularProgress />
         </Box>
       </Container>
@@ -187,9 +207,7 @@ const SceneDetail = ({ isEdit = false }) => {
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Paper sx={{ p: 3 }}>
           <Alert severity="error">
-            {typeof error === "object"
-              ? error.message || "An error occurred"
-              : error}
+            {typeof error === 'object' ? error.message || 'An error occurred' : error}
           </Alert>
         </Paper>
       </Container>
@@ -253,7 +271,7 @@ const SceneDetail = ({ isEdit = false }) => {
               Description
             </Typography>
             <Typography variant="body1" paragraph component="div">
-              {scene.description || "No description provided"}
+              {scene.description || 'No description provided'}
             </Typography>
           </Paper>
 
@@ -301,24 +319,23 @@ const SceneDetail = ({ isEdit = false }) => {
               </Typography>
               <Typography variant="body1" component="div">
                 This scene has {scene.notes_count} note
-                {scene.notes_count !== 1 ? "s" : ""}.
+                {scene.notes_count !== 1 ? 's' : ''}.
               </Typography>
             </Paper>
           )}
 
           {/* Display character count if available */}
-          {scene.characters_count !== undefined &&
-            scene.characters_count > 0 && (
-              <Paper className="scene-detail-section" sx={{ mt: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                  Characters
-                </Typography>
-                <Typography variant="body1" component="div">
-                  This scene has {scene.characters_count} character
-                  {scene.characters_count !== 1 ? "s" : ""}.
-                </Typography>
-              </Paper>
-            )}
+          {scene.characters_count !== undefined && scene.characters_count > 0 && (
+            <Paper className="scene-detail-section" sx={{ mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Characters
+              </Typography>
+              <Typography variant="body1" component="div">
+                This scene has {scene.characters_count} character
+                {scene.characters_count !== 1 ? 's' : ''}.
+              </Typography>
+            </Paper>
+          )}
         </Grid>
 
         <Grid item xs={12} md={4}>
@@ -327,52 +344,26 @@ const SceneDetail = ({ isEdit = false }) => {
               Scene Details
             </Typography>
             <Box className="scene-detail-info">
-              <Typography
-                variant="body2"
-                className="date-info-item"
-                component="div"
-              >
+              <Typography variant="body2" className="date-info-item" component="div">
                 <span>
-                  <CalendarIcon
-                    fontSize="small"
-                    sx={{ verticalAlign: "middle", mr: 1 }}
-                  />{" "}
-                  Created:
+                  <CalendarIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} /> Created:
                 </span>
                 <span>{formatDate(scene.created_at)}</span>
               </Typography>
-              <Typography
-                variant="body2"
-                className="date-info-item"
-                component="div"
-              >
+              <Typography variant="body2" className="date-info-item" component="div">
                 <span>
-                  <UpdateIcon
-                    fontSize="small"
-                    sx={{ verticalAlign: "middle", mr: 1 }}
-                  />{" "}
-                  Updated:
+                  <UpdateIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} /> Updated:
                 </span>
                 <span>{formatDate(scene.updated_at)}</span>
               </Typography>
-              <Typography
-                variant="body2"
-                className="date-info-item"
-                component="div"
-              >
+              <Typography variant="body2" className="date-info-item" component="div">
                 <span>
-                  <InfoIcon
-                    fontSize="small"
-                    sx={{ verticalAlign: "middle", mr: 1 }}
-                  />{" "}
-                  Status:
+                  <InfoIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} /> Status:
                 </span>
                 <Chip
-                  label={scene.is_active ? "Active" : "Inactive"}
+                  label={scene.is_active ? 'Active' : 'Inactive'}
                   size="small"
-                  className={
-                    scene.is_active ? "status-active" : "status-inactive"
-                  }
+                  className={scene.is_active ? 'status-active' : 'status-inactive'}
                 />
               </Typography>
             </Box>
@@ -385,71 +376,43 @@ const SceneDetail = ({ isEdit = false }) => {
             </Typography>
             <Box className="scene-detail-metadata">
               {scene.location && (
-                <Typography
-                  variant="body2"
-                  className="detail-info-item"
-                  component="div"
-                >
+                <Typography variant="body2" className="detail-info-item" component="div">
                   <span>Location:</span>
                   <span>{scene.location}</span>
                 </Typography>
               )}
               {scene.scene_type && (
-                <Typography
-                  variant="body2"
-                  className="detail-info-item"
-                  component="div"
-                >
+                <Typography variant="body2" className="detail-info-item" component="div">
                   <span>Scene Type:</span>
                   <span>{scene.scene_type}</span>
                 </Typography>
               )}
               {scene.time_of_day && (
-                <Typography
-                  variant="body2"
-                  className="detail-info-item"
-                  component="div"
-                >
+                <Typography variant="body2" className="detail-info-item" component="div">
                   <span>Time of Day:</span>
                   <span>{scene.time_of_day}</span>
                 </Typography>
               )}
               {scene.status && (
-                <Typography
-                  variant="body2"
-                  className="detail-info-item"
-                  component="div"
-                >
+                <Typography variant="body2" className="detail-info-item" component="div">
                   <span>Status:</span>
                   <span>{scene.status}</span>
                 </Typography>
               )}
               {scene.significance && (
-                <Typography
-                  variant="body2"
-                  className="detail-info-item"
-                  component="div"
-                >
+                <Typography variant="body2" className="detail-info-item" component="div">
                   <span>Significance:</span>
                   <span>{scene.significance}</span>
                 </Typography>
               )}
               {scene.date_of_scene && (
-                <Typography
-                  variant="body2"
-                  className="detail-info-item"
-                  component="div"
-                >
+                <Typography variant="body2" className="detail-info-item" component="div">
                   <span>Scene Date:</span>
                   <span>{scene.date_of_scene}</span>
                 </Typography>
               )}
-              {typeof scene.order === "number" && (
-                <Typography
-                  variant="body2"
-                  className="detail-info-item"
-                  component="div"
-                >
+              {typeof scene.order === 'number' && (
+                <Typography variant="body2" className="detail-info-item" component="div">
                   <span>Order:</span>
                   <span>{scene.order}</span>
                 </Typography>
@@ -470,8 +433,7 @@ const SceneDetail = ({ isEdit = false }) => {
         <DialogTitle id="delete-dialog-title">Delete Scene</DialogTitle>
         <DialogContent dividers>
           <Typography>
-            Are you sure you want to delete &quot;{scene.name}&quot;? This action cannot
-            be undone.
+            Are you sure you want to delete &quot;{scene.name}&quot;? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -502,31 +464,22 @@ const SceneDetail = ({ isEdit = false }) => {
               initialData={scene}
               onSubmit={async (formattedValues) => {
                 try {
-                  console.log(
-                    "SceneDetail - Form submitted with data:",
-                    formattedValues
-                  );
+                  console.log('SceneDetail - Form submitted with data:', formattedValues);
 
                   // Make sure universeId is included
                   if (!formattedValues.universe_id) {
-                    console.log(
-                      "SceneDetail - Adding missing universe_id:",
-                      scene.universe_id
-                    );
+                    console.log('SceneDetail - Adding missing universe_id:', scene.universe_id);
                     formattedValues.universe_id = scene.universe_id;
                   }
 
                   // Make the update API call
                   console.log(
-                    "SceneDetail - Calling updateScene API with:",
+                    'SceneDetail - Calling updateScene API with:',
                     sceneId,
                     formattedValues
                   );
-                  const response = await apiClient.updateScene(
-                    sceneId,
-                    formattedValues
-                  );
-                  console.log("SceneDetail - Update response:", response);
+                  const response = await apiClient.scenes.updateScene(sceneId, formattedValues);
+                  console.log('SceneDetail - Update response:', response);
 
                   // Process the response to get the result
                   let result;
@@ -535,10 +488,7 @@ const SceneDetail = ({ isEdit = false }) => {
                   } else if (response.data) {
                     result = response.data;
                   } else {
-                    console.warn(
-                      "SceneDetail - Unexpected API response format:",
-                      response
-                    );
+                    console.warn('SceneDetail - Unexpected API response format:', response);
                     result = response;
                   }
 
@@ -550,16 +500,14 @@ const SceneDetail = ({ isEdit = false }) => {
 
                   // If we came from the edit route, navigate back to detail
                   if (isEdit) {
-                    navigate(
-                      `/universes/${scene.universe_id}/scenes/${sceneId}`
-                    );
+                    navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);
                   }
 
                   return result; // Return the result to the SceneForm
                 } catch (error) {
-                  console.error("SceneDetail - Error updating scene:", error);
+                  console.error('SceneDetail - Error updating scene:', error);
                   console.error(
-                    "SceneDetail - Error details:",
+                    'SceneDetail - Error details:',
                     error.response?.data || error.message
                   );
                   throw error; // Re-throw to let SceneForm handle the error
@@ -582,11 +530,11 @@ const SceneDetail = ({ isEdit = false }) => {
 
 // Add PropTypes validation
 SceneDetail.propTypes = {
-  isEdit: PropTypes.bool
+  isEdit: PropTypes.bool,
 };
 
 SceneDetail.defaultProps = {
-  isEdit: false
+  isEdit: false,
 };
 
 export default SceneDetail;

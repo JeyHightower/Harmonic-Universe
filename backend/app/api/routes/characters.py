@@ -22,7 +22,7 @@ def get_characters(scene_id):
         # Get all characters for the scene through the many-to-many relationship
         # using the scene.characters relationship
         characters = scene.characters
-        
+
         # Filter out deleted characters
         active_characters = [c for c in characters if not c.is_deleted]
 
@@ -47,10 +47,10 @@ def get_character(character_id):
 
         # Get the universe for this character
         universe_id = character.universe_id
-        
+
         # Check if the universe is public or belongs to the user
         universe = Universe.query.get_or_404(universe_id)
-        
+
         if not universe.is_public and universe.user_id != user_id:
             return jsonify({
                 'message': 'Access denied'
@@ -80,17 +80,17 @@ def create_character():
             }), 400
 
         user_id = get_jwt_identity()
-        
+
         # Validate required fields
         name = data.get('name', '').strip()
         scene_id = data.get('scene_id')
-        
+
         if not name:
             return jsonify({
                 'message': 'Name is required',
                 'error': 'Character name cannot be empty'
             }), 400
-            
+
         if not scene_id:
             return jsonify({
                 'message': 'Scene ID is required',
@@ -110,7 +110,7 @@ def create_character():
             universe_id=scene.universe_id,
             description=data.get('description', '').strip()
         )
-        
+
         # Add relationship to scene
         character.scenes.append(scene)
 
@@ -125,7 +125,7 @@ def create_character():
 
         db.session.add(character)
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Character created successfully',
             'character': character.to_dict()
@@ -147,10 +147,10 @@ def update_character(character_id):
 
         # Get the universe for this character
         universe_id = character.universe_id
-        
+
         # Check if the universe is public or belongs to the user
         universe = Universe.query.get_or_404(universe_id)
-        
+
         if not universe.is_public and universe.user_id != user_id:
             return jsonify({
                 'message': 'Access denied'
@@ -194,13 +194,13 @@ def delete_character(character_id):
     try:
         character = Character.query.get_or_404(character_id)
         user_id = get_jwt_identity()
-        
+
         # Get the universe for this character
         universe_id = character.universe_id
-        
+
         # Check if the universe belongs to the user (only owner can delete)
         universe = Universe.query.get_or_404(universe_id)
-        
+
         if universe.user_id != user_id:
             return jsonify({
                 'message': 'Access denied'
@@ -208,11 +208,11 @@ def delete_character(character_id):
 
         # Soft delete
         character.delete()
-        
+
         return jsonify({
             'message': 'Character deleted successfully'
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         print(f"Error deleting character: {str(e)}")

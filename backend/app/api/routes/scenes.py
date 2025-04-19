@@ -202,43 +202,16 @@ def get_scene(scene_id):
 
         # Create a comprehensive scene dictionary for the response
         try:
-            scene_dict = {
-                'id': scene.id,
-                'name': scene.name,
-                'description': scene.description if hasattr(scene, 'description') else "",
-                'universe_id': scene.universe_id,
-                'is_deleted': False,  # Explicitly set to False since we already filtered deleted scenes
-                'created_at': str(scene.created_at) if hasattr(scene, 'created_at') and scene.created_at else None,
-                'updated_at': str(scene.updated_at) if hasattr(scene, 'updated_at') and scene.updated_at else None
-            }
+            # Use the scene's to_dict method to ensure we get a properly formatted dictionary
+            # This handles all attributes correctly and includes all necessary data
+            scene_dict = scene.to_dict()
 
-            # Add optional fields that were set
-            if hasattr(scene, 'summary') and scene.summary is not None:
-                scene_dict['summary'] = scene.summary
-            if hasattr(scene, 'content') and scene.content is not None:
-                scene_dict['content'] = scene.content
-            if hasattr(scene, 'notes_text') and scene.notes_text is not None:
-                scene_dict['notes'] = scene.notes_text
-            if hasattr(scene, 'location') and scene.location is not None:
-                scene_dict['location'] = scene.location
-            if hasattr(scene, 'scene_type') and scene.scene_type is not None:
-                scene_dict['scene_type'] = scene.scene_type
-            if hasattr(scene, 'time_of_day') and scene.time_of_day is not None:
-                scene_dict['time_of_day'] = scene.time_of_day
-            if hasattr(scene, 'status') and scene.status is not None:
-                scene_dict['status'] = scene.status
-            if hasattr(scene, 'significance') and scene.significance is not None:
-                scene_dict['significance'] = scene.significance
-            if hasattr(scene, 'date_of_scene') and scene.date_of_scene is not None:
-                scene_dict['date_of_scene'] = str(scene.date_of_scene)
-            if hasattr(scene, 'order') and scene.order is not None:
-                scene_dict['order'] = scene.order
-            if hasattr(scene, 'is_public') and scene.is_public is not None:
-                scene_dict['is_public'] = scene.is_public
+            # Ensure is_deleted is explicitly set to False
+            scene_dict['is_deleted'] = False
 
             # Add character IDs if available
             if hasattr(scene, 'characters') and scene.characters:
-                scene_dict['character_ids'] = [c.id for c in scene.characters]
+                scene_dict['character_ids'] = [c.id for c in scene.characters if not getattr(c, 'is_deleted', False)]
 
             current_app.logger.info(f"Scene {scene_id} retrieved successfully")
 
@@ -920,43 +893,15 @@ def update_scene(scene_id):
             current_app.logger.info(f"Scene {scene_id} updated successfully")
 
             # Create a comprehensive scene dictionary for the response
-            scene_dict = {
-                'id': scene.id,
-                'name': scene.name,
-                'description': scene.description if hasattr(scene, 'description') else "",
-                'universe_id': scene.universe_id,
-                'is_deleted': False,  # Explicitly set to False since we already filtered deleted scenes
-                'created_at': str(scene.created_at) if hasattr(scene, 'created_at') and scene.created_at else None,
-                'updated_at': str(scene.updated_at) if hasattr(scene, 'updated_at') and scene.updated_at else None
-            }
+            # Use the scene's to_dict method for a properly formatted dictionary
+            scene_dict = scene.to_dict()
 
-            # Add optional fields that were set
-            if hasattr(scene, 'summary') and scene.summary is not None:
-                scene_dict['summary'] = scene.summary
-            if hasattr(scene, 'content') and scene.content is not None:
-                scene_dict['content'] = scene.content
-            if hasattr(scene, 'notes_text') and scene.notes_text is not None:
-                scene_dict['notes'] = scene.notes_text
-            if hasattr(scene, 'location') and scene.location is not None:
-                scene_dict['location'] = scene.location
-            if hasattr(scene, 'scene_type') and scene.scene_type is not None:
-                scene_dict['scene_type'] = scene.scene_type
-            if hasattr(scene, 'time_of_day') and scene.time_of_day is not None:
-                scene_dict['time_of_day'] = scene.time_of_day
-            if hasattr(scene, 'status') and scene.status is not None:
-                scene_dict['status'] = scene.status
-            if hasattr(scene, 'significance') and scene.significance is not None:
-                scene_dict['significance'] = scene.significance
-            if hasattr(scene, 'date_of_scene') and scene.date_of_scene is not None:
-                scene_dict['date_of_scene'] = str(scene.date_of_scene)
-            if hasattr(scene, 'order') and scene.order is not None:
-                scene_dict['order'] = scene.order
-            if hasattr(scene, 'is_public') and scene.is_public is not None:
-                scene_dict['is_public'] = scene.is_public
+            # Ensure is_deleted is explicitly set to False
+            scene_dict['is_deleted'] = False
 
             # Add character IDs if available
             if hasattr(scene, 'characters') and scene.characters:
-                scene_dict['character_ids'] = [c.id for c in scene.characters]
+                scene_dict['character_ids'] = [c.id for c in scene.characters if not getattr(c, 'is_deleted', False)]
 
             return jsonify({
                 'message': 'Scene updated successfully',

@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import PropTypes from "prop-types";
-import { Typography, Space, Alert } from "antd";
-import Button from "../../../components/common/Button";
-import apiClient from "../../../services/api.adapter";
+import { Alert, Space, Typography } from 'antd';
+import PropTypes from 'prop-types';
+import { useState } from 'react';
+import Button from '../../../components/common/Button';
+import apiClient from '../../../services/api.adapter';
 
 const { Text, Title } = Typography;
 
@@ -19,15 +19,15 @@ const SceneDeleteConfirmation = ({ scene, onConfirm, onCancel }) => {
       setError(null);
 
       // Call API to delete the scene
-      await apiClient.deleteScene(scene.id);
+      await apiClient.scenes.deleteScene(scene.id);
 
       // Call onConfirm callback with the deleted scene id
       if (onConfirm) {
         onConfirm({ id: scene.id });
       }
     } catch (error) {
-      console.error("Error deleting scene:", error);
-      setError("Failed to delete scene. Please try again.");
+      console.error('Error deleting scene:', error);
+      setError('Failed to delete scene. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -38,8 +38,7 @@ const SceneDeleteConfirmation = ({ scene, onConfirm, onCancel }) => {
       <Title level={4}>Delete Scene</Title>
 
       <Text>
-        Are you sure you want to delete the scene{" "}
-        <strong>{scene.name || scene.title}</strong>?
+        Are you sure you want to delete the scene <strong>{scene.name || scene.title}</strong>?
       </Text>
 
       <div className="warning-message">
@@ -60,12 +59,7 @@ const SceneDeleteConfirmation = ({ scene, onConfirm, onCancel }) => {
       <div className="confirmation-actions">
         <Space>
           <Button onClick={onCancel}>Cancel</Button>
-          <Button
-            type="primary"
-            danger
-            onClick={handleDelete}
-            loading={loading}
-          >
+          <Button type="primary" danger onClick={handleDelete} loading={loading}>
             Delete Scene
           </Button>
         </Space>

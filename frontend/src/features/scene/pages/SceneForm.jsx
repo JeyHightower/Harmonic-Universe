@@ -134,7 +134,7 @@ const SceneForm = ({
           setLoading(true);
           setError(null);
 
-          const response = await apiClient.getScene(sceneId);
+          const response = await apiClient.scenes.getSceneById(sceneId);
           const sceneData = response.data?.scene || response.data;
 
           console.log('SceneForm - Scene data loaded:', sceneData);
@@ -408,7 +408,11 @@ const SceneForm = ({
 
   return (
     <div className="scene-form-container">
-      <Card bordered={false} className="scene-form-card main-form-card" style={formStyles.formCard}>
+      <Card
+        variant="outlined"
+        className="scene-form-card main-form-card"
+        style={formStyles.formCard}
+      >
         <Title level={4} className="form-section-title" style={formStyles.formTitle}>
           {isEditMode ? 'Edit Scene Details' : 'Create New Scene'}
         </Title>

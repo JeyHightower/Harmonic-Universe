@@ -73,7 +73,7 @@ def get_universe_notes_route(universe_id):
             }), 403
 
         notes = Note.query.filter_by(universe_id=universe_id, is_deleted=False).all()
-        
+
         return jsonify({
             'message': 'Notes retrieved successfully',
             'notes': [note.to_dict() for note in notes]
@@ -84,4 +84,4 @@ def get_universe_notes_route(universe_id):
         return jsonify({
             'message': 'Error retrieving notes',
             'error': str(e)
-        }), 500 
+        }), 500
