@@ -63,15 +63,49 @@ const SceneModal = ({
           setLoading(true);
           setError(null);
 
+          console.log(`SceneModal - Loading scene data for ID: ${sceneId}`);
+
+          // First attempt with direct API call
           const response = await apiClient.scenes.getSceneById(sceneId);
-          const sceneData = response.data?.scene || response.data;
+          console.log('SceneModal - Scene data response:', response);
+
+          // Handle different response formats
+          let sceneData;
+          if (response.data?.scene) {
+            sceneData = response.data.scene;
+          } else if (response.data) {
+            sceneData = response.data;
+          } else {
+            throw new Error('Invalid response format from API');
+          }
 
           if (sceneData) {
+            console.log('SceneModal - Setting scene data:', sceneData);
             setScene(sceneData);
+          } else {
+            throw new Error('No scene data returned from API');
           }
         } catch (error) {
-          console.error('Error loading scene data:', error);
-          setError('Failed to load scene data. Please try refreshing the page.');
+          console.error('SceneModal - Error loading scene data:', error);
+
+          // Try a backup method if the first one fails
+          try {
+            console.log('SceneModal - Attempting backup method to fetch scene data');
+            const backupResponse = await apiClient.get(`/scenes/${sceneId}/`);
+
+            if (backupResponse.data?.scene) {
+              console.log(
+                'SceneModal - Got scene data from backup method:',
+                backupResponse.data.scene
+              );
+              setScene(backupResponse.data.scene);
+            } else {
+              throw new Error('Backup method also failed to retrieve scene data');
+            }
+          } catch (backupError) {
+            console.error('SceneModal - Backup method also failed:', backupError);
+            setError('Failed to load scene data. Please try refreshing the page.');
+          }
         } finally {
           setLoading(false);
         }
@@ -79,6 +113,7 @@ const SceneModal = ({
 
       loadSceneData();
     } else if (initialData) {
+      console.log('SceneModal - Using provided initialData:', initialData);
       setScene(initialData);
     }
   }, [sceneId, initialData, actualMode]);

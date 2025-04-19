@@ -58,6 +58,17 @@ limiter = Limiter(
     storage_options={}
 )
 
+# Exempt OPTIONS requests from rate limiting to fix CORS preflight issues
+def exempt_options_requests():
+    def decorator(f):
+        def wrapped(*args, **kwargs):
+            if request.method == "OPTIONS":
+                return f(*args, **kwargs)
+            else:
+                return limiter.exempt(f)(*args, **kwargs)
+        return wrapped
+    return decorator
+
 class DummyCache:
     def __init__(self, *args, **kwargs):
         pass
@@ -127,8 +138,20 @@ def setup_cors(app):
          expose_headers=expose_headers,
          max_age=max_age)
 
-    # Do not add another after_request handler for CORS
-    # Flask-CORS already adds the necessary headers
+    # Add a global response handler specifically for OPTIONS requests
+    @app.after_request
+    def after_request(response):
+        # If it's an OPTIONS request, ensure it gets proper CORS headers and a 200 status
+        if request.method == 'OPTIONS':
+            # Only modify if it's a 429 or other error status
+            if response.status_code != 200:
+                response.headers.add('Access-Control-Allow-Origin', '*')
+                response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+                response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+                response.headers.add('Access-Control-Allow-Credentials', 'true')
+                response.headers.add('Access-Control-Max-Age', '86400')
+                response.status_code = 200
+        return response
 
     return app
 
@@ -237,6 +260,7 @@ def setup_routes(app):
     # SPA route handler
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
+    @limiter.limit("500 per hour")  # Increased from 100 to 500
     def react_root(path: str = '') -> Union[Response, tuple[Response, int]]:
         if path.startswith('api/'):
             return jsonify({"error": "Not found"}), 404

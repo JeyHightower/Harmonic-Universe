@@ -5,13 +5,25 @@ from ..models.character import Character
 from ...extensions import db
 import traceback
 from sqlalchemy import text, create_engine
+from app.__init__ import exempt_options_requests
 
 scenes_bp = Blueprint('scenes', __name__)
 
-@scenes_bp.route('/universe/<int:universe_id>', methods=['GET'])
-@scenes_bp.route('/universe/<int:universe_id>/', methods=['GET'])
-@jwt_required()
+@scenes_bp.route('/universe/<int:universe_id>', methods=['GET', 'OPTIONS'])
+@scenes_bp.route('/universe/<int:universe_id>/', methods=['GET', 'OPTIONS'])
+@exempt_options_requests()
+@jwt_required(optional=True)
 def get_scenes(universe_id):
+    # Handle OPTIONS requests explicitly
+    if request.method == 'OPTIONS':
+        response = jsonify({'success': True})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Max-Age', '86400')
+        return response, 200
+
     try:
         current_app.logger.info(f"Fetching scenes for universe ID: {universe_id}")
 
@@ -504,23 +516,32 @@ def list_scenes():
             'scenes': []  # Return empty array instead of error
         }), 500
 
-@scenes_bp.route('/', methods=['POST'])
-@scenes_bp.route('', methods=['POST'])
-@jwt_required()
+@scenes_bp.route('/', methods=['POST', 'OPTIONS'])
+@scenes_bp.route('', methods=['POST', 'OPTIONS'])
+@exempt_options_requests()
+@jwt_required(optional=True)
 def create_scene():
+    # Handle OPTIONS requests explicitly
+    if request.method == 'OPTIONS':
+        response = jsonify({'success': True})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Max-Age', '86400')
+        return response, 200
+
     try:
-        current_app.logger.info(f"Creating scene with request data: {request.data}")
+        current_app.logger.info("Creating new scene")
+        # Parse and validate the request data
         data = request.get_json()
 
-        # Additional logging to debug malformed requests
-        current_app.logger.info(f"Request JSON data type: {type(data)}")
-
+        # Handle unexpected data format
         if not data:
-            current_app.logger.error("No JSON data provided in request")
+            current_app.logger.error("No data provided for scene creation")
             return jsonify({
                 'message': 'No data provided',
-                'error': 'Request body is required',
-                'scene': {}  # Include empty scene to prevent UI breakage
+                'error': 'Request must include scene data in JSON format'
             }), 400
 
         # Check for unusual data format (numbered keys instead of named fields)
@@ -710,10 +731,21 @@ def create_scene():
             'scene': {}
         }), 500  # Use 500 for server errors
 
-@scenes_bp.route('/<int:scene_id>', methods=['PUT'])
-@scenes_bp.route('/<int:scene_id>/', methods=['PUT'])
-@jwt_required()
+@scenes_bp.route('/<int:scene_id>', methods=['PUT', 'OPTIONS'])
+@scenes_bp.route('/<int:scene_id>/', methods=['PUT', 'OPTIONS'])
+@exempt_options_requests()
+@jwt_required(optional=True)
 def update_scene(scene_id):
+    # Handle OPTIONS requests explicitly
+    if request.method == 'OPTIONS':
+        response = jsonify({'success': True})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'PUT,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Max-Age', '86400')
+        return response, 200
+
     try:
         current_app.logger.info(f"Updating scene with ID: {scene_id}")
 
@@ -897,28 +929,17 @@ def update_scene(scene_id):
             db.session.commit()
             current_app.logger.info(f"Scene {scene_id} updated successfully")
 
-            # Create a comprehensive scene dictionary for the response
-            # Use the scene's to_dict method for a properly formatted dictionary
-            scene_dict = scene.to_dict()
-
-            # Ensure is_deleted is explicitly set to False
-            scene_dict['is_deleted'] = False
-
-            # Add character IDs if available
-            if hasattr(scene, 'characters') and scene.characters:
-                scene_dict['character_ids'] = [c.id for c in scene.characters if not getattr(c, 'is_deleted', False)]
-
+            # If code reaches this point, update was successful
             return jsonify({
                 'message': 'Scene updated successfully',
-                'scene': scene_dict
+                'scene': scene.to_dict()
             }), 200
-
         except Exception as commit_error:
             db.session.rollback()
-            current_app.logger.error(f"Database error updating scene: {str(commit_error)}")
+            current_app.logger.error(f"Error committing scene update: {str(commit_error)}")
             current_app.logger.error(traceback.format_exc())
             return jsonify({
-                'message': 'Error committing scene update',
+                'message': 'Database error updating scene',
                 'error': str(commit_error),
                 'scene': {}
             }), 500

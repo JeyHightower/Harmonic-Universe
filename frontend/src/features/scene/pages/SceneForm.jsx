@@ -273,94 +273,81 @@ const SceneForm = ({
   // Handle form submission
   const onFinish = async (values) => {
     try {
+      console.log('SceneForm - Form submitted with values:', values);
       setSubmitting(true);
       setError(null);
 
-      console.log('SceneForm - Form submitted with values:', values);
-
-      // Validate required fields manually first
-      if (!values.name || values.name.trim() === '') {
-        console.error('SceneForm - Missing required name field in form values');
-        message.error('Scene name is required');
-        throw new Error('Scene name is required');
-      }
-
-      if (!values.summary || values.summary.trim() === '') {
-        console.error('SceneForm - Missing required summary field in form values');
-        message.error('Scene summary is required');
-        throw new Error('Scene summary is required');
-      }
-
-      // DEBUGGING: Get the exact form values before any processing
-      const rawFormValues = form.getFieldsValue(true);
-      console.log('DEBUG - Raw form values from form instance:', rawFormValues);
-
-      // Format the values for API submission
-      const formattedValues = {
-        // Ensure basic required fields are set first
-        name: values.name?.trim() || 'Untitled Scene',
-        summary: values.summary?.trim() || values.description?.trim() || 'No summary provided',
-
-        // Handle all other fields including existing ID if present
-        ...values,
-        universe_id: universeId,
-        id: sceneId || undefined,
-
-        // Convert camelCase to snake_case
-        time_of_day: values.timeOfDay || values.time_of_day || null,
-
-        // Ensure character_ids is properly formatted
-        character_ids: Array.isArray(values.characterIds) ? values.characterIds : [],
-
-        // Fix date handling - ensure proper format
-        date_of_scene: values.dateOfScene
-          ? typeof values.dateOfScene.toISOString === 'function'
-            ? values.dateOfScene.toISOString()
-            : values.dateOfScene
-          : values.date_of_scene || null,
-
-        // Copy name to title for flexibility
-        title: values.name?.trim() || 'Untitled Scene',
+      // Transform form values to API expected format
+      // Convert form data to the format expected by the API
+      const apiData = {
+        name: values.name,
         description: values.description || '',
+        summary: values.summary || '',
         content: values.content || '',
         notes: values.notes || '',
         location: values.location || '',
         scene_type: values.scene_type || 'default',
+        // Ensure consistent naming with both snake_case and camelCase
+        time_of_day: values.timeOfDay || '',
+        timeOfDay: values.timeOfDay || '',
         status: values.status || 'draft',
         significance: values.significance || 'minor',
+        // Convert character IDs to the format expected by API
+        character_ids: Array.isArray(values.characterIds) ? values.characterIds : [],
+        characterIds: Array.isArray(values.characterIds) ? values.characterIds : [],
         order: values.order || 0,
-        is_public: values.is_public || false,
-        is_deleted: false, // Explicitly set to false
+        universe_id: universeId,
+        universeId: universeId,
+        // Format date properly if provided
+        date_of_scene: values.dateOfScene ? values.dateOfScene.format('YYYY-MM-DD') : null,
+        dateOfScene: values.dateOfScene ? values.dateOfScene.format('YYYY-MM-DD') : null,
       };
 
-      // Debug log
-      console.log('SceneForm - Form field values before processing:', {
-        name: values.name,
-        summary: values.summary,
-        description: values.description,
-        content: values.content,
-      });
+      console.log('SceneForm - Transformed API data:', apiData);
 
-      console.log('SceneForm - FINAL Formatted values:', formattedValues);
+      // Call the appropriate action based on whether we're creating or updating
+      if (isEditMode && sceneId) {
+        console.log('SceneForm - Updating scene with ID:', sceneId);
+        console.log('SceneForm - Update payload:', apiData);
 
-      // Call the onSubmit callback with formatted values
-      const action = isEditMode ? 'update' : 'create';
-      const result = await onSubmit(action, formattedValues);
-      console.log('SceneForm - Submit result:', result);
+        // Call onSubmit with 'update' action
+        try {
+          const result = await onSubmit('update', apiData);
+          console.log('SceneForm - Update successful:', result);
+          message.success('Scene updated successfully');
 
-      // Show success message
-      message.success(`Scene ${isEditMode ? 'updated' : 'created'} successfully!`);
+          // Call onCancel only after success to ensure proper cleanup
+          if (onCancel) {
+            onCancel();
+          }
+        } catch (error) {
+          console.error('SceneForm - Error updating scene:', error);
+          setError('Failed to update scene. Please try again.');
+          message.error('Failed to update scene');
+        }
+      } else {
+        console.log('SceneForm - Creating new scene');
 
-      // Call onCancel to close the form
-      if (onCancel) {
-        onCancel();
+        // Call onSubmit with 'create' action
+        try {
+          const result = await onSubmit('create', apiData);
+          console.log('SceneForm - Creation successful:', result);
+          message.success('Scene created successfully');
+
+          // Call onCancel only after success to ensure proper cleanup
+          if (onCancel) {
+            onCancel();
+          }
+        } catch (error) {
+          console.error('SceneForm - Error creating scene:', error);
+          setError('Failed to create scene. Please try again.');
+          message.error('Failed to create scene');
+        }
       }
-
-      return result;
     } catch (error) {
-      console.error('SceneForm - Error submitting form:', error);
-      message.error(error.message || 'Failed to save scene');
-      throw error;
+      console.error('SceneForm - Form submission error:', error);
+      setError('An unexpected error occurred. Please try again.');
+      message.error('Form submission failed');
     } finally {
       setSubmitting(false);
     }
