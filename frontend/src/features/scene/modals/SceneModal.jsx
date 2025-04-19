@@ -84,21 +84,85 @@ const SceneModal = ({
   }, [sceneId, initialData, actualMode]);
 
   // Handle form submission for create/edit modes
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async (action, formData) => {
     try {
       setLoading(true);
       setError(null);
 
+      console.log('SceneModal - handleSubmit called with action:', action, 'and data:', formData);
+
+      // Ensure universe_id is correctly set in the data
+      const dataWithUniverseId = {
+        ...formData,
+        universe_id: universeId,
+        // Also include as universeId for services that might expect it in camelCase
+        universeId: universeId,
+      };
+
       let result;
-      if (actualMode === 'create') {
+      if (action === 'create' || actualMode === 'create') {
         // Create the scene using the API
-        const response = await apiClient.createScene(universeId, formData);
-        result = response.data?.scene || response.data;
-      } else if (actualMode === 'edit') {
+        console.log('SceneModal - Creating scene with data:', dataWithUniverseId);
+        try {
+          // Use the scenes service directly with proper error handling
+          const response = await apiClient.scenes.createScene(dataWithUniverseId);
+          console.log('SceneModal - Create scene response:', response);
+
+          // Check different possible response formats
+          if (response.data?.scene) {
+            result = response.data.scene;
+          } else if (response.data) {
+            result = response.data;
+          } else if (response.success && response.data) {
+            result = response.data;
+          } else {
+            console.warn('SceneModal - Unexpected response format:', response);
+            throw new Error('Unexpected response format from API');
+          }
+        } catch (createError) {
+          console.error('SceneModal - Failed with scenes.createScene:', createError);
+
+          // Fallback to direct API call with better error handling
+          try {
+            console.log('SceneModal - Attempting direct API call fallback');
+            // Make sure we're sending the data properly formatted
+            const formattedData = {
+              ...dataWithUniverseId,
+              // Ensure these fields are always present
+              name: dataWithUniverseId.name || dataWithUniverseId.title || 'Untitled Scene',
+              universe_id: dataWithUniverseId.universe_id || dataWithUniverseId.universeId,
+            };
+
+            const directResponse = await apiClient.post('/scenes/', formattedData);
+            console.log('SceneModal - Direct API create response:', directResponse);
+
+            if (directResponse.data?.scene) {
+              result = directResponse.data.scene;
+            } else if (directResponse.data) {
+              result = directResponse.data;
+            } else {
+              throw new Error('Failed to create scene: Invalid response from API');
+            }
+          } catch (directError) {
+            console.error('SceneModal - Direct API call failed too:', directError);
+            throw new Error(`Failed to create scene: ${directError.message || 'Unknown error'}`);
+          }
+        }
+      } else if (action === 'update' || actualMode === 'edit') {
         // Update the scene using the API
-        const response = await apiClient.updateScene(sceneId, formData);
+        console.log('SceneModal - Updating scene with data:', dataWithUniverseId);
+        const response = await apiClient.scenes.updateScene(sceneId, dataWithUniverseId);
+        console.log('SceneModal - Update scene response:', response);
         result = response.data?.scene || response.data;
       }
+
+      // Ensure result has the expected structure
+      if (!result) {
+        console.error('SceneModal - API returned empty result');
+        throw new Error('Failed to save scene. Empty response from API.');
+      }
+
+      console.log('SceneModal - Operation successful, calling onSuccess callback');
 
       // Call success callback if provided
       if (onSuccess) {
@@ -107,9 +171,12 @@ const SceneModal = ({
 
       // Close the modal
       onClose();
+
+      return result;
     } catch (error) {
-      console.error('Error saving scene:', error);
+      console.error('SceneModal - Error saving scene:', error);
       setError(error.message || 'An error occurred while saving the scene');
+      throw error;
     } finally {
       setLoading(false);
     }

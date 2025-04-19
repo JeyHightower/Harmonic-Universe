@@ -297,30 +297,34 @@ const SceneForm = ({
 
       // Format the values for API submission
       const formattedValues = {
+        // Ensure basic required fields are set first
+        name: values.name?.trim() || 'Untitled Scene',
+        summary: values.summary?.trim() || values.description?.trim() || 'No summary provided',
+
+        // Handle all other fields including existing ID if present
         ...values,
         universe_id: universeId,
-        // If we have an existing ID, include it
         id: sceneId || undefined,
-        // Ensure name is correctly set and preserved
-        name: values.name?.trim(),
+
         // Convert camelCase to snake_case
         time_of_day: values.timeOfDay || values.time_of_day || null,
+
+        // Ensure character_ids is properly formatted
+        character_ids: Array.isArray(values.characterIds) ? values.characterIds : [],
+
         // Fix date handling - ensure proper format
         date_of_scene: values.dateOfScene
-          ? values.dateOfScene.toISOString
+          ? typeof values.dateOfScene.toISOString === 'function'
             ? values.dateOfScene.toISOString()
             : values.dateOfScene
-          : values.date_of_scene
-            ? values.date_of_scene
-            : null,
+          : values.date_of_scene || null,
+
         // Copy name to title for flexibility
-        title: values.name?.trim(),
-        description: values.description || null,
-        // Ensure summary is always set to a non-null value
-        summary: values.summary || values.description || '',
-        content: values.content || null,
-        notes: values.notes || null,
-        location: values.location || null,
+        title: values.name?.trim() || 'Untitled Scene',
+        description: values.description || '',
+        content: values.content || '',
+        notes: values.notes || '',
+        location: values.location || '',
         scene_type: values.scene_type || 'default',
         status: values.status || 'draft',
         significance: values.significance || 'minor',
@@ -337,38 +341,7 @@ const SceneForm = ({
         content: values.content,
       });
 
-      // Debug validation step
-      if (!formattedValues.name) {
-        console.error('CRITICAL: Name field is missing after formatting');
-      }
-
-      // CRITICAL: Make sure required fields are explicitly set as non-empty strings
-      if (!formattedValues.name || formattedValues.name.trim() === '') {
-        formattedValues.name = rawFormValues.name?.trim() || 'Untitled Scene';
-        console.log('Applied name fallback to:', formattedValues.name);
-      }
-
-      if (!formattedValues.summary || formattedValues.summary.trim() === '') {
-        formattedValues.summary =
-          rawFormValues.summary?.trim() || formattedValues.description || 'No summary provided';
-        console.log('Applied summary fallback to:', formattedValues.summary);
-      }
-
       console.log('SceneForm - FINAL Formatted values:', formattedValues);
-
-      // Final validation check
-      if (!formattedValues.name) {
-        console.error('SceneForm - Name validation failed after processing');
-        message.error('Scene name is required');
-        throw new Error('Scene name is required');
-      }
-
-      // Additional validation for required fields
-      if (!formattedValues.summary) {
-        console.error('SceneForm - Summary validation failed after processing');
-        message.error('Scene summary is required');
-        throw new Error('Scene summary is required');
-      }
 
       // Call the onSubmit callback with formatted values
       const action = isEditMode ? 'update' : 'create';

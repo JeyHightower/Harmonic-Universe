@@ -3,8 +3,8 @@
  * Handles operations related to scenes in the application
  */
 
-import { httpClient } from './http-client';
 import { sceneEndpoints } from './endpoints';
+import { httpClient } from './http-client';
 import { responseHandler } from './response-handler';
 
 /**
@@ -35,9 +35,9 @@ export const getScenesByUniverse = async (universeId) => {
     const response = await httpClient.get(sceneEndpoints.forUniverse(universeId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('scenes', 'Error fetching universe scenes', { 
-      universeId, 
-      error: error.message 
+    console.log('scenes', 'Error fetching universe scenes', {
+      universeId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -57,9 +57,9 @@ export const getSceneById = async (sceneId) => {
     const response = await httpClient.get(sceneEndpoints.get(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('scenes', 'Error fetching scene by ID', { 
-      sceneId, 
-      error: error.message 
+    console.log('scenes', 'Error fetching scene by ID', {
+      sceneId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -67,23 +67,47 @@ export const getSceneById = async (sceneId) => {
 
 /**
  * Create a new scene
- * @param {object} sceneData - Scene data to create
+ * @param {object|number|string} param1 - Either scene data object or universe ID
+ * @param {object} [param2] - Scene data object (if param1 is universeId)
  * @returns {Promise<object>} - Created scene
  */
-export const createScene = async (sceneData) => {
+export const createScene = async (param1, param2) => {
   try {
+    let sceneData;
+
+    // Handle both function signatures:
+    // 1. createScene(sceneData)
+    // 2. createScene(universeId, sceneData)
+    if (param2) {
+      // Function was called with (universeId, sceneData)
+      const universeId = param1;
+      sceneData = { ...param2, universe_id: universeId };
+      console.log('scenes', 'Creating scene with universeId param:', universeId);
+    } else {
+      // Function was called with just (sceneData)
+      sceneData = param1;
+    }
+
     // Validate required fields
     if (!sceneData) {
       return responseHandler.handleError(new Error('Scene data is required'));
     }
-    
-    if (!sceneData.universeId) {
-      return responseHandler.handleError(new Error('Universe ID is required for scene creation'));
+
+    // Ensure universe_id is set
+    if (!sceneData.universe_id) {
+      if (sceneData.universeId) {
+        // Convert camelCase to snake_case
+        sceneData.universe_id = sceneData.universeId;
+        delete sceneData.universeId;
+      } else {
+        return responseHandler.handleError(new Error('Universe ID is required for scene creation'));
+      }
     }
 
+    console.log('scenes', 'Creating scene with data:', sceneData);
     const response = await httpClient.post(sceneEndpoints.create, sceneData);
-    
-    console.log('scenes', 'Scene created successfully');
+
+    console.log('scenes', 'Scene created successfully:', response.data);
     return responseHandler.handleSuccess(response);
   } catch (error) {
     console.log('scenes', 'Error creating scene', { error: error.message });
@@ -102,19 +126,19 @@ export const updateScene = async (sceneId, sceneData) => {
     if (!sceneId) {
       return responseHandler.handleError(new Error('Scene ID is required'));
     }
-    
+
     if (!sceneData) {
       return responseHandler.handleError(new Error('Scene data is required'));
     }
 
     const response = await httpClient.put(sceneEndpoints.update(sceneId), sceneData);
-    
+
     console.log('scenes', 'Scene updated successfully', { sceneId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('scenes', 'Error updating scene', { 
-      sceneId, 
-      error: error.message 
+    console.log('scenes', 'Error updating scene', {
+      sceneId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -132,13 +156,13 @@ export const deleteScene = async (sceneId) => {
     }
 
     const response = await httpClient.delete(sceneEndpoints.delete(sceneId));
-    
+
     console.log('scenes', 'Scene deleted successfully', { sceneId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('scenes', 'Error deleting scene', { 
-      sceneId, 
-      error: error.message 
+    console.log('scenes', 'Error deleting scene', {
+      sceneId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -158,9 +182,9 @@ export const getSceneSettings = async (sceneId) => {
     const response = await httpClient.get(sceneEndpoints.settings(sceneId));
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('scenes', 'Error fetching scene settings', { 
-      sceneId, 
-      error: error.message 
+    console.log('scenes', 'Error fetching scene settings', {
+      sceneId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -177,19 +201,19 @@ export const updateSceneSettings = async (sceneId, settings) => {
     if (!sceneId) {
       return responseHandler.handleError(new Error('Scene ID is required'));
     }
-    
+
     if (!settings) {
       return responseHandler.handleError(new Error('Settings data is required'));
     }
 
     const response = await httpClient.put(sceneEndpoints.settings(sceneId), settings);
-    
+
     console.log('scenes', 'Scene settings updated successfully', { sceneId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('scenes', 'Error updating scene settings', { 
-      sceneId, 
-      error: error.message 
+    console.log('scenes', 'Error updating scene settings', {
+      sceneId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -206,21 +230,21 @@ export const reorderScenes = async (universeId, sceneOrder) => {
     if (!universeId) {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
-    
+
     if (!Array.isArray(sceneOrder) || sceneOrder.length === 0) {
       return responseHandler.handleError(new Error('Scene order array is required'));
     }
 
-    const response = await httpClient.post(sceneEndpoints.reorder(universeId), { 
-      scene_order: sceneOrder 
+    const response = await httpClient.post(sceneEndpoints.reorder(universeId), {
+      scene_order: sceneOrder,
     });
-    
+
     console.log('scenes', 'Scenes reordered successfully', { universeId });
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('scenes', 'Error reordering scenes', { 
-      universeId, 
-      error: error.message 
+    console.log('scenes', 'Error reordering scenes', {
+      universeId,
+      error: error.message,
     });
     return responseHandler.handleError(error);
   }
@@ -238,7 +262,7 @@ export const sceneService = {
   deleteScene,
   getSceneSettings,
   updateSceneSettings,
-  reorderScenes
+  reorderScenes,
 };
 
 export default sceneService;

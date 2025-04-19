@@ -82,15 +82,17 @@ export const universeEndpoints = {
  * Scene Endpoints
  */
 export const sceneEndpoints = {
-  list: endpoint('/scenes'),
-  create: endpoint('/scenes'),
-  get: (id) => endpoint(`/scenes/${id}`),
-  update: (id) => endpoint(`/scenes/${id}`),
-  delete: (id) => endpoint(`/scenes/${id}`),
-  byUniverse: (universeId) => endpoint(`/scenes/universe/${universeId}`),
-  reorder: endpoint('/scenes/reorder'),
-  characters: (id) => endpoint(`/scenes/${id}/characters`),
-  notes: (id) => endpoint(`/scenes/${id}/notes`),
+  list: endpoint('/scenes/'),
+  create: endpoint('/scenes/'),
+  get: (id) => endpoint(`/scenes/${id}/`),
+  update: (id) => endpoint(`/scenes/${id}/`),
+  delete: (id) => endpoint(`/scenes/${id}/`),
+  forUniverse: (universeId) => endpoint(`/universes/${universeId}/scenes/`),
+  byUniverse: (universeId) => endpoint(`/scenes/universe/${universeId}/`),
+  reorder: endpoint('/scenes/reorder/'),
+  characters: (id) => endpoint(`/scenes/${id}/characters/`),
+  notes: (id) => endpoint(`/scenes/${id}/notes/`),
+  settings: (id) => endpoint(`/scenes/${id}/settings/`),
 };
 
 /**
@@ -102,9 +104,12 @@ export const characterEndpoints = {
   get: (id) => endpoint(`/characters/${id}`),
   update: (id) => endpoint(`/characters/${id}`),
   delete: (id) => endpoint(`/characters/${id}`),
-  forUniverse: (universeId) => endpoint(`/characters/universe/${universeId}`),
+  forUniverse: (universeId) => endpoint(`/universes/${universeId}/characters`),
+  byUniverse: (universeId) => endpoint(`/universes/${universeId}/characters`),
   forScene: (sceneId) => endpoint(`/characters/scene/${sceneId}`),
   notes: (id) => endpoint(`/characters/${id}/notes`),
+  relationships: (id) => endpoint(`/characters/${id}/relationships`),
+  attributes: (id) => endpoint(`/characters/${id}/attributes`),
 };
 
 /**
