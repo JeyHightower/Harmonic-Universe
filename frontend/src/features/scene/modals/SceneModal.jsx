@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@mui/material';
 import PropTypes from 'prop-types';
-import { Dialog, DialogTitle, DialogContent } from '@mui/material';
-import SceneForm from '../pages/SceneForm';
+import { useEffect, useState } from 'react';
+import { apiClient } from '../../../services/api.adapter.mjs';
 import SceneViewer from '../components/SceneViewer';
-import apiClient from '../../../services/api.adapter';
+import SceneForm from '../pages/SceneForm';
 import SceneDeleteConfirmation from './SceneDeleteConfirmation';
 
 /**
  * SceneModal component
- * 
+ *
  * A unified modal for handling all scene operations: create, edit, view, and delete
  * Replaces the consolidated SceneModalComponent with a more modular approach
  */
@@ -27,14 +27,14 @@ const SceneModal = ({
 }) => {
   // For backward compatibility with both open and isOpen props
   const isModalOpen = open || isOpen || false;
-  
+
   // Support both modalType and mode props for backward compatibility
   const actualMode = mode || modalType;
 
   const [scene, setScene] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Get modal title based on mode
   const getModalTitle = () => {
     switch (actualMode) {
@@ -53,7 +53,11 @@ const SceneModal = ({
 
   // Load scene data if we have a sceneId but no initialData
   useEffect(() => {
-    if (sceneId && !initialData && (actualMode === 'edit' || actualMode === 'view' || actualMode === 'delete')) {
+    if (
+      sceneId &&
+      !initialData &&
+      (actualMode === 'edit' || actualMode === 'view' || actualMode === 'delete')
+    ) {
       const loadSceneData = async () => {
         try {
           setLoading(true);
@@ -66,8 +70,8 @@ const SceneModal = ({
             setScene(sceneData);
           }
         } catch (error) {
-          console.error("Error loading scene data:", error);
-          setError("Failed to load scene data. Please try refreshing the page.");
+          console.error('Error loading scene data:', error);
+          setError('Failed to load scene data. Please try refreshing the page.');
         } finally {
           setLoading(false);
         }
@@ -104,8 +108,8 @@ const SceneModal = ({
       // Close the modal
       onClose();
     } catch (error) {
-      console.error("Error saving scene:", error);
-      setError(error.message || "An error occurred while saving the scene");
+      console.error('Error saving scene:', error);
+      setError(error.message || 'An error occurred while saving the scene');
     } finally {
       setLoading(false);
     }
@@ -127,8 +131,8 @@ const SceneModal = ({
       // Close the modal
       onClose();
     } catch (error) {
-      console.error("Error deleting scene:", error);
-      setError(error.message || "An error occurred while deleting the scene");
+      console.error('Error deleting scene:', error);
+      setError(error.message || 'An error occurred while deleting the scene');
     } finally {
       setLoading(false);
     }
@@ -159,13 +163,7 @@ const SceneModal = ({
     // Render content based on mode
     switch (actualMode) {
       case 'create':
-        return (
-          <SceneForm
-            universeId={universeId}
-            onSubmit={handleSubmit}
-            onCancel={onClose}
-          />
-        );
+        return <SceneForm universeId={universeId} onSubmit={handleSubmit} onCancel={onClose} />;
       case 'edit':
         return (
           <SceneForm
@@ -177,12 +175,7 @@ const SceneModal = ({
           />
         );
       case 'view':
-        return (
-          <SceneViewer
-            scene={scene || initialData}
-            onClose={onClose}
-          />
-        );
+        return <SceneViewer scene={scene || initialData} onClose={onClose} />;
       case 'delete':
         return (
           <SceneDeleteConfirmation
@@ -206,9 +199,7 @@ const SceneModal = ({
     >
       <DialogTitle id="scene-modal-title">{getModalTitle()}</DialogTitle>
       <DialogContent>
-        <div className="scene-modal">
-          {renderContent()}
-        </div>
+        <div className="scene-modal">{renderContent()}</div>
       </DialogContent>
     </Dialog>
   );
@@ -228,4 +219,4 @@ SceneModal.propTypes = {
   mode: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
 };
 
-export default SceneModal; 
+export default SceneModal;

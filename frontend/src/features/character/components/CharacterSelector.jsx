@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { Select, Empty, Spin, Avatar } from "antd";
-import { UserOutlined } from "@ant-design/icons";
-import { fetchCharacters } from "../../../store/thunks/characterThunks";
-import apiClient from "../../../services/api.adapter";
-import CharacterCard from "./CharacterCard";
-import "../styles/Character.css";
+import { UserOutlined } from '@ant-design/icons';
+import { Avatar, Empty, Select, Spin } from 'antd';
+import { useEffect, useState } from 'react';
+import { apiClient } from '../../../services/api.adapter.mjs';
+import '../styles/Character.css';
 
 const { Option } = Select;
 
@@ -37,8 +34,8 @@ const CharacterSelector = ({
   // Create mock characters for production fallback
   const createMockCharacters = () => {
     return [
-      { id: 1001, name: "Demo Character 1" },
-      { id: 1002, name: "Demo Character 2" },
+      { id: 1001, name: 'Demo Character 1' },
+      { id: 1002, name: 'Demo Character 2' },
     ];
   };
 
@@ -46,23 +43,21 @@ const CharacterSelector = ({
   const handleDropdownVisibleChange = (visible) => {
     setOpen(visible);
     // When closing dropdown, trigger onBlur if provided
-    if (!visible && onBlur && typeof onBlur === "function") {
+    if (!visible && onBlur && typeof onBlur === 'function') {
       setTimeout(() => onBlur(), 100);
     }
   };
 
   // Handle manual blur
   const handleBlur = () => {
-    if (onBlur && typeof onBlur === "function") {
+    if (onBlur && typeof onBlur === 'function') {
       onBlur();
     }
   };
 
   useEffect(() => {
     if (providedCharacters) {
-      setCharacters(
-        Array.isArray(providedCharacters) ? providedCharacters : []
-      );
+      setCharacters(Array.isArray(providedCharacters) ? providedCharacters : []);
       setLoading(false);
       return;
     }
@@ -72,15 +67,12 @@ const CharacterSelector = ({
 
       try {
         setLoading(true);
-        const response = await apiClient.getCharactersByUniverse(universeId);
+        const response = await apiClient.universes.getUniverseCharacters(universeId);
 
         // Extract characters data with better error handling
         let charactersData = [];
 
-        if (
-          response?.data?.characters &&
-          Array.isArray(response.data.characters)
-        ) {
+        if (response?.data?.characters && Array.isArray(response.data.characters)) {
           charactersData = response.data.characters;
         } else if (Array.isArray(response?.data)) {
           charactersData = response.data;
@@ -101,12 +93,12 @@ const CharacterSelector = ({
         // Always ensure we have an array
         setCharacters(Array.isArray(charactersData) ? charactersData : []);
       } catch (error) {
-        console.error("CharacterSelector - Error fetching characters:", error);
+        console.error('CharacterSelector - Error fetching characters:', error);
 
         // Use mock characters in production on error
-        const isProduction = !window.location.hostname.includes("localhost");
+        const isProduction = !window.location.hostname.includes('localhost');
         if (isProduction) {
-          console.log("Using mock characters due to error in production");
+          console.log('Using mock characters due to error in production');
           setCharacters(createMockCharacters());
         } else {
           // Set an empty array on error in development
@@ -129,7 +121,7 @@ const CharacterSelector = ({
   return (
     <Select
       mode="multiple"
-      style={{ width: "100%" }}
+      style={{ width: '100%' }}
       placeholder="Select characters in this scene"
       value={value}
       onChange={handleChange}
@@ -144,33 +136,20 @@ const CharacterSelector = ({
       open={open}
       autoComplete="off"
       notFoundContent={
-        loading ? (
-          <Spin size="small" />
-        ) : (
-          <Empty description="No characters found" />
-        )
+        loading ? <Spin size="small" /> : <Empty description="No characters found" />
       }
       maxTagCount={5}
       maxTagTextLength={12}
-      showArrow={true}
       virtual={true}
     >
       {Array.isArray(characters) && characters.length > 0 ? (
         characters.map((character) => (
           <Option key={character.id} value={character.id}>
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
               {character.avatar ? (
-                <Avatar
-                  src={character.avatar}
-                  size="small"
-                  style={{ marginRight: 8 }}
-                />
+                <Avatar src={character.avatar} size="small" style={{ marginRight: 8 }} />
               ) : (
-                <Avatar
-                  icon={<UserOutlined />}
-                  size="small"
-                  style={{ marginRight: 8 }}
-                />
+                <Avatar icon={<UserOutlined />} size="small" style={{ marginRight: 8 }} />
               )}
               {character.name}
             </div>
@@ -178,12 +157,8 @@ const CharacterSelector = ({
         ))
       ) : (
         <Option disabled value="no-characters">
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <Avatar
-              icon={<UserOutlined />}
-              size="small"
-              style={{ marginRight: 8 }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar icon={<UserOutlined />} size="small" style={{ marginRight: 8 }} />
             No characters available
           </div>
         </Option>
