@@ -44,7 +44,7 @@ export const authEndpoints = {
   login: endpoint('/auth/login'),
   register: endpoint('/auth/signup'),
   demoLogin: endpoint('/auth/demo-login'),
-  refresh: endpointNoSlash('/auth/refresh'),
+  refresh: endpoint('/auth/refresh'),
   logout: endpoint('/auth/logout/'),
   validate: endpoint('/auth/validate/'),
 };

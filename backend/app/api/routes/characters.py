@@ -7,6 +7,7 @@ from ...extensions import db
 characters_bp = Blueprint('characters', __name__)
 
 @characters_bp.route('/scene/<int:scene_id>', methods=['GET'])
+@characters_bp.route('/scene/<int:scene_id>/', methods=['GET'])
 @jwt_required()
 def get_characters(scene_id):
     try:
@@ -39,6 +40,7 @@ def get_characters(scene_id):
         }), 500
 
 @characters_bp.route('/<int:character_id>', methods=['GET'])
+@characters_bp.route('/<int:character_id>/', methods=['GET'])
 @jwt_required()
 def get_character(character_id):
     try:
@@ -69,6 +71,7 @@ def get_character(character_id):
         }), 500
 
 @characters_bp.route('/', methods=['POST'])
+@characters_bp.route('', methods=['POST'])
 @jwt_required()
 def create_character():
     try:
@@ -139,6 +142,7 @@ def create_character():
         }), 500
 
 @characters_bp.route('/<int:character_id>', methods=['PUT'])
+@characters_bp.route('/<int:character_id>/', methods=['PUT'])
 @jwt_required()
 def update_character(character_id):
     try:
@@ -189,6 +193,7 @@ def update_character(character_id):
         }), 500
 
 @characters_bp.route('/<int:character_id>', methods=['DELETE'])
+@characters_bp.route('/<int:character_id>/', methods=['DELETE'])
 @jwt_required()
 def delete_character(character_id):
     try:

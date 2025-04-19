@@ -9,6 +9,7 @@ import traceback
 notes_bp = Blueprint('notes', __name__)
 
 @notes_bp.route('/universe/<int:universe_id>', methods=['GET'])
+@notes_bp.route('/universe/<int:universe_id>/', methods=['GET'])
 @jwt_required()
 def get_universe_notes(universe_id):
     try:
@@ -40,6 +41,7 @@ def get_universe_notes(universe_id):
         }), 500
 
 @notes_bp.route('/scene/<int:scene_id>', methods=['GET'])
+@notes_bp.route('/scene/<int:scene_id>/', methods=['GET'])
 @jwt_required()
 def get_scene_notes(scene_id):
     try:
@@ -71,6 +73,7 @@ def get_scene_notes(scene_id):
         }), 500
 
 @notes_bp.route('/character/<int:character_id>', methods=['GET'])
+@notes_bp.route('/character/<int:character_id>/', methods=['GET'])
 @jwt_required()
 def get_character_notes(character_id):
     try:
@@ -102,6 +105,7 @@ def get_character_notes(character_id):
         }), 500
 
 @notes_bp.route('/<int:note_id>', methods=['GET'])
+@notes_bp.route('/<int:note_id>/', methods=['GET'])
 @jwt_required()
 def get_note(note_id):
     try:
@@ -126,6 +130,7 @@ def get_note(note_id):
         }), 500
 
 @notes_bp.route('/', methods=['POST'])
+@notes_bp.route('', methods=['POST'])
 @jwt_required()
 def create_note():
     try:
@@ -137,24 +142,24 @@ def create_note():
             }), 400
 
         user_id = get_jwt_identity()
-        
+
         # Validate required fields
         title = data.get('title', '').strip()
         content = data.get('content', '').strip()
         universe_id = data.get('universe_id')
-        
+
         if not title:
             return jsonify({
                 'message': 'Title is required',
                 'error': 'Note title cannot be empty'
             }), 400
-            
+
         if not content:
             return jsonify({
                 'message': 'Content is required',
                 'error': 'Note content cannot be empty'
             }), 400
-            
+
         if not universe_id:
             return jsonify({
                 'message': 'Universe ID is required',
@@ -195,7 +200,7 @@ def create_note():
 
         db.session.add(note)
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Note created successfully',
             'note': note.to_dict()
@@ -209,6 +214,7 @@ def create_note():
         }), 500
 
 @notes_bp.route('/<int:note_id>', methods=['PUT'])
+@notes_bp.route('/<int:note_id>/', methods=['PUT'])
 @jwt_required()
 def update_note(note_id):
     try:
@@ -263,6 +269,7 @@ def update_note(note_id):
         }), 500
 
 @notes_bp.route('/<int:note_id>', methods=['DELETE'])
+@notes_bp.route('/<int:note_id>/', methods=['DELETE'])
 @jwt_required()
 def delete_note(note_id):
     try:
@@ -291,6 +298,7 @@ def delete_note(note_id):
         }), 500
 
 @notes_bp.route('/<int:note_id>/archive', methods=['POST'])
+@notes_bp.route('/<int:note_id>/archive/', methods=['POST'])
 @jwt_required()
 def archive_note(note_id):
     try:
@@ -319,6 +327,7 @@ def archive_note(note_id):
         }), 500
 
 @notes_bp.route('/<int:note_id>/unarchive', methods=['POST'])
+@notes_bp.route('/<int:note_id>/unarchive/', methods=['POST'])
 @jwt_required()
 def unarchive_note(note_id):
     try:

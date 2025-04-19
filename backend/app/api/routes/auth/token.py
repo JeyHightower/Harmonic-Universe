@@ -429,6 +429,7 @@ def get_current_user():
 
 # Debug endpoint to verify JWT identity
 @auth_bp.route('/debug/jwt-identity', methods=['GET'])
+@auth_bp.route('/debug/jwt-identity/', methods=['GET'])
 @jwt_required()
 def debug_jwt_identity():
     # Get JWT identity

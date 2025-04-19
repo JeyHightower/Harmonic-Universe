@@ -9,6 +9,7 @@ from sqlalchemy import text, create_engine
 scenes_bp = Blueprint('scenes', __name__)
 
 @scenes_bp.route('/universe/<int:universe_id>', methods=['GET'])
+@scenes_bp.route('/universe/<int:universe_id>/', methods=['GET'])
 @jwt_required()
 def get_scenes(universe_id):
     try:
@@ -125,6 +126,7 @@ def get_scenes(universe_id):
         }), 500
 
 @scenes_bp.route('/<int:scene_id>', methods=['GET'])
+@scenes_bp.route('/<int:scene_id>/', methods=['GET'])
 @jwt_required()
 def get_scene(scene_id):
     try:
@@ -243,6 +245,7 @@ def get_scene(scene_id):
         }), 500
 
 @scenes_bp.route('/', methods=['GET'])
+@scenes_bp.route('', methods=['GET'])
 @jwt_required()
 def list_scenes():
     """List scenes with filtering by universe ID"""
@@ -502,6 +505,7 @@ def list_scenes():
         }), 500
 
 @scenes_bp.route('/', methods=['POST'])
+@scenes_bp.route('', methods=['POST'])
 @jwt_required()
 def create_scene():
     try:
@@ -707,6 +711,7 @@ def create_scene():
         }), 500  # Use 500 for server errors
 
 @scenes_bp.route('/<int:scene_id>', methods=['PUT'])
+@scenes_bp.route('/<int:scene_id>/', methods=['PUT'])
 @jwt_required()
 def update_scene(scene_id):
     try:
@@ -929,6 +934,7 @@ def update_scene(scene_id):
         }), 500
 
 @scenes_bp.route('/<int:scene_id>', methods=['DELETE'])
+@scenes_bp.route('/<int:scene_id>/', methods=['DELETE'])
 @jwt_required()
 def delete_scene(scene_id):
     try:

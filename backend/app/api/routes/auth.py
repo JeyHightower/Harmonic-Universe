@@ -11,6 +11,7 @@ import re
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/signup', methods=['POST'])
+@auth_bp.route('/signup/', methods=['POST'])
 def signup():
     """Sign up a new user."""
     try:
@@ -89,6 +90,7 @@ def signup():
         return jsonify({"message": "An error occurred during signup"}), 500
 
 @auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login/', methods=['POST'])
 def login():
     """Login a user."""
     try:
@@ -122,6 +124,7 @@ def login():
         return jsonify({'message': 'An error occurred during login'}), 500
 
 @auth_bp.route('/logout', methods=['POST'])
+@auth_bp.route('/logout/', methods=['POST'])
 @jwt_required()
 def logout():
     """Logout the current user."""
@@ -134,6 +137,7 @@ def logout():
         return jsonify({'message': 'An error occurred during logout'}), 500
 
 @auth_bp.route('/demo-login', methods=['GET', 'POST'])
+@auth_bp.route('/demo-login/', methods=['GET', 'POST'])
 def demo_login():
     """Login as a demo user."""
     try:
@@ -197,6 +201,7 @@ def demo_login():
         }), 500
 
 @auth_bp.route('/validate', methods=['GET'])
+@auth_bp.route('/validate/', methods=['GET'])
 @jwt_required()
 def validate_token():
     """Validate the JWT token and return user data."""
