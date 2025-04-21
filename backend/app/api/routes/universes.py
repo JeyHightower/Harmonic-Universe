@@ -7,6 +7,9 @@ from ...extensions import db
 from sqlalchemy import text
 import traceback
 
+# Import the route to reuse logic
+from .characters import get_characters_by_universe as get_characters_by_universe_func
+
 universes_bp = Blueprint('universes', __name__)
 
 @universes_bp.route('/', methods=['GET'])
@@ -301,48 +304,9 @@ def delete_universe(universe_id):
 @universes_bp.route('/<int:universe_id>/characters/', methods=['GET'])
 @jwt_required()
 def get_universe_characters(universe_id):
-    try:
-        universe = Universe.query.get_or_404(universe_id)
-        user_id = get_jwt_identity()
-
-        # Convert user_id and universe.user_id to integers for consistent comparison
-        try:
-            # Ensure both user IDs are treated as integers for comparison
-            jwt_user_id = int(user_id) if user_id is not None else None
-            universe_user_id = int(universe.user_id) if universe.user_id is not None else None
-
-            # Check if user has access to this universe
-            if not universe.is_public and universe_user_id != jwt_user_id:
-                current_app.logger.warning(f'User {jwt_user_id} denied access to characters for universe {universe_id}')
-                return jsonify({
-                    'message': 'Access denied',
-                    'error': 'You do not have permission to access this universe'
-                }), 403
-
-            # Get all characters for the universe
-            characters = Character.query.filter_by(
-                universe_id=universe_id,
-                is_deleted=False
-            ).all()
-
-            return jsonify({
-                'message': 'Characters retrieved successfully',
-                'characters': [character.to_dict() for character in characters]
-            }), 200
-
-        except ValueError as e:
-            current_app.logger.error(f"Type conversion error during access check: {str(e)}")
-            return jsonify({
-                'message': 'Access denied due to ID type mismatch',
-                'error': str(e)
-            }), 403
-
-    except Exception as e:
-        current_app.logger.error(f'Error retrieving characters for universe {universe_id}: {str(e)}')
-        return jsonify({
-            'message': 'Error retrieving characters',
-            'error': str(e)
-        }), 500
+    """Get all characters in a universe"""
+    # Reuse the existing function logic
+    return get_characters_by_universe_func(universe_id)
 
 @universes_bp.route('/<int:universe_id>/scenes', methods=['GET'])
 @universes_bp.route('/<int:universe_id>/scenes/', methods=['GET'])
