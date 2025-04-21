@@ -1,11 +1,11 @@
 import { createSlice } from "@reduxjs/toolkit";
 import {
-  fetchScenes,
-  createScene,
-  updateScene,
-  deleteScene,
-  fetchSceneById,
-  reorderScenes,
+    createScene,
+    deleteScene,
+    fetchSceneById,
+    fetchScenes,
+    reorderScenes,
+    updateScene,
 } from "../thunks/consolidated/scenesThunks";
 
 const initialState = {
@@ -17,6 +17,11 @@ const initialState = {
   universeScenes: {}, // Stores scenes by universeId
   message: "",
   locallyCreatedScenes: [], // Add support for locally created scenes
+  lastCreateAttempt: 0, // Track timestamp of last create attempt to prevent duplicates
+  selectedScenes: [],
+  filterType: 'all',
+  sortBy: 'name',
+  sortDirection: 'asc',
 };
 
 const scenesSlice = createSlice({
@@ -40,12 +45,19 @@ const scenesSlice = createSlice({
       state.currentScene = action.payload;
     },
     addScene(state, action) {
-      // Add a scene if it doesn't already exist
-      const exists = state.scenes.some(scene => scene.id === action.payload.id);
-      if (!exists) {
-        // Ensure is_deleted is explicitly set to false
-        const newScene = { ...action.payload, is_deleted: false };
-        state.scenes.push(newScene);
+      const scene = action.payload;
+
+      // Only add if it doesn't already exist in the list
+      if (!state.scenes.some(s => s.id === scene.id)) {
+        state.scenes.push(scene);
+      }
+
+      // Also add to the universe scenes if needed
+      if (scene.universe_id && state.universeScenes[scene.universe_id]) {
+        // Check if it's already in the universe scenes
+        if (!state.universeScenes[scene.universe_id].some(s => s.id === scene.id)) {
+          state.universeScenes[scene.universe_id].push(scene);
+        }
       }
     },
     addLocallyCreatedScene(state, action) {
@@ -75,6 +87,13 @@ const scenesSlice = createSlice({
           }
         }
       }
+    },
+    updateCreateAttempt(state, action) {
+      // Update the timestamp of the last create attempt
+      state.lastCreateAttempt = action.payload;
+    },
+    selectScene(state, action) {
+      state.selectedScenes.push(action.payload);
     },
   },
   extraReducers: (builder) => {
@@ -459,7 +478,7 @@ const scenesSlice = createSlice({
   },
 });
 
-export const { clearSceneError, clearSceneSuccess, resetSceneState, setError, setCurrentScene, addScene, addLocallyCreatedScene } =
+export const { clearSceneError, clearSceneSuccess, resetSceneState, setError, setCurrentScene, addScene, addLocallyCreatedScene, updateCreateAttempt, selectScene } =
   scenesSlice.actions;
 
 export default scenesSlice.reducer;

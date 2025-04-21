@@ -68,10 +68,17 @@ export const safeId = (id) => {
 
   // If it's a string, try to convert to a number if it looks like one
   if (typeof id === 'string') {
+    // Always try to convert numeric-looking strings to integers for consistency
     if (/^\d+$/.test(id)) {
       const parsedId = parseInt(id, 10);
       // Ensure it's a positive number
-      return parsedId > 0 ? parsedId : null;
+      if (parsedId > 0) {
+        console.log(`Converted string ID "${id}" to number: ${parsedId}`);
+        return parsedId;
+      } else {
+        console.error(`Invalid numeric ID (not positive): ${id}`);
+        return null;
+      }
     }
     // Otherwise, return the string as is if it's not empty
     return id.trim() ? id : null;

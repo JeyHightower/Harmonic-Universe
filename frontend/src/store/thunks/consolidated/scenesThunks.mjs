@@ -1,6 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { sceneService } from '../../../services';
-import { addLocallyCreatedScene } from '../../slices/scenesSlice';
 
 /**
  * Error handler function for API errors
@@ -277,7 +276,22 @@ export const createScene = createAsyncThunk(
   'scenes/createScene',
   async (sceneData, { dispatch, rejectWithValue, getState }) => {
     try {
-      console.log('THUNK createScene: Called with data:', sceneData);
+      // Add timestamp to help track multiple calls
+      const timestamp = new Date().toISOString();
+      console.log(`THUNK createScene [${timestamp}]: Called with data:`, sceneData);
+
+      // Check if this function was already called in the last second (debounce effect)
+      // This helps prevent accidental duplicate scene creation
+      const state = getState();
+      const lastSceneCreation = state.scenes?.lastCreateAttempt || 0;
+      const now = Date.now();
+
+      if (now - lastSceneCreation < 1000) {
+        console.warn(`THUNK createScene [${timestamp}]: Potential duplicate call detected (${now - lastSceneCreation}ms after previous call)`);
+        dispatch({ type: 'scenes/updateCreateAttempt', payload: now });
+      } else {
+        dispatch({ type: 'scenes/updateCreateAttempt', payload: now });
+      }
 
       // Validate universe_id is present and valid
       let universeId = sceneData.universe_id || sceneData.universeId;
@@ -294,11 +308,10 @@ export const createScene = createAsyncThunk(
         }
       }
 
-      // Format data before sending to API
+      // Format data before sending to API - create a new object to avoid modifying the original
       const formattedData = {
         ...sceneData,
         universe_id: universeId, // Use the validated numeric universeId
-        universeId: universeId, // Also set the camelCase version for consistency
         is_deleted: false, // Explicitly set is_deleted to false
       };
 
@@ -320,7 +333,12 @@ export const createScene = createAsyncThunk(
       }
 
       if (formattedData.dateOfScene && !formattedData.date_of_scene) {
-        formattedData.date_of_scene = formattedData.dateOfScene;
+        // Handle dateOfScene being either a string or a date object (like from Ant Design DatePicker)
+        if (typeof formattedData.dateOfScene === 'object' && formattedData.dateOfScene.format) {
+          formattedData.date_of_scene = formattedData.dateOfScene.format('YYYY-MM-DD');
+        } else {
+          formattedData.date_of_scene = formattedData.dateOfScene;
+        }
         delete formattedData.dateOfScene;
       }
 
@@ -330,14 +348,15 @@ export const createScene = createAsyncThunk(
       }
 
       // Log the formatted data before sending to the API
-      console.log('THUNK createScene: Sending formatted data to API:', formattedData);
+      console.log(`THUNK createScene [${timestamp}]: Sending formatted data to API:`, formattedData);
 
-      // Using correct endpoint: http://localhost:5001/api/scenes/
+      // Only make the API call once for a given timestamp
+      console.log(`THUNK createScene [${timestamp}]: Calling sceneService.createScene once`);
       const response = await sceneService.createScene(formattedData);
-      console.log('THUNK createScene: Received API response:', response);
+      console.log(`THUNK createScene [${timestamp}]: Received API response:`, response);
 
       // More detailed logging of response format
-      console.log('THUNK createScene: Response format analysis:', {
+      console.log(`THUNK createScene [${timestamp}]: Response format analysis:`, {
         hasData: !!response.data,
         dataKeys: response.data ? Object.keys(response.data) : [],
         sceneInResponse: !!response.data?.scene,
@@ -347,7 +366,7 @@ export const createScene = createAsyncThunk(
       // Create a default scene object with the input data as fallback
       // This ensures we have valid data even if the API returns incomplete data
       const defaultSceneData = {
-        id: response.data?.scene?.id || Date.now().toString(), // Use the real ID if available
+        id: response.data?.scene?.id || response.data?.id || Date.now().toString(), // Use the real ID if available
         name: formattedData.name || 'New Scene',
         description: formattedData.description || '',
         universe_id: formattedData.universe_id,
@@ -364,7 +383,7 @@ export const createScene = createAsyncThunk(
       // If scene data is missing or empty, use our default
       if (!sceneResponseData || Object.keys(sceneResponseData).length === 0) {
         console.warn(
-          'THUNK createScene: Scene data missing in API response, using default scene data'
+          `THUNK createScene [${timestamp}]: Scene data missing in API response, using default scene data`
         );
         sceneResponseData = defaultSceneData;
       } else {
@@ -377,55 +396,58 @@ export const createScene = createAsyncThunk(
         };
       }
 
-      console.log('THUNK createScene: Final scene data with is_deleted=false:', sceneResponseData);
+      console.log(`THUNK createScene [${timestamp}]: Final scene data with is_deleted=false:`, sceneResponseData);
 
       // Normalize the scene data
       const normalizedSceneData = normalizeSceneData(sceneResponseData);
 
-      // Update direct store if needed - ensure we dispatch to all relevant parts of the store
-      if (dispatch) {
-        console.log('THUNK createScene: Adding scene to store:', normalizedSceneData.id);
-
-        // Add to regular scenes array
-        dispatch({ type: 'scenes/addScene', payload: normalizedSceneData });
-
-        // Also add to locally created scenes for persistence
-        dispatch(addLocallyCreatedScene(normalizedSceneData));
-
-        // Force update to current scene in the store
-        dispatch({ type: 'scenes/setCurrentScene', payload: normalizedSceneData });
-
-        // Update the universe-specific scenes array
-        if (normalizedSceneData.universe_id) {
-          console.log(
-            `THUNK createScene: Fetching scenes for universe ${normalizedSceneData.universe_id} to update store`
-          );
-
-          // First, add the scene directly to the universe scenes array for immediate UI update
-          const state = getState();
-          const currentUniverseScenes =
-            state.scenes.universeScenes[normalizedSceneData.universe_id] || [];
-
-          dispatch({
-            type: 'scenes/fetchScenes/fulfilled',
-            payload: {
-              scenes: [...currentUniverseScenes, normalizedSceneData],
-              universe_id: normalizedSceneData.universe_id,
-            },
-            meta: { arg: normalizedSceneData.universe_id },
-          });
-
-          // Then fetch from server to ensure we have the latest data
-          dispatch(fetchScenes(normalizedSceneData.universe_id));
-        }
-      }
-
-      // Return serializable data
+      // Return the response data early to avoid Redux dispatch timing issues
       const serializedResponse = {
         message: response.data?.message || 'Scene created successfully',
         scene: normalizedSceneData,
         status: response.status || 200,
+        timestamp: timestamp, // Add timestamp for correlation
       };
+
+      // Update store if dispatch is available (do this after returning the response)
+      if (dispatch) {
+        console.log(`THUNK createScene [${timestamp}]: Adding scene to store:`, normalizedSceneData.id);
+
+        // Use a separate function to update the Redux store to avoid race conditions
+        setTimeout(() => {
+          try {
+            // Add to regular scenes array
+            dispatch({ type: 'scenes/addScene', payload: normalizedSceneData });
+
+            // Set as current scene in the store
+            dispatch({ type: 'scenes/setCurrentScene', payload: normalizedSceneData });
+
+            // Update the universe-specific scenes array if universe_id is available
+            if (normalizedSceneData.universe_id) {
+              console.log(
+                `THUNK createScene [${timestamp}]: Updating universe scenes for universe ${normalizedSceneData.universe_id}`
+              );
+
+              // Get current universe scenes from state
+              const currentState = getState();
+              const currentUniverseScenes =
+                currentState.scenes.universeScenes[normalizedSceneData.universe_id] || [];
+
+              // Add the new scene to the universe scenes array
+              dispatch({
+                type: 'scenes/fetchScenes/fulfilled',
+                payload: {
+                  scenes: [...currentUniverseScenes, normalizedSceneData],
+                  universe_id: normalizedSceneData.universe_id,
+                },
+                meta: { arg: normalizedSceneData.universe_id },
+              });
+            }
+          } catch (storeError) {
+            console.error(`THUNK createScene [${timestamp}]: Error updating Redux store:`, storeError);
+          }
+        }, 0);
+      }
 
       return serializedResponse;
     } catch (error) {

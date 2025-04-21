@@ -34,11 +34,23 @@ const normalizeSceneData = (scene) => {
 };
 
 /**
+ * Helper function to normalize scene IDs
+ */
+const normalizeSceneId = (scene) => {
+  if (scene && scene.id) {
+    if (typeof scene.id === 'string' && /^\d+$/.test(scene.id)) {
+      scene.id = parseInt(scene.id, 10);
+    }
+  }
+  return scene;
+};
+
+/**
  * Helper function to normalize scenes array
  */
 const normalizeScenes = (scenes) => {
   if (!scenes || !Array.isArray(scenes)) return [];
-  return scenes.map(normalizeSceneData);
+  return scenes.map(normalizeSceneId);
 };
 
 /**
@@ -166,6 +178,11 @@ export const fetchScenes = createAsyncThunk(
       }
 
       console.log(`[${timestamp}] REDUX-THUNK: Successfully fetched ${scenesData.length} scenes using ${endpointUsed}`);
+
+      // Normalize scene IDs to ensure consistent format
+      if (scenesData) {
+        scenesData = normalizeScenes(scenesData);
+      }
 
       // Return the scenes array wrapped in an object
       return {

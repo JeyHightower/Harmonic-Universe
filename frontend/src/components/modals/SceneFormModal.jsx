@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from "react";
-import PropTypes from "prop-types";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  CircularProgress,
-  Alert,
-  IconButton,
+    Alert,
+    Box,
+    Button,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    IconButton,
 } from "@mui/material";
+import PropTypes from "prop-types";
+import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import apiClient from "../../services/api";
 // Import only the fetchScenes thunk to refresh scenes after operations
-import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
-import SceneForm from "../consolidated/SceneForm";
 import CloseIcon from "@mui/icons-material/Close";
+import SceneForm from "../../features/scene/pages/SceneForm";
+import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
 
 /**
  * Modal component for creating and editing scenes
@@ -73,14 +73,17 @@ const SceneFormModal = ({
       let result;
       if (action === "create" || modalType === "create") {
         // Make sure we have a proper payload with required fields
-        if (!formData.name) {
+        if (!formData.name || formData.name.trim() === '') {
+          console.error("SceneFormModal - Missing name in form data");
           throw new Error("Scene name is required");
         }
+
+        console.log("SceneFormModal - Name field value:", formData.name);
 
         // Ensure universe_id is set
         const scenePayload = {
           ...formData,
-          universe_id: universeId,
+          universe_id: typeof universeId === 'string' ? parseInt(universeId, 10) : universeId,
           is_deleted: false,
         };
 
@@ -117,7 +120,7 @@ const SceneFormModal = ({
         const idToUse = sceneId || formData.id;
         const scenePayload = {
           ...formData,
-          universe_id: universeId,
+          universe_id: typeof universeId === 'string' ? parseInt(universeId, 10) : universeId,
           is_deleted: false,
         };
 
@@ -204,7 +207,7 @@ const SceneFormModal = ({
           setInitialValues({
             name: "",
             description: "",
-            universe_id: universeId || null,
+            universe_id: typeof universeId === 'string' ? parseInt(universeId, 10) : universeId || null,
           });
         }
       } catch (error) {
@@ -223,7 +226,7 @@ const SceneFormModal = ({
         setInitialValues({
           name: "",
           description: "",
-          universe_id: universeId || null,
+          universe_id: typeof universeId === 'string' ? parseInt(universeId, 10) : universeId || null,
         });
       } finally {
         setLoading(false);
@@ -236,7 +239,7 @@ const SceneFormModal = ({
       setInitialValues({
         name: "",
         description: "",
-        universe_id: universeId || null,
+        universe_id: typeof universeId === 'string' ? parseInt(universeId, 10) : universeId || null,
       });
     }
   };

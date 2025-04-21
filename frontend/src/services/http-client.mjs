@@ -734,72 +734,131 @@ const get = async (url, config = {}) => {
 
 /**
  * HTTP POST request
- * @param {string} url - The URL to request
- * @param {Object} data - The data to send
- * @param {Object} [config] - Axios request config
- * @returns {Promise} - The response promise
+ * @param {string} url - URL to request
+ * @param {object} data - Request payload
+ * @param {object} options - Request options
+ * @returns {Promise<any>} - Response data
  */
-const post = async (url, data, config = {}) => {
-  logApiOperation('post-request', { url, data, config });
+const post = async (url, data = {}, options = {}) => {
+  const formattedUrl = formatUrl(url);
 
-  try {
-    const formattedUrl = formatUrl(url);
+  // Extra debugging for scene creation
+  if (formattedUrl.includes('/api/scenes')) {
+    console.log('HTTP Client: Scene-related POST request detected:', {
+      url: formattedUrl,
+      data: data,
+      hasToken: !!getToken(),
+      tokenLength: getToken()?.length || 0,
+      options: { ...options, headers: options.headers || {} }
+    });
+  }
 
-    // Special handling for auth endpoints
-    const isAuthEndpoint = formattedUrl.includes('/auth/');
+  // Clear cache for this URL if it exists
+  clearCacheForUrl(formattedUrl);
 
-    if (isAuthEndpoint && formattedUrl.includes('/logout')) {
-      // Handle logout specially - don't retry on 429
-      try {
-        const response = await axiosInstance.post(formattedUrl, data, config);
-        return response.data;
-      } catch (error) {
-        if (error.response && error.response.status === 429) {
-          log('api', 'Logout rate limited (429) - treating as successful', { url: formattedUrl });
-          return { success: true, message: 'Logged out successfully (client-side only)' };
-        }
-        throw error;
+  // Special handling for auth endpoints
+  const isAuthEndpoint = formattedUrl.includes('/auth/');
+
+  if (isAuthEndpoint && formattedUrl.includes('/logout')) {
+    // Handle logout specially - don't retry on 429
+    try {
+      const response = await axiosInstance.post(formattedUrl, data, options);
+      return response.data;
+    } catch (error) {
+      if (error.response && error.response.status === 429) {
+        log('api', 'Logout rate limited (429) - treating as successful', { url: formattedUrl });
+        return { success: true, message: 'Logged out successfully (client-side only)' };
       }
+      throw error;
     }
+  }
 
-    // Special handling for auth refresh endpoint to avoid 405 errors
-    if (isAuthEndpoint && formattedUrl.includes('/auth/refresh')) {
-      // Try to handle both potential endpoint formats (with and without trailing slash)
-      try {
-        console.log('Attempting token refresh with primary endpoint:', formattedUrl);
-        const response = await axiosInstance.post(formattedUrl, data, config);
-        return response.data;
-      } catch (error) {
-        // If we get a 405 Method Not Allowed, try the alternate endpoint format
-        if (error.response && error.response.status === 405) {
-          console.log('Method not allowed on primary endpoint, trying alternate format');
+  // Special handling for auth refresh endpoint to avoid 405 errors
+  if (isAuthEndpoint && formattedUrl.includes('/auth/refresh')) {
+    // Try to handle both potential endpoint formats (with and without trailing slash)
+    try {
+      console.log('Attempting token refresh with primary endpoint:', formattedUrl);
+      const response = await axiosInstance.post(formattedUrl, data, options);
+      return response.data;
+    } catch (error) {
+      // If we get a 405 Method Not Allowed, try the alternate endpoint format
+      if (error.response && error.response.status === 405) {
+        console.log('Method not allowed on primary endpoint, trying alternate format');
 
-          // Toggle the trailing slash
-          const alternateEndpoint = formattedUrl.endsWith('/')
-            ? formattedUrl.slice(0, -1)
-            : formattedUrl + '/';
+        // Toggle the trailing slash
+        const alternateEndpoint = formattedUrl.endsWith('/')
+          ? formattedUrl.slice(0, -1)
+          : formattedUrl + '/';
 
-          console.log('Attempting with alternate endpoint:', alternateEndpoint);
-          const altResponse = await axiosInstance.post(alternateEndpoint, data, config);
-          return altResponse.data;
-        }
-        throw error;
+        console.log('Attempting with alternate endpoint:', alternateEndpoint);
+        const altResponse = await axiosInstance.post(alternateEndpoint, data, options);
+        return altResponse.data;
       }
+      throw error;
     }
+  }
 
+  // Enhanced logging for scene creation errors
+  if (formattedUrl.includes('/api/scenes')) {
+    try {
+      // Sanitize data to remove any numbered keys that may have been accidentally added
+      if (data && typeof data === 'object') {
+        const sanitizedData = {};
+        Object.keys(data).forEach(key => {
+          // Skip keys that are just digits (0, 1, 2, etc.)
+          if (!/^\d+$/.test(key)) {
+            sanitizedData[key] = data[key];
+          } else {
+            console.log('HTTP Client: Removing numeric key from scene data:', key);
+          }
+        });
+
+        // Replace the original data with sanitized version
+        data = sanitizedData;
+
+        console.log('HTTP Client: Sanitized scene data:', data);
+      }
+
+      // Make the request with retry logic for scene-related endpoints with enhanced logging
+      console.log('HTTP Client: Sending scene POST request');
+      const response = await withRetry(
+        async () => {
+          const resp = await axiosInstance.post(formattedUrl, data, options);
+          console.log('HTTP Client: Scene POST successful', {
+            status: resp.status,
+            statusText: resp.statusText,
+            dataKeys: Object.keys(resp.data || {})
+          });
+
+          // Enhanced logging for scene IDs
+          if (resp.data && resp.data.scene && resp.data.scene.id) {
+            console.log('HTTP Client: Scene created with ID:', resp.data.scene.id,
+                        'Type:', typeof resp.data.scene.id);
+          }
+
+          return resp;
+        },
+        options
+      );
+      return response.data;
+    } catch (error) {
+      console.error('HTTP Client: Scene POST request failed', {
+        url: formattedUrl,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        errorData: error.response?.data,
+        errorMessage: error.message
+      });
+      throw error;
+    }
+  } else {
     // Make the request with retry logic for regular endpoints
-    const response = await withRetry(() => axiosInstance.post(formattedUrl, data, config), config);
-
-    // Clear cache for this URL after successful POST
-    clearCacheForUrl(formattedUrl);
+    const response = await withRetry(
+      () => axiosInstance.post(formattedUrl, data, options),
+      options
+    );
 
     return response.data;
-  } catch (error) {
-    logApiOperation('post-error', {
-      url,
-      error: error.message,
-    });
-    throw error;
   }
 };
 
@@ -908,6 +967,17 @@ export const httpClient = {
   post: async (url, data = {}, options = {}) => {
     const formattedUrl = formatUrl(url);
 
+    // Extra debugging for scene creation
+    if (formattedUrl.includes('/api/scenes')) {
+      console.log('HTTP Client: Scene-related POST request detected:', {
+        url: formattedUrl,
+        data: data,
+        hasToken: !!getToken(),
+        tokenLength: getToken()?.length || 0,
+        options: { ...options, headers: options.headers || {} }
+      });
+    }
+
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
 
@@ -953,13 +1023,68 @@ export const httpClient = {
       }
     }
 
-    // Make the request with retry logic for regular endpoints
-    const response = await withRetry(
-      () => axiosInstance.post(formattedUrl, data, options),
-      options
-    );
+    // Enhanced logging for scene creation errors
+    if (formattedUrl.includes('/api/scenes')) {
+      try {
+        // Sanitize data to remove any numbered keys that may have been accidentally added
+        if (data && typeof data === 'object') {
+          const sanitizedData = {};
+          Object.keys(data).forEach(key => {
+            // Skip keys that are just digits (0, 1, 2, etc.)
+            if (!/^\d+$/.test(key)) {
+              sanitizedData[key] = data[key];
+            } else {
+              console.log('HTTP Client: Removing numeric key from scene data:', key);
+            }
+          });
 
-    return response.data;
+          // Replace the original data with sanitized version
+          data = sanitizedData;
+
+          console.log('HTTP Client: Sanitized scene data:', data);
+        }
+
+        // Make the request with retry logic for scene-related endpoints with enhanced logging
+        console.log('HTTP Client: Sending scene POST request');
+        const response = await withRetry(
+          async () => {
+            const resp = await axiosInstance.post(formattedUrl, data, options);
+            console.log('HTTP Client: Scene POST successful', {
+              status: resp.status,
+              statusText: resp.statusText,
+              dataKeys: Object.keys(resp.data || {})
+            });
+
+            // Enhanced logging for scene IDs
+            if (resp.data && resp.data.scene && resp.data.scene.id) {
+              console.log('HTTP Client: Scene created with ID:', resp.data.scene.id,
+                          'Type:', typeof resp.data.scene.id);
+            }
+
+            return resp;
+          },
+          options
+        );
+        return response.data;
+      } catch (error) {
+        console.error('HTTP Client: Scene POST request failed', {
+          url: formattedUrl,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          errorData: error.response?.data,
+          errorMessage: error.message
+        });
+        throw error;
+      }
+    } else {
+      // Make the request with retry logic for regular endpoints
+      const response = await withRetry(
+        () => axiosInstance.post(formattedUrl, data, options),
+        options
+      );
+
+      return response.data;
+    }
   },
 
   /**

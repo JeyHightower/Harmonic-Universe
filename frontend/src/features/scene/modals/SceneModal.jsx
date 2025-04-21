@@ -154,47 +154,118 @@ const SceneModal = ({
   // Handle form submission (create/edit)
   const handleSubmit = async (formData) => {
     try {
+      // Prevent multiple submissions - simple debounce
+      if (loading) {
+        console.log('SceneModal - Submission already in progress, ignoring duplicate submit');
+        return;
+      }
+
       setLoading(true);
       setError(null);
+
+      // Create a unique request ID to track this submission
+      const requestId = `scene_submit_${Date.now()}`;
+      console.log(`SceneModal [${requestId}] - Processing form submission`);
 
       // Import only the thunks but use the component-level dispatch
       const { createSceneAndRefresh, updateSceneAndRefresh } = await import('../../../store/thunks/consolidated/scenesThunks');
 
       // Determine whether to create or update based on mode
       if (actualMode === 'create') {
-        console.log('SceneModal - Creating new scene with data:', { ...formData, universe_id: universeId });
+        console.log(`SceneModal [${requestId}] - Creating new scene with form data:`, formData);
 
-        // Add universe_id to form data if not present
-        const sceneData = { ...formData, universe_id: universeId };
+        // Ensure proper data format for the API
+        const sceneData = {
+          ...formData,
+          universe_id: universeId,
+          is_deleted: false // Explicitly set is_deleted to false
+        };
 
-        // Dispatch create action with automatic refresh
-        const resultAction = await dispatch(createSceneAndRefresh(sceneData));
+        // Convert any date objects to string format
+        if (sceneData.dateOfScene && typeof sceneData.dateOfScene !== 'string') {
+          sceneData.date_of_scene = sceneData.dateOfScene.format('YYYY-MM-DD');
+        }
 
-        if (createSceneAndRefresh.fulfilled.match(resultAction)) {
-          console.log('SceneModal - Scene created successfully:', resultAction.payload);
-          // Call onSuccess callback if provided
-          if (onSuccess) onSuccess(resultAction.payload);
-          onClose();
-        } else {
-          throw new Error(resultAction.error?.message || 'Failed to create scene');
+        // Log the complete data being sent
+        console.log(`SceneModal [${requestId}] - Formatted data for API:`, sceneData);
+        console.log(`SceneModal [${requestId}] - Using universe ID:`, universeId);
+
+        // Use a try-catch with timeout to ensure we don't get stuck
+        try {
+          // Dispatch create action with automatic refresh with timeout protection
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Create operation timed out after 15 seconds')), 15000)
+          );
+
+          const createPromise = dispatch(createSceneAndRefresh(sceneData));
+          const resultAction = await Promise.race([createPromise, timeoutPromise]);
+
+          if (createSceneAndRefresh.fulfilled.match(resultAction)) {
+            console.log(`SceneModal [${requestId}] - Scene created successfully:`, resultAction.payload);
+            // Call onSuccess callback if provided
+            if (onSuccess) onSuccess(resultAction.payload);
+            onClose();
+          } else {
+            // Log detailed error information
+            console.error(`SceneModal [${requestId}] - Scene creation failed:`, resultAction.error);
+            throw new Error(
+              resultAction.error?.message ||
+              'Failed to create scene. Please check the console for more details.'
+            );
+          }
+        } catch (createError) {
+          console.error(`SceneModal [${requestId}] - Scene creation error:`, createError);
+          throw createError;
         }
       } else if (actualMode === 'edit') {
-        console.log('SceneModal - Updating scene with ID:', formattedSceneId);
-        console.log('SceneModal - Update data:', formData);
+        console.log(`SceneModal [${requestId}] - Updating scene with ID:`, formattedSceneId);
+        console.log(`SceneModal [${requestId}] - Update data:`, formData);
 
-        // Dispatch update action with automatic refresh
-        const resultAction = await dispatch(updateSceneAndRefresh({
-          sceneId: formattedSceneId,
-          sceneData: { id: formattedSceneId, ...formData }
-        }));
+        // Ensure proper data format for the API
+        const sceneData = {
+          id: formattedSceneId,
+          ...formData,
+          universe_id: universeId,
+          is_deleted: false // Explicitly set is_deleted to false
+        };
 
-        if (updateSceneAndRefresh.fulfilled.match(resultAction)) {
-          console.log('SceneModal - Scene updated successfully:', resultAction.payload);
-          // Call onSuccess callback if provided
-          if (onSuccess) onSuccess(resultAction.payload);
-          onClose();
-        } else {
-          throw new Error(resultAction.error?.message || 'Failed to update scene');
+        // Convert any date objects to string format
+        if (sceneData.dateOfScene && typeof sceneData.dateOfScene !== 'string') {
+          sceneData.date_of_scene = sceneData.dateOfScene.format('YYYY-MM-DD');
+        }
+
+        // Log the complete data being sent
+        console.log(`SceneModal [${requestId}] - Formatted update data for API:`, sceneData);
+
+        // Dispatch update action with automatic refresh and timeout protection
+        try {
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Update operation timed out after 15 seconds')), 15000)
+          );
+
+          const updatePromise = dispatch(updateSceneAndRefresh({
+            sceneId: formattedSceneId,
+            sceneData: sceneData
+          }));
+
+          const resultAction = await Promise.race([updatePromise, timeoutPromise]);
+
+          if (updateSceneAndRefresh.fulfilled.match(resultAction)) {
+            console.log(`SceneModal [${requestId}] - Scene updated successfully:`, resultAction.payload);
+            // Call onSuccess callback if provided
+            if (onSuccess) onSuccess(resultAction.payload);
+            onClose();
+          } else {
+            // Log detailed error information
+            console.error(`SceneModal [${requestId}] - Scene update failed:`, resultAction.error);
+            throw new Error(
+              resultAction.error?.message ||
+              'Failed to update scene. Please check the console for more details.'
+            );
+          }
+        } catch (updateError) {
+          console.error(`SceneModal [${requestId}] - Scene update error:`, updateError);
+          throw updateError;
         }
       }
     } catch (error) {

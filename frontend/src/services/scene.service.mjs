@@ -7,6 +7,38 @@ import { sceneEndpoints } from './endpoints';
 import { httpClient } from './http-client';
 import { responseHandler } from './response-handler';
 
+// Create a cache of recent scene creation attempts to prevent duplicates
+const recentSceneCreations = new Map();
+
+// Time window for preventing duplicate scene creations (in milliseconds)
+const DEDUPLICATION_WINDOW = 3000; // 3 seconds
+
+/**
+ * Clear expired entries from the scene creation cache
+ */
+const cleanupCache = () => {
+  const now = Date.now();
+  for (const [key, timestamp] of recentSceneCreations.entries()) {
+    if (now - timestamp > DEDUPLICATION_WINDOW) {
+      recentSceneCreations.delete(key);
+    }
+  }
+};
+
+// Run cleanup every minute to prevent memory leaks
+setInterval(cleanupCache, 60000);
+
+/**
+ * Generate a cache key for scene data to detect duplicates
+ * @param {Object} sceneData - The scene data
+ * @returns {string} - A cache key based on the scene's critical properties
+ */
+const getSceneCacheKey = (sceneData) => {
+  // Extract critical properties for detecting duplicates
+  const { name, universe_id, description } = sceneData;
+  return `${universe_id}:${name}:${description ? description.substring(0, 20) : ''}:${Date.now()}`;
+};
+
 /**
  * Get all scenes
  * @returns {Promise<object>} - List of all scenes
@@ -273,6 +305,15 @@ export const createScene = async (param1, param2) => {
       return responseHandler.handleError(new Error('Scene data is required'));
     }
 
+    // Check and log the name field
+    console.log('scenes', 'Scene name in request:', sceneData.name);
+
+    // Validate that name is present and not empty
+    if (!sceneData.name || sceneData.name.trim() === '') {
+      console.error('scenes', 'Missing or empty name in scene data');
+      return responseHandler.handleError(new Error('Scene name is required'));
+    }
+
     // Ensure universe_id is set
     if (!sceneData.universe_id) {
       if (sceneData.universeId) {
@@ -284,13 +325,81 @@ export const createScene = async (param1, param2) => {
       }
     }
 
-    console.log('scenes', 'Creating scene with data:', sceneData);
-    const response = await httpClient.post(sceneEndpoints.create, sceneData);
+    // Check if this is a duplicate scene creation attempt
+    const cacheKey = getSceneCacheKey(sceneData);
+    if (recentSceneCreations.has(cacheKey)) {
+      console.warn('scenes', 'Detected duplicate scene creation attempt, returning cached response');
+      return responseHandler.handleError(new Error('Duplicate scene creation attempt detected - please wait before trying again'));
+    }
+
+    // Mark this scene creation as in-progress
+    recentSceneCreations.set(cacheKey, Date.now());
+
+    // Ensure the universe_id is a number
+    if (typeof sceneData.universe_id === 'string') {
+      sceneData.universe_id = parseInt(sceneData.universe_id, 10);
+      if (isNaN(sceneData.universe_id)) {
+        return responseHandler.handleError(new Error('Invalid universe ID format'));
+      }
+    }
+
+    // Make sure name is used instead of title
+    if (sceneData.title && !sceneData.name) {
+      sceneData.name = sceneData.title;
+      delete sceneData.title;
+    }
+
+    // Convert any camelCase keys to snake_case as expected by the API
+    const formattedData = {};
+    Object.keys(sceneData).forEach(key => {
+      // Convert camelCase to snake_case
+      if (/[A-Z]/.test(key)) {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        formattedData[snakeKey] = sceneData[key];
+      } else {
+        formattedData[key] = sceneData[key];
+      }
+    });
+
+    // Always ensure these critical properties are properly set
+    formattedData.is_deleted = false;
+
+    // Log complete formatted data before sending to API
+    console.log('scenes', 'Creating scene with formatted data:', formattedData);
+
+    // Ensure we have a valid URL
+    console.log('scenes', 'Using endpoint:', sceneEndpoints.create);
+
+    // Make the API call with detailed logging
+    console.log('scenes', 'Sending POST request to:', sceneEndpoints.create);
+    const response = await httpClient.post(sceneEndpoints.create, formattedData);
+    console.log('scenes', 'Raw response from createScene API:', response);
+
+    // Enhanced validation of response
+    if (!response || !response.data) {
+      console.error('scenes', 'Empty or invalid response from API');
+      return responseHandler.handleError(new Error('Invalid response from API'));
+    }
+
+    // Process scene ID in response to ensure it's an integer if possible
+    if (response.data.scene && response.data.scene.id) {
+      const sceneId = response.data.scene.id;
+      if (typeof sceneId === 'string' && /^\d+$/.test(sceneId)) {
+        // Convert to integer if it's a numeric string
+        response.data.scene.id = parseInt(sceneId, 10);
+        console.log('scenes', 'Converted string scene ID to integer:', response.data.scene.id);
+      }
+    }
 
     console.log('scenes', 'Scene created successfully:', response.data);
     return responseHandler.handleSuccess(response);
   } catch (error) {
-    console.log('scenes', 'Error creating scene', { error: error.message });
+    console.error('scenes', 'Error creating scene:', error);
+    console.error('scenes', 'Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     return responseHandler.handleError(error);
   }
 };
@@ -321,6 +430,16 @@ export const updateScene = async (sceneId, sceneData) => {
     if (!response) {
       console.warn('scene.service: Empty response from API');
       return responseHandler.handleError(new Error('Empty response from API'));
+    }
+
+    // Process scene ID in response to ensure it's an integer if possible
+    if (response.data && response.data.scene && response.data.scene.id) {
+      const sceneId = response.data.scene.id;
+      if (typeof sceneId === 'string' && /^\d+$/.test(sceneId)) {
+        // Convert to integer if it's a numeric string
+        response.data.scene.id = parseInt(sceneId, 10);
+        console.log('scenes', 'Converted string scene ID to integer in update response:', response.data.scene.id);
+      }
     }
 
     // Normalize the response structure to ensure consistent format

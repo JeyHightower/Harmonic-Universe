@@ -556,16 +556,41 @@ def create_scene():
         return response, 200
 
     try:
-        current_app.logger.info("Creating new scene")
+        current_app.logger.info("Creating new scene - START")
+        # Log request details for debugging
+        current_app.logger.info(f"Request headers: {dict(request.headers)}")
+        current_app.logger.info(f"Request content type: {request.content_type}")
+        current_app.logger.info(f"Request method: {request.method}")
+
         # Parse and validate the request data
-        data = request.get_json()
+        try:
+            data = request.get_json()
+            current_app.logger.info(f"Received data: {data}")
+
+            # Log the specific name field for debugging
+            name_value = data.get('name', 'NOT_PROVIDED')
+            current_app.logger.info(f"Name field in request: '{name_value}'")
+            if name_value == 'NOT_PROVIDED':
+                current_app.logger.error("Name field is missing in the request")
+            elif not name_value or name_value.strip() == '':
+                current_app.logger.error("Name field is empty or only whitespace")
+
+        except Exception as json_error:
+            current_app.logger.error(f"Failed to parse JSON data: {str(json_error)}")
+            current_app.logger.error(f"Raw request data: {request.data}")
+            return jsonify({
+                'message': 'Invalid JSON data',
+                'error': str(json_error),
+                'scene': {}
+            }), 400
 
         # Handle unexpected data format
         if not data:
             current_app.logger.error("No data provided for scene creation")
             return jsonify({
                 'message': 'No data provided',
-                'error': 'Request must include scene data in JSON format'
+                'error': 'Request must include scene data in JSON format',
+                'scene': {}
             }), 400
 
         # Check for unusual data format (numbered keys instead of named fields)
@@ -582,8 +607,16 @@ def create_scene():
         user_id = get_jwt_identity()
         current_app.logger.info(f"User ID from JWT: {user_id}")
 
+        if not user_id:
+            current_app.logger.error("No user ID found in JWT token")
+            return jsonify({
+                'message': 'Authentication required',
+                'error': 'You must be logged in to create a scene',
+                'scene': {}
+            }), 401
+
         # Validate required fields
-        name = data.get('name', '').strip()
+        name = data.get('name', '').strip() if data.get('name') else ''
         universe_id = data.get('universe_id')
 
         current_app.logger.info(f"Scene name: {name}, universe_id: {universe_id}")
@@ -636,36 +669,43 @@ def create_scene():
 
         # Create new scene
         try:
+            current_app.logger.info("Creating new Scene object")
             scene = Scene(
                 name=name,
-                description=data.get('description', '').strip(),
+                description=data.get('description', '').strip() if data.get('description') else '',
                 universe_id=universe_id
             )
             # Explicitly set is_deleted to False
             scene.is_deleted = False
 
             # Set optional fields from request data
-            if 'summary' in data:
+            if 'summary' in data and data['summary'] is not None:
                 scene.summary = data.get('summary')
-            if 'content' in data:
+            if 'content' in data and data['content'] is not None:
                 scene.content = data.get('content')
-            if 'notes' in data:
+            if 'notes' in data and data['notes'] is not None:
                 scene.notes_text = data.get('notes')
-            if 'location' in data:
+            elif 'notes_text' in data and data['notes_text'] is not None:
+                scene.notes_text = data.get('notes_text')
+            if 'location' in data and data['location'] is not None:
                 scene.location = data.get('location')
-            if 'scene_type' in data:
+            if 'scene_type' in data and data['scene_type'] is not None:
                 scene.scene_type = data.get('scene_type')
-            if 'time_of_day' in data:
+            if 'time_of_day' in data and data['time_of_day'] is not None:
                 scene.time_of_day = data.get('time_of_day')
-            if 'status' in data:
+            elif 'timeOfDay' in data and data['timeOfDay'] is not None:
+                scene.time_of_day = data.get('timeOfDay')
+            if 'status' in data and data['status'] is not None:
                 scene.status = data.get('status')
-            if 'significance' in data:
+            if 'significance' in data and data['significance'] is not None:
                 scene.significance = data.get('significance')
-            if 'date_of_scene' in data:
+            if 'date_of_scene' in data and data['date_of_scene'] is not None:
                 scene.date_of_scene = data.get('date_of_scene')
-            if 'order' in data:
+            elif 'dateOfScene' in data and data['dateOfScene'] is not None:
+                scene.date_of_scene = data.get('dateOfScene')
+            if 'order' in data and data['order'] is not None:
                 scene.order = data.get('order')
-            if 'is_public' in data:
+            if 'is_public' in data and data['is_public'] is not None:
                 scene.is_public = data.get('is_public')
 
             current_app.logger.info(f"Created scene object: {scene.name} for universe {scene.universe_id}")
@@ -691,16 +731,17 @@ def create_scene():
             }), 400
 
         try:
+            current_app.logger.info("Adding scene to database session")
             db.session.add(scene)
-            current_app.logger.info("Added scene to session")
+            current_app.logger.info("Committing transaction")
             db.session.commit()
-            current_app.logger.info(f"Committed scene to database with ID: {scene.id}")
+            current_app.logger.info(f"Scene committed to database with ID: {scene.id}")
 
             # Create a comprehensive scene dictionary for the response
             scene_dict = {
                 'id': scene.id,
                 'name': scene.name,
-                'description': scene.description,
+                'description': scene.description or '',
                 'universe_id': scene.universe_id,
                 'is_deleted': False,  # Explicitly set to False
                 'created_at': str(scene.created_at) if scene.created_at else None,
@@ -714,23 +755,27 @@ def create_scene():
                 scene_dict['content'] = scene.content
             if scene.notes_text is not None:
                 scene_dict['notes'] = scene.notes_text
+                scene_dict['notes_text'] = scene.notes_text
             if scene.location is not None:
                 scene_dict['location'] = scene.location
             if scene.scene_type is not None:
                 scene_dict['scene_type'] = scene.scene_type
             if scene.time_of_day is not None:
                 scene_dict['time_of_day'] = scene.time_of_day
+                scene_dict['timeOfDay'] = scene.time_of_day  # Add camelCase for frontend
             if scene.status is not None:
                 scene_dict['status'] = scene.status
             if scene.significance is not None:
                 scene_dict['significance'] = scene.significance
             if scene.date_of_scene is not None:
                 scene_dict['date_of_scene'] = scene.date_of_scene
+                scene_dict['dateOfScene'] = scene.date_of_scene  # Add camelCase for frontend
             if scene.order is not None:
                 scene_dict['order'] = scene.order
             if scene.is_public is not None:
                 scene_dict['is_public'] = scene.is_public
 
+            current_app.logger.info(f"Returning successful response with scene: {scene_dict}")
             return jsonify({
                 'message': 'Scene created successfully',
                 'scene': scene_dict
@@ -747,10 +792,10 @@ def create_scene():
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Unexpected error creating scene: {str(e)}")
+        current_app.logger.error(f"Unexpected error in create_scene: {str(e)}")
         current_app.logger.error(traceback.format_exc())
         return jsonify({
-            'message': 'Error creating scene',
+            'message': 'Server error',
             'error': str(e),
             'scene': {}
         }), 500  # Use 500 for server errors
