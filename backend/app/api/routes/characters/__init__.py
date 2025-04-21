@@ -1,12 +1,13 @@
 from flask import Blueprint
 
-characters_bp = Blueprint('characters', __name__)
+characters_bp = Blueprint('characters', __name__, url_prefix='/api/characters')
 
 # Import route modules
-from .list_routes import *
-from .detail_routes import *
-from .create_routes import *
-from .update_routes import *
-from .delete_routes import *
+from . import list_routes
+from . import detail_routes
+from . import create_routes
+from . import update_routes
+from . import delete_routes
+from . import universe_routes  # Import the new universe routes
 
-# All routes are already registered with characters_bp in their respective modules 
+# All routes are already registered with characters_bp in their respective modules

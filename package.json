@@ -6,7 +6,7 @@
   "scripts": {
     "build": "cd frontend && vite build",
     "start": "concurrently \"npm run start-backend\" \"npm run start-frontend\"",
-    "start-backend": "cd backend && source myenv/bin/activate && python run.py",
+    "start-backend": "cd backend && poetry run python run.py",
     "start-frontend": "cd frontend && pnpm run dev",
     "dev": "vite --force --clearScreen=false",
     "lint": "eslint . --ignore-pattern \"build.test/**\"",
