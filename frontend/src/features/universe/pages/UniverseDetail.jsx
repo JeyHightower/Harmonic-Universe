@@ -4,9 +4,9 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { UniverseDeleteModal, UniverseModal } from '../';
 import Button from '../../../components/common/Button';
 import {
-    createSceneAndRefresh,
-    deleteSceneAndRefresh,
-    fetchScenesForUniverse,
+  createSceneAndRefresh,
+  deleteSceneAndRefresh,
+  fetchScenesForUniverse,
 } from '../../../store/thunks/consolidated/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { SceneCard, SceneModal } from '../../scene/index.mjs';
@@ -103,10 +103,16 @@ const UniverseDetail = () => {
   };
 
   const handleViewScene = (scene) => {
-    // Open modal for viewing, only pass the scene ID
+    // Open modal for viewing
     console.log(`Opening view modal for scene ${scene.id} in universe ${id}`);
-    setSceneToView(scene.id);
-    setIsViewSceneModalOpen(true);
+
+    try {
+      // Store both the ID and full scene object if available
+      setSceneToView(scene);
+      setIsViewSceneModalOpen(true);
+    } catch (error) {
+      console.error('Error opening view scene modal:', error);
+    }
   };
 
   const handleEditSceneSuccess = (editedScene) => {
@@ -384,7 +390,8 @@ const UniverseDetail = () => {
           isOpen={isViewSceneModalOpen}
           onClose={handleViewSceneClose}
           universeId={id}
-          sceneId={sceneToView}
+          sceneId={typeof sceneToView === 'object' ? sceneToView.id : sceneToView}
+          initialData={typeof sceneToView === 'object' ? sceneToView : null}
           mode="view"
         />
       )}

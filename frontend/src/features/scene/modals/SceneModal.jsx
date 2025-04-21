@@ -106,20 +106,28 @@ const SceneModal = ({
             // Successfully fetched scene data from Redux
             const sceneData = resultAction.payload;
 
-            if (sceneData) {
-              // Ensure ID is explicitly set
-              sceneData.id = sceneData.id || formattedSceneId;
-
-              // Ensure universe_id is present if provided via props
-              if (universeId && !sceneData.universe_id) {
-                sceneData.universe_id = universeId;
-              }
-
-              console.log('SceneModal - Setting scene data from Redux:', sceneData);
-              setScene(sceneData);
+            // Handle both response formats - either direct scene object or {scene: sceneObject}
+            let processedSceneData;
+            if (sceneData && sceneData.scene) {
+              // Response has {scene} property
+              processedSceneData = sceneData.scene;
+            } else if (sceneData && typeof sceneData === 'object') {
+              // Response is the scene object directly
+              processedSceneData = sceneData;
             } else {
-              throw new Error('No scene data returned from Redux action');
+              throw new Error('No valid scene data found in response');
             }
+
+            // Ensure ID is explicitly set
+            processedSceneData.id = processedSceneData.id || formattedSceneId;
+
+            // Ensure universe_id is present if provided via props
+            if (universeId && !processedSceneData.universe_id) {
+              processedSceneData.universe_id = universeId;
+            }
+
+            console.log('SceneModal - Setting scene data from Redux:', processedSceneData);
+            setScene(processedSceneData);
           } else {
             throw new Error(resultAction.error?.message || 'Failed to fetch scene data');
           }
@@ -258,15 +266,29 @@ const SceneModal = ({
       case 'view':
         // Ensure we have valid scene data, falling back to initialData if needed
         const sceneData = scene || initialData;
-        if (!sceneData || !sceneData.id) {
+        if (!sceneData) {
           return (
             <div className="scene-modal-error">
-              <p className="error-message">Invalid scene data. Please try again.</p>
+              <p className="error-message">Scene data not found. Please try again.</p>
               <button onClick={onClose}>Close</button>
             </div>
           );
         }
-        return <SceneViewer scene={sceneData} onClose={onClose} />;
+
+        // Handle both possible scene structures (direct object or nested within scene property)
+        const viewerData = sceneData.scene ? sceneData.scene : sceneData;
+
+        // Verify we have a valid ID
+        if (!viewerData.id) {
+          return (
+            <div className="scene-modal-error">
+              <p className="error-message">Invalid scene data. Missing scene ID.</p>
+              <button onClick={onClose}>Close</button>
+            </div>
+          );
+        }
+
+        return <SceneViewer scene={viewerData} onClose={onClose} />;
       case 'delete':
         if (!scene && !initialData) {
           // For delete operation without scene data, create minimal scene object with ID
