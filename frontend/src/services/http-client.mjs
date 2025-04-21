@@ -941,7 +941,7 @@ export const httpClient = {
   get: async (url, options = {}) => {
     const formattedUrl = formatUrl(url);
 
-    // Check cache for GET requests
+    // Check cache first
     const cachedResponse = getCachedResponse(formattedUrl, options);
     if (cachedResponse) {
       return cachedResponse;
@@ -1140,9 +1140,60 @@ export const httpClient = {
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
 
-    // Make the request with retry logic
-    const response = await withRetry(() => axiosInstance.delete(formattedUrl, options), options);
+    // Special handling for scene deletion
+    if (formattedUrl.includes('/api/scenes/')) {
+      try {
+        console.log('HTTP Client: Sending scene DELETE request to:', formattedUrl);
 
+        // Try with the current URL (which may have a trailing slash)
+        try {
+          const response = await axiosInstance.delete(formattedUrl, options);
+          console.log('HTTP Client: Scene DELETE successful:', {
+            url: formattedUrl,
+            status: response.status,
+          });
+          return response.data;
+        } catch (error) {
+          // If we get a 405 Method Not Allowed, the endpoint might not support the trailing slash
+          if (error.response && error.response.status === 405) {
+            console.log('HTTP Client: Method not allowed (405), trying alternate URL format');
+
+            // Toggle the trailing slash
+            const alternateUrl = formattedUrl.endsWith('/')
+              ? formattedUrl.slice(0, -1)
+              : formattedUrl + '/';
+
+            console.log('HTTP Client: Trying DELETE with alternate URL:', alternateUrl);
+            const altResponse = await axiosInstance.delete(alternateUrl, options);
+            return altResponse.data;
+          }
+
+          // For 404 errors, consider the resource already gone (which is the goal of DELETE)
+          if (error.response && error.response.status === 404) {
+            console.log('HTTP Client: Resource not found (404), treating DELETE as successful');
+            return {
+              message: 'Resource not found or already deleted',
+              success: true,
+              id: formattedUrl.split('/').filter(Boolean).pop()
+            };
+          }
+
+          // Re-throw for other errors
+          throw error;
+        }
+      } catch (error) {
+        console.error('HTTP Client: Scene DELETE request failed', {
+          url: formattedUrl,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          errorMessage: error.message
+        });
+        throw error;
+      }
+    }
+
+    // Handle regular (non-scene) DELETE requests with retry logic
+    const response = await withRetry(() => axiosInstance.delete(formattedUrl, options), options);
     return response.data;
   },
 

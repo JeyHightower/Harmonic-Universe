@@ -37,18 +37,7 @@ def validate_token():
     """Validate the JWT token and return user data."""
     # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
-        response = current_app.make_default_options_response()
-        # Ensure proper CORS headers for preflight
-        origin = request.headers.get('Origin', 'http://localhost:5173')
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
-        # Ensure only one Access-Control-Allow-Credentials header
-        if 'Access-Control-Allow-Credentials' in response.headers:
-            del response.headers['Access-Control-Allow-Credentials']
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        response.headers.add('Access-Control-Max-Age', '86400')
-        return response
+        return current_app.make_default_options_response()
 
     # Print request details for debugging
     current_app.logger.debug(f"Token validate request: Headers={dict(request.headers)}, Origin={request.headers.get('Origin')}")
@@ -160,15 +149,6 @@ def validate_token():
                 'valid': True,
                 'user': user.to_dict()
             })
-
-            # Ensure CORS headers are properly set
-            origin = request.headers.get('Origin')
-            if origin:
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                # Ensure only one Access-Control-Allow-Credentials header
-                if 'Access-Control-Allow-Credentials' in response.headers:
-                    del response.headers['Access-Control-Allow-Credentials']
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
 
             # Set the token as a cookie with secure settings
             is_production = current_app.config.get('ENV') == 'production'

@@ -7,6 +7,7 @@ import traceback
 from . import scenes_bp  # import the Blueprint instance
 
 @scenes_bp.route('/<int:scene_id>', methods=['DELETE'])
+@scenes_bp.route('/<int:scene_id>/', methods=['DELETE'])  # Added endpoint with trailing slash
 @jwt_required()
 def delete_scene(scene_id):
     try:
