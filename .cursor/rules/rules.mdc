@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
 # Project Guidelines and Best Practices
@@ -32,6 +32,7 @@ alwaysApply: true
      - `harmonic-universe/backend/app/api/models/**/*`
      - `harmonic-universe/backend/app/api/routes/**/*`
    - Check other features (universe management, scene management, character management, notes management) for similar errors. Trace data flow to identify and address the root cause of issues.
+   - Follow the stack trace and analyze the files listed to identify the root cause of the error, ensuring a thorough understanding before implementing a fix.
 
 6. **Codebase Modifications**
    - Do not create new files or code. If something is needed, search for it and update the import instead.

@@ -21,6 +21,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { createSelector } from '@reduxjs/toolkit';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -35,6 +36,7 @@ const ScenesPageWrapper = () => {
   const navigate = useNavigate();
   const [isValidating, setIsValidating] = useState(true);
   const [validatedId, setValidatedId] = useState(null);
+  const [validationError, setValidationError] = useState(null);
 
   // Add debug logging
   useEffect(() => {
@@ -48,6 +50,9 @@ const ScenesPageWrapper = () => {
       console.log('ScenesPageWrapper: Already validated this universeId, skipping validation');
       return;
     }
+
+    // Reset validation state
+    setValidationError(null);
 
     // Comprehensive validation check for universeId using safeId utility
     try {
@@ -66,6 +71,7 @@ const ScenesPageWrapper = () => {
 
       if (!isValidUniverseId) {
         console.log(`Invalid universe ID detected (${universeId}), redirecting to dashboard`);
+        setValidationError(`Invalid universe ID: ${universeId}`);
         navigate('/dashboard', { replace: true });
         return;
       } else {
@@ -75,6 +81,7 @@ const ScenesPageWrapper = () => {
       }
     } catch (error) {
       console.error('Error validating universe ID:', error);
+      setValidationError(`Error validating universe ID: ${error.message}`);
       navigate('/dashboard', { replace: true });
     }
   }, [universeId, navigate, validatedId]);
@@ -87,6 +94,15 @@ const ScenesPageWrapper = () => {
         <Typography variant="body1" sx={{ ml: 2 }}>
           Validating universe...
         </Typography>
+      </Box>
+    );
+  }
+
+  // If there's a validation error, show it
+  if (validationError) {
+    return (
+      <Box display="flex" justifyContent="center" my={6}>
+        <Alert severity="error">{validationError}. Redirecting to dashboard...</Alert>
       </Box>
     );
   }
@@ -127,6 +143,7 @@ const ScenesPageContent = ({ universeId }) => {
   // Double-check universeId is valid, even after wrapper validation
   // Make this a separate effect to ensure it runs on component mount
   const [safeUniverseId, setSafeUniverseId] = useState(null);
+  const [isUniverseExists, setIsUniverseExists] = useState(null);
 
   // Initialize safeUniverseId
   useEffect(() => {
@@ -155,6 +172,39 @@ const ScenesPageContent = ({ universeId }) => {
     }
   }, [universeId]);
 
+  // Check if universe exists in the database early
+  useEffect(() => {
+    if (safeUniverseId === null || safeUniverseId === undefined) {
+      return;
+    }
+
+    // Function to check if universe exists
+    const checkUniverseExists = async () => {
+      try {
+        const response = await apiClient.universes.getUniverse(safeUniverseId);
+        if (response && response.data) {
+          console.log('Universe exists in database:', safeUniverseId);
+          setIsUniverseExists(true);
+        } else {
+          console.log('Universe does not exist in database:', safeUniverseId);
+          setIsUniverseExists(false);
+        }
+      } catch (error) {
+        console.error('Error checking if universe exists:', error);
+        // Handle different errors - 404 means it doesn't exist
+        if (error.response && error.response.status === 404) {
+          console.log('Universe not found (404):', safeUniverseId);
+          setIsUniverseExists(false);
+        } else {
+          // Other errors - keep null to retry later
+          setIsUniverseExists(null);
+        }
+      }
+    };
+
+    checkUniverseExists();
+  }, [safeUniverseId]);
+
   // Add more debug logging for the safe ID
   useEffect(() => {
     console.log('ScenesPageContent: safeUniverseId updated to:', safeUniverseId);
@@ -164,19 +214,23 @@ const ScenesPageContent = ({ universeId }) => {
   // Get scenes from Redux store
   const scenesFromStore = useSelector((state) => state.scenes?.scenes || []);
 
-  // Memoized selector function for universe scenes
-  const memoizedUniverseSceneSelector = useMemo(() => {
-    return (state) => {
-      const scenes = state.scenes?.universeScenes?.[safeUniverseId] || [];
-      console.log(
-        `ScenesPage - Found ${scenes.length} scenes for universe ${safeUniverseId} in universeScenes collection`
-      );
-      return scenes;
-    };
+  // Create a properly memoized selector with createSelector
+  const selectUniverseScenes = useMemo(() => {
+    return createSelector(
+      [(state) => state.scenes?.universeScenes || {}, () => safeUniverseId],
+      (universeScenes, universeId) => {
+        if (!universeId) return [];
+        const scenes = universeId ? universeScenes[universeId] || [] : [];
+        console.log(
+          `ScenesPage - Found ${scenes.length} scenes for universe ${universeId} in universeScenes collection`
+        );
+        return scenes;
+      }
+    );
   }, [safeUniverseId]);
 
   // Use the memoized selector
-  const universeScenes = useSelector(memoizedUniverseSceneSelector);
+  const universeScenes = useSelector(selectUniverseScenes);
 
   const loadingFromStore = useSelector((state) => state.scenes?.loading);
   const errorFromStore = useSelector((state) => state.scenes?.error);
@@ -202,7 +256,7 @@ const ScenesPageContent = ({ universeId }) => {
       setScenes(universeScenes);
     }
     // Fall back to filtered scenes from the main collection
-    else if (scenesFromStore && scenesFromStore.length > 0) {
+    else if (scenesFromStore && scenesFromStore.length > 0 && safeUniverseId) {
       console.log('ScenesPage - Filtering from all scenes in store:', scenesFromStore.length);
       // Filter scenes that belong to this universe
       const filteredScenes = scenesFromStore.filter((scene) => {
@@ -221,9 +275,19 @@ const ScenesPageContent = ({ universeId }) => {
   }, [scenesFromStore, universeScenes, loadingFromStore, errorFromStore, safeUniverseId]);
 
   useEffect(() => {
+    // Handle universe not found case
+    if (isUniverseExists === false) {
+      console.error(`Universe with ID ${safeUniverseId} does not exist in the database.`);
+      setLoading(false);
+      setError(`Universe with ID ${safeUniverseId} not found.`);
+      // Redirect to dashboard after a short delay
+      window.setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
+      return;
+    }
+
     // Early return to prevent any API calls if universeId is invalid or null
     if (safeUniverseId === null || safeUniverseId === undefined) {
-      console.warn(`Invalid universeId for API calls: ${universeId}, skipping data fetch`);
+      console.warn(`Invalid universeId value for API calls: ${safeUniverseId}`);
       setLoading(false);
       setError('Invalid universe ID. Redirecting to dashboard.');
       // Only redirect if this is initial load, not after scene creation
@@ -262,8 +326,20 @@ const ScenesPageContent = ({ universeId }) => {
           const universeData = universeResponse.data.universe || universeResponse.data || {};
           console.log('Extracted universe data:', universeData);
           setUniverse(universeData);
+
+          // Confirm that universe exists
+          setIsUniverseExists(true);
         } catch (universeError) {
           console.error('Error fetching universe:', universeError);
+
+          // Check if the error is due to universe not existing (404)
+          if (universeError.response && universeError.response.status === 404) {
+            setIsUniverseExists(false);
+            setError(`Universe with ID ${safeUniverseId} not found.`);
+            setLoading(false);
+            return;
+          }
+
           setError('Failed to fetch universe details. Please try again.');
           setLoading(false);
           return;
@@ -275,6 +351,21 @@ const ScenesPageContent = ({ universeId }) => {
           console.log('About to call fetchScenes with:', safeUniverseId);
           const scenesResult = await dispatch(fetchScenes(safeUniverseId));
           console.log('Redux fetchScenes result:', scenesResult);
+
+          // Check if the API call failed with a 404 (universe not found)
+          if (
+            scenesResult.error &&
+            scenesResult.error.message &&
+            scenesResult.error.message.includes('404')
+          ) {
+            console.error(
+              `Universe with ID ${safeUniverseId} does not exist (404 from scenes API).`
+            );
+            setIsUniverseExists(false);
+            setError(`Universe with ID ${safeUniverseId} not found.`);
+            setLoading(false);
+            return;
+          }
 
           // If we didn't get any scenes, try direct API call as backup
           if (!scenesResult.payload?.scenes || scenesResult.payload.scenes.length === 0) {
@@ -316,11 +407,27 @@ const ScenesPageContent = ({ universeId }) => {
               }
             } catch (directError) {
               console.error('Direct API call failed:', directError);
-              // We don't throw here, just log, as we've already tried Redux
+              // If we get a 404 here, universe might not exist
+              if (directError.response && directError.response.status === 404) {
+                setIsUniverseExists(false);
+                setError(`Universe with ID ${safeUniverseId} not found.`);
+                setLoading(false);
+                return;
+              }
+              // We don't throw here for other errors, just log, as we've already tried Redux
             }
           }
         } catch (scenesError) {
           console.error('Error fetching scenes:', scenesError);
+
+          // Check if the error is due to universe not existing (404)
+          if (scenesError.response && scenesError.response.status === 404) {
+            setIsUniverseExists(false);
+            setError(`Universe with ID ${safeUniverseId} not found.`);
+            setLoading(false);
+            return;
+          }
+
           setError('Failed to fetch scenes. Please try again.');
         }
 
@@ -332,11 +439,11 @@ const ScenesPageContent = ({ universeId }) => {
       }
     };
 
-    // Only fetch data if safeUniverseId is valid
-    if (safeUniverseId) {
+    // Only fetch data if safeUniverseId is valid and universe exists or hasn't been checked yet
+    if (safeUniverseId && isUniverseExists !== false) {
       fetchData();
     }
-  }, [dispatch, navigate, safeUniverseId, scenes.length, universeId]);
+  }, [dispatch, navigate, safeUniverseId, scenes.length, isUniverseExists]);
 
   const handleCreateScene = () => {
     console.log('ScenesPage - Opening create scene modal with universeId:', safeUniverseId);
@@ -473,56 +580,71 @@ const ScenesPageContent = ({ universeId }) => {
       );
     }
 
-    // Filter and sort scenes
-    const filteredScenes = useMemo(() => {
-      return scenes
-        .filter((scene) => {
-          // Filter by search term
-          const matchesSearch =
-            searchTerm === '' ||
-            scene.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            scene.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    // Create a properly memoized selector for filtering and sorting scenes
+    const selectFilteredScenes = useMemo(() => {
+      return createSelector(
+        [
+          () => scenes,
+          () => searchTerm,
+          () => typeFilter,
+          () => statusFilter,
+          () => sortBy,
+          () => sortDirection,
+        ],
+        (scenes, searchTerm, typeFilter, statusFilter, sortBy, sortDirection) => {
+          return scenes
+            .filter((scene) => {
+              // Filter by search term
+              const matchesSearch =
+                searchTerm === '' ||
+                scene.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                scene.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
-          // Filter by type
-          const matchesType =
-            typeFilter === 'all' || (scene.scene_type && scene.scene_type === typeFilter);
+              // Filter by type
+              const matchesType =
+                typeFilter === 'all' || (scene.scene_type && scene.scene_type === typeFilter);
 
-          // Filter by status
-          const matchesStatus =
-            statusFilter === 'all' || (scene.status && scene.status === statusFilter);
+              // Filter by status
+              const matchesStatus =
+                statusFilter === 'all' || (scene.status && scene.status === statusFilter);
 
-          return matchesSearch && matchesType && matchesStatus;
-        })
-        .sort((a, b) => {
-          // Sort by selected field
-          let valueA, valueB;
+              return matchesSearch && matchesType && matchesStatus;
+            })
+            .sort((a, b) => {
+              // Sort by selected field
+              let valueA, valueB;
 
-          switch (sortBy) {
-            case 'name':
-              valueA = a.name || '';
-              valueB = b.name || '';
-              break;
-            case 'created':
-              valueA = a.created_at || '';
-              valueB = b.created_at || '';
-              break;
-            case 'updated':
-              valueA = a.updated_at || '';
-              valueB = b.updated_at || '';
-              break;
-            default:
-              valueA = a.name || '';
-              valueB = b.name || '';
-          }
+              switch (sortBy) {
+                case 'name':
+                  valueA = a.name || '';
+                  valueB = b.name || '';
+                  break;
+                case 'created':
+                  valueA = a.created_at || '';
+                  valueB = b.created_at || '';
+                  break;
+                case 'updated':
+                  valueA = a.updated_at || '';
+                  valueB = b.updated_at || '';
+                  break;
+                default:
+                  valueA = a.name || '';
+                  valueB = b.name || '';
+              }
 
-          // Apply sort direction
-          if (sortDirection === 'asc') {
-            return valueA.localeCompare(valueB);
-          } else {
-            return valueB.localeCompare(valueA);
-          }
-        });
+              // Apply sort direction
+              if (sortDirection === 'asc') {
+                return valueA.localeCompare(valueB);
+              } else {
+                return valueB.localeCompare(valueA);
+              }
+            });
+        }
+      );
     }, [scenes, searchTerm, typeFilter, statusFilter, sortBy, sortDirection]);
+
+    // Use the memoized selector to get the filtered scenes
+    const filteredScenes = selectFilteredScenes();
 
     return (
       <Grid container spacing={3}>
