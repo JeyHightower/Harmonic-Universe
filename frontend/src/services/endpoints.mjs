@@ -40,30 +40,34 @@ const endpointNoSlash = (path) => {
 /**
  * Safely convert an ID to a valid format for URL paths
  * @param {any} id - The ID to convert
- * @returns {string|number} - A valid ID for use in URLs
+ * @returns {string|number|null} - A valid ID for use in URLs or null for invalid inputs
  */
 export const safeId = (id) => {
   if (id === undefined || id === null) {
     console.error('Invalid ID (undefined or null) provided to endpoint');
-    return 'invalid-id';
+    // Return null instead of 'invalid-id' string to make it easier to check for invalid values
+    return null;
   }
 
   // If it's already a number, return it directly
-  if (typeof id === 'number' && !isNaN(id)) {
+  if (typeof id === 'number' && !isNaN(id) && id > 0) {
     return id;
   }
 
   // If it's a string, try to convert to a number if it looks like one
   if (typeof id === 'string') {
     if (/^\d+$/.test(id)) {
-      return parseInt(id, 10);
+      const parsedId = parseInt(id, 10);
+      // Ensure it's a positive number
+      return parsedId > 0 ? parsedId : null;
     }
-    // Otherwise, return the string as is
-    return id;
+    // Otherwise, return the string as is if it's not empty
+    return id.trim() ? id : null;
   }
 
-  // For any other type, convert to string
-  return String(id);
+  // For any other type, convert to string if possible
+  const stringId = String(id);
+  return stringId.trim() ? stringId : null;
 };
 
 /**

@@ -58,9 +58,11 @@ const ScenesPageWrapper = () => {
     try {
       const safeUniverseId = safeId(universeId);
 
-      // Check if safeId returned the invalid-id string or if it's not a positive number
+      // Check if safeId returned null (invalid id) or if it's not a positive number
       const isValidUniverseId =
-        safeUniverseId !== 'invalid-id' && typeof safeUniverseId === 'number' && safeUniverseId > 0;
+        safeUniverseId !== null &&
+        ((typeof safeUniverseId === 'number' && safeUniverseId > 0) ||
+          (typeof safeUniverseId === 'string' && safeUniverseId.trim() !== ''));
 
       console.log(
         'ScenesPageWrapper: safeUniverseId =',
@@ -151,9 +153,11 @@ const ScenesPageContent = ({ universeId }) => {
       // Use the safeId utility to validate and normalize the universeId
       const validatedId = safeId(universeId);
 
-      // Check if the ID is valid (not 'invalid-id' string and is a positive number)
+      // Check if the ID is valid (not null and is a positive number or valid string)
       const isValid =
-        validatedId !== 'invalid-id' && typeof validatedId === 'number' && validatedId > 0;
+        validatedId !== null &&
+        ((typeof validatedId === 'number' && validatedId > 0) ||
+          (typeof validatedId === 'string' && validatedId.trim() !== ''));
 
       if (isValid) {
         console.log('ScenesPageContent: Valid universeId detected:', validatedId);
@@ -219,8 +223,18 @@ const ScenesPageContent = ({ universeId }) => {
     return createSelector(
       [(state) => state.scenes?.universeScenes || {}, () => safeUniverseId],
       (universeScenes, universeId) => {
-        if (!universeId) return [];
-        const scenes = universeId ? universeScenes[universeId] || [] : [];
+        // Early return empty array for invalid universeId
+        if (universeId === null || universeId === undefined) {
+          console.log(
+            'ScenesPage - Selector received null or undefined universeId, returning empty array'
+          );
+          return [];
+        }
+
+        // Convert ID to string for consistent lookup (in case it's stored differently)
+        const idStr = String(universeId);
+        const scenes = universeScenes[universeId] || universeScenes[idStr] || [];
+
         console.log(
           `ScenesPage - Found ${scenes.length} scenes for universe ${universeId} in universeScenes collection`
         );
@@ -275,21 +289,15 @@ const ScenesPageContent = ({ universeId }) => {
   }, [scenesFromStore, universeScenes, loadingFromStore, errorFromStore, safeUniverseId]);
 
   useEffect(() => {
-    // Handle universe not found case
-    if (isUniverseExists === false) {
-      console.error(`Universe with ID ${safeUniverseId} does not exist in the database.`);
-      setLoading(false);
-      setError(`Universe with ID ${safeUniverseId} not found.`);
-      // Redirect to dashboard after a short delay
-      window.setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
-      return;
-    }
-
-    // Early return to prevent any API calls if universeId is invalid or null
+    // Handle null or invalid universeId early and consistently
     if (safeUniverseId === null || safeUniverseId === undefined) {
       console.warn(`Invalid universeId value for API calls: ${safeUniverseId}`);
       setLoading(false);
       setError('Invalid universe ID. Redirecting to dashboard.');
+
+      // Clear any cached scenes to avoid showing data from previous universes
+      setScenes([]);
+
       // Only redirect if this is initial load, not after scene creation
       if (!scenes.length) {
         console.log('ScenesPageContent: No scenes loaded yet, redirecting to dashboard');
@@ -300,7 +308,23 @@ const ScenesPageContent = ({ universeId }) => {
       return;
     }
 
+    // Handle universe not found case
+    if (isUniverseExists === false) {
+      console.error(`Universe with ID ${safeUniverseId} does not exist in the database.`);
+      setLoading(false);
+      setError(`Universe with ID ${safeUniverseId} not found.`);
+      // Redirect to dashboard after a short delay
+      window.setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
+      return;
+    }
+
     const fetchData = async () => {
+      // Extra guard clause to prevent API calls if conditions change while preparing to fetch
+      if (!safeUniverseId || isUniverseExists === false) {
+        console.warn('Aborting fetchData due to invalid universe ID or universe not existing');
+        return;
+      }
+
       try {
         console.log(`Fetching data for valid universe ID: ${safeUniverseId}`);
         setLoading(true);
