@@ -198,9 +198,59 @@ export const fetchSceneById = createAsyncThunk(
         throw new Error("Scene ID is required");
       }
 
+      // First check if we already have this scene in the Redux store
+      const state = getState();
+      const existingScene = state.scenes?.scenes?.find(scene =>
+        scene.id === sceneId || scene.id === Number(sceneId)
+      );
+
+      // If we found the scene in the store and it's not marked as deleted, use it
+      if (existingScene && existingScene.is_deleted !== true) {
+        console.log("THUNK fetchSceneById: Found scene in Redux store, using cached data:", existingScene);
+
+        // Return the existing scene data in the expected format
+        return {
+          message: "Scene fetched from store successfully",
+          scene: normalizeSceneData({
+            ...existingScene,
+            is_deleted: false // Ensure is_deleted is explicitly false
+          }),
+          status: 200,
+          fromStore: true // Flag to indicate this came from store
+        };
+      }
+
+      // Check the currentScene as well
+      const currentScene = state.scenes?.currentScene;
+      if (currentScene &&
+          (currentScene.id === sceneId || currentScene.id === Number(sceneId)) &&
+          currentScene.is_deleted !== true) {
+        console.log("THUNK fetchSceneById: Using current scene from Redux store:", currentScene);
+
+        return {
+          message: "Scene fetched from current scene successfully",
+          scene: normalizeSceneData({
+            ...currentScene,
+            is_deleted: false // Ensure is_deleted is explicitly false
+          }),
+          status: 200,
+          fromStore: true // Flag to indicate this came from store
+        };
+      }
+
+      // If we don't have the scene in the store, make the API call
+      console.log("THUNK fetchSceneById: Scene not found in store, fetching from API");
+
+      // Format sceneId to ensure consistency - try to parse as number if it's a string
+      let formattedSceneId = sceneId;
+      if (typeof sceneId === 'string' && /^\d+$/.test(sceneId)) {
+        formattedSceneId = parseInt(sceneId, 10);
+        console.log(`THUNK fetchSceneById: Converted string ID to number: ${sceneId} -> ${formattedSceneId}`);
+      }
+
       // Make API call
       try {
-        const response = await apiClient.getScene(sceneId);
+        const response = await apiClient.getScene(formattedSceneId);
         console.log("THUNK fetchSceneById: Received API response:", response);
 
         // Check for valid scene data

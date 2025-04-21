@@ -85,6 +85,14 @@ const SceneModal = ({
 
   // Load scene data if we have a sceneId but no initialData
   useEffect(() => {
+    // First, check if we already have initialData and set it immediately
+    if (initialData) {
+      console.log('SceneModal - Using provided initialData, skipping fetch entirely:', initialData);
+      setScene(initialData);
+      return; // Exit early if initialData is provided
+    }
+
+    // Only proceed with API fetch if we have a sceneId and no initialData
     if (
       formattedSceneId &&
       !initialData &&
@@ -96,14 +104,6 @@ const SceneModal = ({
           setError(null);
 
           console.log(`SceneModal - Loading scene data for ID: ${formattedSceneId}`);
-
-          // Skip fetching if initialData is already provided
-          if (initialData) {
-            console.log('SceneModal - Using provided initialData, skipping fetch');
-            setScene(initialData);
-            setLoading(false);
-            return;
-          }
 
           // Import only the thunk but use the component-level dispatch
           const { fetchSceneById } = await import('../../../store/thunks/consolidated/scenesThunks');
@@ -156,9 +156,6 @@ const SceneModal = ({
       };
 
       loadSceneData();
-    } else if (initialData) {
-      console.log('SceneModal - Using provided initialData:', initialData);
-      setScene(initialData);
     }
   }, [formattedSceneId, initialData, actualMode, universeId, dispatch]);
 

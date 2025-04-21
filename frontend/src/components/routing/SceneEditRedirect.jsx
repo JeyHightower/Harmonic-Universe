@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { SceneModal } from "../../features/scene/index.mjs";
 
@@ -17,6 +17,10 @@ const SceneEditRedirect = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Get the current scene from Redux store if available
+  const currentSceneFromStore = useSelector(state => state.scenes?.currentScene);
+  const allScenes = useSelector(state => state.scenes?.scenes || []);
+
   // Fetch the scene data when the component mounts
   useEffect(() => {
     const fetchSceneData = async () => {
@@ -26,6 +30,39 @@ const SceneEditRedirect = () => {
           sceneId
         );
         setLoading(true);
+
+        // Check if we already have this scene in Redux store
+        if (currentSceneFromStore && currentSceneFromStore.id === sceneId) {
+          console.log("SceneEditRedirect - Using scene from Redux store:", currentSceneFromStore);
+          setScene(currentSceneFromStore);
+
+          if (currentSceneFromStore.universe_id) {
+            setUniverseId(currentSceneFromStore.universe_id);
+          } else {
+            setError("Could not determine universe ID for this scene");
+          }
+
+          setShowModal(true);
+          setLoading(false);
+          return;
+        }
+
+        // Check if we already have this scene in the scenes list
+        const existingScene = allScenes.find(s => s.id === sceneId);
+        if (existingScene) {
+          console.log("SceneEditRedirect - Using scene from scenes list:", existingScene);
+          setScene(existingScene);
+
+          if (existingScene.universe_id) {
+            setUniverseId(existingScene.universe_id);
+          } else {
+            setError("Could not determine universe ID for this scene");
+          }
+
+          setShowModal(true);
+          setLoading(false);
+          return;
+        }
 
         // Import and use Redux thunk instead of direct API call
         const { fetchSceneById } = await import("../../store/thunks/consolidated/scenesThunks");
@@ -76,7 +113,7 @@ const SceneEditRedirect = () => {
       setError("No scene ID provided");
       setLoading(false);
     }
-  }, [sceneId, dispatch]);
+  }, [sceneId, dispatch, currentSceneFromStore, allScenes]);
 
   // Handle successful edit
   const handleEditSuccess = () => {

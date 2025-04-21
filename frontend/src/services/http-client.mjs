@@ -502,10 +502,15 @@ const formatUrl = (url) => {
   // Now add the /api prefix
   url = '/api' + url;
 
-  // Special handling for scene endpoints - don't add trailing slash for numeric IDs
-  if (url.match(/\/api\/scenes\/\d+$/)) {
-    console.log(`Scene endpoint with numeric ID detected, not adding trailing slash: ${url}`);
-    return url;
+  // Special case - check if this is a scene endpoint with a numeric ID
+  // Using a more strict pattern to match only numeric IDs
+  const sceneIdPattern = /\/api\/scenes\/(\d+)$/;
+  const match = url.match(sceneIdPattern);
+
+  if (match) {
+    const sceneId = match[1];
+    console.log(`Scene endpoint with numeric ID ${sceneId} detected, not adding trailing slash`);
+    return url; // Return without trailing slash for scene endpoints with numeric IDs
   }
 
   // Ensure trailing slash to prevent redirects for other endpoints
@@ -581,6 +586,24 @@ const getAlternativeUrl = (url, method, error) => {
     status: error.response?.status,
   });
 
+  // Special case for scene endpoints with numeric IDs
+  const sceneIdPattern = /\/api\/scenes\/(\d+)/;
+  const sceneMatch = url.match(sceneIdPattern);
+
+  if (sceneMatch) {
+    const sceneId = sceneMatch[1];
+    console.log(`Special handling for scene ID endpoint: ${sceneId}`);
+
+    // Try without trailing slash first (higher priority for scenes)
+    if (url.endsWith('/')) {
+      console.log(`Removing trailing slash from scene endpoint: ${url}`);
+      return url.slice(0, -1); // Remove trailing slash
+    } else {
+      console.log(`Adding trailing slash to scene endpoint: ${url}`);
+      return url + '/'; // Add trailing slash
+    }
+  }
+
   // Special case for the refresh endpoint
   if (url.includes('/auth/') && method.toLowerCase() === 'post') {
     if (url.endsWith('/')) {
@@ -599,7 +622,7 @@ const getAlternativeUrl = (url, method, error) => {
     }
   }
 
-  // Add special handling for scene endpoints
+  // Generic handling for other scene endpoints
   if (url.includes('/scenes/')) {
     if (url.endsWith('/')) {
       return url.slice(0, -1); // Remove trailing slash

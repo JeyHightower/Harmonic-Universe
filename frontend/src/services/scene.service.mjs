@@ -176,41 +176,65 @@ export const getSceneById = async (sceneId) => {
 
     console.log('scenes', 'Fetching scene by ID:', sceneId);
 
-    // First try - Make sure the URL doesn't have a trailing slash
-    let endpoint = sceneEndpoints.getById(sceneId);
-    if (endpoint.endsWith('/')) {
-      endpoint = endpoint.slice(0, -1);
+    // Normalize sceneId - if it's a string that looks like a number, convert it
+    let normalizedId = sceneId;
+    if (typeof sceneId === 'string' && /^\d+$/.test(sceneId)) {
+      normalizedId = parseInt(sceneId, 10);
+      console.log('scenes', `Normalized scene ID from string to number: ${sceneId} -> ${normalizedId}`);
     }
 
-    try {
-      // Try first without trailing slash
-      console.log('scenes', 'Trying endpoint without trailing slash:', endpoint);
-      const response = await httpClient.get(endpoint);
-      console.log('scenes', 'Scene fetched successfully:', response);
-      return responseHandler.handleSuccess(response);
-    } catch (error) {
-      // If 404, try with trailing slash
-      if (error.response && error.response.status === 404) {
-        console.log('scenes', 'Endpoint without slash failed, trying with slash');
-        // Add trailing slash if not present
-        if (!endpoint.endsWith('/')) {
-          endpoint = endpoint + '/';
-        }
+    // Try multiple endpoint formats to handle both with and without trailing slashes
+    // Store all errors to provide comprehensive error info if all attempts fail
+    const errors = [];
 
-        try {
-          const response = await httpClient.get(endpoint);
-          console.log('scenes', 'Scene fetched successfully with trailing slash:', response);
-          return responseHandler.handleSuccess(response);
-        } catch (slashError) {
-          console.log('scenes', 'Both endpoint variations failed');
-          // If both fail, throw the original error with better message
-          const errorMessage = `Scene with ID ${sceneId} not found. It may have been deleted or doesn't exist.`;
-          return responseHandler.handleError(new Error(errorMessage));
-        }
+    // First attempt - without trailing slash (preferred for numeric IDs)
+    try {
+      let endpoint = sceneEndpoints.getById(normalizedId);
+      if (endpoint.endsWith('/')) {
+        endpoint = endpoint.slice(0, -1);
       }
 
-      // Rethrow the original error for non-404 errors
-      throw error;
+      console.log('scenes', 'Trying endpoint without trailing slash:', endpoint);
+      const response = await httpClient.get(endpoint);
+      console.log('scenes', 'Scene fetched successfully with non-trailing slash endpoint:', response);
+      return responseHandler.handleSuccess(response);
+    } catch (error1) {
+      console.log('scenes', 'First attempt failed:', error1.message);
+      errors.push(error1);
+
+      // Second attempt - with trailing slash
+      try {
+        let endpoint = sceneEndpoints.get(normalizedId); // Use the regular endpoint with trailing slash
+        console.log('scenes', 'Trying endpoint with trailing slash:', endpoint);
+        const response = await httpClient.get(endpoint);
+        console.log('scenes', 'Scene fetched successfully with trailing slash endpoint:', response);
+        return responseHandler.handleSuccess(response);
+      } catch (error2) {
+        console.log('scenes', 'Second attempt failed:', error2.message);
+        errors.push(error2);
+
+        // Third attempt - direct /api/scenes/:id format
+        try {
+          const directEndpoint = `/api/scenes/${normalizedId}`;
+          console.log('scenes', 'Trying direct endpoint format:', directEndpoint);
+          const response = await httpClient.get(directEndpoint);
+          console.log('scenes', 'Scene fetched successfully with direct endpoint:', response);
+          return responseHandler.handleSuccess(response);
+        } catch (error3) {
+          console.log('scenes', 'All endpoint variations failed');
+          errors.push(error3);
+
+          // If all attempts fail and we have a 404 status in any of the errors, return a scene not found error
+          const hasNotFoundError = errors.some(err => err.response?.status === 404);
+          if (hasNotFoundError) {
+            const errorMessage = `Scene with ID ${normalizedId} not found. It may have been deleted or doesn't exist.`;
+            return responseHandler.handleError(new Error(errorMessage));
+          }
+
+          // Otherwise, throw the first error
+          throw errors[0];
+        }
+      }
     }
   } catch (error) {
     console.log('scenes', 'Error fetching scene by ID', {
