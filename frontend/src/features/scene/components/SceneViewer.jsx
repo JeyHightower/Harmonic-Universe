@@ -1,8 +1,10 @@
-import { Card, Descriptions, Skeleton, Tag } from 'antd';
+import { Card, Descriptions, Skeleton, Space, Tag, Typography } from 'antd';
 import PropTypes from 'prop-types';
 import React, { useMemo, useState } from 'react';
 import { formatDate } from '../../../utils/dateUtils';
 import '../styles/SceneViewer.css';
+
+const { Title, Text, Paragraph } = Typography;
 
 const SceneViewer = React.memo(({ scene }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -63,34 +65,42 @@ const SceneViewer = React.memo(({ scene }) => {
         </div>
 
         <div className="scene-details">
-          <Descriptions title={sceneDetails.title} bordered>
-            <Descriptions.Item label="Scene Type">
-              <Tag color={sceneTypeColor}>{formattedSceneType}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Description">
-              {sceneDetails.description}
-            </Descriptions.Item>
-            <Descriptions.Item label="Location">
-              {sceneDetails.location}
-            </Descriptions.Item>
-            <Descriptions.Item label="Time of Day">
-              {sceneDetails.timeOfDay}
-            </Descriptions.Item>
-            <Descriptions.Item label="Weather">
-              {sceneDetails.weather}
-            </Descriptions.Item>
-            <Descriptions.Item label="Characters">
-              {sceneDetails.characters.map(character => (
-                <Tag key={character.id}>{character.name}</Tag>
-              ))}
-            </Descriptions.Item>
-            <Descriptions.Item label="Created">
-              {sceneDetails.createdAt}
-            </Descriptions.Item>
-            <Descriptions.Item label="Last Updated">
-              {sceneDetails.updatedAt}
-            </Descriptions.Item>
-          </Descriptions>
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <div className="scene-header">
+              <Title level={2} className="scene-title">{sceneDetails.title}</Title>
+              <Tag color={sceneTypeColor} className="scene-type-tag">{formattedSceneType}</Tag>
+            </div>
+
+            <div className="scene-description">
+              <Title level={4}>Description</Title>
+              <Paragraph className="description-text">{sceneDetails.description}</Paragraph>
+            </div>
+
+            <Descriptions bordered column={1} className="scene-metadata">
+              <Descriptions.Item label="Location">
+                <Text strong>{sceneDetails.location}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Time of Day">
+                <Text strong>{sceneDetails.timeOfDay}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Weather">
+                <Text strong>{sceneDetails.weather}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Characters">
+                <Space wrap>
+                  {sceneDetails.characters.map(character => (
+                    <Tag key={character.id} color="blue">{character.name}</Tag>
+                  ))}
+                </Space>
+              </Descriptions.Item>
+              <Descriptions.Item label="Created">
+                <Text type="secondary">{sceneDetails.createdAt}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Last Updated">
+                <Text type="secondary">{sceneDetails.updatedAt}</Text>
+              </Descriptions.Item>
+            </Descriptions>
+          </Space>
         </div>
       </Card>
     </div>
