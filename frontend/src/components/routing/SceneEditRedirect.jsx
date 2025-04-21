@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import apiClient from "../../services/api.adapter";
+import { useNavigate, useParams } from "react-router-dom";
 import { SceneModal } from "../../features/scene/index.mjs";
 
 /**
@@ -28,21 +27,41 @@ const SceneEditRedirect = () => {
         );
         setLoading(true);
 
-        const response = await apiClient.getScene(sceneId);
-        const sceneData = response.data?.scene || response.data;
+        // Import and use Redux thunk instead of direct API call
+        const { fetchSceneById } = await import("../../store/thunks/consolidated/scenesThunks");
 
-        console.log("SceneEditRedirect - Scene data fetched:", sceneData);
-        setScene(sceneData);
+        // Dispatch the action to fetch scene data
+        const resultAction = await dispatch(fetchSceneById(sceneId));
 
-        // Extract universe ID from scene data
-        if (sceneData && sceneData.universe_id) {
-          setUniverseId(sceneData.universe_id);
+        // Check if the action was fulfilled or rejected
+        if (fetchSceneById.fulfilled.match(resultAction)) {
+          // Successfully fetched scene data
+          const sceneData = resultAction.payload.scene || resultAction.payload;
+
+          console.log("SceneEditRedirect - Scene data fetched:", sceneData);
+          setScene(sceneData);
+
+          // Extract universe ID from scene data
+          if (sceneData && sceneData.universe_id) {
+            setUniverseId(sceneData.universe_id);
+          } else {
+            setError("Could not determine universe ID for this scene");
+          }
+
+          // Show the edit modal
+          setShowModal(true);
         } else {
-          setError("Could not determine universe ID for this scene");
-        }
+          // Handle rejection - check for 404 error specifically
+          const errorMessage = resultAction.error?.message || "Failed to load scene data";
 
-        // Show the edit modal
-        setShowModal(true);
+          if (errorMessage.includes("404") || errorMessage.includes("not found")) {
+            console.error("SceneEditRedirect - Scene not found:", sceneId);
+            setError(`Scene with ID ${sceneId} not found. It may have been deleted or doesn't exist.`);
+          } else {
+            console.error("SceneEditRedirect - Error fetching scene:", errorMessage);
+            setError("Failed to load scene data. Please try again.");
+          }
+        }
       } catch (error) {
         console.error("SceneEditRedirect - Error fetching scene:", error);
         setError("Failed to load scene data. Please try again.");
@@ -57,7 +76,7 @@ const SceneEditRedirect = () => {
       setError("No scene ID provided");
       setLoading(false);
     }
-  }, [sceneId]);
+  }, [sceneId, dispatch]);
 
   // Handle successful edit
   const handleEditSuccess = () => {

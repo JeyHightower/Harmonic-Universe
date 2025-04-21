@@ -97,6 +97,14 @@ const SceneModal = ({
 
           console.log(`SceneModal - Loading scene data for ID: ${formattedSceneId}`);
 
+          // Skip fetching if initialData is already provided
+          if (initialData) {
+            console.log('SceneModal - Using provided initialData, skipping fetch');
+            setScene(initialData);
+            setLoading(false);
+            return;
+          }
+
           // Import only the thunk but use the component-level dispatch
           const { fetchSceneById } = await import('../../../store/thunks/consolidated/scenesThunks');
 
@@ -129,7 +137,15 @@ const SceneModal = ({
             console.log('SceneModal - Setting scene data from Redux:', processedSceneData);
             setScene(processedSceneData);
           } else {
-            throw new Error(resultAction.error?.message || 'Failed to fetch scene data');
+            // Handle specific error types
+            const errorMsg = resultAction.error?.message || 'Failed to fetch scene data';
+
+            if (errorMsg.includes('404') || errorMsg.includes('not found')) {
+              // Special handling for 404 (not found) errors
+              throw new Error(`Scene with ID ${formattedSceneId} not found. It may have been deleted or moved.`);
+            } else {
+              throw new Error(errorMsg);
+            }
           }
         } catch (error) {
           console.error('SceneModal - Error loading scene data:', error);

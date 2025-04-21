@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../../services/api";
 import {
-  addLocallyCreatedScene
+    addLocallyCreatedScene
 } from "../../slices/scenesSlice";
 
 /**
@@ -199,33 +199,51 @@ export const fetchSceneById = createAsyncThunk(
       }
 
       // Make API call
-      const response = await apiClient.getScene(sceneId);
-      console.log("THUNK fetchSceneById: Received API response:", response);
+      try {
+        const response = await apiClient.getScene(sceneId);
+        console.log("THUNK fetchSceneById: Received API response:", response);
 
-      // Check for valid scene data
-      if (!response.data || !response.data.scene) {
-        throw new Error("Invalid response format - missing scene data");
+        // Check for valid scene data
+        if (!response.data || !response.data.scene) {
+          throw new Error("Invalid response format - missing scene data");
+        }
+
+        // Normalize response to ensure consistent structure
+        const sceneData = response.data.scene;
+
+        // Ensure is_deleted is explicitly set to false
+        const normalizedSceneData = normalizeSceneData({
+          ...sceneData,
+          is_deleted: false
+        });
+
+        // Return serializable data
+        const serializedResponse = {
+          message: response.data?.message || "Scene fetched successfully",
+          scene: normalizedSceneData,
+          status: response.status || 200
+        };
+
+        return serializedResponse;
+      } catch (apiError) {
+        // Handle specific API errors
+        console.error("THUNK fetchSceneById: API Error:", apiError);
+
+        // Provide a specific error message for 404 (not found)
+        if (apiError.response?.status === 404) {
+          return rejectWithValue({
+            message: `Scene with ID ${sceneId} not found. It may have been deleted or doesn't exist.`,
+            status: 404
+          });
+        }
+
+        // Handle other API errors
+        throw apiError;
       }
-
-      // Normalize response to ensure consistent structure
-      const sceneData = response.data.scene;
-
-      // Ensure is_deleted is explicitly set to false
-      const normalizedSceneData = normalizeSceneData({
-        ...sceneData,
-        is_deleted: false
-      });
-
-      // Return serializable data
-      const serializedResponse = {
-        message: response.data?.message || "Scene fetched successfully",
-        scene: normalizedSceneData,
-        status: response.status || 200
-      };
-
-      return serializedResponse;
     } catch (error) {
       console.error("THUNK fetchSceneById: Error fetching scene:", error);
+
+      // Format error for consistent handling
       return rejectWithValue(handleError(error));
     }
   }
@@ -582,4 +600,4 @@ export const reorderScenes = createAsyncThunk(
       return rejectWithValue(handleError(error));
     }
   }
-); 
+);

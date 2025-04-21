@@ -164,9 +164,9 @@ export const getScenesByUniverse = async (universeId) => {
 };
 
 /**
- * Get a specific scene by ID
+ * Get a scene by ID
  * @param {number|string} sceneId - Scene ID
- * @returns {Promise<object>} - Scene details
+ * @returns {Promise<object>} - Scene data
  */
 export const getSceneById = async (sceneId) => {
   try {
@@ -174,45 +174,44 @@ export const getSceneById = async (sceneId) => {
       return responseHandler.handleError(new Error('Scene ID is required'));
     }
 
-    console.log('scene.service: Fetching scene by ID:', sceneId);
-    const response = await httpClient.get(sceneEndpoints.get(sceneId));
+    console.log('scenes', 'Fetching scene by ID:', sceneId);
 
-    // Log the response to debug
-    console.log('scene.service: Raw response from getSceneById:', response);
-
-    // Check if response has expected format
-    if (!response) {
-      console.warn('scene.service: Empty response from API');
-      return responseHandler.handleError(new Error('Empty response from API'));
+    // First try - Make sure the URL doesn't have a trailing slash
+    let endpoint = sceneEndpoints.getById(sceneId);
+    if (endpoint.endsWith('/')) {
+      endpoint = endpoint.slice(0, -1);
     }
 
-    if (!response.data) {
-      console.warn('scene.service: Response missing data property');
-      return responseHandler.handleError(new Error('Invalid response format - missing data'));
+    try {
+      // Try first without trailing slash
+      console.log('scenes', 'Trying endpoint without trailing slash:', endpoint);
+      const response = await httpClient.get(endpoint);
+      console.log('scenes', 'Scene fetched successfully:', response);
+      return responseHandler.handleSuccess(response);
+    } catch (error) {
+      // If 404, try with trailing slash
+      if (error.response && error.response.status === 404) {
+        console.log('scenes', 'Endpoint without slash failed, trying with slash');
+        // Add trailing slash if not present
+        if (!endpoint.endsWith('/')) {
+          endpoint = endpoint + '/';
+        }
+
+        try {
+          const response = await httpClient.get(endpoint);
+          console.log('scenes', 'Scene fetched successfully with trailing slash:', response);
+          return responseHandler.handleSuccess(response);
+        } catch (slashError) {
+          console.log('scenes', 'Both endpoint variations failed');
+          // If both fail, throw the original error with better message
+          const errorMessage = `Scene with ID ${sceneId} not found. It may have been deleted or doesn't exist.`;
+          return responseHandler.handleError(new Error(errorMessage));
+        }
+      }
+
+      // Rethrow the original error for non-404 errors
+      throw error;
     }
-
-    // Normalize the response structure to ensure consistent format
-    let normalizedResponse = { ...response };
-
-    // If scene is directly in data, wrap it for consistent response format
-    if (response.data && !response.data.scene && typeof response.data === 'object') {
-      console.log('scene.service: Normalizing response format to include scene property');
-      normalizedResponse = {
-        ...response,
-        data: {
-          message: 'Scene retrieved successfully',
-          scene: response.data,
-        },
-      };
-    }
-
-    // Ensure scene data is clean
-    if (normalizedResponse.data?.scene) {
-      // Make sure is_deleted is explicitly set to false for consistency
-      normalizedResponse.data.scene.is_deleted = false;
-    }
-
-    return responseHandler.handleSuccess(normalizedResponse);
   } catch (error) {
     console.log('scenes', 'Error fetching scene by ID', {
       sceneId,

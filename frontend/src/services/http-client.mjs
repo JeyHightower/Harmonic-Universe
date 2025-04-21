@@ -502,7 +502,13 @@ const formatUrl = (url) => {
   // Now add the /api prefix
   url = '/api' + url;
 
-  // Ensure trailing slash to prevent redirects
+  // Special handling for scene endpoints - don't add trailing slash for numeric IDs
+  if (url.match(/\/api\/scenes\/\d+$/)) {
+    console.log(`Scene endpoint with numeric ID detected, not adding trailing slash: ${url}`);
+    return url;
+  }
+
+  // Ensure trailing slash to prevent redirects for other endpoints
   if (!url.endsWith('/')) {
     url = url + '/';
   }
@@ -586,6 +592,15 @@ const getAlternativeUrl = (url, method, error) => {
 
   // For universe endpoints
   if (url.includes('/universes/') && !url.includes('/universes/list')) {
+    if (url.endsWith('/')) {
+      return url.slice(0, -1); // Remove trailing slash
+    } else {
+      return url + '/'; // Add trailing slash
+    }
+  }
+
+  // Add special handling for scene endpoints
+  if (url.includes('/scenes/')) {
     if (url.endsWith('/')) {
       return url.slice(0, -1); // Remove trailing slash
     } else {
@@ -1039,17 +1054,17 @@ export const httpClient = {
 };
 
 export {
-  addAuthHeader,
-  axiosInstance,
-  clearCache,
-  clearCacheForUrl,
-  del,
-  get,
-  getCorsProxyUrl,
-  logApiOperation,
-  post,
-  put,
-  shouldUseCorsProxy,
+    addAuthHeader,
+    axiosInstance,
+    clearCache,
+    clearCacheForUrl,
+    del,
+    get,
+    getCorsProxyUrl,
+    logApiOperation,
+    post,
+    put,
+    shouldUseCorsProxy
 };
 
 export default httpClient;

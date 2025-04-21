@@ -146,10 +146,23 @@ def get_scenes(universe_id):
             'scenes': [] # Return empty scenes array for graceful handling
         }), 500
 
-@scenes_bp.route('/<int:scene_id>', methods=['GET'])
-@scenes_bp.route('/<int:scene_id>/', methods=['GET'])
-@jwt_required()
+@scenes_bp.route('/<int:scene_id>', methods=['GET', 'OPTIONS'])
+@scenes_bp.route('/<int:scene_id>/', methods=['GET', 'OPTIONS'])
+@exempt_options_requests()
+@jwt_required(optional=True)
 def get_scene(scene_id):
+    # Handle OPTIONS requests explicitly
+    if request.method == 'OPTIONS':
+        response = jsonify({'success': True})
+        # Get the origin from the request headers or use a safe default
+        origin = request.headers.get('Origin', 'http://localhost:5173')
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Max-Age', '86400')
+        return response, 200
+
     try:
         current_app.logger.info(f"Fetching scene with ID: {scene_id}")
 
