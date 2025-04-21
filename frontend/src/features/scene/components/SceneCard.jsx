@@ -1,5 +1,4 @@
 import PropTypes from "prop-types";
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/SceneCard.css";
 // Import a local default image to avoid server requests
@@ -34,6 +33,12 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
   const handleView = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Use the provided onView handler if available
+    if (typeof onView === 'function') {
+      onView(scene);
+      return;
+    }
 
     // Make sure we have a valid universe_id
     if (!scene.universe_id) {

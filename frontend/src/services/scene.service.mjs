@@ -30,6 +30,7 @@ export const getScenesByUniverse = async (universeId) => {
   try {
     // Validate universeId
     if (universeId === undefined || universeId === null) {
+      console.error('getScenesByUniverse: Universe ID is required but was', universeId);
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
 
@@ -54,10 +55,54 @@ export const getScenesByUniverse = async (universeId) => {
     }
 
     console.log('scenes.service: Making API call to get scenes for universe:', validatedId);
+
+    // First check if the universe exists
+    try {
+      // Import universeService using dynamic import to avoid circular dependency
+      const { default: apiAdapter } = await import('./api.adapter.mjs');
+
+      console.log('scenes.service: Checking if universe exists:', validatedId);
+      const universeResponse = await apiAdapter.universes.getUniverse(validatedId);
+
+      if (!universeResponse || !universeResponse.data || !universeResponse.data.universe) {
+        console.error(`Universe with ID ${validatedId} does not exist or is not accessible`);
+        return responseHandler.handleSuccess({
+          data: { scenes: [] },
+          status: 200,
+          statusText: 'OK (universe not found but returning empty array for graceful handling)',
+        });
+      }
+
+      // Check if universe is deleted
+      if (universeResponse.data.universe.is_deleted) {
+        console.error(`Universe with ID ${validatedId} has been deleted`);
+        return responseHandler.handleSuccess({
+          data: { scenes: [] },
+          status: 200,
+          statusText: 'OK (universe is deleted but returning empty array for graceful handling)',
+        });
+      }
+
+      console.log(`Universe with ID ${validatedId} exists and is accessible, proceeding to fetch scenes`);
+    } catch (universeError) {
+      // If we can't verify the universe, log but continue to try fetching scenes
+      console.warn(`Could not verify if universe ${validatedId} exists:`, universeError);
+      // If we got a 404, that means the universe doesn't exist
+      if (universeError.response && universeError.response.status === 404) {
+        console.error(`Universe with ID ${validatedId} does not exist (404 from universe API)`);
+        return responseHandler.handleSuccess({
+          data: { scenes: [] },
+          status: 200,
+          statusText: 'OK (universe not found but returning empty array for graceful handling)',
+        });
+      }
+    }
+
+    // Try the primary endpoint first (byUniverse)
     try {
       const response = await httpClient.get(sceneEndpoints.byUniverse(validatedId));
 
-      console.log('scenes.service: Got API response for getScenesByUniverse:', {
+      console.log('scenes.service: Got API response for getScenesByUniverse (primary endpoint):', {
         status: response.status,
         hasData: !!response.data,
         dataKeys: response.data ? Object.keys(response.data) : [],
@@ -65,31 +110,56 @@ export const getScenesByUniverse = async (universeId) => {
       });
 
       return responseHandler.handleSuccess(response);
-    } catch (apiError) {
-      // If we get a 404, probably using the wrong endpoint format, return an empty scenes array
-      // instead of an error to allow the app to continue working
-      if (apiError.response && apiError.response.status === 404) {
-        console.log('scenes.service: Got 404 when fetching scenes, returning empty array:', {
-          universeId: validatedId,
-          error: apiError.message,
-        });
+    } catch (primaryError) {
+      // If primary endpoint fails with 404, try the alternative endpoint
+      if (primaryError.response && primaryError.response.status === 404) {
+        console.log('Primary endpoint returned 404, trying alternative endpoint forUniverse');
 
-        return responseHandler.handleSuccess({
-          data: { scenes: [] },
-          status: 200,
-          statusText: 'OK (recovered from 404)',
-        });
+        try {
+          // Try the alternative endpoint (forUniverse)
+          const altResponse = await httpClient.get(sceneEndpoints.forUniverse(validatedId));
+
+          console.log('scenes.service: Got API response from alternative endpoint:', {
+            status: altResponse.status,
+            hasData: !!altResponse.data,
+            dataKeys: altResponse.data ? Object.keys(altResponse.data) : [],
+            sceneCount: altResponse.data?.scenes?.length || 0,
+          });
+
+          return responseHandler.handleSuccess(altResponse);
+        } catch (altError) {
+          // If both endpoints fail, return empty scenes array instead of an error
+          console.log('Both endpoints failed, returning empty array for graceful recovery');
+          return responseHandler.handleSuccess({
+            data: { scenes: [] },
+            status: 200,
+            statusText: 'OK (recovered from errors)',
+          });
+        }
       }
 
-      // Re-throw to be caught by the main try/catch
-      throw apiError;
+      // If error is not 404, check if we should recover or propagate
+      console.error('Primary endpoint failed with non-404 error:', primaryError.message);
+
+      // Return empty scenes array instead of error for better UX
+      return responseHandler.handleSuccess({
+        data: { scenes: [] },
+        status: 200,
+        statusText: 'OK (recovered from non-404 error)',
+      });
     }
   } catch (error) {
     console.log('scenes', 'Error fetching universe scenes', {
       universeId,
       error: error.message,
     });
-    return responseHandler.handleError(error);
+
+    // Return empty scenes array for graceful error recovery
+    return responseHandler.handleSuccess({
+      data: { scenes: [] },
+      status: 200,
+      statusText: 'OK (recovered from general error)',
+    });
   }
 };
 

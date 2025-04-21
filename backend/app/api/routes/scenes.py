@@ -17,7 +17,9 @@ def get_scenes(universe_id):
     # Handle OPTIONS requests explicitly
     if request.method == 'OPTIONS':
         response = jsonify({'success': True})
-        response.headers.add('Access-Control-Allow-Origin', '*')
+        # Get the origin from the request headers or use a safe default
+        origin = request.headers.get('Origin', 'http://localhost:5173')
+        response.headers.add('Access-Control-Allow-Origin', origin)
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
         response.headers.add('Access-Control-Allow-Methods', 'GET,OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -32,7 +34,8 @@ def get_scenes(universe_id):
             current_app.logger.error(f"Invalid universe ID: {universe_id}")
             return jsonify({
                 'message': 'Invalid universe ID',
-                'error': 'Universe ID must be a positive integer'
+                'error': 'Universe ID must be a positive integer',
+                'scenes': [] # Return empty scenes array for graceful handling
             }), 400
 
         # Get universe with additional error handling
@@ -43,20 +46,23 @@ def get_scenes(universe_id):
                 current_app.logger.warning(f"Universe with ID {universe_id} not found")
                 return jsonify({
                     'message': 'Universe not found',
-                    'error': f'No universe found with ID {universe_id}'
+                    'error': f'No universe found with ID {universe_id}',
+                    'scenes': [] # Return empty scenes array for graceful handling
                 }), 404
 
             if hasattr(universe, 'is_deleted') and universe.is_deleted:
                 current_app.logger.warning(f"Attempted to access deleted universe: {universe_id}")
                 return jsonify({
-                    'message': 'Universe has been deleted'
+                    'message': 'Universe has been deleted',
+                    'scenes': [] # Return empty scenes array for graceful handling
                 }), 404
         except Exception as universe_error:
             current_app.logger.error(f"Error fetching universe {universe_id}: {str(universe_error)}")
             current_app.logger.error(traceback.format_exc())
             return jsonify({
                 'message': 'Error retrieving universe',
-                'error': str(universe_error)
+                'error': str(universe_error),
+                'scenes': [] # Return empty scenes array for graceful handling
             }), 500
 
         # Check permissions
@@ -66,7 +72,8 @@ def get_scenes(universe_id):
         if not universe.is_public and universe.user_id != user_id:
             current_app.logger.warning(f"Access denied: User {user_id} attempting to access private universe {universe_id}")
             return jsonify({
-                'message': 'Access denied'
+                'message': 'Access denied',
+                'scenes': [] # Return empty scenes array for graceful handling
             }), 403
 
         # Get all scenes for the universe with clean session management
@@ -126,7 +133,8 @@ def get_scenes(universe_id):
             current_app.logger.error(traceback.format_exc())
             return jsonify({
                 'message': 'Database error retrieving scenes',
-                'error': str(query_error)
+                'error': str(query_error),
+                'scenes': [] # Return empty scenes array for graceful handling
             }), 500
 
     except Exception as e:
@@ -134,7 +142,8 @@ def get_scenes(universe_id):
         current_app.logger.error(traceback.format_exc())
         return jsonify({
             'message': 'Error retrieving scenes',
-            'error': str(e)
+            'error': str(e),
+            'scenes': [] # Return empty scenes array for graceful handling
         }), 500
 
 @scenes_bp.route('/<int:scene_id>', methods=['GET'])
@@ -524,7 +533,9 @@ def create_scene():
     # Handle OPTIONS requests explicitly
     if request.method == 'OPTIONS':
         response = jsonify({'success': True})
-        response.headers.add('Access-Control-Allow-Origin', '*')
+        # Get the origin from the request headers or use a safe default
+        origin = request.headers.get('Origin', 'http://localhost:5173')
+        response.headers.add('Access-Control-Allow-Origin', origin)
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
         response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -739,7 +750,9 @@ def update_scene(scene_id):
     # Handle OPTIONS requests explicitly
     if request.method == 'OPTIONS':
         response = jsonify({'success': True})
-        response.headers.add('Access-Control-Allow-Origin', '*')
+        # Get the origin from the request headers or use a safe default
+        origin = request.headers.get('Origin', 'http://localhost:5173')
+        response.headers.add('Access-Control-Allow-Origin', origin)
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
         response.headers.add('Access-Control-Allow-Methods', 'PUT,OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')

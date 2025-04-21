@@ -1,24 +1,23 @@
+import { Delete, Edit, NoteAlt, PersonOutline, Visibility } from '@mui/icons-material';
+import { Box, Button, Card, CardActions, CardContent, CardMedia, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/UniverseCard.css';
-import { Card, CardContent, CardMedia, CardActions, Typography, Button, Box } from '@mui/material';
-import { PersonOutline, NoteAlt, Visibility, Edit, Delete } from '@mui/icons-material';
 import defaultUniverseImage from '../../../assets/images/default-universe.svg';
+import '../styles/UniverseCard.css';
 
 const UniverseCard = ({ universe, isNew = false, onEdit, onDelete, onView }) => {
   const navigate = useNavigate();
 
   const handleViewScenes = () => {
-    navigate(`/universes/${universe.id}/scenes`);
+    navigate(`/universes/${universe.id}`, { state: { activeTab: 'scenes' } });
   };
 
   const handleViewCharacters = () => {
-    navigate(`/universes/${universe.id}/characters`);
+    navigate(`/universes/${universe.id}`, { state: { activeTab: 'characters' } });
   };
 
   const handleViewNotes = () => {
-    navigate(`/universes/${universe.id}/notes`);
+    navigate(`/universes/${universe.id}`, { state: { activeTab: 'notes' } });
   };
 
   return (

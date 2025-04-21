@@ -4,8 +4,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { UniverseDeleteModal, UniverseModal } from '../';
 import Button from '../../../components/common/Button';
 import {
-  deleteScene,
-  fetchScenesForUniverse,
+    deleteScene,
+    fetchScenesForUniverse,
 } from '../../../store/thunks/consolidated/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { SceneCard, SceneModal } from '../../scene/index.mjs';
@@ -18,6 +18,9 @@ const UniverseDetail = () => {
   const navigate = useNavigate();
   const { currentUniverse, loading, error } = useSelector((state) => state.universes);
   const { scenes, loading: scenesLoading } = useSelector((state) => state.scenes);
+
+  // Initialize activeTab from location state if available
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'details');
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -34,6 +37,13 @@ const UniverseDetail = () => {
       dispatch(fetchScenesForUniverse(id));
     }
   }, [dispatch, id]);
+
+  // Set active tab when location state changes
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   // Open edit modal automatically if accessed through the edit route
   useEffect(() => {
@@ -121,8 +131,16 @@ const UniverseDetail = () => {
   };
 
   // Filter scenes for this universe
-  const universeScenes = scenes.filter((scene) => scene.universe_id === parseInt(id, 10));
+  const universeScenes = scenes.filter(
+    (scene) => scene.universe_id === parseInt(id, 10) && !scene.is_deleted
+  );
 
+  // Handle tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+  };
+
+  // Return early if universe is not loaded
   if (loading && !currentUniverse) {
     return (
       <div className="loading-container">
@@ -203,36 +221,90 @@ const UniverseDetail = () => {
         </div>
       )}
 
-      <div className="universe-content">
-        <div className="universe-scenes-header">
-          <h2>Scenes</h2>
-          <Button onClick={handleCreateSceneClick} variant="primary">
-            Create Scene
-          </Button>
-        </div>
+      {/* Tab Navigation */}
+      <div className="universe-tabs">
+        <button
+          className={`tab-button ${activeTab === 'details' ? 'active' : ''}`}
+          onClick={() => handleTabChange('details')}
+        >
+          Details
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'scenes' ? 'active' : ''}`}
+          onClick={() => handleTabChange('scenes')}
+        >
+          Scenes
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'characters' ? 'active' : ''}`}
+          onClick={() => handleTabChange('characters')}
+        >
+          Characters
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'notes' ? 'active' : ''}`}
+          onClick={() => handleTabChange('notes')}
+        >
+          Notes
+        </button>
+      </div>
 
-        {scenesLoading ? (
-          <div className="loading-container small">
-            <div className="spinner"></div>
-            <p>Loading scenes...</p>
+      {/* Tab Content */}
+      <div className="universe-content">
+        {activeTab === 'details' && (
+          <div className="universe-details-tab">
+            <h2>Universe Details</h2>
+            {/* Details content here */}
           </div>
-        ) : universeScenes.length > 0 ? (
-          <div className="scene-grid">
-            {universeScenes.map((scene) => (
-              <SceneCard
-                key={scene.id}
-                scene={scene}
-                onEdit={handleEditScene}
-                onDelete={handleDeleteScene}
-              />
-            ))}
+        )}
+
+        {activeTab === 'scenes' && (
+          <>
+            <div className="universe-scenes-header">
+              <h2>Scenes</h2>
+              <Button onClick={handleCreateSceneClick} variant="primary">
+                Create Scene
+              </Button>
+            </div>
+
+            {scenesLoading ? (
+              <div className="loading-container small">
+                <div className="spinner"></div>
+                <p>Loading scenes...</p>
+              </div>
+            ) : universeScenes.length > 0 ? (
+              <div className="scene-grid">
+                {universeScenes.map((scene) => (
+                  <SceneCard
+                    key={scene.id}
+                    scene={scene}
+                    onEdit={handleEditScene}
+                    onDelete={handleDeleteScene}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <p>No scenes found in this universe</p>
+                <Button onClick={handleCreateSceneClick} variant="primary">
+                  Create Your First Scene
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'characters' && (
+          <div className="universe-characters-tab">
+            <h2>Characters</h2>
+            <p>Character management will be implemented soon.</p>
           </div>
-        ) : (
-          <div className="empty-state">
-            <p>No scenes found in this universe</p>
-            <Button onClick={handleCreateSceneClick} variant="primary">
-              Create Your First Scene
-            </Button>
+        )}
+
+        {activeTab === 'notes' && (
+          <div className="universe-notes-tab">
+            <h2>Notes</h2>
+            <p>Note management will be implemented soon.</p>
           </div>
         )}
       </div>
@@ -272,11 +344,11 @@ const UniverseDetail = () => {
       {isEditSceneModalOpen && sceneToEdit && (
         <SceneModal
           isOpen={isEditSceneModalOpen}
-          onClose={handleEditSceneClose}
+          onClose={() => setIsEditSceneModalOpen(false)}
           onSuccess={handleEditSceneSuccess}
           universeId={id}
+          sceneId={sceneToEdit}
           mode="edit"
-          scene={sceneToEdit}
         />
       )}
     </div>

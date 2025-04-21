@@ -6,20 +6,20 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     PORT = int(os.environ.get('PORT', 5001))
-    
+
     # Database config - PostgreSQL only
     database_url = os.environ.get('DATABASE_URL')
-    
+
     if not database_url:
         raise ValueError("DATABASE_URL environment variable must be set for PostgreSQL connection")
-        
+
     # Handle PostgreSQL URL from render.com (starts with postgres://) vs SQLAlchemy (requires postgresql://)
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        
+
     SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
+
     # PostgreSQL-specific settings with reduced timeouts to prevent 504 errors
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 10,
@@ -32,13 +32,13 @@ class Config:
             'application_name': 'harmonic_universe',  # Help identify app in PostgreSQL logs
         }
     }
-    
+
     # Application environment
     ENV = os.environ.get('FLASK_ENV', 'development')
-    
+
     # Auto-create tables flag
     AUTO_CREATE_TABLES = os.environ.get('AUTO_CREATE_TABLES', 'False').lower() == 'true'
-    
+
     # JWT config
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-in-production'
     # By default, use the same key for refresh tokens
@@ -55,12 +55,12 @@ class Config:
     JWT_HEADER_TYPE = 'Bearer'
     # Secure cookies in production
     JWT_COOKIE_SAMESITE = 'None' if os.environ.get('FLASK_ENV', 'development') == 'production' else 'Lax'
-    
+
     # Log the secret key in development mode to help with debugging
     if os.environ.get('FLASK_ENV', 'development') == 'development' or os.environ.get('FLASK_DEBUG', 'False').lower() == 'true':
         print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY[:5]}...'")
         print(f"DEBUG - JWT_REFRESH_SECRET_KEY: '{JWT_REFRESH_SECRET_KEY[:5]}...'")
-    
+
     # CORS Configuration
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000,http://127.0.0.1:3000').split(',')
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
@@ -68,38 +68,38 @@ class Config:
     CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type", "Authorization"]
     CORS_MAX_AGE = 86400  # 24 hours
     CORS_SUPPORTS_CREDENTIALS = True
-    CORS_RESOURCES = {r"/api/*": {"origins": "*" if os.environ.get('FLASK_ENV') == 'development' else CORS_ORIGINS}}
-    
+    CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
+
     # Security config
     SESSION_COOKIE_SECURE = os.environ.get('FLASK_ENV', 'development') == 'production'
     SESSION_COOKIE_SAMESITE = 'lax'
     SESSION_COOKIE_HTTPONLY = True
-    
+
     # Rate limiting
     RATELIMIT_ENABLED = True
     RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL', "memory://")
     RATELIMIT_STRATEGY = "moving-window"
     RATELIMIT_DEFAULT = "1000 per day, 100 per hour" if os.environ.get('FLASK_ENV') == 'development' else "200 per day, 50 per hour"
-    
+
     # API config
     API_PREFIX = '/api'
     API_VERSION = '1'
-    
+
     # Error handling
     ERROR_404_HELP = False
     ERROR_405_HELP = False
-    
+
     # Logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    
+
     # Cache config
     CACHE_TYPE = 'simple'
     CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes
-    
+
     # Health check
     HEALTH_CHECK_ENDPOINT = '/api/health'
-    
+
     # Feature flags
     ENABLE_MFA = os.environ.get('ENABLE_MFA', 'False').lower() == 'true'
     ENABLE_PASSWORD_RESET = os.environ.get('ENABLE_PASSWORD_RESET', 'True').lower() == 'true'
@@ -141,7 +141,7 @@ class DevelopmentConfig(Config):
             'http://127.0.0.1:3000'
         ],
     }
-    
+
     # Override CORS settings for development
     CORS_ORIGINS = [
         'http://localhost:5173',
@@ -152,11 +152,12 @@ class DevelopmentConfig(Config):
         'http://127.0.0.1:3000'
     ]
     CORS_SUPPORTS_CREDENTIALS = True
-    CORS_RESOURCES = {r"/api/*": {"origins": "*"}}
-    
+    # When credentials are supported, must use specific origins instead of wildcard
+    CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
+
     # More permissive rate limiting for development
     RATELIMIT_DEFAULT = "1000 per day, 100 per hour"
-    
+
     # JWT settings for development
     JWT_COOKIE_SECURE = False
     JWT_COOKIE_SAMESITE = 'Lax'
@@ -189,11 +190,11 @@ class TestingConfig(Config):
     CORS_CONFIG = {
         'ORIGINS': ['*'],  # Allow all origins in testing
     }
-    
+
     # Allow all origins in testing
-    CORS_ORIGINS = ['*']
-    CORS_RESOURCES = {r"/api/*": {"origins": "*"}}
-    
+    CORS_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']  # Use specific origins for testing
+    CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
+
     # Disable rate limiting in testing
     RATELIMIT_ENABLED = False
 
@@ -230,7 +231,7 @@ class ProductionConfig(Config):
             'https://harmonic-universe-git-main-someones-projects-4ec78d48.vercel.app'
         ],
     }
-    
+
     # Strict CORS in production
     CORS_ORIGINS = [
         'https://harmonic-universe.vercel.app',
@@ -238,10 +239,10 @@ class ProductionConfig(Config):
     ]
     CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
     CORS_SUPPORTS_CREDENTIALS = True
-    
+
     # Production rate limiting
     RATELIMIT_DEFAULT = "200 per day, 50 per hour"
-    
+
     # Secure cookie settings
     JWT_COOKIE_SECURE = True
     JWT_COOKIE_SAMESITE = 'Strict'
@@ -251,4 +252,4 @@ config_by_name = {
     'test': TestingConfig,
     'prod': ProductionConfig,
     'default': DevelopmentConfig
-} 
+}

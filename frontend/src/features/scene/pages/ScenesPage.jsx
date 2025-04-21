@@ -45,6 +45,17 @@ const ScenesPageWrapper = () => {
 
   // Validate the universeId immediately when component mounts
   useEffect(() => {
+    console.log('ScenesPageWrapper: universeId from params:', universeId);
+
+    // Early return if universeId is undefined or null
+    if (universeId === undefined || universeId === null) {
+      console.error('ScenesPageWrapper: Missing universeId in URL parameters');
+      setValidationError('Missing universe ID in URL parameters');
+      setIsValidating(false);
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
     // Skip validation if we already validated this ID (prevents re-validation on re-renders)
     if (validatedId === universeId) {
       console.log('ScenesPageWrapper: Already validated this universeId, skipping validation');
@@ -330,11 +341,19 @@ const ScenesPageContent = ({ universeId }) => {
         setLoading(true);
         setError(null);
 
-        // Get universe details
+        // Get universe details with better error handling
         try {
-          // Make sure you're passing the ID directly, not as an object
           console.log('About to call getUniverse with:', safeUniverseId);
           console.log('Type of ID being passed:', typeof safeUniverseId);
+
+          // Extra validation before calling API
+          if (
+            safeUniverseId === null ||
+            safeUniverseId === undefined ||
+            isNaN(Number(safeUniverseId))
+          ) {
+            throw new Error(`Invalid universeId: ${safeUniverseId}`);
+          }
 
           // Ensure we're passing the ID directly, not wrapped in an object
           const universeResponse = await apiClient.universes.getUniverse(safeUniverseId);
@@ -349,6 +368,18 @@ const ScenesPageContent = ({ universeId }) => {
           // Set universe with fallback to empty object if undefined
           const universeData = universeResponse.data.universe || universeResponse.data || {};
           console.log('Extracted universe data:', universeData);
+
+          // Check if the response actually contains valid universe data
+          if (!universeData.id || String(universeData.id) !== String(safeUniverseId)) {
+            console.error('Universe data does not match requested ID', {
+              requested: safeUniverseId,
+              received: universeData.id,
+            });
+            throw new Error(
+              `Universe data mismatch: requested ID ${safeUniverseId} but received ${universeData.id || 'unknown'}`
+            );
+          }
+
           setUniverse(universeData);
 
           // Confirm that universe exists
@@ -361,6 +392,8 @@ const ScenesPageContent = ({ universeId }) => {
             setIsUniverseExists(false);
             setError(`Universe with ID ${safeUniverseId} not found.`);
             setLoading(false);
+            // Redirect to dashboard after a short delay
+            window.setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
             return;
           }
 
@@ -373,6 +406,16 @@ const ScenesPageContent = ({ universeId }) => {
         try {
           // First try to get scenes using Redux action
           console.log('About to call fetchScenes with:', safeUniverseId);
+
+          // Extra validation before Redux dispatch
+          if (
+            safeUniverseId === null ||
+            safeUniverseId === undefined ||
+            isNaN(Number(safeUniverseId))
+          ) {
+            throw new Error(`Invalid universeId for scene fetching: ${safeUniverseId}`);
+          }
+
           const scenesResult = await dispatch(fetchScenes(safeUniverseId));
           console.log('Redux fetchScenes result:', scenesResult);
 
@@ -380,7 +423,7 @@ const ScenesPageContent = ({ universeId }) => {
           if (
             scenesResult.error &&
             scenesResult.error.message &&
-            scenesResult.error.message.includes('404')
+            (scenesResult.error.message.includes('404') || scenesResult.error.status === 404)
           ) {
             console.error(
               `Universe with ID ${safeUniverseId} does not exist (404 from scenes API).`
@@ -388,6 +431,8 @@ const ScenesPageContent = ({ universeId }) => {
             setIsUniverseExists(false);
             setError(`Universe with ID ${safeUniverseId} not found.`);
             setLoading(false);
+            // Redirect to dashboard after a short delay
+            window.setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
             return;
           }
 
@@ -428,6 +473,8 @@ const ScenesPageContent = ({ universeId }) => {
                   });
                   return Array.from(scenesMap.values());
                 });
+              } else {
+                console.log('Direct API call returned no scenes but did not fail');
               }
             } catch (directError) {
               console.error('Direct API call failed:', directError);
@@ -436,19 +483,25 @@ const ScenesPageContent = ({ universeId }) => {
                 setIsUniverseExists(false);
                 setError(`Universe with ID ${safeUniverseId} not found.`);
                 setLoading(false);
+                // Redirect to dashboard after a short delay
+                window.setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
                 return;
               }
-              // We don't throw here for other errors, just log, as we've already tried Redux
             }
           }
         } catch (scenesError) {
           console.error('Error fetching scenes:', scenesError);
 
           // Check if the error is due to universe not existing (404)
-          if (scenesError.response && scenesError.response.status === 404) {
+          if (
+            (scenesError.response && scenesError.response.status === 404) ||
+            (scenesError.message && scenesError.message.includes('404'))
+          ) {
             setIsUniverseExists(false);
             setError(`Universe with ID ${safeUniverseId} not found.`);
             setLoading(false);
+            // Redirect to dashboard after a short delay
+            window.setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
             return;
           }
 

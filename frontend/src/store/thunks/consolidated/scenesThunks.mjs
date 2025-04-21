@@ -42,20 +42,22 @@ const normalizeScenes = (scenes) => {
  * Fetch scenes for a universe
  */
 export const fetchScenes = createAsyncThunk(
-  'scenes/fetchScenes',
-  async (universeId, { rejectWithValue }) => {
+  'scenes/fetchByUniverse',
+  async (universeId, { rejectWithValue, dispatch, getState }) => {
+    const timestamp = new Date().toISOString();
     try {
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] REDUX-THUNK: Starting fetchScenes for universe ${universeId}`);
+      console.log(`[${timestamp}] REDUX-THUNK: fetchScenes called with universeId=${universeId}`);
 
-      // Validate universeId
+      // Input validation
       if (universeId === undefined || universeId === null) {
         throw new Error('Universe ID is required');
       }
 
-      // Convert universeId to a number if it's a string
-      const numericUniverseId =
-        typeof universeId === 'string' ? parseInt(universeId, 10) : universeId;
+      // Convert universeId to number if it's a string
+      let numericUniverseId = universeId;
+      if (typeof universeId === 'string') {
+        numericUniverseId = parseInt(universeId, 10);
+      }
 
       // Check if the ID is valid after conversion
       if (isNaN(numericUniverseId) || numericUniverseId <= 0) {
@@ -63,6 +65,54 @@ export const fetchScenes = createAsyncThunk(
       }
 
       console.log(`[${timestamp}] REDUX-THUNK: Using validated universeId: ${numericUniverseId}`);
+
+      // First, check if the universe exists to avoid unnecessary API calls for non-existent universes
+      try {
+        console.log(`[${timestamp}] REDUX-THUNK: Checking if universe ${numericUniverseId} exists`);
+
+        // Import apiClient dynamically to avoid circular imports
+        const apiServices = await import('../../../services/api.adapter.mjs');
+        const apiClient = apiServices.default;
+
+        const universeResponse = await apiClient.universes.getUniverse(numericUniverseId);
+        console.log(`[${timestamp}] REDUX-THUNK: Universe check response:`, universeResponse);
+
+        if (!universeResponse || !universeResponse.data || !universeResponse.data.universe) {
+          console.error(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist or is not accessible`);
+          // Return empty scenes array with success status instead of throwing an error
+          return {
+            universeId: numericUniverseId,
+            scenes: [],
+            endpointUsed: 'universeNotFound',
+          };
+        }
+
+        // Check if universe is deleted
+        if (universeResponse.data.universe.is_deleted) {
+          console.error(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} has been deleted`);
+          // Return empty scenes array with success status
+          return {
+            universeId: numericUniverseId,
+            scenes: [],
+            endpointUsed: 'universeDeleted',
+          };
+        }
+
+        console.log(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} exists and is accessible, proceeding to fetch scenes`);
+      } catch (universeError) {
+        console.warn(`[${timestamp}] REDUX-THUNK: Error checking universe:`, universeError);
+
+        // Only return empty result if we got a 404, otherwise continue with scene fetching
+        if (universeError.response && universeError.response.status === 404) {
+          console.error(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist (404 from universe API)`);
+          return {
+            universeId: numericUniverseId,
+            scenes: [],
+            endpointUsed: 'universeApiError',
+          };
+        }
+        // For other errors, continue with scene fetching attempt
+      }
 
       let response;
       let scenesData = [];
@@ -82,6 +132,16 @@ export const fetchScenes = createAsyncThunk(
           `[${timestamp}] REDUX-THUNK: Initial getScenesByUniverse request failed:`,
           initialError
         );
+
+        // Check if the error is due to universe not existing (404)
+        if (initialError.response && initialError.response.status === 404) {
+          console.error(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist (404 from scenes API)`);
+          return {
+            universeId: numericUniverseId,
+            scenes: [],
+            endpointUsed: 'sceneApiNotFound',
+          };
+        }
 
         // If getScenesByUniverse fails, try getAllScenes as fallback
         try {
