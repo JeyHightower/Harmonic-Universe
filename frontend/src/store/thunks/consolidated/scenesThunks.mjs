@@ -199,72 +199,67 @@ export const fetchSceneById = createAsyncThunk(
   'scenes/fetchSceneById',
   async (sceneId, { rejectWithValue }) => {
     try {
-      // Ensure sceneId is a string
-      const formattedSceneId = String(sceneId);
+      console.log('fetchSceneById - Starting fetch for scene ID:', sceneId);
 
-      console.log(`fetchSceneById - Fetching scene with ID: ${formattedSceneId}`);
+      // Normalize sceneId to string
+      const formattedSceneId = String(sceneId).trim();
+      console.log('fetchSceneById - Normalized scene ID:', formattedSceneId);
 
-      // Using corrected endpoint: http://localhost:5001/api/scenes/{scene_id}
-      const response = await sceneService.getSceneById(formattedSceneId);
-      console.log('fetchSceneById - Response:', response);
-
-      // Handle different response formats
-      let sceneData;
-      if (response.data?.scene) {
-        sceneData = response.data.scene;
-      } else if (response.data) {
-        sceneData = response.data;
-      } else {
-        throw new Error('Invalid response format from API');
-      }
-
-      // Ensure ID is explicitly set
-      if (sceneData && !sceneData.id) {
-        sceneData.id = formattedSceneId;
-      }
-
-      console.log('fetchSceneById - Processed scene data:', sceneData);
-      return sceneData;
-    } catch (error) {
-      console.error('Error fetching scene by ID:', error);
-
-      // Attempt backup method
+      // First attempt - standard method
       try {
-        const formattedSceneId = String(sceneId);
-        console.log('fetchSceneById - Attempting backup method for scene ID:', formattedSceneId);
+        const response = await sceneService.getSceneById(formattedSceneId);
+        console.log('fetchSceneById - Standard method response:', response);
 
-        // Try different API endpoints
-        let backupResponse;
+        if (!response?.data) {
+          throw new Error('Invalid response format from standard API');
+        }
+
+        return response.data;
+      } catch (error) {
+        console.error('fetchSceneById - Standard method failed:', error);
+
+        // Attempt backup method
         try {
-          backupResponse = await sceneService.getSceneById(formattedSceneId);
-        } catch (err) {
-          backupResponse = await sceneService.getSceneById(`/api/scenes/${formattedSceneId}`);
+          console.log('fetchSceneById - Attempting backup method for scene ID:', formattedSceneId);
+
+          // Try different API endpoints
+          let backupResponse;
+          try {
+            backupResponse = await sceneService.getSceneById(formattedSceneId);
+          } catch (err) {
+            backupResponse = await sceneService.getSceneById(`/api/scenes/${formattedSceneId}`);
+          }
+
+          console.log('fetchSceneById - Backup response:', backupResponse);
+
+          let sceneData;
+          if (backupResponse?.data?.scene) {
+            sceneData = backupResponse.data.scene;
+          } else if (backupResponse?.data) {
+            sceneData = backupResponse.data;
+          } else {
+            throw new Error('Invalid response format from backup API');
+          }
+
+          // Ensure ID is explicitly set
+          if (sceneData && !sceneData.id) {
+            sceneData.id = formattedSceneId;
+          }
+
+          console.log('fetchSceneById - Processed backup scene data:', sceneData);
+          return sceneData;
+        } catch (backupError) {
+          console.error('Backup method also failed:', backupError);
+          return rejectWithValue(
+            error.response?.data?.message || error.message || 'Failed to fetch scene'
+          );
         }
-
-        console.log('fetchSceneById - Backup response:', backupResponse);
-
-        let sceneData;
-        if (backupResponse?.data?.scene) {
-          sceneData = backupResponse.data.scene;
-        } else if (backupResponse?.data) {
-          sceneData = backupResponse.data;
-        } else {
-          throw new Error('Invalid response format from backup API');
-        }
-
-        // Ensure ID is explicitly set
-        if (sceneData && !sceneData.id) {
-          sceneData.id = formattedSceneId;
-        }
-
-        console.log('fetchSceneById - Processed backup scene data:', sceneData);
-        return sceneData;
-      } catch (backupError) {
-        console.error('Backup method also failed:', backupError);
-        return rejectWithValue(
-          error.response?.data?.message || error.message || 'Failed to fetch scene'
-        );
       }
+    } catch (error) {
+      console.error('fetchSceneById - Error:', error);
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Failed to fetch scene'
+      );
     }
   }
 );

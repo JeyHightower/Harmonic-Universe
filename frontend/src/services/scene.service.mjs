@@ -169,79 +169,55 @@ export const getScenesByUniverse = async (universeId) => {
  * @returns {Promise<object>} - Scene data
  */
 export const getSceneById = async (sceneId) => {
+  console.log('scenes', 'Getting scene by ID:', sceneId);
+  const errors = [];
+  const normalizedId = String(sceneId).trim();
+
+  // First attempt - standard endpoint
   try {
-    if (!sceneId) {
-      return responseHandler.handleError(new Error('Scene ID is required'));
-    }
+    console.log('scenes', 'Trying standard endpoint format');
+    const response = await httpClient.get(`/api/scenes/${normalizedId}`);
+    console.log('scenes', 'Scene fetched successfully with standard endpoint:', response);
+    return responseHandler.handleSuccess(response);
+  } catch (error1) {
+    console.log('scenes', 'First attempt failed:', error1.message);
+    errors.push(error1);
 
-    console.log('scenes', 'Fetching scene by ID:', sceneId);
-
-    // Normalize sceneId - if it's a string that looks like a number, convert it
-    let normalizedId = sceneId;
-    if (typeof sceneId === 'string' && /^\d+$/.test(sceneId)) {
-      normalizedId = parseInt(sceneId, 10);
-      console.log('scenes', `Normalized scene ID from string to number: ${sceneId} -> ${normalizedId}`);
-    }
-
-    // Try multiple endpoint formats to handle both with and without trailing slashes
-    // Store all errors to provide comprehensive error info if all attempts fail
-    const errors = [];
-
-    // First attempt - without trailing slash (preferred for numeric IDs)
+    // Second attempt - with trailing slash
     try {
-      let endpoint = sceneEndpoints.getById(normalizedId);
-      if (endpoint.endsWith('/')) {
-        endpoint = endpoint.slice(0, -1);
-      }
-
-      console.log('scenes', 'Trying endpoint without trailing slash:', endpoint);
-      const response = await httpClient.get(endpoint);
-      console.log('scenes', 'Scene fetched successfully with non-trailing slash endpoint:', response);
+      console.log('scenes', 'Trying trailing slash endpoint format');
+      const response = await httpClient.get(`/api/scenes/${normalizedId}/`);
+      console.log('scenes', 'Scene fetched successfully with trailing slash endpoint:', response);
       return responseHandler.handleSuccess(response);
-    } catch (error1) {
-      console.log('scenes', 'First attempt failed:', error1.message);
-      errors.push(error1);
+    } catch (error2) {
+      console.log('scenes', 'Second attempt failed:', error2.message);
+      errors.push(error2);
 
-      // Second attempt - with trailing slash
+      // Third attempt - direct /api/scenes/:id format
       try {
-        let endpoint = sceneEndpoints.get(normalizedId); // Use the regular endpoint with trailing slash
-        console.log('scenes', 'Trying endpoint with trailing slash:', endpoint);
-        const response = await httpClient.get(endpoint);
-        console.log('scenes', 'Scene fetched successfully with trailing slash endpoint:', response);
+        const directEndpoint = `/api/scenes/${normalizedId}`;
+        console.log('scenes', 'Trying direct endpoint format:', directEndpoint);
+        const response = await httpClient.get(directEndpoint);
+        console.log('scenes', 'Scene fetched successfully with direct endpoint:', response);
         return responseHandler.handleSuccess(response);
-      } catch (error2) {
-        console.log('scenes', 'Second attempt failed:', error2.message);
-        errors.push(error2);
+      } catch (error3) {
+        console.log('scenes', 'All endpoint variations failed');
+        errors.push(error3);
 
-        // Third attempt - direct /api/scenes/:id format
-        try {
-          const directEndpoint = `/api/scenes/${normalizedId}`;
-          console.log('scenes', 'Trying direct endpoint format:', directEndpoint);
-          const response = await httpClient.get(directEndpoint);
-          console.log('scenes', 'Scene fetched successfully with direct endpoint:', response);
-          return responseHandler.handleSuccess(response);
-        } catch (error3) {
-          console.log('scenes', 'All endpoint variations failed');
-          errors.push(error3);
-
-          // If all attempts fail and we have a 404 status in any of the errors, return a scene not found error
-          const hasNotFoundError = errors.some(err => err.response?.status === 404);
-          if (hasNotFoundError) {
-            const errorMessage = `Scene with ID ${normalizedId} not found. It may have been deleted or doesn't exist.`;
-            return responseHandler.handleError(new Error(errorMessage));
-          }
-
-          // Otherwise, throw the first error
-          throw errors[0];
+        // If all attempts fail and we have a 404 status in any of the errors, return a scene not found error
+        const hasNotFoundError = errors.some(err => err.response?.status === 404);
+        if (hasNotFoundError) {
+          const errorMessage = `Scene with ID ${normalizedId} not found. It may have been deleted or doesn't exist.`;
+          console.error('scenes', errorMessage);
+          return responseHandler.handleError(new Error(errorMessage));
         }
+
+        // If we have any other errors, return the most specific one
+        const specificError = errors.find(err => err.response?.status) || errors[0];
+        console.error('scenes', 'All attempts failed:', specificError);
+        return responseHandler.handleError(specificError);
       }
     }
-  } catch (error) {
-    console.log('scenes', 'Error fetching scene by ID', {
-      sceneId,
-      error: error.message,
-    });
-    return responseHandler.handleError(error);
   }
 };
 

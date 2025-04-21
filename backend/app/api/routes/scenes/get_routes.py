@@ -6,43 +6,49 @@ import traceback
 
 from . import scenes_bp  # import the Blueprint instance
 
-@scenes_bp.route('/<int:scene_id>', methods=['GET'])
+@scenes_bp.route('/<scene_id>', methods=['GET'])
 @jwt_required()
 def get_scene(scene_id):
     try:
         current_app.logger.info(f"Fetching scene with ID: {scene_id}")
-        
+
+        # Convert scene_id to string for logging and validation
+        scene_id_str = str(scene_id)
+
         # Validate scene_id
-        if not scene_id or scene_id <= 0:
-            current_app.logger.error(f"Invalid scene ID: {scene_id}")
+        if not scene_id_str or not scene_id_str.isdigit():
+            current_app.logger.error(f"Invalid scene ID: {scene_id_str}")
             return jsonify({
                 'message': 'Invalid scene ID',
-                'error': 'Scene ID must be a positive integer',
+                'error': 'Scene ID must be a positive number',
                 'scene': {}
             }), 400
-            
+
+        # Convert to int for database query
+        scene_id_int = int(scene_id_str)
+
         # Get the scene with additional error handling
         try:
-            scene = Scene.query.get(scene_id)
-            
+            scene = Scene.query.get(scene_id_int)
+
             if not scene:
-                current_app.logger.warning(f"Scene with ID {scene_id} not found")
+                current_app.logger.warning(f"Scene with ID {scene_id_str} not found")
                 return jsonify({
                     'message': 'Scene not found',
-                    'error': f'No scene found with ID {scene_id}',
+                    'error': f'No scene found with ID {scene_id_str}',
                     'scene': {}
                 }), 404
-                
+
             # Check if scene is marked as deleted
             if hasattr(scene, 'is_deleted') and scene.is_deleted:
-                current_app.logger.warning(f"Attempted to access deleted scene: {scene_id}")
+                current_app.logger.warning(f"Attempted to access deleted scene: {scene_id_str}")
                 return jsonify({
                     'message': 'Scene has been deleted',
                     'scene': {}
                 }), 404
-                
+
         except Exception as scene_error:
-            current_app.logger.error(f"Error fetching scene {scene_id}: {str(scene_error)}")
+            current_app.logger.error(f"Error fetching scene {scene_id_str}: {str(scene_error)}")
             current_app.logger.error(traceback.format_exc())
             return jsonify({
                 'message': 'Error retrieving scene',
@@ -52,29 +58,29 @@ def get_scene(scene_id):
 
         # Check permissions
         user_id = get_jwt_identity()
-        current_app.logger.info(f"User {user_id} accessing scene {scene_id} from universe {scene.universe_id}")
-        
+        current_app.logger.info(f"User {user_id} accessing scene {scene_id_str} from universe {scene.universe_id}")
+
         # Get universe for permission check
         try:
             universe = Universe.query.get(scene.universe_id)
             if not universe:
-                current_app.logger.error(f"Universe with ID {scene.universe_id} not found for scene {scene_id}")
+                current_app.logger.error(f"Universe with ID {scene.universe_id} not found for scene {scene_id_str}")
                 return jsonify({
                     'message': 'Scene universe not found',
                     'error': f'The universe this scene belongs to does not exist',
                     'scene': {}
                 }), 404
-                
+
             # Check if user has access to this scene's universe
             if not universe.is_public and universe.user_id != user_id:
-                current_app.logger.warning(f"Access denied: User {user_id} attempting to access scene {scene_id} in private universe {scene.universe_id}")
+                current_app.logger.warning(f"Access denied: User {user_id} attempting to access scene {scene_id_str} in private universe {scene.universe_id}")
                 return jsonify({
                     'message': 'Access denied',
                     'scene': {}
                 }), 403
-                
+
         except Exception as universe_error:
-            current_app.logger.error(f"Error checking universe access for scene {scene_id}: {str(universe_error)}")
+            current_app.logger.error(f"Error checking universe access for scene {scene_id_str}: {str(universe_error)}")
             current_app.logger.error(traceback.format_exc())
             return jsonify({
                 'message': 'Error checking universe access',
@@ -93,7 +99,7 @@ def get_scene(scene_id):
                 'created_at': str(scene.created_at) if hasattr(scene, 'created_at') and scene.created_at else None,
                 'updated_at': str(scene.updated_at) if hasattr(scene, 'updated_at') and scene.updated_at else None
             }
-            
+
             # Add optional fields that were set
             if hasattr(scene, 'summary') and scene.summary is not None:
                 scene_dict['summary'] = scene.summary
@@ -117,18 +123,18 @@ def get_scene(scene_id):
                 scene_dict['order'] = scene.order
             if hasattr(scene, 'is_public') and scene.is_public is not None:
                 scene_dict['is_public'] = scene.is_public
-                
+
             # Add character IDs if available
             if hasattr(scene, 'characters') and scene.characters:
                 scene_dict['character_ids'] = [c.id for c in scene.characters]
-                
-            current_app.logger.info(f"Scene {scene_id} retrieved successfully")
-            
+
+            current_app.logger.info(f"Scene {scene_id_str} retrieved successfully")
+
             return jsonify({
                 'message': 'Scene retrieved successfully',
                 'scene': scene_dict
             }), 200
-            
+
         except Exception as dict_error:
             current_app.logger.error(f"Error building scene dictionary: {str(dict_error)}")
             current_app.logger.error(traceback.format_exc())
@@ -149,4 +155,4 @@ def get_scene(scene_id):
             'message': 'Error retrieving scene',
             'error': str(e),
             'scene': {}
-        }), 500 
+        }), 500

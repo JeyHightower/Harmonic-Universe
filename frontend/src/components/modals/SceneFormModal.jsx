@@ -1,13 +1,13 @@
 import {
-    Alert,
-    Box,
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
 } from "@mui/material";
 import PropTypes from "prop-types";
 import React, { useEffect, useState } from "react";
@@ -16,7 +16,7 @@ import apiClient from "../../services/api";
 // Import only the fetchScenes thunk to refresh scenes after operations
 import CloseIcon from "@mui/icons-material/Close";
 import SceneForm from "../../features/scene/pages/SceneForm";
-import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
+import { fetchSceneById, fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
 
 /**
  * Modal component for creating and editing scenes
@@ -186,38 +186,30 @@ const SceneFormModal = ({
 
   const fetchSceneData = async () => {
     if (modalType === "edit" && sceneId) {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        console.log(`SceneFormModal: Fetching scene data for ID: ${sceneId}`);
+        console.log("SceneFormModal: Fetching scene data for ID:", sceneId);
+        const sceneData = await dispatch(fetchSceneById(sceneId)).unwrap();
+        console.log("SceneFormModal: Fetched scene data:", sceneData);
 
-        const response = await apiClient.getScene(sceneId);
-        console.log("SceneFormModal: Scene data fetched:", response.data);
-
-        if (response.data && response.data.scene) {
-          setInitialValues(response.data.scene);
-          console.log("SceneFormModal: Set initial values from scene data");
-        } else {
-          console.warn(
-            "SceneFormModal: Retrieved scene data is empty or invalid"
-          );
-          setError(
-            "Could not load scene data. The scene may have been deleted."
-          );
-          // Create empty initial values to prevent form errors
-          setInitialValues({
-            name: "",
-            description: "",
-            universe_id: typeof universeId === 'string' ? parseInt(universeId, 10) : universeId || null,
-          });
+        if (!sceneData) {
+          throw new Error("No scene data returned");
         }
-      } catch (error) {
-        console.error("SceneFormModal: Error fetching scene:", error);
 
-        // Handle 404 errors specially
-        if (error.response && error.response.status === 404) {
-          setError(
-            "The requested scene was not found. It may have been deleted."
-          );
+        // Ensure we have the correct ID format
+        const normalizedSceneId = String(sceneData.id || sceneId).trim();
+
+        setInitialValues({
+          name: sceneData.name || "",
+          description: sceneData.description || "",
+          universe_id: typeof universeId === 'string' ? parseInt(universeId, 10) : universeId || null,
+          id: normalizedSceneId,
+        });
+      } catch (error) {
+        console.error("SceneModal - Error loading scene data:", error);
+        if (error.response?.status === 404) {
+          setError(`Scene with ID ${sceneId} not found. It may have been deleted or doesn't exist.`);
         } else {
           setError(`Failed to load scene: ${error.message || "Unknown error"}`);
         }
