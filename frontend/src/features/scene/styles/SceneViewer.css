@@ -1,0 +1,151 @@
+.scene-viewer {
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+}
+
+.scene-viewer .scene-card-detail {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background-color: #fff;
+  height: auto !important;
+  min-height: 600px;
+}
+
+.scene-viewer .scene-image {
+  height: 300px;
+  width: 100%;
+  object-fit: cover;
+  background-color: #f5f5f5;
+  position: relative;
+  transition: none !important;
+}
+
+.scene-viewer .ant-typography {
+  margin-bottom: 16px;
+}
+
+.scene-viewer .scene-description {
+  margin-bottom: 24px;
+}
+
+.scene-viewer .ant-descriptions {
+  margin-bottom: 24px;
+}
+
+.scene-viewer .ant-descriptions-bordered .ant-descriptions-item-label,
+.scene-viewer .ant-descriptions-bordered .ant-descriptions-item-content {
+  padding: 12px 16px;
+}
+
+.scene-viewer .viewer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Prevent content jumping */
+.MuiDialog-paper {
+  min-width: 400px;
+  width: 90%;
+  max-width: 800px !important;
+  max-height: 90vh !important;
+  height: auto !important;
+  overflow-y: auto;
+}
+
+.MuiDialogContent-root {
+  padding: 20px !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Fix for content jumping and flickering */
+.scene-modal {
+  width: 100%;
+  min-height: 200px;
+  height: auto;
+  position: relative;
+  transition: none !important;
+}
+
+/* Fix animation issues */
+.MuiDialog-container.MuiDialog-scrollPaper {
+  transition: none !important;
+}
+
+/* Improve modal backdrop stability */
+.MuiBackdrop-root {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Ensure consistent spacing */
+.scene-viewer h3.ant-typography {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .scene-viewer .scene-image {
+    height: 200px;
+  }
+
+  .MuiDialog-paper {
+    min-width: 320px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scene-viewer .scene-image {
+    height: 180px;
+  }
+
+  .scene-viewer .viewer-actions {
+    flex-direction: column;
+  }
+
+  .scene-viewer .viewer-actions button {
+    width: 100%;
+  }
+}
+
+/* Add animation for loading to prevent size jumps */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.scene-viewer .ant-card-cover {
+  position: relative;
+  height: 300px;
+  background-color: #f5f5f5;
+  overflow: hidden;
+}
+
+.scene-viewer .ant-card-cover img {
+  animation: fadeIn 0.3s ease-in-out;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Disable transitions that might cause flicker */
+.MuiDialog-container.MuiDialog-scrollPaper,
+.MuiDialog-paper,
+.MuiDialogContent-root {
+  transition: none !important;
+}
+
+/* Fix for Firefox animation issues */
+@-moz-document url-prefix() {
+  .MuiDialog-paper {
+    animation: none !important;
+  }
+}

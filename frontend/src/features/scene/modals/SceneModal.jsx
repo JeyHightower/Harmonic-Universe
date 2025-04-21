@@ -327,6 +327,21 @@ const SceneModal = ({
       onClose={onClose}
       aria-labelledby="scene-modal-title"
       aria-describedby="scene-modal-description"
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          height: 'auto',
+          maxHeight: '90vh',
+          width: '100%',
+          maxWidth: '800px',
+          overflowY: 'auto',
+          transition: 'none',
+        }
+      }}
+      TransitionProps={{
+        timeout: 300
+      }}
     >
       <DialogTitle id="scene-modal-title">{getModalTitle()}</DialogTitle>
       <DialogContent>

@@ -1,11 +1,9 @@
-import React from "react";
+import { Card, Descriptions, Tag, Typography } from "antd";
 import PropTypes from "prop-types";
-import { Typography, Descriptions, Card, Tag } from "antd";
+import { useNavigate } from "react-router-dom";
 import Button from "../../../components/common/Button";
-import { useParams, useNavigate } from "react-router-dom";
-import { Box, Paper, Grid, CircularProgress } from "@mui/material";
-import { ArrowBack } from "@mui/icons-material";
 import { formatDate } from "../../../utils";
+import "../styles/SceneViewer.css";
 
 const { Title, Paragraph, Text } = Typography;
 
