@@ -196,62 +196,74 @@ export const fetchScenesForUniverse = fetchScenes;
  * Fetch a single scene by ID
  */
 export const fetchSceneById = createAsyncThunk(
-  'scenes/fetchById',
-  async (sceneId, { rejectWithValue, _dispatch, _getState }) => {
+  'scenes/fetchSceneById',
+  async (sceneId, { rejectWithValue }) => {
     try {
-      console.log('THUNK fetchSceneById: Called with ID:', sceneId);
+      // Ensure sceneId is a string
+      const formattedSceneId = String(sceneId);
 
-      // Input validation
-      if (!sceneId) {
-        throw new Error('Scene ID is required');
-      }
+      console.log(`fetchSceneById - Fetching scene with ID: ${formattedSceneId}`);
 
-      // Make API call
-      const response = await sceneService.getSceneById(sceneId);
-      console.log('THUNK fetchSceneById: Received API response:', response);
+      const response = await sceneService.getSceneById(formattedSceneId);
+      console.log('fetchSceneById - Response:', response);
 
-      // Extract scene data from response, handling different response formats
+      // Handle different response formats
       let sceneData;
-
       if (response.data?.scene) {
-        // Format: { data: { scene: {...} } }
         sceneData = response.data.scene;
-        console.log('THUNK fetchSceneById: Scene data found in response.data.scene');
       } else if (response.data) {
-        // Format: { data: {...} }
         sceneData = response.data;
-        console.log('THUNK fetchSceneById: Scene data found directly in response.data');
       } else {
-        // No data found at all
-        console.error('THUNK fetchSceneById: No scene data found in response:', response);
-        throw new Error('Invalid response format - missing scene data');
+        throw new Error('Invalid response format from API');
       }
 
-      // Ensure we have at least minimal scene data
-      if (!sceneData.id) {
-        console.warn('THUNK fetchSceneById: Scene data missing ID, using requested ID:', sceneId);
-        sceneData.id = sceneId;
+      // Ensure ID is explicitly set
+      if (sceneData && !sceneData.id) {
+        sceneData.id = formattedSceneId;
       }
 
-      // Ensure is_deleted is explicitly set to false
-      const normalizedSceneData = normalizeSceneData({
-        ...sceneData,
-        is_deleted: false,
-      });
-
-      console.log('THUNK fetchSceneById: Normalized scene data:', normalizedSceneData);
-
-      // Return serializable data
-      const serializedResponse = {
-        message: response.data?.message || 'Scene fetched successfully',
-        scene: normalizedSceneData,
-        status: response.status || 200,
-      };
-
-      return serializedResponse;
+      console.log('fetchSceneById - Processed scene data:', sceneData);
+      return sceneData;
     } catch (error) {
-      console.error('THUNK fetchSceneById: Error fetching scene:', error);
-      return rejectWithValue(handleError(error));
+      console.error('Error fetching scene by ID:', error);
+
+      // Attempt backup method
+      try {
+        const formattedSceneId = String(sceneId);
+        console.log('fetchSceneById - Attempting backup method for scene ID:', formattedSceneId);
+
+        // Try different API endpoints
+        let backupResponse;
+        try {
+          backupResponse = await sceneService.getSceneById(formattedSceneId);
+        } catch (err) {
+          backupResponse = await sceneService.getSceneById(`/api/scenes/${formattedSceneId}`);
+        }
+
+        console.log('fetchSceneById - Backup response:', backupResponse);
+
+        let sceneData;
+        if (backupResponse?.data?.scene) {
+          sceneData = backupResponse.data.scene;
+        } else if (backupResponse?.data) {
+          sceneData = backupResponse.data;
+        } else {
+          throw new Error('Invalid response format from backup API');
+        }
+
+        // Ensure ID is explicitly set
+        if (sceneData && !sceneData.id) {
+          sceneData.id = formattedSceneId;
+        }
+
+        console.log('fetchSceneById - Processed backup scene data:', sceneData);
+        return sceneData;
+      } catch (backupError) {
+        console.error('Backup method also failed:', backupError);
+        return rejectWithValue(
+          error.response?.data?.message || error.message || 'Failed to fetch scene'
+        );
+      }
     }
   }
 );
@@ -434,97 +446,53 @@ export const createScene = createAsyncThunk(
  */
 export const updateScene = createAsyncThunk(
   'scenes/updateScene',
-  async (sceneData, { dispatch, rejectWithValue, _getState }) => {
+  async (sceneData, { rejectWithValue }) => {
     try {
-      console.log('THUNK updateScene: Called with data:', sceneData);
+      console.log('updateScene - Scene data to update:', sceneData);
 
-      // Validation
       if (!sceneData || !sceneData.id) {
         throw new Error('Scene ID is required for updating a scene');
       }
 
-      // Format data before sending to API
-      const formattedData = {
+      // Ensure scene ID is properly formatted
+      const formattedSceneId = String(sceneData.id);
+
+      // Create a copy of the data with the properly formatted ID
+      const formattedSceneData = {
         ...sceneData,
-        is_deleted: false, // Explicitly set is_deleted to false
+        id: formattedSceneId
       };
 
-      // Make sure name is used instead of title
-      if (formattedData.title && !formattedData.name) {
-        formattedData.name = formattedData.title;
-        delete formattedData.title;
-      }
+      console.log(`updateScene - Updating scene with ID: ${formattedSceneId}`, formattedSceneData);
 
-      // Ensure snake_case for fields that require it
-      if (formattedData.timeOfDay && !formattedData.time_of_day) {
-        formattedData.time_of_day = formattedData.timeOfDay;
-        delete formattedData.timeOfDay;
-      }
+      const response = await sceneService.updateScene(formattedSceneId, formattedSceneData);
+      console.log('updateScene - Response:', response);
 
-      if (formattedData.characterIds && !formattedData.character_ids) {
-        formattedData.character_ids = formattedData.characterIds;
-        delete formattedData.characterIds;
-      }
-
-      if (formattedData.dateOfScene && !formattedData.date_of_scene) {
-        formattedData.date_of_scene = formattedData.dateOfScene;
-        delete formattedData.dateOfScene;
-      }
-
-      if (formattedData.notesText && !formattedData.notes_text) {
-        formattedData.notes_text = formattedData.notesText;
-        delete formattedData.notesText;
-      }
-
-      // Extract scene ID and remove from update payload
-      const sceneId = formattedData.id;
-      const updatePayload = { ...formattedData };
-      delete updatePayload.id; // Remove ID from update data
-
-      console.log(
-        `THUNK updateScene: Updating scene ${sceneId} with formatted data:`,
-        updatePayload
-      );
-
-      // Call API
-      const response = await sceneService.updateScene(sceneId, updatePayload);
-      console.log('THUNK updateScene: Received API response:', response);
-
-      // Check for valid scene data
-      if (!response.data || !response.data.scene) {
-        throw new Error('Invalid response format - missing scene data');
-      }
-
-      // Get scene data from response
-      const responseSceneData = response.data.scene;
-
-      // Ensure is_deleted is explicitly false
-      const normalizedSceneData = normalizeSceneData({
-        ...responseSceneData,
-        is_deleted: false,
-      });
-
-      console.log('THUNK updateScene: Normalized scene data:', normalizedSceneData);
-
-      // Refresh universe scenes if scene has a universe_id
-      if (normalizedSceneData.universe_id) {
-        console.log(
-          `THUNK updateScene: Refreshing scenes for universe ${normalizedSceneData.universe_id}`
-        );
-        dispatch(fetchScenes(normalizedSceneData.universe_id));
-      }
-
-      // Return serializable data
-      const serializedResponse = {
-        message: response.data?.message || 'Scene updated successfully',
-        scene: normalizedSceneData,
-        status: response.status || 200,
-      };
-
-      return serializedResponse;
+      return response.data;
     } catch (error) {
-      console.error('THUNK updateScene: Error updating scene:', error);
-      return rejectWithValue(handleError(error));
+      console.error('Error updating scene:', error);
+
+      // Attempt backup method
+      try {
+        const formattedSceneId = String(sceneData.id);
+        console.log('updateScene - Attempting backup method for scene ID:', formattedSceneId);
+
+        const formattedSceneData = {
+          ...sceneData,
+          id: formattedSceneId
+        };
+
+        // Try alternative endpoint
+        const backupResponse = await sceneService.updateScene(`/api/scenes/${formattedSceneId}`, formattedSceneData);
+        console.log('updateScene - Backup response:', backupResponse);
+
+        return backupResponse.data;
+      } catch (backupError) {
+        console.error('Backup method also failed:', backupError);
+        return rejectWithValue(
+          error.response?.data?.message || error.message || 'Failed to update scene'
+        );
+      }
     }
   }
 );
@@ -533,52 +501,49 @@ export const updateScene = createAsyncThunk(
  * Delete a scene (soft delete)
  */
 export const deleteScene = createAsyncThunk(
-  'scenes/delete',
-  async (sceneId, { rejectWithValue, dispatch, _getState }) => {
+  'scenes/deleteScene',
+  async (sceneId, { rejectWithValue }) => {
     try {
-      console.log('THUNK deleteScene: Called with ID:', sceneId);
+      // Handle both scene object and direct ID
+      const formattedSceneId = typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
+        ? String(sceneId.id)
+        : String(sceneId);
 
-      // Input validation
-      if (!sceneId) {
-        throw new Error('Scene ID is required for deletion');
-      }
+      console.log(`deleteScene - Deleting scene with ID: ${formattedSceneId}`);
 
-      // Get scene data before deletion to know which universe to refresh
-      let universeId = null;
-      // Skip this part since _getState is not used
-      // Previously we were trying to look up the universe from state
+      const response = await sceneService.deleteScene(formattedSceneId);
+      console.log('deleteScene - Response:', response);
 
-      // Call API to delete scene
-      const response = await sceneService.deleteScene(sceneId);
-      console.log('THUNK deleteScene: Received API response:', response);
-
-      // Get the scene ID from the response if available, or use the input ID
-      const deletedSceneId = response.data?.id || sceneId;
-
-      // Get the universe ID from the response if available
-      if (response.data?.universe_id) {
-        universeId = response.data.universe_id;
-        console.log(`THUNK deleteScene: Got universe_id ${universeId} from response`);
-      }
-
-      // If we have a universe ID, refresh the scenes for that universe
-      if (universeId) {
-        console.log(`THUNK deleteScene: Refreshing scenes for universe ${universeId}`);
-        dispatch(fetchScenes(universeId));
-      }
-
-      // Return serializable data
-      const serializedResponse = {
-        message: response.data?.message || 'Scene deleted successfully',
-        id: deletedSceneId,
-        universe_id: universeId,
-        status: response.status || 200,
-      };
-
-      return serializedResponse;
+      return { id: formattedSceneId, ...response.data };
     } catch (error) {
-      console.error('THUNK deleteScene: Error deleting scene:', error);
-      return rejectWithValue(handleError(error));
+      console.error('Error deleting scene:', error);
+
+      // Attempt backup method
+      try {
+        // Handle both scene object and direct ID
+        const formattedSceneId = typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
+          ? String(sceneId.id)
+          : String(sceneId);
+
+        console.log('deleteScene - Attempting backup method for scene ID:', formattedSceneId);
+
+        // Try different methods/endpoints
+        let backupResponse;
+        try {
+          backupResponse = await sceneService.deleteScene(`/scenes/${formattedSceneId}`);
+        } catch (err) {
+          backupResponse = await sceneService.deleteScene(`/api/scenes/${formattedSceneId}`);
+        }
+
+        console.log('deleteScene - Backup response:', backupResponse);
+
+        return { id: formattedSceneId, ...backupResponse.data };
+      } catch (backupError) {
+        console.error('Backup method also failed:', backupError);
+        return rejectWithValue(
+          error.response?.data?.message || error.message || 'Failed to delete scene'
+        );
+      }
     }
   }
 );

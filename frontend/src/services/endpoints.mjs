@@ -129,9 +129,9 @@ export const universeEndpoints = {
 export const sceneEndpoints = {
   list: endpoint('/scenes/'),
   create: endpoint('/scenes/'),
-  get: (id) => endpoint(`/scenes/${safeId(id)}/`),
-  update: (id) => endpoint(`/scenes/${safeId(id)}/`),
-  delete: (id) => endpoint(`/scenes/${safeId(id)}/`),
+  get: (id) => endpoint(`/scenes/${safeId(id)}`),
+  update: (id) => endpoint(`/scenes/${safeId(id)}`),
+  delete: (id) => endpoint(`/scenes/${safeId(id)}`),
   forUniverse: (universeId) => endpoint(`/universes/${safeId(universeId)}/scenes/`),
   byUniverse: (universeId) => endpoint(`/scenes/universe/${safeId(universeId)}/`),
   reorder: endpoint('/scenes/reorder/'),

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogTitle } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useMemo, useState } from 'react';
-import { apiClient } from '../../../services/api.adapter.mjs';
+import { useDispatch } from 'react-redux';
 import SceneViewer from '../components/SceneViewer';
 import SceneForm from '../pages/SceneForm';
 import SceneDeleteConfirmation from './SceneDeleteConfirmation';
@@ -34,6 +34,7 @@ const SceneModal = ({
   const [scene, setScene] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const dispatch = useDispatch();
 
   // Get modal title based on mode
   const getModalTitle = () => {
@@ -59,17 +60,28 @@ const SceneModal = ({
 
     // If sceneId is already a string or number, use it directly
     if (typeof sceneId === 'string' || typeof sceneId === 'number') {
-      return sceneId;
+      return String(sceneId); // Ensure consistent string format
     }
 
     // If sceneId is an object (likely a scene object), extract the id property
     if (typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId) {
-      return sceneId.id;
+      return String(sceneId.id); // Ensure consistent string format
     }
 
     console.error('Invalid sceneId provided to SceneModal:', sceneId);
     return null;
   }, [sceneId]);
+
+  // Add enhanced debug logging
+  useEffect(() => {
+    console.log('SceneModal - Props received:', {
+      mode: actualMode,
+      sceneId,
+      formattedSceneId,
+      universeId,
+      hasInitialData: !!initialData
+    });
+  }, [actualMode, sceneId, formattedSceneId, universeId, initialData]);
 
   // Load scene data if we have a sceneId but no initialData
   useEffect(() => {
@@ -85,47 +97,35 @@ const SceneModal = ({
 
           console.log(`SceneModal - Loading scene data for ID: ${formattedSceneId}`);
 
-          // First attempt with direct API call
-          const response = await apiClient.scenes.getSceneById(formattedSceneId);
-          console.log('SceneModal - Scene data response:', response);
+          // Import only the thunk but use the component-level dispatch
+          const { fetchSceneById } = await import('../../../store/thunks/consolidated/scenesThunks');
 
-          // Handle different response formats
-          let sceneData;
-          if (response.data?.scene) {
-            sceneData = response.data.scene;
-          } else if (response.data) {
-            sceneData = response.data;
-          } else {
-            throw new Error('Invalid response format from API');
-          }
+          const resultAction = await dispatch(fetchSceneById(formattedSceneId));
 
-          if (sceneData) {
-            console.log('SceneModal - Setting scene data:', sceneData);
-            setScene(sceneData);
+          if (fetchSceneById.fulfilled.match(resultAction)) {
+            // Successfully fetched scene data from Redux
+            const sceneData = resultAction.payload;
+
+            if (sceneData) {
+              // Ensure ID is explicitly set
+              sceneData.id = sceneData.id || formattedSceneId;
+
+              // Ensure universe_id is present if provided via props
+              if (universeId && !sceneData.universe_id) {
+                sceneData.universe_id = universeId;
+              }
+
+              console.log('SceneModal - Setting scene data from Redux:', sceneData);
+              setScene(sceneData);
+            } else {
+              throw new Error('No scene data returned from Redux action');
+            }
           } else {
-            throw new Error('No scene data returned from API');
+            throw new Error(resultAction.error?.message || 'Failed to fetch scene data');
           }
         } catch (error) {
           console.error('SceneModal - Error loading scene data:', error);
-
-          // Try a backup method if the first one fails
-          try {
-            console.log('SceneModal - Attempting backup method to fetch scene data');
-            const backupResponse = await apiClient.get(`/scenes/${formattedSceneId}/`);
-
-            if (backupResponse.data?.scene) {
-              console.log(
-                'SceneModal - Got scene data from backup method:',
-                backupResponse.data.scene
-              );
-              setScene(backupResponse.data.scene);
-            } else {
-              throw new Error('Backup method also failed to retrieve scene data');
-            }
-          } catch (backupError) {
-            console.error('SceneModal - Backup method also failed:', backupError);
-            setError('Failed to load scene data. Please try refreshing the page.');
-          }
+          setError(`Failed to load scene data: ${error.message}`);
         } finally {
           setLoading(false);
         }
@@ -136,125 +136,84 @@ const SceneModal = ({
       console.log('SceneModal - Using provided initialData:', initialData);
       setScene(initialData);
     }
-  }, [formattedSceneId, initialData, actualMode]);
+  }, [formattedSceneId, initialData, actualMode, universeId, dispatch]);
 
-  // Handle form submission for create/edit modes
-  const handleSubmit = async (action, formData) => {
+  // Handle form submission (create/edit)
+  const handleSubmit = async (formData) => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('SceneModal - handleSubmit called with action:', action, 'and data:', formData);
+      // Import only the thunks but use the component-level dispatch
+      const { createScene, updateScene } = await import('../../../store/thunks/consolidated/scenesThunks');
 
-      // Ensure universe_id is correctly set in the data
-      const dataWithUniverseId = {
-        ...formData,
-        universe_id: universeId,
-        // Also include as universeId for services that might expect it in camelCase
-        universeId: universeId,
-      };
+      // Determine whether to create or update based on mode
+      if (actualMode === 'create') {
+        console.log('SceneModal - Creating new scene with data:', { ...formData, universe_id: universeId });
 
-      let result;
-      if (action === 'create' || actualMode === 'create') {
-        // Create the scene using the API
-        console.log('SceneModal - Creating scene with data:', dataWithUniverseId);
-        try {
-          // Use the scenes service directly with proper error handling
-          const response = await apiClient.scenes.createScene(dataWithUniverseId);
-          console.log('SceneModal - Create scene response:', response);
+        // Add universe_id to form data if not present
+        const sceneData = { ...formData, universe_id: universeId };
 
-          // Check different possible response formats
-          if (response.data?.scene) {
-            result = response.data.scene;
-          } else if (response.data) {
-            result = response.data;
-          } else if (response.success && response.data) {
-            result = response.data;
-          } else {
-            console.warn('SceneModal - Unexpected response format:', response);
-            throw new Error('Unexpected response format from API');
-          }
-        } catch (createError) {
-          console.error('SceneModal - Failed with scenes.createScene:', createError);
+        // Dispatch create action
+        const resultAction = await dispatch(createScene(sceneData));
 
-          // Fallback to direct API call with better error handling
-          try {
-            console.log('SceneModal - Attempting direct API call fallback');
-            // Make sure we're sending the data properly formatted
-            const formattedData = {
-              ...dataWithUniverseId,
-              // Ensure these fields are always present
-              name: dataWithUniverseId.name || dataWithUniverseId.title || 'Untitled Scene',
-              universe_id: dataWithUniverseId.universe_id || dataWithUniverseId.universeId,
-            };
-
-            const directResponse = await apiClient.post('/scenes/', formattedData);
-            console.log('SceneModal - Direct API create response:', directResponse);
-
-            if (directResponse.data?.scene) {
-              result = directResponse.data.scene;
-            } else if (directResponse.data) {
-              result = directResponse.data;
-            } else {
-              throw new Error('Failed to create scene: Invalid response from API');
-            }
-          } catch (directError) {
-            console.error('SceneModal - Direct API call failed too:', directError);
-            throw new Error(`Failed to create scene: ${directError.message || 'Unknown error'}`);
-          }
+        if (createScene.fulfilled.match(resultAction)) {
+          console.log('SceneModal - Scene created successfully:', resultAction.payload);
+          // Call onSuccess callback if provided
+          if (onSuccess) onSuccess(resultAction.payload);
+          onClose();
+        } else {
+          throw new Error(resultAction.error?.message || 'Failed to create scene');
         }
-      } else if (action === 'update' || actualMode === 'edit') {
-        // Update the scene using the API
-        console.log('SceneModal - Updating scene with data:', dataWithUniverseId);
-        const response = await apiClient.scenes.updateScene(formattedSceneId, dataWithUniverseId);
-        console.log('SceneModal - Update scene response:', response);
-        result = response.data?.scene || response.data;
+      } else if (actualMode === 'edit') {
+        console.log('SceneModal - Updating scene with ID:', formattedSceneId);
+        console.log('SceneModal - Update data:', formData);
+
+        // Dispatch update action
+        const resultAction = await dispatch(updateScene({ id: formattedSceneId, ...formData }));
+
+        if (updateScene.fulfilled.match(resultAction)) {
+          console.log('SceneModal - Scene updated successfully:', resultAction.payload);
+          // Call onSuccess callback if provided
+          if (onSuccess) onSuccess(resultAction.payload);
+          onClose();
+        } else {
+          throw new Error(resultAction.error?.message || 'Failed to update scene');
+        }
       }
-
-      // Ensure result has the expected structure
-      if (!result) {
-        console.error('SceneModal - API returned empty result');
-        throw new Error('Failed to save scene. Empty response from API.');
-      }
-
-      console.log('SceneModal - Operation successful, calling onSuccess callback');
-
-      // Call success callback if provided
-      if (onSuccess) {
-        onSuccess(result);
-      }
-
-      // Close the modal
-      onClose();
-
-      return result;
     } catch (error) {
-      console.error('SceneModal - Error saving scene:', error);
-      setError(error.message || 'An error occurred while saving the scene');
-      throw error;
+      console.error('SceneModal - Error submitting scene data:', error);
+      setError(`Failed to save scene: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle scene deletion
+  // Handle delete confirmation
   const handleDelete = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      await apiClient.scenes.deleteScene(formattedSceneId);
+      console.log('SceneModal - Deleting scene with ID:', formattedSceneId);
 
-      // Call success callback if provided
-      if (onSuccess) {
-        onSuccess({ id: formattedSceneId, deleted: true });
+      // Import only the thunk but use the component-level dispatch
+      const { deleteScene } = await import('../../../store/thunks/consolidated/scenesThunks');
+
+      // Dispatch delete action
+      const resultAction = await dispatch(deleteScene(formattedSceneId));
+
+      if (deleteScene.fulfilled.match(resultAction)) {
+        console.log('SceneModal - Scene deleted successfully:', resultAction.payload);
+        // Call onSuccess callback if provided
+        if (onSuccess) onSuccess(resultAction.payload);
+        onClose();
+      } else {
+        throw new Error(resultAction.error?.message || 'Failed to delete scene');
       }
-
-      // Close the modal
-      onClose();
     } catch (error) {
-      console.error('Error deleting scene:', error);
-      setError(error.message || 'An error occurred while deleting the scene');
+      console.error('SceneModal - Error deleting scene:', error);
+      setError(`Failed to delete scene: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -297,8 +256,36 @@ const SceneModal = ({
           />
         );
       case 'view':
-        return <SceneViewer scene={scene || initialData} onClose={onClose} />;
+        // Ensure we have valid scene data, falling back to initialData if needed
+        const sceneData = scene || initialData;
+        if (!sceneData || !sceneData.id) {
+          return (
+            <div className="scene-modal-error">
+              <p className="error-message">Invalid scene data. Please try again.</p>
+              <button onClick={onClose}>Close</button>
+            </div>
+          );
+        }
+        return <SceneViewer scene={sceneData} onClose={onClose} />;
       case 'delete':
+        if (!scene && !initialData) {
+          // For delete operation without scene data, create minimal scene object with ID
+          const fallbackScene = {
+            id: formattedSceneId,
+            name: 'Scene',
+            universe_id: universeId
+          };
+
+          return (
+            <SceneDeleteConfirmation
+              scene={fallbackScene}
+              onDelete={handleDelete}
+              onCancel={onClose}
+              isLoading={loading}
+            />
+          );
+        }
+
         return (
           <SceneDeleteConfirmation
             scene={scene || initialData}

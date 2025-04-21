@@ -147,6 +147,9 @@ def setup_cors(app):
             if response.status_code != 200:
                 # Get the origin from the request headers or use a safe default
                 origin = request.headers.get('Origin', 'http://localhost:5173')
+                # Remove existing header before adding to prevent duplication
+                if 'Access-Control-Allow-Origin' in response.headers:
+                    del response.headers['Access-Control-Allow-Origin']
                 response.headers.add('Access-Control-Allow-Origin', origin)
                 response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
                 response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
