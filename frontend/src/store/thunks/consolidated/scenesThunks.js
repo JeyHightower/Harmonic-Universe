@@ -376,7 +376,10 @@ export const createScene = createAsyncThunk(
       // Create a default scene object with the input data as fallback
       // This ensures we have valid data even if the API returns incomplete data
       const defaultSceneData = {
-        id: response.data?.scene?.id || Date.now().toString(), // Use the real ID if available
+        // Generate a temporary ID that fits within PostgreSQL integer limits
+        // Take last 7 digits of timestamp and add small random number for uniqueness
+        id: response.data?.scene?.id ||
+            parseInt(Date.now().toString().slice(-7) + Math.floor(Math.random() * 100).toString().padStart(2, '0')),
         name: formattedData.name || "New Scene",
         description: formattedData.description || "",
         universe_id: formattedData.universe_id,

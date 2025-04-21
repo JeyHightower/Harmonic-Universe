@@ -380,7 +380,7 @@ const SceneModal = ({
       fullWidth
       PaperProps={{
         sx: {
-          height: '600px',
+          height: '80vh',
           maxHeight: '90vh',
           width: '100%',
           maxWidth: '800px',
@@ -388,6 +388,8 @@ const SceneModal = ({
           transform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
           WebkitFontSmoothing: 'subpixel-antialiased',
+          display: 'flex',
+          flexDirection: 'column',
         }
       }}
       TransitionProps={{
@@ -404,9 +406,27 @@ const SceneModal = ({
         }
       }}
     >
-      <DialogTitle id="scene-modal-title">{modalTitle}</DialogTitle>
-      <DialogContent>
-        <div className="scene-modal">{renderContent()}</div>
+      <DialogTitle id="scene-modal-title" sx={{
+        padding: '16px 24px',
+        borderBottom: '1px solid #f0f0f0',
+        backgroundColor: '#fafafa'
+      }}>
+        {modalTitle}
+      </DialogTitle>
+      <DialogContent sx={{
+        flex: 1,
+        padding: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <div className="scene-modal" style={{
+          height: '100%',
+          overflow: 'auto',
+          padding: '24px'
+        }}>
+          {renderContent()}
+        </div>
       </DialogContent>
     </Dialog>
   );

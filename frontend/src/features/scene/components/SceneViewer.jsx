@@ -73,10 +73,12 @@ const SceneViewer = React.memo(({ scene }) => {
 
             <div className="scene-description">
               <Title level={4}>Description</Title>
-              <Paragraph className="description-text">{sceneDetails.description}</Paragraph>
+              <Paragraph className="description-text" ellipsis={{ rows: 3, expandable: true, symbol: 'more' }}>
+                {sceneDetails.description}
+              </Paragraph>
             </div>
 
-            <Descriptions bordered column={1} className="scene-metadata">
+            <Descriptions bordered column={1} className="scene-metadata" size="middle">
               <Descriptions.Item label="Location">
                 <Text strong>{sceneDetails.location}</Text>
               </Descriptions.Item>
