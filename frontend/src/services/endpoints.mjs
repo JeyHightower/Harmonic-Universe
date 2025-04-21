@@ -127,18 +127,18 @@ export const universeEndpoints = {
  * Scene Endpoints
  */
 export const sceneEndpoints = {
-  list: endpoint('/scenes/'),
-  create: endpoint('/scenes/'),
-  get: (id) => endpoint(`/scenes/${safeId(id)}`),
-  getById: (id) => endpointNoSlash(`/scenes/${safeId(id)}`),
-  update: (id) => endpoint(`/scenes/${safeId(id)}`),
-  delete: (id) => endpoint(`/scenes/${safeId(id)}`),
-  forUniverse: (universeId) => endpoint(`/universes/${safeId(universeId)}/scenes/`),
-  byUniverse: (universeId) => endpoint(`/scenes/universe/${safeId(universeId)}/`),
-  reorder: endpoint('/scenes/reorder/'),
-  characters: (id) => endpoint(`/scenes/${safeId(id)}/characters/`),
-  notes: (id) => endpoint(`/scenes/${safeId(id)}/notes/`),
-  settings: (id) => endpoint(`/scenes/${safeId(id)}/settings/`),
+  list: endpoint('/api/scenes/'),
+  create: endpoint('/api/scenes/'),
+  get: (id) => endpoint(`/api/scenes/${safeId(id)}`),
+  getById: (id) => endpointNoSlash(`/api/scenes/${safeId(id)}`),
+  update: (id) => endpoint(`/api/scenes/${safeId(id)}`),
+  delete: (id) => endpoint(`/api/scenes/${safeId(id)}`),
+  forUniverse: (universeId) => endpoint(`/api/scenes/universe/${safeId(universeId)}`),
+  byUniverse: (universeId) => endpoint(`/api/scenes/universe/${safeId(universeId)}`),
+  reorder: endpoint('/api/scenes/reorder/'),
+  characters: (id) => endpoint(`/api/scenes/${safeId(id)}/characters/`),
+  notes: (id) => endpoint(`/api/scenes/${safeId(id)}/notes/`),
+  settings: (id) => endpoint(`/api/scenes/${safeId(id)}/settings/`),
 };
 
 /**

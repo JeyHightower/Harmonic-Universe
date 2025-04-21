@@ -85,14 +85,6 @@ const SceneModal = ({
 
   // Load scene data if we have a sceneId but no initialData
   useEffect(() => {
-    // First, check if we already have initialData and set it immediately
-    if (initialData) {
-      console.log('SceneModal - Using provided initialData, skipping fetch entirely:', initialData);
-      setScene(initialData);
-      return; // Exit early if initialData is provided
-    }
-
-    // Only proceed with API fetch if we have a sceneId and no initialData
     if (
       formattedSceneId &&
       !initialData &&
@@ -166,7 +158,7 @@ const SceneModal = ({
       setError(null);
 
       // Import only the thunks but use the component-level dispatch
-      const { createScene, updateScene } = await import('../../../store/thunks/consolidated/scenesThunks');
+      const { createSceneAndRefresh, updateSceneAndRefresh } = await import('../../../store/thunks/consolidated/scenesThunks');
 
       // Determine whether to create or update based on mode
       if (actualMode === 'create') {
@@ -175,10 +167,10 @@ const SceneModal = ({
         // Add universe_id to form data if not present
         const sceneData = { ...formData, universe_id: universeId };
 
-        // Dispatch create action
-        const resultAction = await dispatch(createScene(sceneData));
+        // Dispatch create action with automatic refresh
+        const resultAction = await dispatch(createSceneAndRefresh(sceneData));
 
-        if (createScene.fulfilled.match(resultAction)) {
+        if (createSceneAndRefresh.fulfilled.match(resultAction)) {
           console.log('SceneModal - Scene created successfully:', resultAction.payload);
           // Call onSuccess callback if provided
           if (onSuccess) onSuccess(resultAction.payload);
@@ -190,10 +182,13 @@ const SceneModal = ({
         console.log('SceneModal - Updating scene with ID:', formattedSceneId);
         console.log('SceneModal - Update data:', formData);
 
-        // Dispatch update action
-        const resultAction = await dispatch(updateScene({ id: formattedSceneId, ...formData }));
+        // Dispatch update action with automatic refresh
+        const resultAction = await dispatch(updateSceneAndRefresh({
+          sceneId: formattedSceneId,
+          sceneData: { id: formattedSceneId, ...formData }
+        }));
 
-        if (updateScene.fulfilled.match(resultAction)) {
+        if (updateSceneAndRefresh.fulfilled.match(resultAction)) {
           console.log('SceneModal - Scene updated successfully:', resultAction.payload);
           // Call onSuccess callback if provided
           if (onSuccess) onSuccess(resultAction.payload);
@@ -219,12 +214,15 @@ const SceneModal = ({
       console.log('SceneModal - Deleting scene with ID:', formattedSceneId);
 
       // Import only the thunk but use the component-level dispatch
-      const { deleteScene } = await import('../../../store/thunks/consolidated/scenesThunks');
+      const { deleteSceneAndRefresh } = await import('../../../store/thunks/consolidated/scenesThunks');
 
-      // Dispatch delete action
-      const resultAction = await dispatch(deleteScene(formattedSceneId));
+      // Dispatch delete action with automatic refresh
+      const resultAction = await dispatch(deleteSceneAndRefresh({
+        sceneId: formattedSceneId,
+        universeId: universeId
+      }));
 
-      if (deleteScene.fulfilled.match(resultAction)) {
+      if (deleteSceneAndRefresh.fulfilled.match(resultAction)) {
         console.log('SceneModal - Scene deleted successfully:', resultAction.payload);
         // Call onSuccess callback if provided
         if (onSuccess) onSuccess(resultAction.payload);

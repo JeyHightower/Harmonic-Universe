@@ -28,7 +28,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { SceneModal } from '..';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { safeId } from '../../../services/endpoints.mjs';
-import { deleteScene, fetchScenes } from '../../../store/thunks/consolidated/scenesThunks';
+import {
+  deleteSceneAndRefresh,
+  fetchScenes,
+} from '../../../store/thunks/consolidated/scenesThunks';
 
 // Create a wrapper component that handles redirection logic
 const ScenesPageWrapper = () => {
@@ -561,12 +564,14 @@ const ScenesPageContent = ({ universeId }) => {
   const handleDeleteScene = async (sceneId) => {
     if (window.confirm('Are you sure you want to delete this scene?')) {
       try {
-        // Use the Redux thunk instead of directly calling the API
-        await dispatch(deleteScene(sceneId)).unwrap();
+        // Use the Redux thunk with correct endpoint and with refresh
+        await dispatch(
+          deleteSceneAndRefresh({
+            sceneId,
+            universeId: safeUniverseId,
+          })
+        ).unwrap();
         console.log(`Scene ${sceneId} deleted successfully`);
-
-        // Refresh the scenes list for this universe
-        dispatch(fetchScenes(safeUniverseId));
       } catch (error) {
         console.error('Error deleting scene:', error);
         setError('Failed to delete scene. Please try again.');

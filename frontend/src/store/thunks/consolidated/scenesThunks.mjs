@@ -119,6 +119,7 @@ export const fetchScenes = createAsyncThunk(
       let endpointUsed = '';
 
       try {
+        // Using corrected endpoint: http://localhost:5001/api/scenes/universe/{universe_id}
         console.log(`[${timestamp}] REDUX-THUNK: Trying primary endpoint getScenesByUniverse`);
         response = await sceneService.getScenesByUniverse(numericUniverseId);
         console.log(`[${timestamp}] REDUX-THUNK: getScenesByUniverse response:`, response);
@@ -204,6 +205,7 @@ export const fetchSceneById = createAsyncThunk(
 
       console.log(`fetchSceneById - Fetching scene with ID: ${formattedSceneId}`);
 
+      // Using corrected endpoint: http://localhost:5001/api/scenes/{scene_id}
       const response = await sceneService.getSceneById(formattedSceneId);
       console.log('fetchSceneById - Response:', response);
 
@@ -330,7 +332,7 @@ export const createScene = createAsyncThunk(
       // Log the formatted data before sending to the API
       console.log('THUNK createScene: Sending formatted data to API:', formattedData);
 
-      // Call the API to create the scene
+      // Using correct endpoint: http://localhost:5001/api/scenes/
       const response = await sceneService.createScene(formattedData);
       console.log('THUNK createScene: Received API response:', response);
 
@@ -465,6 +467,7 @@ export const updateScene = createAsyncThunk(
 
       console.log(`updateScene - Updating scene with ID: ${formattedSceneId}`, formattedSceneData);
 
+      // Using correct endpoint: http://localhost:5001/api/scenes/{scene_id}
       const response = await sceneService.updateScene(formattedSceneId, formattedSceneData);
       console.log('updateScene - Response:', response);
 
@@ -511,6 +514,7 @@ export const deleteScene = createAsyncThunk(
 
       console.log(`deleteScene - Deleting scene with ID: ${formattedSceneId}`);
 
+      // Using correct endpoint: http://localhost:5001/api/scenes/{scene_id}
       const response = await sceneService.deleteScene(formattedSceneId);
       console.log('deleteScene - Response:', response);
 
@@ -530,7 +534,7 @@ export const deleteScene = createAsyncThunk(
         // Try different methods/endpoints
         let backupResponse;
         try {
-          backupResponse = await sceneService.deleteScene(`/scenes/${formattedSceneId}`);
+          backupResponse = await sceneService.deleteScene(`/api/scenes/${formattedSceneId}`);
         } catch (err) {
           backupResponse = await sceneService.deleteScene(`/api/scenes/${formattedSceneId}`);
         }

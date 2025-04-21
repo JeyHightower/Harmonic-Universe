@@ -1,32 +1,31 @@
 import {
-  ArrowBack as ArrowBackIcon,
-  CalendarToday as CalendarIcon,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  Info as InfoIcon,
-  Update as UpdateIcon,
+    ArrowBack as ArrowBackIcon,
+    CalendarToday as CalendarIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    Info as InfoIcon,
+    Update as UpdateIcon,
 } from '@mui/icons-material';
 import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-  Paper,
-  Typography,
+    Alert,
+    Box,
+    Button,
+    Chip,
+    CircularProgress,
+    Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Grid,
+    Paper,
+    Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import apiClient from '../../../services/api.adapter';
-import { deleteScene, fetchSceneById } from '../../../store/thunks/consolidated/scenesThunks';
+import { deleteSceneAndRefresh, fetchSceneById, updateSceneAndRefresh } from '../../../store/thunks/consolidated/scenesThunks';
 import { formatDate } from '../../../utils';
 import '../styles/SceneDetail.css';
 import SceneForm from './SceneForm';
@@ -150,11 +149,17 @@ const SceneDetail = ({ isEdit = false }) => {
   const handleDelete = async () => {
     try {
       console.log('Deleting scene with ID:', sceneId);
-      await dispatch(deleteScene(sceneId));
 
-      // Determine where to navigate after deletion
+      // Determine universe ID for navigation after deletion
       const targetUniverseId = universeId || scene?.universe_id;
 
+      // Use the enhanced thunk with automatic refresh
+      await dispatch(deleteSceneAndRefresh({
+        sceneId,
+        universeId: targetUniverseId
+      })).unwrap();
+
+      // Navigate after successful deletion
       if (targetUniverseId) {
         navigate(`/universes/${targetUniverseId}/scenes`);
       } else {
@@ -472,54 +477,31 @@ const SceneDetail = ({ isEdit = false }) => {
                     formattedValues.universe_id = scene.universe_id;
                   }
 
-                  // Make the update API call
+                  // Use Redux thunk to update the scene with automatic refresh
                   console.log(
-                    'SceneDetail - Calling updateScene API with:',
+                    'SceneDetail - Calling updateSceneAndRefresh with:',
                     sceneId,
                     formattedValues
                   );
-                  const response = await apiClient.scenes.updateScene(sceneId, formattedValues);
-                  console.log('SceneDetail - Update response:', response);
 
-                  // Process the response to get the result
-                  let result;
-                  if (response.data?.scene) {
-                    result = response.data.scene;
-                  } else if (response.data) {
-                    result = response.data;
-                  } else {
-                    console.warn('SceneDetail - Unexpected API response format:', response);
-                    result = response;
-                  }
+                  await dispatch(updateSceneAndRefresh({
+                    sceneId,
+                    sceneData: {
+                      id: sceneId,
+                      ...formattedValues
+                    }
+                  })).unwrap();
 
                   // Success! Close the form and refresh the data
                   handleCloseEditForm();
 
                   // Refresh scene data
                   dispatch(fetchSceneById(sceneId));
-
-                  // If we came from the edit route, navigate back to detail
-                  if (isEdit) {
-                    navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);
-                  }
-
-                  return result; // Return the result to the SceneForm
                 } catch (error) {
                   console.error('SceneDetail - Error updating scene:', error);
-                  console.error(
-                    'SceneDetail - Error details:',
-                    error.response?.data || error.message
-                  );
-                  throw error; // Re-throw to let SceneForm handle the error
                 }
               }}
-              onCancel={() => {
-                handleCloseEditForm();
-                // If we came from the edit route, navigate back to detail
-                if (isEdit) {
-                  navigate(`/universes/${scene.universe_id}/scenes/${sceneId}`);
-                }
-              }}
+              onCancel={handleCloseEditForm}
             />
           </DialogContent>
         </Dialog>
