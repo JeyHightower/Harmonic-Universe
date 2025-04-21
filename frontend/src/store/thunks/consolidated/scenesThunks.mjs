@@ -666,3 +666,102 @@ export const deleteSceneLocally = (sceneId) => async (dispatch, _getState) => {
     return { success: false, error };
   }
 };
+
+/**
+ * Create a new scene and ensure UI is updated
+ */
+export const createSceneAndRefresh = createAsyncThunk(
+  'scenes/createSceneAndRefresh',
+  async (sceneData, { dispatch, rejectWithValue }) => {
+    try {
+      console.log('THUNK createSceneAndRefresh: Called with data:', sceneData);
+
+      // First create the scene
+      const createResult = await dispatch(createScene(sceneData)).unwrap();
+      console.log('THUNK createSceneAndRefresh: Scene created successfully:', createResult);
+
+      // Extract universe_id to refresh the scenes list
+      const universeId = sceneData.universe_id || sceneData.universeId;
+
+      if (!universeId) {
+        console.warn('THUNK createSceneAndRefresh: No universe_id found in scene data, cannot refresh');
+        return createResult;
+      }
+
+      // Immediately refresh the scenes list to update the UI
+      console.log(`THUNK createSceneAndRefresh: Refreshing scenes for universe ${universeId}`);
+      await dispatch(fetchScenesForUniverse(universeId)).unwrap();
+
+      return createResult;
+    } catch (error) {
+      console.error('THUNK createSceneAndRefresh: Error:', error);
+      return rejectWithValue(handleError(error));
+    }
+  }
+);
+
+/**
+ * Update an existing scene and ensure UI is updated
+ */
+export const updateSceneAndRefresh = createAsyncThunk(
+  'scenes/updateSceneAndRefresh',
+  async ({ sceneId, sceneData }, { dispatch, rejectWithValue }) => {
+    try {
+      console.log('THUNK updateSceneAndRefresh: Called with data:', { sceneId, sceneData });
+
+      // First update the scene
+      const updateResult = await dispatch(updateScene(sceneData)).unwrap();
+      console.log('THUNK updateSceneAndRefresh: Scene updated successfully:', updateResult);
+
+      // Extract universe_id to refresh the scenes list
+      const universeId = sceneData.universe_id || sceneData.universeId;
+
+      if (!universeId) {
+        console.warn('THUNK updateSceneAndRefresh: No universe_id found in scene data, cannot refresh');
+        return updateResult;
+      }
+
+      // Immediately refresh the scenes list to update the UI
+      console.log(`THUNK updateSceneAndRefresh: Refreshing scenes for universe ${universeId}`);
+      await dispatch(fetchScenesForUniverse(universeId)).unwrap();
+
+      return updateResult;
+    } catch (error) {
+      console.error('THUNK updateSceneAndRefresh: Error:', error);
+      return rejectWithValue(handleError(error));
+    }
+  }
+);
+
+/**
+ * Delete a scene and ensure UI is updated
+ */
+export const deleteSceneAndRefresh = createAsyncThunk(
+  'scenes/deleteSceneAndRefresh',
+  async ({ sceneId, universeId }, { dispatch, rejectWithValue }) => {
+    try {
+      console.log('THUNK deleteSceneAndRefresh: Called with data:', { sceneId, universeId });
+
+      // First delete the scene
+      const deleteResult = await dispatch(deleteScene(sceneId)).unwrap();
+      console.log('THUNK deleteSceneAndRefresh: Scene deleted successfully:', deleteResult);
+
+      // If we don't have a universe ID in the parameters, try to get it from the response
+      const effectiveUniverseId = universeId || deleteResult.universe_id;
+
+      if (!effectiveUniverseId) {
+        console.warn('THUNK deleteSceneAndRefresh: No universe_id found, cannot refresh');
+        return deleteResult;
+      }
+
+      // Immediately refresh the scenes list to update the UI
+      console.log(`THUNK deleteSceneAndRefresh: Refreshing scenes for universe ${effectiveUniverseId}`);
+      await dispatch(fetchScenesForUniverse(effectiveUniverseId)).unwrap();
+
+      return deleteResult;
+    } catch (error) {
+      console.error('THUNK deleteSceneAndRefresh: Error:', error);
+      return rejectWithValue(handleError(error));
+    }
+  }
+);

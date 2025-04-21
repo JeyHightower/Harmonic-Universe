@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogTitle } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import SceneViewer from '../components/SceneViewer';
 import SceneForm from '../pages/SceneForm';
@@ -51,10 +51,30 @@ const SceneModal = ({
     }
   };
 
+  // Ensure sceneId is properly formatted (string or number, not an object)
+  const formattedSceneId = useMemo(() => {
+    if (sceneId === null || sceneId === undefined) {
+      return null;
+    }
+
+    // If sceneId is already a string or number, use it directly
+    if (typeof sceneId === 'string' || typeof sceneId === 'number') {
+      return sceneId;
+    }
+
+    // If sceneId is an object (likely a scene object), extract the id property
+    if (typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId) {
+      return sceneId.id;
+    }
+
+    console.error('Invalid sceneId provided to SceneModal:', sceneId);
+    return null;
+  }, [sceneId]);
+
   // Load scene data if we have a sceneId but no initialData
   useEffect(() => {
     if (
-      sceneId &&
+      formattedSceneId &&
       !initialData &&
       (actualMode === 'edit' || actualMode === 'view' || actualMode === 'delete')
     ) {
@@ -63,10 +83,10 @@ const SceneModal = ({
           setLoading(true);
           setError(null);
 
-          console.log(`SceneModal - Loading scene data for ID: ${sceneId}`);
+          console.log(`SceneModal - Loading scene data for ID: ${formattedSceneId}`);
 
           // First attempt with direct API call
-          const response = await apiClient.scenes.getSceneById(sceneId);
+          const response = await apiClient.scenes.getSceneById(formattedSceneId);
           console.log('SceneModal - Scene data response:', response);
 
           // Handle different response formats
@@ -91,7 +111,7 @@ const SceneModal = ({
           // Try a backup method if the first one fails
           try {
             console.log('SceneModal - Attempting backup method to fetch scene data');
-            const backupResponse = await apiClient.get(`/scenes/${sceneId}/`);
+            const backupResponse = await apiClient.get(`/scenes/${formattedSceneId}/`);
 
             if (backupResponse.data?.scene) {
               console.log(
@@ -116,7 +136,7 @@ const SceneModal = ({
       console.log('SceneModal - Using provided initialData:', initialData);
       setScene(initialData);
     }
-  }, [sceneId, initialData, actualMode]);
+  }, [formattedSceneId, initialData, actualMode]);
 
   // Handle form submission for create/edit modes
   const handleSubmit = async (action, formData) => {
@@ -186,7 +206,7 @@ const SceneModal = ({
       } else if (action === 'update' || actualMode === 'edit') {
         // Update the scene using the API
         console.log('SceneModal - Updating scene with data:', dataWithUniverseId);
-        const response = await apiClient.scenes.updateScene(sceneId, dataWithUniverseId);
+        const response = await apiClient.scenes.updateScene(formattedSceneId, dataWithUniverseId);
         console.log('SceneModal - Update scene response:', response);
         result = response.data?.scene || response.data;
       }
@@ -223,11 +243,11 @@ const SceneModal = ({
       setLoading(true);
       setError(null);
 
-      await apiClient.scenes.deleteScene(sceneId);
+      await apiClient.scenes.deleteScene(formattedSceneId);
 
       // Call success callback if provided
       if (onSuccess) {
-        onSuccess({ id: sceneId, deleted: true });
+        onSuccess({ id: formattedSceneId, deleted: true });
       }
 
       // Close the modal
@@ -270,7 +290,7 @@ const SceneModal = ({
         return (
           <SceneForm
             universeId={universeId}
-            sceneId={sceneId}
+            sceneId={formattedSceneId}
             initialData={scene || initialData}
             onSubmit={handleSubmit}
             onCancel={onClose}
@@ -313,8 +333,8 @@ SceneModal.propTypes = {
   isOpen: PropTypes.bool,
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
-  universeId: PropTypes.string,
-  sceneId: PropTypes.string,
+  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  sceneId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   initialData: PropTypes.object,
   // Support both modalType and mode props
   modalType: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),

@@ -4,7 +4,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { UniverseDeleteModal, UniverseModal } from '../';
 import Button from '../../../components/common/Button';
 import {
-    deleteScene,
+    createSceneAndRefresh,
+    deleteSceneAndRefresh,
     fetchScenesForUniverse,
 } from '../../../store/thunks/consolidated/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
@@ -29,6 +30,10 @@ const UniverseDetail = () => {
   // Add state for scene editing
   const [isEditSceneModalOpen, setIsEditSceneModalOpen] = useState(false);
   const [sceneToEdit, setSceneToEdit] = useState(null);
+
+  // Add state for scene viewing
+  const [isViewSceneModalOpen, setIsViewSceneModalOpen] = useState(false);
+  const [sceneToView, setSceneToView] = useState(null);
 
   // Fetch universe data when component mounts or id changes
   useEffect(() => {
@@ -81,23 +86,45 @@ const UniverseDetail = () => {
     setIsCreateSceneModalOpen(true);
   };
 
-  const handleCreateSceneSuccess = () => {
+  const handleCreateSceneSuccess = (newScene) => {
     setIsCreateSceneModalOpen(false);
-    dispatch(fetchScenesForUniverse(id));
+    // Dispatch action to create scene using Redux with auto-refresh
+    dispatch(createSceneAndRefresh({
+      ...newScene,
+      universe_id: id
+    }));
   };
 
   const handleEditScene = (scene) => {
-    // Open modal for editing instead of navigating
+    // Open modal for editing, only pass the scene ID
     console.log(`Opening edit modal for scene ${scene.id} in universe ${id}`);
-    setSceneToEdit(scene);
+    setSceneToEdit(scene.id);
     setIsEditSceneModalOpen(true);
   };
 
-  const handleEditSceneSuccess = () => {
+  const handleViewScene = (scene) => {
+    // Open modal for viewing, only pass the scene ID
+    console.log(`Opening view modal for scene ${scene.id} in universe ${id}`);
+    setSceneToView(scene.id);
+    setIsViewSceneModalOpen(true);
+  };
+
+  const handleEditSceneSuccess = (editedScene) => {
     setIsEditSceneModalOpen(false);
     setSceneToEdit(null);
-    // Refresh scenes data
+
+    // Make sure we refresh the scenes data from the server
+    if (editedScene) {
+      console.log('Scene edited successfully, refreshing scenes list for universe:', id);
+    }
+
+    // Always refresh to ensure we have the latest data
     dispatch(fetchScenesForUniverse(id));
+  };
+
+  const handleViewSceneClose = () => {
+    setIsViewSceneModalOpen(false);
+    setSceneToView(null);
   };
 
   const handleEditSceneClose = () => {
@@ -111,13 +138,12 @@ const UniverseDetail = () => {
         `Are you sure you want to delete "${scene.title || scene.name}"? This cannot be undone.`
       )
     ) {
-      dispatch(deleteScene(scene.id))
-        .then(() => {
-          dispatch(fetchScenesForUniverse(id));
-        })
-        .catch((error) => {
-          console.error('Error deleting scene:', error);
-        });
+      dispatch(deleteSceneAndRefresh({
+        sceneId: scene.id,
+        universeId: id
+      })).catch((error) => {
+        console.error('Error deleting scene:', error);
+      });
     }
   };
 
@@ -130,8 +156,8 @@ const UniverseDetail = () => {
     }
   };
 
-  // Filter scenes for this universe
-  const universeScenes = scenes.filter(
+  // Filter scenes for this universe using Redux store
+  const filteredScenes = scenes.filter(
     (scene) => scene.universe_id === parseInt(id, 10) && !scene.is_deleted
   );
 
@@ -272,14 +298,15 @@ const UniverseDetail = () => {
                 <div className="spinner"></div>
                 <p>Loading scenes...</p>
               </div>
-            ) : universeScenes.length > 0 ? (
+            ) : filteredScenes.length > 0 ? (
               <div className="scene-grid">
-                {universeScenes.map((scene) => (
+                {filteredScenes.map((scene) => (
                   <SceneCard
                     key={scene.id}
                     scene={scene}
                     onEdit={handleEditScene}
                     onDelete={handleDeleteScene}
+                    onView={handleViewScene}
                   />
                 ))}
               </div>
@@ -344,11 +371,21 @@ const UniverseDetail = () => {
       {isEditSceneModalOpen && sceneToEdit && (
         <SceneModal
           isOpen={isEditSceneModalOpen}
-          onClose={() => setIsEditSceneModalOpen(false)}
+          onClose={handleEditSceneClose}
           onSuccess={handleEditSceneSuccess}
           universeId={id}
           sceneId={sceneToEdit}
           mode="edit"
+        />
+      )}
+
+      {isViewSceneModalOpen && sceneToView && (
+        <SceneModal
+          isOpen={isViewSceneModalOpen}
+          onClose={handleViewSceneClose}
+          universeId={id}
+          sceneId={sceneToView}
+          mode="view"
         />
       )}
     </div>

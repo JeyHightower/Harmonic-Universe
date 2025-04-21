@@ -49,6 +49,18 @@ export const safeId = (id) => {
     return null;
   }
 
+  // Handle case where an object is passed instead of an ID (common error)
+  if (typeof id === 'object' && id !== null) {
+    // If the object has an 'id' property, use that
+    if ('id' in id) {
+      console.warn('Object passed instead of ID, extracting id property:', id);
+      return safeId(id.id); // Recursively process the extracted ID
+    }
+
+    console.error('Invalid object passed as ID without id property:', id);
+    return null;
+  }
+
   // If it's already a number, return it directly
   if (typeof id === 'number' && !isNaN(id) && id > 0) {
     return id;

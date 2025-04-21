@@ -1,21 +1,21 @@
 import { ArrowLeftOutlined, SaveOutlined, WarningOutlined } from '@ant-design/icons';
 import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  DatePicker,
-  Divider,
-  Form,
-  Input,
-  Radio,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Typography,
-  message,
-  notification,
+    Alert,
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Divider,
+    Form,
+    Input,
+    Radio,
+    Row,
+    Select,
+    Space,
+    Spin,
+    Typography,
+    message,
+    notification,
 } from 'antd';
 import dayjs from 'dayjs';
 import moment from 'moment';
@@ -127,7 +127,7 @@ const SceneForm = ({
 
   // Load scene data if we have a sceneId but no initialData
   useEffect(() => {
-    if (sceneId && !initialData) {
+    if (sceneId && !initialData && !initialValues) {
       const loadSceneData = async () => {
         try {
           console.log('SceneForm - Loading scene data for scene:', sceneId);
@@ -174,7 +174,7 @@ const SceneForm = ({
 
       loadSceneData();
     }
-  }, [sceneId, initialData, form, universeId]);
+  }, [sceneId, initialData, form, universeId, initialValues]);
 
   // Load characters for the universe
   useEffect(() => {
@@ -611,11 +611,11 @@ const SceneForm = ({
 };
 
 SceneForm.propTypes = {
-  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   sceneId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   initialData: PropTypes.object,
-  onSubmit: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func,
+  onCancel: PropTypes.func,
   readOnly: PropTypes.bool,
   registerSubmit: PropTypes.func,
   initialValues: PropTypes.object,
