@@ -274,24 +274,10 @@ export const fetchSceneById = createAsyncThunk(
  */
 export const createScene = createAsyncThunk(
   'scenes/createScene',
-  async (sceneData, { dispatch, rejectWithValue, getState }) => {
+  async (sceneData, { rejectWithValue, getState, dispatch }) => {
     try {
-      // Add timestamp to help track multiple calls
       const timestamp = new Date().toISOString();
       console.log(`THUNK createScene [${timestamp}]: Called with data:`, sceneData);
-
-      // Check if this function was already called in the last second (debounce effect)
-      // This helps prevent accidental duplicate scene creation
-      const state = getState();
-      const lastSceneCreation = state.scenes?.lastCreateAttempt || 0;
-      const now = Date.now();
-
-      if (now - lastSceneCreation < 1000) {
-        console.warn(`THUNK createScene [${timestamp}]: Potential duplicate call detected (${now - lastSceneCreation}ms after previous call)`);
-        dispatch({ type: 'scenes/updateCreateAttempt', payload: now });
-      } else {
-        dispatch({ type: 'scenes/updateCreateAttempt', payload: now });
-      }
 
       // Validate universe_id is present and valid
       let universeId = sceneData.universe_id || sceneData.universeId;

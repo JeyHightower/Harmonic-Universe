@@ -7,38 +7,6 @@ import { sceneEndpoints } from './endpoints';
 import { httpClient } from './http-client';
 import { responseHandler } from './response-handler';
 
-// Create a cache of recent scene creation attempts to prevent duplicates
-const recentSceneCreations = new Map();
-
-// Time window for preventing duplicate scene creations (in milliseconds)
-const DEDUPLICATION_WINDOW = 3000; // 3 seconds
-
-/**
- * Clear expired entries from the scene creation cache
- */
-const cleanupCache = () => {
-  const now = Date.now();
-  for (const [key, timestamp] of recentSceneCreations.entries()) {
-    if (now - timestamp > DEDUPLICATION_WINDOW) {
-      recentSceneCreations.delete(key);
-    }
-  }
-};
-
-// Run cleanup every minute to prevent memory leaks
-setInterval(cleanupCache, 60000);
-
-/**
- * Generate a cache key for scene data to detect duplicates
- * @param {Object} sceneData - The scene data
- * @returns {string} - A cache key based on the scene's critical properties
- */
-const getSceneCacheKey = (sceneData) => {
-  // Extract critical properties for detecting duplicates
-  const { name, universe_id, description } = sceneData;
-  return `${universe_id}:${name}:${description ? description.substring(0, 20) : ''}:${Date.now()}`;
-};
-
 /**
  * Get all scenes
  * @returns {Promise<object>} - List of all scenes
@@ -311,7 +279,7 @@ export const createScene = async (param1, param2) => {
     // Validate that name is present and not empty
     if (!sceneData.name || sceneData.name.trim() === '') {
       console.error('scenes', 'Missing or empty name in scene data');
-      return responseHandler.handleError(new Error('Scene name is required'));
+      return responseHandler.handleError(new Error('Scene data is missing or the name is empty'));
     }
 
     // Ensure universe_id is set
@@ -324,16 +292,6 @@ export const createScene = async (param1, param2) => {
         return responseHandler.handleError(new Error('Universe ID is required for scene creation'));
       }
     }
-
-    // Check if this is a duplicate scene creation attempt
-    const cacheKey = getSceneCacheKey(sceneData);
-    if (recentSceneCreations.has(cacheKey)) {
-      console.warn('scenes', 'Detected duplicate scene creation attempt, returning cached response');
-      return responseHandler.handleError(new Error('Duplicate scene creation attempt detected - please wait before trying again'));
-    }
-
-    // Mark this scene creation as in-progress
-    recentSceneCreations.set(cacheKey, Date.now());
 
     // Ensure the universe_id is a number
     if (typeof sceneData.universe_id === 'string') {

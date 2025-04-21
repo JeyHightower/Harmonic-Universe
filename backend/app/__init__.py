@@ -153,6 +153,9 @@ def setup_cors(app):
                 response.headers.add('Access-Control-Allow-Origin', origin)
                 response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
                 response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+                # Ensure only one 'Access-Control-Allow-Credentials' header is set
+                if 'Access-Control-Allow-Credentials' in response.headers:
+                    del response.headers['Access-Control-Allow-Credentials']
                 response.headers.add('Access-Control-Allow-Credentials', 'true')
                 response.headers.add('Access-Control-Max-Age', '86400')
                 response.status_code = 200
