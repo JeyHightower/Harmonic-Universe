@@ -26,6 +26,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SceneModal } from '..';
 import { apiClient } from '../../../services/api.adapter.mjs';
+import { safeId } from '../../../services/endpoints.mjs';
 import { deleteScene, fetchScenes } from '../../../store/thunks/consolidated/scenesThunks';
 
 // Create a wrapper component that handles redirection logic
@@ -48,25 +49,33 @@ const ScenesPageWrapper = () => {
       return;
     }
 
-    // Comprehensive validation check for universeId
-    const isValidUniverseId =
-      universeId !== undefined &&
-      universeId !== null &&
-      universeId !== 'undefined' &&
-      universeId !== 'null' &&
-      universeId !== '' &&
-      !isNaN(parseInt(universeId, 10)) &&
-      parseInt(universeId, 10) > 0;
+    // Comprehensive validation check for universeId using safeId utility
+    try {
+      const safeUniverseId = safeId(universeId);
 
-    console.log('ScenesPageWrapper: isValidUniverseId =', isValidUniverseId);
+      // Check if safeId returned the invalid-id string or if it's not a positive number
+      const isValidUniverseId =
+        safeUniverseId !== 'invalid-id' && typeof safeUniverseId === 'number' && safeUniverseId > 0;
 
-    if (!isValidUniverseId) {
-      console.log(`Invalid universe ID detected (${universeId}), redirecting to dashboard`);
+      console.log(
+        'ScenesPageWrapper: safeUniverseId =',
+        safeUniverseId,
+        'isValidUniverseId =',
+        isValidUniverseId
+      );
+
+      if (!isValidUniverseId) {
+        console.log(`Invalid universe ID detected (${universeId}), redirecting to dashboard`);
+        navigate('/dashboard', { replace: true });
+        return;
+      } else {
+        setIsValidating(false);
+        // Store the validated ID to prevent re-validation
+        setValidatedId(universeId);
+      }
+    } catch (error) {
+      console.error('Error validating universe ID:', error);
       navigate('/dashboard', { replace: true });
-    } else {
-      setIsValidating(false);
-      // Store the validated ID to prevent re-validation
-      setValidatedId(universeId);
     }
   }, [universeId, navigate, validatedId]);
 
@@ -87,6 +96,22 @@ const ScenesPageWrapper = () => {
   const parsedUniverseId = parseInt(universeId, 10);
   console.log(`ScenesPageWrapper: Rendering for valid universe ID: ${parsedUniverseId}`);
 
+  // Extra safety check - if somehow we still have an invalid ID after all the validations,
+  // don't render the component
+  if (isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
+    console.error(
+      'ScenesPageWrapper: Unexpected invalid universe ID after validation:',
+      universeId
+    );
+    return (
+      <Box display="flex" justifyContent="center" my={6}>
+        <Typography variant="body1" color="error">
+          Invalid universe ID. Redirecting to dashboard...
+        </Typography>
+      </Box>
+    );
+  }
+
   // If universeId is valid, render the main component
   return <ScenesPageContent universeId={parsedUniverseId} />;
 };
@@ -100,28 +125,59 @@ const ScenesPageContent = ({ universeId }) => {
   console.log('ScenesPageContent props:', { universeId, type: typeof universeId });
 
   // Double-check universeId is valid, even after wrapper validation
-  const safeUniverseId = universeId && !isNaN(universeId) && universeId > 0 ? universeId : null;
+  // Make this a separate effect to ensure it runs on component mount
+  const [safeUniverseId, setSafeUniverseId] = useState(null);
 
-  // Store the universe ID in localStorage for recovery
+  // Initialize safeUniverseId
   useEffect(() => {
-    if (safeUniverseId) {
-      localStorage.setItem('lastViewedUniverseId', safeUniverseId.toString());
-    }
-  }, [safeUniverseId]);
+    try {
+      // Use the safeId utility to validate and normalize the universeId
+      const validatedId = safeId(universeId);
 
-  // Add more debug logging
-  console.log('Calculated safeUniverseId:', safeUniverseId);
-  console.log('Type of safeUniverseId:', typeof safeUniverseId);
+      // Check if the ID is valid (not 'invalid-id' string and is a positive number)
+      const isValid =
+        validatedId !== 'invalid-id' && typeof validatedId === 'number' && validatedId > 0;
+
+      if (isValid) {
+        console.log('ScenesPageContent: Valid universeId detected:', validatedId);
+        setSafeUniverseId(validatedId);
+
+        // Store the universe ID in localStorage for recovery
+        localStorage.setItem('lastViewedUniverseId', validatedId.toString());
+      } else {
+        console.error('ScenesPageContent: Invalid universeId detected:', universeId);
+        setSafeUniverseId(null);
+        // Will trigger the redirect in the fetchData effect
+      }
+    } catch (error) {
+      console.error('Error processing universe ID:', error);
+      setSafeUniverseId(null);
+    }
+  }, [universeId]);
+
+  // Add more debug logging for the safe ID
+  useEffect(() => {
+    console.log('ScenesPageContent: safeUniverseId updated to:', safeUniverseId);
+    console.log('Type of safeUniverseId:', typeof safeUniverseId);
+  }, [safeUniverseId]);
 
   // Get scenes from Redux store
   const scenesFromStore = useSelector((state) => state.scenes?.scenes || []);
-  const universeScenes = useSelector((state) => {
-    const scenes = state.scenes?.universeScenes?.[safeUniverseId] || [];
-    console.log(
-      `ScenesPage - Found ${scenes.length} scenes for universe ${safeUniverseId} in universeScenes collection`
-    );
-    return scenes;
-  });
+
+  // Memoized selector function for universe scenes
+  const memoizedUniverseSceneSelector = useMemo(() => {
+    return (state) => {
+      const scenes = state.scenes?.universeScenes?.[safeUniverseId] || [];
+      console.log(
+        `ScenesPage - Found ${scenes.length} scenes for universe ${safeUniverseId} in universeScenes collection`
+      );
+      return scenes;
+    };
+  }, [safeUniverseId]);
+
+  // Use the memoized selector
+  const universeScenes = useSelector(memoizedUniverseSceneSelector);
+
   const loadingFromStore = useSelector((state) => state.scenes?.loading);
   const errorFromStore = useSelector((state) => state.scenes?.error);
 
@@ -166,7 +222,7 @@ const ScenesPageContent = ({ universeId }) => {
 
   useEffect(() => {
     // Early return to prevent any API calls if universeId is invalid or null
-    if (!safeUniverseId) {
+    if (safeUniverseId === null || safeUniverseId === undefined) {
       console.warn(`Invalid universeId for API calls: ${universeId}, skipping data fetch`);
       setLoading(false);
       setError('Invalid universe ID. Redirecting to dashboard.');
@@ -276,8 +332,11 @@ const ScenesPageContent = ({ universeId }) => {
       }
     };
 
-    fetchData();
-  }, [dispatch, navigate, safeUniverseId, universeId]);
+    // Only fetch data if safeUniverseId is valid
+    if (safeUniverseId) {
+      fetchData();
+    }
+  }, [dispatch, navigate, safeUniverseId, scenes.length, universeId]);
 
   const handleCreateScene = () => {
     console.log('ScenesPage - Opening create scene modal with universeId:', safeUniverseId);
@@ -361,358 +420,211 @@ const ScenesPageContent = ({ universeId }) => {
     setSortDirection(newSortDirection);
   };
 
-  // Filter and sort scenes
-  const filteredScenes = useMemo(() => {
-    console.log('ScenesPage - Calculating filteredScenes, input length:', scenes.length);
+  // Handle scene modal success
+  const handleModalSuccess = (result) => {
+    console.log('ScenesPage - Scene modal success:', result);
 
-    // Debug scenes data to find potential issues
-    if (scenes.length > 0) {
-      const sampleScene = scenes[0];
-      console.log('ScenesPage - Sample scene structure:', {
-        id: sampleScene.id,
-        name: sampleScene.name || sampleScene.title,
-        universe_id: sampleScene.universe_id,
-        universeId: sampleScene.universeId,
-      });
-    }
-
-    let result = [...scenes]; // Create a copy to avoid mutation issues
-
-    // Filter scenes by universe ID if we have a valid ID
+    // Refresh scenes for this universe
     if (safeUniverseId) {
-      result = result.filter((scene) => {
-        // Get universe ID with support for different property names
-        const sceneUniverseId = scene.universe_id || scene.universeId;
-
-        // Convert both to strings to ensure consistent comparison
-        const sceneIdStr = String(sceneUniverseId || '');
-        const targetIdStr = String(safeUniverseId);
-
-        const isMatch = sceneIdStr === targetIdStr;
-
-        if (!isMatch) {
-          console.log(
-            `ScenesPage - Filtering out scene ${scene.id || 'unknown'} with universeId ${sceneUniverseId} (expecting ${safeUniverseId})`
-          );
-        } else {
-          // For matched scenes, ensure universe_id is consistently set
-          if (!scene.universe_id && scene.universeId) {
-            scene.universe_id = scene.universeId;
-          }
-        }
-
-        return isMatch;
-      });
-      console.log(`ScenesPage - After universe filtering: ${result.length} scenes`);
+      console.log('ScenesPage - Refreshing scenes for universe:', safeUniverseId);
+      dispatch(fetchScenes(safeUniverseId));
     }
+  };
 
-    // Filter out deleted scenes
-    result = result.filter((scene) => {
-      const isActive = scene && scene.is_deleted !== true;
-      if (!isActive) {
-        console.log(`ScenesPage - Filtering out deleted scene ${scene.id}`);
-      }
-      return isActive;
-    });
-    console.log(`ScenesPage - After deletion filtering: ${result.length} scenes`);
-
-    // Apply search filter if search term is present
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        (scene) =>
-          scene.name?.toLowerCase().includes(term) ||
-          scene.description?.toLowerCase().includes(term) ||
-          scene.content?.toLowerCase().includes(term) ||
-          scene.summary?.toLowerCase().includes(term) ||
-          scene.location?.toLowerCase().includes(term)
-      );
-      console.log(`ScenesPage - After search filtering: ${result.length} scenes`);
-    }
-
-    // Apply type filter if not set to "all"
-    if (typeFilter && typeFilter !== 'all') {
-      result = result.filter((scene) => scene.scene_type === typeFilter);
-      console.log(`ScenesPage - After type filtering: ${result.length} scenes`);
-    }
-
-    // Apply status filter if not set to "all"
-    if (statusFilter && statusFilter !== 'all') {
-      result = result.filter((scene) => scene.status === statusFilter);
-      console.log(`ScenesPage - After status filtering: ${result.length} scenes`);
-    }
-
-    // Apply sort
-    if (sortBy) {
-      result = [...result].sort((a, b) => {
-        if (sortBy === 'name') {
-          return sortDirection === 'asc'
-            ? (a.name || '').localeCompare(b.name || '')
-            : (b.name || '').localeCompare(a.name || '');
-        } else if (sortBy === 'date_of_scene') {
-          // Sorting by scene date
-          const aDate = a.date_of_scene ? new Date(a.date_of_scene) : new Date(0);
-          const bDate = b.date_of_scene ? new Date(b.date_of_scene) : new Date(0);
-          return sortDirection === 'asc' ? aDate - bDate : bDate - aDate;
-        } else if (sortBy === 'created_at') {
-          // Sorting by creation date
-          const aDate = a.created_at ? new Date(a.created_at) : new Date(0);
-          const bDate = b.created_at ? new Date(b.created_at) : new Date(0);
-          return sortDirection === 'asc' ? aDate - bDate : bDate - aDate;
-        } else if (sortBy === 'updated_at') {
-          // Sorting by update date
-          const aDate = a.updated_at ? new Date(a.updated_at) : new Date(0);
-          const bDate = b.updated_at ? new Date(b.updated_at) : new Date(0);
-          return sortDirection === 'asc' ? aDate - bDate : bDate - aDate;
-        } else if (sortBy === 'order') {
-          // Sorting by order field (numeric)
-          const aOrder = typeof a.order === 'number' ? a.order : 0;
-          const bOrder = typeof b.order === 'number' ? b.order : 0;
-          return sortDirection === 'asc' ? aOrder - bOrder : bOrder - aOrder;
-        }
-        return 0;
-      });
-      console.log(`ScenesPage - After sorting: ${result.length} scenes`);
-    }
-
-    console.log('ScenesPage - Final filtered scenes:', result);
-    return result;
-  }, [scenes, searchTerm, typeFilter, statusFilter, sortBy, sortDirection, safeUniverseId]);
-
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" my={6}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Alert severity="error" sx={{ mb: 4 }}>
-          {error}
-        </Alert>
-        <Button
-          variant="contained"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/dashboard')}
-        >
-          Back to Dashboard
-        </Button>
-      </Container>
-    );
-  }
-
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={handleBackToUniverse}
-            sx={{ mb: 2 }}
-          >
-            Back to Universe
-          </Button>
-          <Typography variant="h4" component="h1" gutterBottom>
-            {universe?.title || 'Universe'} Scenes
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {scenes.length} scenes loaded, {filteredScenes.length} shown after filtering
+  // Render UI
+  const renderScenesList = () => {
+    if (loading) {
+      return (
+        <Box display="flex" justifyContent="center" my={6}>
+          <CircularProgress />
+          <Typography variant="body1" sx={{ ml: 2 }}>
+            Loading scenes...
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleCreateScene}
-        >
-          Create Scene
-        </Button>
-      </Box>
+      );
+    }
 
-      <TextField
-        fullWidth
-        margin="normal"
-        placeholder="Search scenes..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
-        sx={{ mb: 4 }}
-      />
+    if (error) {
+      return (
+        <Alert severity="error" sx={{ my: 3 }}>
+          {error}
+        </Alert>
+      );
+    }
 
-      {filteredScenes.length === 0 ? (
-        <Box textAlign="center" my={6}>
+    if (scenes.length === 0) {
+      return (
+        <Box textAlign="center" my={4}>
           <Typography variant="h6" color="textSecondary" gutterBottom>
             No scenes found
           </Typography>
-          <Typography variant="body1" color="textSecondary">
-            {searchTerm
-              ? 'No scenes match your search criteria.'
-              : 'Start by creating your first scene!'}
+          <Typography variant="body1" color="textSecondary" paragraph>
+            Create your first scene to get started
           </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleCreateScene}
+          >
+            Create Scene
+          </Button>
         </Box>
-      ) : (
-        <Grid container spacing={3}>
-          {filteredScenes.map((scene) => (
-            <Grid item xs={12} sm={6} md={4} key={scene.id}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
-                    boxShadow: 3,
-                  },
-                }}
-              >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h5" component="h2" gutterBottom noWrap>
-                    {scene.title || scene.name || 'Untitled Scene'}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{
-                      mb: 2,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {scene.description || 'No description available'}
-                  </Typography>
-                </CardContent>
-                <CardActions>
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => handleViewScene(scene.id)}
-                    title="View Scene"
-                  >
-                    <ViewIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="secondary"
-                    onClick={() => handleEditScene(scene.id)}
-                    title="Edit Scene"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDeleteScene(scene.id)}
-                    title="Delete Scene"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+      );
+    }
 
-      {modalOpen && (
+    // Filter and sort scenes
+    const filteredScenes = useMemo(() => {
+      return scenes
+        .filter((scene) => {
+          // Filter by search term
+          const matchesSearch =
+            searchTerm === '' ||
+            scene.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            scene.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+          // Filter by type
+          const matchesType =
+            typeFilter === 'all' || (scene.scene_type && scene.scene_type === typeFilter);
+
+          // Filter by status
+          const matchesStatus =
+            statusFilter === 'all' || (scene.status && scene.status === statusFilter);
+
+          return matchesSearch && matchesType && matchesStatus;
+        })
+        .sort((a, b) => {
+          // Sort by selected field
+          let valueA, valueB;
+
+          switch (sortBy) {
+            case 'name':
+              valueA = a.name || '';
+              valueB = b.name || '';
+              break;
+            case 'created':
+              valueA = a.created_at || '';
+              valueB = b.created_at || '';
+              break;
+            case 'updated':
+              valueA = a.updated_at || '';
+              valueB = b.updated_at || '';
+              break;
+            default:
+              valueA = a.name || '';
+              valueB = b.name || '';
+          }
+
+          // Apply sort direction
+          if (sortDirection === 'asc') {
+            return valueA.localeCompare(valueB);
+          } else {
+            return valueB.localeCompare(valueA);
+          }
+        });
+    }, [scenes, searchTerm, typeFilter, statusFilter, sortBy, sortDirection]);
+
+    return (
+      <Grid container spacing={3}>
+        {filteredScenes.map((scene) => (
+          <Grid item xs={12} sm={6} md={4} key={scene.id}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" component="div">
+                  {scene.name}
+                </Typography>
+                {scene.description && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    {scene.description}
+                  </Typography>
+                )}
+              </CardContent>
+              <CardActions>
+                <IconButton
+                  aria-label="view"
+                  color="primary"
+                  onClick={() => handleViewScene(scene.id)}
+                >
+                  <ViewIcon />
+                </IconButton>
+                <IconButton
+                  aria-label="edit"
+                  color="secondary"
+                  onClick={() => handleEditScene(scene.id)}
+                >
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  aria-label="delete"
+                  color="error"
+                  onClick={() => handleDeleteScene(scene.id)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    );
+  };
+
+  return (
+    <Container maxWidth="lg" className="scenes-page">
+      <Box my={4}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">
+            Scenes {universe && `- ${universe.name}`}
+          </Typography>
+          <Box>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
+              onClick={handleBackToUniverse}
+              sx={{ mr: 2 }}
+            >
+              Back to Universe
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleCreateScene}
+            >
+              Create Scene
+            </Button>
+          </Box>
+        </Box>
+
+        <Box mb={4}>
+          <TextField
+            label="Search scenes"
+            variant="outlined"
+            fullWidth
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+
+        {renderScenesList()}
+      </Box>
+
+      {/* Scene Modal */}
+      {modalOpen && safeUniverseId && (
         <SceneModal
           open={modalOpen}
           onClose={handleModalClose}
+          onSuccess={handleModalSuccess}
           universeId={String(safeUniverseId)}
-          sceneId={selectedSceneId}
-          mode={modalType}
-          onSuccess={(data) => {
-            console.log(`ScenesPage - Scene ${modalType} successful:`, data);
-            try {
-              // Store the current scene to prevent it from being lost during refresh
-              const currentScene = data;
-
-              // Ensure the universe_id is set correctly on the scene
-              if (currentScene && !currentScene.universe_id && safeUniverseId) {
-                currentScene.universe_id = safeUniverseId;
-                console.log('ScenesPage - Adding missing universe_id to scene:', safeUniverseId);
-              }
-
-              // Don't clear scenes - this might trigger validation to run again
-              // Instead, immediately add the new scene to current list
-              if (currentScene && currentScene.id) {
-                console.log('ScenesPage - Immediately adding new scene to state');
-                setScenes((prevScenes) => {
-                  // Check if scene already exists
-                  const exists = prevScenes.some((scene) => scene.id === currentScene.id);
-                  if (!exists) {
-                    return [...prevScenes, currentScene];
-                  }
-                  return prevScenes;
-                });
-              }
-
-              // Force a refresh of scenes for this universe
-              console.log('ScenesPage - Refreshing scenes for universe:', safeUniverseId);
-              dispatch(fetchScenes(safeUniverseId))
-                .then((result) => {
-                  console.log('ScenesPage - Refresh scenes result:', result);
-                  // Force update scenes with both local and API data
-                  if (result.payload && result.payload.scenes) {
-                    const apiScenes = result.payload.scenes;
-                    setScenes((prevScenes) => {
-                      // Merge API scenes with our local scenes
-                      const scenesMap = new Map();
-                      // Add API scenes first
-                      apiScenes.forEach((scene) => {
-                        if (scene && scene.id) {
-                          scenesMap.set(scene.id, scene);
-                        }
-                      });
-                      // Then add local scenes that might not be in API yet
-                      prevScenes.forEach((scene) => {
-                        if (scene && scene.id && !scenesMap.has(scene.id)) {
-                          scenesMap.set(scene.id, scene);
-                        }
-                      });
-                      // Add our current scene which might not be in either
-                      if (currentScene && currentScene.id) {
-                        scenesMap.set(currentScene.id, currentScene);
-                      }
-                      return Array.from(scenesMap.values());
-                    });
-                  }
-                })
-                .catch((error) => {
-                  console.error('ScenesPage - Error refreshing scenes:', error);
-                  // Scene is already added above, no need to add again
-                });
-            } catch (error) {
-              console.error('ScenesPage - Error in scene success handler:', error);
-              // Last resort - set the scene directly in state if not already done
-              if (data && data.id) {
-                // Ensure universe_id is set
-                const sceneWithUniverseId = {
-                  ...data,
-                  universe_id: data.universe_id || safeUniverseId,
-                };
-                setScenes((prevScenes) => {
-                  const exists = prevScenes.some((scene) => scene.id === data.id);
-                  if (!exists) {
-                    return [...prevScenes, sceneWithUniverseId];
-                  }
-                  return prevScenes;
-                });
-              }
-            }
-          }}
+          sceneId={selectedSceneId ? String(selectedSceneId) : undefined}
+          modalType={modalType}
         />
       )}
     </Container>

@@ -48,13 +48,29 @@ export const fetchScenes = createAsyncThunk(
       const timestamp = new Date().toISOString();
       console.log(`[${timestamp}] REDUX-THUNK: Starting fetchScenes for universe ${universeId}`);
 
+      // Validate universeId
+      if (universeId === undefined || universeId === null) {
+        throw new Error('Universe ID is required');
+      }
+
+      // Convert universeId to a number if it's a string
+      const numericUniverseId =
+        typeof universeId === 'string' ? parseInt(universeId, 10) : universeId;
+
+      // Check if the ID is valid after conversion
+      if (isNaN(numericUniverseId) || numericUniverseId <= 0) {
+        throw new Error(`Invalid universe ID: ${universeId}`);
+      }
+
+      console.log(`[${timestamp}] REDUX-THUNK: Using validated universeId: ${numericUniverseId}`);
+
       let response;
       let scenesData = [];
       let endpointUsed = '';
 
       try {
         console.log(`[${timestamp}] REDUX-THUNK: Trying primary endpoint getScenesByUniverse`);
-        response = await sceneService.getScenesByUniverse(universeId);
+        response = await sceneService.getScenesByUniverse(numericUniverseId);
         console.log(`[${timestamp}] REDUX-THUNK: getScenesByUniverse response:`, response);
 
         if (response?.data?.scenes) {
@@ -74,8 +90,16 @@ export const fetchScenes = createAsyncThunk(
           console.log(`[${timestamp}] REDUX-THUNK: getAllScenes response:`, response);
 
           if (response?.data?.scenes) {
-            // Filter scenes for the specific universe
-            scenesData = response.data.scenes.filter((scene) => scene.universe_id === universeId);
+            // Filter scenes for the specific universe - ensure we're using the numeric value for comparison
+            scenesData = response.data.scenes.filter((scene) => {
+              // Convert scene.universe_id to a number if it's a string for consistent comparison
+              const sceneUniverseId =
+                typeof scene.universe_id === 'string'
+                  ? parseInt(scene.universe_id, 10)
+                  : scene.universe_id;
+
+              return sceneUniverseId === numericUniverseId;
+            });
             endpointUsed = 'getAllScenes';
           }
         } catch (fallbackError) {
@@ -88,13 +112,13 @@ export const fetchScenes = createAsyncThunk(
       const normalizedScenes = normalizeScenes(scenesData);
 
       console.log(`[${timestamp}] REDUX-THUNK: Fetch completed successfully`, {
-        universeId,
+        universeId: numericUniverseId,
         endpointUsed,
         sceneCount: normalizedScenes.length,
       });
 
       return {
-        universeId,
+        universeId: numericUniverseId,
         scenes: normalizedScenes,
         endpointUsed,
       };
@@ -181,9 +205,26 @@ export const createScene = createAsyncThunk(
     try {
       console.log('THUNK createScene: Called with data:', sceneData);
 
+      // Validate universe_id is present and valid
+      let universeId = sceneData.universe_id || sceneData.universeId;
+
+      if (!universeId) {
+        throw new Error('Universe ID is required for scene creation');
+      }
+
+      // Convert to number if it's a string
+      if (typeof universeId === 'string') {
+        universeId = parseInt(universeId, 10);
+        if (isNaN(universeId) || universeId <= 0) {
+          throw new Error(`Invalid universe ID: ${sceneData.universe_id || sceneData.universeId}`);
+        }
+      }
+
       // Format data before sending to API
       const formattedData = {
         ...sceneData,
+        universe_id: universeId, // Use the validated numeric universeId
+        universeId: universeId, // Also set the camelCase version for consistency
         is_deleted: false, // Explicitly set is_deleted to false
       };
 

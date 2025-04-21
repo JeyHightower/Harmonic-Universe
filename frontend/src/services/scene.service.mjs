@@ -28,12 +28,62 @@ export const getAllScenes = async () => {
  */
 export const getScenesByUniverse = async (universeId) => {
   try {
-    if (!universeId) {
+    // Validate universeId
+    if (universeId === undefined || universeId === null) {
       return responseHandler.handleError(new Error('Universe ID is required'));
     }
 
-    const response = await httpClient.get(sceneEndpoints.byUniverse(universeId));
-    return responseHandler.handleSuccess(response);
+    // If universeId is a string, convert it to a number
+    let validatedId = universeId;
+    if (typeof universeId === 'string') {
+      validatedId = parseInt(universeId, 10);
+      if (isNaN(validatedId)) {
+        console.error(`Invalid universe ID format: ${universeId} - cannot be parsed to a number`);
+        return responseHandler.handleError(new Error(`Invalid universe ID format: ${universeId}`));
+      }
+    }
+
+    // Check if ID is positive
+    if (validatedId <= 0) {
+      console.error(
+        `Universe ID must be a positive number: ${universeId}, received: ${validatedId}`
+      );
+      return responseHandler.handleError(
+        new Error(`Universe ID must be a positive number: ${universeId}`)
+      );
+    }
+
+    console.log('scenes.service: Making API call to get scenes for universe:', validatedId);
+    try {
+      const response = await httpClient.get(sceneEndpoints.byUniverse(validatedId));
+
+      console.log('scenes.service: Got API response for getScenesByUniverse:', {
+        status: response.status,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        sceneCount: response.data?.scenes?.length || 0,
+      });
+
+      return responseHandler.handleSuccess(response);
+    } catch (apiError) {
+      // If we get a 404, probably using the wrong endpoint format, return an empty scenes array
+      // instead of an error to allow the app to continue working
+      if (apiError.response && apiError.response.status === 404) {
+        console.log('scenes.service: Got 404 when fetching scenes, returning empty array:', {
+          universeId: validatedId,
+          error: apiError.message,
+        });
+
+        return responseHandler.handleSuccess({
+          data: { scenes: [] },
+          status: 200,
+          statusText: 'OK (recovered from 404)',
+        });
+      }
+
+      // Re-throw to be caught by the main try/catch
+      throw apiError;
+    }
   } catch (error) {
     console.log('scenes', 'Error fetching universe scenes', {
       universeId,

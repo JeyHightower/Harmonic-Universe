@@ -38,6 +38,35 @@ const endpointNoSlash = (path) => {
 };
 
 /**
+ * Safely convert an ID to a valid format for URL paths
+ * @param {any} id - The ID to convert
+ * @returns {string|number} - A valid ID for use in URLs
+ */
+export const safeId = (id) => {
+  if (id === undefined || id === null) {
+    console.error('Invalid ID (undefined or null) provided to endpoint');
+    return 'invalid-id';
+  }
+
+  // If it's already a number, return it directly
+  if (typeof id === 'number' && !isNaN(id)) {
+    return id;
+  }
+
+  // If it's a string, try to convert to a number if it looks like one
+  if (typeof id === 'string') {
+    if (/^\d+$/.test(id)) {
+      return parseInt(id, 10);
+    }
+    // Otherwise, return the string as is
+    return id;
+  }
+
+  // For any other type, convert to string
+  return String(id);
+};
+
+/**
  * Authentication Endpoints
  */
 export const authEndpoints = {
@@ -65,17 +94,17 @@ export const userEndpoints = {
 export const universeEndpoints = {
   list: endpoint('/universes/'),
   create: endpoint('/universes/'),
-  get: (id) => endpoint(`/universes/${id}`),
-  update: (id) => endpoint(`/universes/${id}`),
-  delete: (id) => endpoint(`/universes/${id}`),
-  physics: (id) => endpoint(`/universes/${id}/physics`),
-  audio: (id) => endpoint(`/universes/${id}/audio`),
-  visualization: (id) => endpoint(`/universes/${id}/visualization`),
-  generateMusic: (id) => endpoint(`/universes/${id}/generate-music`),
-  saveMusic: (id) => endpoint(`/universes/${id}/save-music`),
-  downloadMusic: (id) => endpoint(`/universes/${id}/download-music`),
-  getMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}`),
-  deleteMusic: (id, musicId) => endpoint(`/universes/${id}/music/${musicId}`),
+  get: (id) => endpoint(`/universes/${safeId(id)}`),
+  update: (id) => endpoint(`/universes/${safeId(id)}`),
+  delete: (id) => endpoint(`/universes/${safeId(id)}`),
+  physics: (id) => endpoint(`/universes/${safeId(id)}/physics`),
+  audio: (id) => endpoint(`/universes/${safeId(id)}/audio`),
+  visualization: (id) => endpoint(`/universes/${safeId(id)}/visualization`),
+  generateMusic: (id) => endpoint(`/universes/${safeId(id)}/generate-music`),
+  saveMusic: (id) => endpoint(`/universes/${safeId(id)}/save-music`),
+  downloadMusic: (id) => endpoint(`/universes/${safeId(id)}/download-music`),
+  getMusic: (id, musicId) => endpoint(`/universes/${safeId(id)}/music/${safeId(musicId)}`),
+  deleteMusic: (id, musicId) => endpoint(`/universes/${safeId(id)}/music/${safeId(musicId)}`),
 };
 
 /**
@@ -84,15 +113,15 @@ export const universeEndpoints = {
 export const sceneEndpoints = {
   list: endpoint('/scenes/'),
   create: endpoint('/scenes/'),
-  get: (id) => endpoint(`/scenes/${id}/`),
-  update: (id) => endpoint(`/scenes/${id}/`),
-  delete: (id) => endpoint(`/scenes/${id}/`),
-  forUniverse: (universeId) => endpoint(`/universes/${universeId}/scenes/`),
-  byUniverse: (universeId) => endpoint(`/scenes/universe/${universeId}/`),
+  get: (id) => endpoint(`/scenes/${safeId(id)}/`),
+  update: (id) => endpoint(`/scenes/${safeId(id)}/`),
+  delete: (id) => endpoint(`/scenes/${safeId(id)}/`),
+  forUniverse: (universeId) => endpoint(`/universes/${safeId(universeId)}/scenes/`),
+  byUniverse: (universeId) => endpoint(`/scenes/universe/${safeId(universeId)}/`),
   reorder: endpoint('/scenes/reorder/'),
-  characters: (id) => endpoint(`/scenes/${id}/characters/`),
-  notes: (id) => endpoint(`/scenes/${id}/notes/`),
-  settings: (id) => endpoint(`/scenes/${id}/settings/`),
+  characters: (id) => endpoint(`/scenes/${safeId(id)}/characters/`),
+  notes: (id) => endpoint(`/scenes/${safeId(id)}/notes/`),
+  settings: (id) => endpoint(`/scenes/${safeId(id)}/settings/`),
 };
 
 /**
@@ -101,15 +130,15 @@ export const sceneEndpoints = {
 export const characterEndpoints = {
   list: endpoint('/characters'),
   create: endpoint('/characters'),
-  get: (id) => endpoint(`/characters/${id}`),
-  update: (id) => endpoint(`/characters/${id}`),
-  delete: (id) => endpoint(`/characters/${id}`),
-  forUniverse: (universeId) => endpoint(`/universes/${universeId}/characters`),
-  byUniverse: (universeId) => endpoint(`/universes/${universeId}/characters`),
-  forScene: (sceneId) => endpoint(`/characters/scene/${sceneId}`),
-  notes: (id) => endpoint(`/characters/${id}/notes`),
-  relationships: (id) => endpoint(`/characters/${id}/relationships`),
-  attributes: (id) => endpoint(`/characters/${id}/attributes`),
+  get: (id) => endpoint(`/characters/${safeId(id)}`),
+  update: (id) => endpoint(`/characters/${safeId(id)}`),
+  delete: (id) => endpoint(`/characters/${safeId(id)}`),
+  forUniverse: (universeId) => endpoint(`/universes/${safeId(universeId)}/characters`),
+  byUniverse: (universeId) => endpoint(`/universes/${safeId(universeId)}/characters`),
+  forScene: (sceneId) => endpoint(`/characters/scene/${safeId(sceneId)}`),
+  notes: (id) => endpoint(`/characters/${safeId(id)}/notes`),
+  relationships: (id) => endpoint(`/characters/${safeId(id)}/relationships`),
+  attributes: (id) => endpoint(`/characters/${safeId(id)}/attributes`),
 };
 
 /**
@@ -118,12 +147,12 @@ export const characterEndpoints = {
 export const noteEndpoints = {
   list: endpoint('/notes'),
   create: endpoint('/notes'),
-  get: (id) => endpoint(`/notes/${id}`),
-  update: (id) => endpoint(`/notes/${id}`),
-  delete: (id) => endpoint(`/notes/${id}`),
-  forUniverse: (universeId) => endpoint(`/notes/universe/${universeId}`),
-  forScene: (sceneId) => endpoint(`/notes/scene/${sceneId}`),
-  forCharacter: (characterId) => endpoint(`/notes/character/${characterId}`),
+  get: (id) => endpoint(`/notes/${safeId(id)}`),
+  update: (id) => endpoint(`/notes/${safeId(id)}`),
+  delete: (id) => endpoint(`/notes/${safeId(id)}`),
+  forUniverse: (universeId) => endpoint(`/notes/universe/${safeId(universeId)}`),
+  forScene: (sceneId) => endpoint(`/notes/scene/${safeId(sceneId)}`),
+  forCharacter: (characterId) => endpoint(`/notes/character/${safeId(characterId)}`),
 };
 
 /**
@@ -131,15 +160,18 @@ export const noteEndpoints = {
  */
 export const physicsEndpoints = {
   objects: {
-    list: (universeId) => endpoint(`/universes/${universeId}/objects`),
-    create: (universeId) => endpoint(`/universes/${universeId}/objects`),
-    get: (universeId, objectId) => endpoint(`/universes/${universeId}/objects/${objectId}`),
-    update: (universeId, objectId) => endpoint(`/universes/${universeId}/objects/${objectId}`),
-    delete: (universeId, objectId) => endpoint(`/universes/${universeId}/objects/${objectId}`),
+    list: (universeId) => endpoint(`/universes/${safeId(universeId)}/objects`),
+    create: (universeId) => endpoint(`/universes/${safeId(universeId)}/objects`),
+    get: (universeId, objectId) =>
+      endpoint(`/universes/${safeId(universeId)}/objects/${safeId(objectId)}`),
+    update: (universeId, objectId) =>
+      endpoint(`/universes/${safeId(universeId)}/objects/${safeId(objectId)}`),
+    delete: (universeId, objectId) =>
+      endpoint(`/universes/${safeId(universeId)}/objects/${safeId(objectId)}`),
   },
   parameters: {
-    get: (universeId) => endpoint(`/universes/${universeId}/physics`),
-    update: (universeId) => endpoint(`/universes/${universeId}/physics`),
+    get: (universeId) => endpoint(`/universes/${safeId(universeId)}/physics`),
+    update: (universeId) => endpoint(`/universes/${safeId(universeId)}/physics`),
   },
 };
 
@@ -148,15 +180,18 @@ export const physicsEndpoints = {
  */
 export const audioEndpoints = {
   tracks: {
-    list: (universeId) => endpoint(`/universes/${universeId}/audio-tracks`),
-    create: (universeId) => endpoint(`/universes/${universeId}/audio-tracks`),
-    get: (universeId, trackId) => endpoint(`/universes/${universeId}/audio-tracks/${trackId}`),
-    update: (universeId, trackId) => endpoint(`/universes/${universeId}/audio-tracks/${trackId}`),
-    delete: (universeId, trackId) => endpoint(`/universes/${universeId}/audio-tracks/${trackId}`),
-    byScene: (sceneId) => endpoint(`/scenes/${sceneId}/audio-tracks`),
+    list: (universeId) => endpoint(`/universes/${safeId(universeId)}/audio-tracks`),
+    create: (universeId) => endpoint(`/universes/${safeId(universeId)}/audio-tracks`),
+    get: (universeId, trackId) =>
+      endpoint(`/universes/${safeId(universeId)}/audio-tracks/${safeId(trackId)}`),
+    update: (universeId, trackId) =>
+      endpoint(`/universes/${safeId(universeId)}/audio-tracks/${safeId(trackId)}`),
+    delete: (universeId, trackId) =>
+      endpoint(`/universes/${safeId(universeId)}/audio-tracks/${safeId(trackId)}`),
+    byScene: (sceneId) => endpoint(`/scenes/${safeId(sceneId)}/audio-tracks`),
   },
-  generate: (universeId) => endpoint(`/universes/${universeId}/generate-music`),
-  download: (universeId) => endpoint(`/universes/${universeId}/download-music`),
+  generate: (universeId) => endpoint(`/universes/${safeId(universeId)}/generate-music`),
+  download: (universeId) => endpoint(`/universes/${safeId(universeId)}/download-music`),
 };
 
 /**
