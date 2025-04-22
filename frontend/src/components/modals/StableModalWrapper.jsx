@@ -1,8 +1,8 @@
-import { Modal } from "antd";
-import PropTypes from "prop-types";
+import { Modal } from 'antd';
+import PropTypes from 'prop-types';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ensurePortalRoot } from "../../utils/portalUtils.mjs";
-import "./Modal.css";
+import { ensurePortalRoot } from '../../utils/portalUtils.mjs';
+import './Modal.css';
 
 /**
  * A wrapper around Ant Design's Modal component that ensures stability
@@ -15,7 +15,7 @@ const StableModalWrapper = ({
   width = 520,
   style = {},
   footer = undefined,
-  children
+  children,
 }) => {
   const [isVisible, setIsVisible] = useState(open);
 
@@ -23,7 +23,7 @@ const StableModalWrapper = ({
   console.log('StableModalWrapper - COMPONENT INITIALIZED', {
     componentName: 'StableModalWrapper',
     open,
-    isVisible
+    isVisible,
   });
 
   // Create the portal root when the component mounts
@@ -35,7 +35,7 @@ const StableModalWrapper = ({
   useEffect(() => {
     console.log('StableModalWrapper - open prop changed:', {
       previousIsVisible: isVisible,
-      newOpen: open
+      newOpen: open,
     });
     setIsVisible(open);
   }, [open]);
@@ -57,27 +57,30 @@ const StableModalWrapper = ({
   const stableContent = useMemo(() => children, [children]);
 
   // Combine default and passed styles
-  const combinedStyles = useMemo(() => ({
-    ...style,
-  }), [style]);
+  const combinedStyles = useMemo(
+    () => ({
+      ...style,
+    }),
+    [style]
+  );
 
   const modalRef = useRef(null);
   const instanceId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);
 
   // Add debug logging
   useEffect(() => {
-    console.log("StableModalWrapper - Rendering with props:", { title, open, width });
+    console.log('StableModalWrapper - Rendering with props:', { title, open, width });
 
     // Log when the modal should be visible
     if (open) {
-      console.log("StableModalWrapper - Modal is set to be visible");
+      console.log('StableModalWrapper - Modal is set to be visible');
 
       // Ensure consistent body scroll locking
       if (document.body.style.overflow !== 'hidden') {
         document.body.style.overflow = 'hidden';
       }
     } else {
-      console.log("StableModalWrapper - Modal is set to be hidden");
+      console.log('StableModalWrapper - Modal is set to be hidden');
       // Only restore body overflow if this is the last modal
       if (!document.querySelector('.ant-modal:not(.stable-modal-' + instanceId.current + ')')) {
         document.body.style.overflow = '';
@@ -86,7 +89,10 @@ const StableModalWrapper = ({
 
     return () => {
       // Cleanup on unmount
-      if (open && !document.querySelector('.ant-modal:not(.stable-modal-' + instanceId.current + ')')) {
+      if (
+        open &&
+        !document.querySelector('.ant-modal:not(.stable-modal-' + instanceId.current + ')')
+      ) {
         document.body.style.overflow = '';
       }
     };
@@ -105,18 +111,14 @@ const StableModalWrapper = ({
   };
 
   // Log right before rendering
-  console.log("StableModalWrapper - About to render Modal with open=", open, "title=", title);
-  console.log("StableModalWrapper - Close handlers enabled: keyboard=true, maskClosable=true");
+  console.log('StableModalWrapper - About to render Modal with open=', open, 'title=', title);
+  console.log('StableModalWrapper - Close handlers enabled: keyboard=true, maskClosable=true');
 
   // Create standard footer with cancel button
   const createFooter = () => {
     return (
       <div className="modal-footer">
-        <button
-          className="modal-cancel-btn"
-          onClick={handleClose}
-          aria-label="Cancel"
-        >
+        <button className="modal-cancel-btn" onClick={handleClose} aria-label="Cancel">
           Cancel
         </button>
       </div>
@@ -127,7 +129,7 @@ const StableModalWrapper = ({
     display: 'block',
     visibility: 'visible',
     pointerEvents: 'auto', // Ensure modal gets pointer events
-    ...style
+    ...style,
   };
 
   return (
@@ -165,7 +167,7 @@ const StableModalWrapper = ({
         style={{
           pointerEvents: 'auto',
           position: 'relative', // Ensure proper stacking context
-          zIndex: 1051 // Higher than the backdrop
+          zIndex: 1051, // Higher than the backdrop
         }}
       >
         {stableContent}

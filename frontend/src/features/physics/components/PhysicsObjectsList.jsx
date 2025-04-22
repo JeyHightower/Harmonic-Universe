@@ -1,12 +1,12 @@
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import PropTypes from "prop-types";
-import "../styles/PhysicsObjects.css";
-import { fetchPhysicsObjects } from "../../../store/thunks/physicsObjectsThunks";
-import Button from "../../../components/common/Button";
-import Icon from "../../../components/common/Icon";
-import Spinner from "../../../components/common/Spinner";
-import { setCurrentPhysicsObject } from "../../../store/slices/physicsObjectsSlice";
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import PropTypes from 'prop-types';
+import '../styles/PhysicsObjects.css';
+import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
+import Button from '../../../components/common/Button';
+import Icon from '../../../components/common/Icon';
+import Spinner from '../../../components/common/Spinner';
+import { setCurrentPhysicsObject } from '../../../store/slices/physicsObjectsSlice';
 
 const PhysicsObjectsList = ({
   sceneId,
@@ -40,14 +40,14 @@ const PhysicsObjectsList = ({
 
   const getCollisionShapeClass = (shape) => {
     const classes = {
-      box: "shape-box",
-      sphere: "shape-sphere",
-      capsule: "shape-capsule",
-      cylinder: "shape-cylinder",
-      cone: "shape-cone",
-      plane: "shape-plane",
+      box: 'shape-box',
+      sphere: 'shape-sphere',
+      capsule: 'shape-capsule',
+      cylinder: 'shape-cylinder',
+      cone: 'shape-cone',
+      plane: 'shape-plane',
     };
-    return classes[shape] || "shape-default";
+    return classes[shape] || 'shape-default';
   };
 
   if (error) {
@@ -104,7 +104,7 @@ const PhysicsObjectsList = ({
                 <div className="physics-object-item-header">
                   <h3 className="physics-object-name">
                     <Icon
-                      name={item.collision_shape || "default"}
+                      name={item.collision_shape || 'default'}
                       size="small"
                       className="object-icon"
                     />
@@ -140,21 +140,17 @@ const PhysicsObjectsList = ({
 
                 <div className="physics-object-badges">
                   <span
-                    className={`badge ${
-                      item.is_static ? "badge-static" : "badge-dynamic"
-                    }`}
+                    className={`badge ${item.is_static ? 'badge-static' : 'badge-dynamic'}`}
                     title={
                       item.is_static
                         ? "Static objects don't move"
-                        : "Dynamic objects respond to forces"
+                        : 'Dynamic objects respond to forces'
                     }
                   >
-                    {item.is_static ? "Static" : "Dynamic"}
+                    {item.is_static ? 'Static' : 'Dynamic'}
                   </span>
                   <span
-                    className={`badge ${getCollisionShapeClass(
-                      item.collision_shape
-                    )}`}
+                    className={`badge ${getCollisionShapeClass(item.collision_shape)}`}
                     title={`Collision shape: ${item.collision_shape}`}
                   >
                     {item.collision_shape}
@@ -177,17 +173,15 @@ const PhysicsObjectsList = ({
                   <div className="physics-object-property">
                     <span className="property-label">Position:</span>
                     <span className="property-value">
-                      ({item.position.x.toFixed(2)},{" "}
-                      {item.position.y.toFixed(2)}, {item.position.z.toFixed(2)}
-                      )
+                      ({item.position.x.toFixed(2)}, {item.position.y.toFixed(2)},{' '}
+                      {item.position.z.toFixed(2)})
                     </span>
                   </div>
                   <div className="physics-object-property">
                     <span className="property-label">Velocity:</span>
                     <span className="property-value">
-                      ({item.velocity.x.toFixed(2)},{" "}
-                      {item.velocity.y.toFixed(2)}, {item.velocity.z.toFixed(2)}
-                      )
+                      ({item.velocity.x.toFixed(2)}, {item.velocity.y.toFixed(2)},{' '}
+                      {item.velocity.z.toFixed(2)})
                     </span>
                   </div>
                 </div>

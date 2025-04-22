@@ -1,11 +1,6 @@
-import React, { useEffect, useState } from "react";
-import {
-  THEMES,
-  getCurrentTheme,
-  setTheme,
-  toggleTheme,
-} from "../../utils/themeUtils";
-import "../../styles/ThemeToggle.css";
+import React, { useEffect, useState } from 'react';
+import { THEMES, getCurrentTheme, setTheme, toggleTheme } from '../../utils/themeUtils';
+import '../../styles/ThemeToggle.css';
 
 /**
  * ThemeToggle component allows users to switch between light, dark, and system themes
@@ -19,8 +14,8 @@ const ThemeToggle = () => {
       setCurrentTheme(getCurrentTheme());
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Handle theme toggle
@@ -38,12 +33,10 @@ const ThemeToggle = () => {
   // Determine which icon to show based on current theme
   const getThemeIcon = () => {
     if (currentTheme === THEMES.SYSTEM) {
-      const systemIsDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      return systemIsDark ? "🌙" : "☀️";
+      const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return systemIsDark ? '🌙' : '☀️';
     }
-    return currentTheme === THEMES.DARK ? "🌙" : "☀️";
+    return currentTheme === THEMES.DARK ? '🌙' : '☀️';
   };
 
   return (
@@ -55,27 +48,21 @@ const ThemeToggle = () => {
       <div className="theme-select-dropdown">
         <button
           onClick={() => selectTheme(THEMES.LIGHT)}
-          className={`theme-option ${
-            currentTheme === THEMES.LIGHT ? "active" : ""
-          }`}
+          className={`theme-option ${currentTheme === THEMES.LIGHT ? 'active' : ''}`}
         >
           ☀️ Light
         </button>
 
         <button
           onClick={() => selectTheme(THEMES.DARK)}
-          className={`theme-option ${
-            currentTheme === THEMES.DARK ? "active" : ""
-          }`}
+          className={`theme-option ${currentTheme === THEMES.DARK ? 'active' : ''}`}
         >
           🌙 Dark
         </button>
 
         <button
           onClick={() => selectTheme(THEMES.SYSTEM)}
-          className={`theme-option ${
-            currentTheme === THEMES.SYSTEM ? "active" : ""
-          }`}
+          className={`theme-option ${currentTheme === THEMES.SYSTEM ? 'active' : ''}`}
         >
           💻 System
         </button>

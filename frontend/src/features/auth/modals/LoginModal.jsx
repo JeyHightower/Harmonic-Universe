@@ -142,7 +142,7 @@ const LoginModal = ({ onClose }) => {
           if (e.target === e.currentTarget) {
             forceClose();
           }
-        }
+        },
       }}
     >
       <DialogTitle>Login</DialogTitle>

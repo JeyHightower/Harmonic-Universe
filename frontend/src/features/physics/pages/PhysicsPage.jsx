@@ -1,12 +1,12 @@
-import { Spin, Tabs, Card, Empty } from "antd";
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
-import { useModal } from "../../../contexts/ModalContext";
-import { fetchUniverseById } from "../../../store/thunks/universeThunks.mjs";
-import Button from "../../../components/common/Button";
-import Spinner from "../../../components/common/Spinner";
-import "../../../styles/PhysicsPage.css";
+import { Spin, Tabs, Card, Empty } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
+import { useModal } from '../../../contexts/ModalContext';
+import { fetchUniverseById } from '../../../store/thunks/universeThunks.mjs';
+import Button from '../../../components/common/Button';
+import Spinner from '../../../components/common/Spinner';
+import '../../../styles/PhysicsPage.css';
 
 const PhysicsPage = () => {
   const { universeId } = useParams();
@@ -14,7 +14,7 @@ const PhysicsPage = () => {
   const { openModal } = useModal();
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("objects");
+  const [activeTab, setActiveTab] = useState('objects');
 
   const universe = useSelector((state) => state.universe.currentUniverse);
 
@@ -24,7 +24,7 @@ const PhysicsPage = () => {
         setLoading(true);
         await dispatch(fetchUniverseById(universeId));
       } catch (error) {
-        console.error("Error loading universe:", error);
+        console.error('Error loading universe:', error);
       } finally {
         setLoading(false);
       }
@@ -34,15 +34,15 @@ const PhysicsPage = () => {
   }, [dispatch, universeId]);
 
   const handleCreatePhysicsObject = () => {
-    openModal("physics-object", { universeId });
+    openModal('physics-object', { universeId });
   };
 
   const handleCreatePhysicsParameter = () => {
-    openModal("physics-parameters", { universeId });
+    openModal('physics-parameters', { universeId });
   };
 
   const handleCreatePhysicsConstraint = () => {
-    openModal("physics-constraint", { universeId });
+    openModal('physics-constraint', { universeId });
   };
 
   if (loading) {
@@ -69,8 +69,8 @@ const PhysicsPage = () => {
         className="physics-tabs"
         items={[
           {
-            key: "objects",
-            label: "Physics Objects",
+            key: 'objects',
+            label: 'Physics Objects',
             children: (
               <div className="physics-tab-content">
                 <div className="physics-actions">
@@ -94,8 +94,8 @@ const PhysicsPage = () => {
             ),
           },
           {
-            key: "parameters",
-            label: "Physics Parameters",
+            key: 'parameters',
+            label: 'Physics Parameters',
             children: (
               <div className="physics-tab-content">
                 <div className="physics-actions">
@@ -110,10 +110,7 @@ const PhysicsPage = () => {
                       description="No physics parameters defined yet"
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
-                    <Button
-                      variant="primary"
-                      onClick={handleCreatePhysicsParameter}
-                    >
+                    <Button variant="primary" onClick={handleCreatePhysicsParameter}>
                       Create Your First Physics Parameter
                     </Button>
                   </Card>
@@ -122,15 +119,12 @@ const PhysicsPage = () => {
             ),
           },
           {
-            key: "constraints",
-            label: "Physics Constraints",
+            key: 'constraints',
+            label: 'Physics Constraints',
             children: (
               <div className="physics-tab-content">
                 <div className="physics-actions">
-                  <Button
-                    variant="primary"
-                    onClick={handleCreatePhysicsConstraint}
-                  >
+                  <Button variant="primary" onClick={handleCreatePhysicsConstraint}>
                     Create Physics Constraint
                   </Button>
                 </div>
@@ -141,10 +135,7 @@ const PhysicsPage = () => {
                       description="No physics constraints defined yet"
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
-                    <Button
-                      variant="primary"
-                      onClick={handleCreatePhysicsConstraint}
-                    >
+                    <Button variant="primary" onClick={handleCreatePhysicsConstraint}>
                       Create Your First Physics Constraint
                     </Button>
                   </Card>

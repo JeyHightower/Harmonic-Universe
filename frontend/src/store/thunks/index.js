@@ -18,4 +18,4 @@ export * from './physicsObjectsThunks';
 export * from './universeThunks';
 
 // Export consolidated thunks
-export * from './consolidated'; 
+export * from './consolidated';

@@ -1,8 +1,8 @@
-import PropTypes from "prop-types";
-import "../../styles/Input.css";
+import PropTypes from 'prop-types';
+import '../../styles/Input.css';
 
 function Input({
-  type = "text",
+  type = 'text',
   label,
   name,
   value,
@@ -12,7 +12,7 @@ function Input({
   placeholder,
   disabled = false,
   required = false,
-  className = "",
+  className = '',
   rows = 3,
 }) {
   const inputId = `input-${name}`;
@@ -26,7 +26,7 @@ function Input({
           {required && <span className="input-required">*</span>}
         </label>
       )}
-      {type === "textarea" ? (
+      {type === 'textarea' ? (
         <textarea
           id={inputId}
           name={name}
@@ -36,9 +36,7 @@ function Input({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
-          className={`input-field input-textarea ${
-            hasError ? "input-error" : ""
-          }`}
+          className={`input-field input-textarea ${hasError ? 'input-error' : ''}`}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${inputId}-error` : undefined}
           rows={rows}
@@ -54,7 +52,7 @@ function Input({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
-          className={`input-field ${hasError ? "input-error" : ""}`}
+          className={`input-field ${hasError ? 'input-error' : ''}`}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${inputId}-error` : undefined}
         />
@@ -69,22 +67,10 @@ function Input({
 }
 
 Input.propTypes = {
-  type: PropTypes.oneOf([
-    "text",
-    "password",
-    "email",
-    "number",
-    "tel",
-    "url",
-    "textarea",
-  ]),
+  type: PropTypes.oneOf(['text', 'password', 'email', 'number', 'tel', 'url', 'textarea']),
   label: PropTypes.string,
   name: PropTypes.string.isRequired,
-  value: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.number,
-    PropTypes.bool,
-  ]).isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.bool]).isRequired,
   onChange: PropTypes.func.isRequired,
   onBlur: PropTypes.func,
   error: PropTypes.string,

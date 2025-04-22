@@ -14,7 +14,9 @@ body {
   color: var(--text-color);
   background-color: var(--background);
   line-height: 1.6;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* Typography */
@@ -69,7 +71,9 @@ p {
 a {
   color: var(--primary-600);
   text-decoration: none;
-  transition: color 0.2s ease, text-decoration 0.2s ease;
+  transition:
+    color 0.2s ease,
+    text-decoration 0.2s ease;
   font-weight: 500;
 }
 
@@ -228,7 +232,9 @@ a.underline:hover::after {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   padding: var(--padding-lg);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
   border: 1px solid var(--border-color);
 }
 
@@ -261,7 +267,9 @@ a.underline:hover::after {
   background-clip: padding-box;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .form-control:focus {

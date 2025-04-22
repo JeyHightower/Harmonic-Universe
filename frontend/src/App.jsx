@@ -1,19 +1,19 @@
-import React, { lazy, Suspense, useEffect, useState, useTransition } from "react";
-import { Provider, useDispatch, useSelector } from "react-redux";
-import { useRoutes } from "react-router-dom";
-import { PersistGate } from "redux-persist/integration/react";
-import { ErrorBoundary, NetworkErrorHandler } from "./components";
-import { ModalProvider } from "./contexts/ModalContext";
-import routes from "./routes/index.jsx";
-import { authService } from "./services/auth.service.mjs";
-import store, { persistor } from "./store";
-import { checkAuthState, logout } from "./store/slices/authSlice";
-import "./styles"; // Import all styles
-import { AUTH_CONFIG } from "./utils";
-import { fixModalZIndex, resetModalSystem } from "./utils/modalUtils.mjs";
-import { cleanupAllPortals, ensurePortalRoot } from "./utils/portalUtils.mjs";
+import React, { lazy, Suspense, useEffect, useState, useTransition } from 'react';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { useRoutes } from 'react-router-dom';
+import { PersistGate } from 'redux-persist/integration/react';
+import { ErrorBoundary, NetworkErrorHandler } from './components';
+import { ModalProvider } from './contexts/ModalContext';
+import routes from './routes/index.jsx';
+import { authService } from './services/auth.service.mjs';
+import store, { persistor } from './store';
+import { checkAuthState, logout } from './store/slices/authSlice';
+import './styles'; // Import all styles
+import { AUTH_CONFIG } from './utils';
+import { fixModalZIndex, resetModalSystem } from './utils/modalUtils.mjs';
+import { cleanupAllPortals, ensurePortalRoot } from './utils/portalUtils.mjs';
 // Import modal debugging utilities in development
-import { setupModalDebugging } from "./utils/modalDebug.mjs";
+import { setupModalDebugging } from './utils/modalDebug.mjs';
 // Import the essential fixes only
 import { applyEssentialFixes } from './utils/interactionFixes.mjs';
 
@@ -35,7 +35,7 @@ const ErrorFallback = () => (
 
 // Modal system initialization - ensures the modal system is in a clean state
 const initModalSystem = () => {
-  console.log("Initializing modal system");
+  console.log('Initializing modal system');
   // Clean up any lingering modals from previous sessions
   cleanupAllPortals();
   // Make sure portal root exists
@@ -70,7 +70,7 @@ const initModalSystem = () => {
     fixInteractions: () => {
       applyEssentialFixes();
       return true;
-    }
+    },
   };
 };
 
@@ -79,7 +79,7 @@ initModalSystem();
 
 // A component to handle the root path with query parameters
 const RootPathHandler = () => {
-  const Home = lazy(() => import("./features/home/pages/Home"));
+  const Home = lazy(() => import('./features/home/pages/Home'));
   return (
     <Suspense fallback={<LoadingPage />}>
       <Home />
@@ -90,9 +90,7 @@ const RootPathHandler = () => {
 // Create a component to properly render lazy-loaded Dashboard
 const DashboardComponent = () => (
   <Suspense fallback={<LoadingPage />}>
-    {React.createElement(
-      lazy(() => import("./features/dashboard/pages/Dashboard"))
-    )}
+    {React.createElement(lazy(() => import('./features/dashboard/pages/Dashboard')))}
   </Suspense>
 );
 
@@ -138,9 +136,9 @@ const AppContent = () => {
         }
 
         // Check for token validation failure flag
-        const tokenFailed = localStorage.getItem("token_verification_failed");
-        if (tokenFailed === "true") {
-          console.warn("Token previously failed verification, cleaning up");
+        const tokenFailed = localStorage.getItem('token_verification_failed');
+        if (tokenFailed === 'true') {
+          console.warn('Token previously failed verification, cleaning up');
           // Use centralized auth cleanup
           authService.clearAuthData();
           setAuthChecked(true);
@@ -155,7 +153,7 @@ const AppContent = () => {
         // Mark as checked regardless of success/failure
         setAuthChecked(true);
       } catch (e) {
-        console.error("Auth check error:", e);
+        console.error('Auth check error:', e);
         setAuthChecked(true);
       }
     };
@@ -174,29 +172,27 @@ const AppContent = () => {
       <div className="auth-error">
         <h2>Authentication Error</h2>
         <p>{typeof error === 'string' ? error : 'Failed to authenticate'}</p>
-        <button onClick={() => {
-          // Use centralized auth cleanup
-          authService.clearAuthData();
-          dispatch(logout());
-        }}>Return to Login</button>
+        <button
+          onClick={() => {
+            // Use centralized auth cleanup
+            authService.clearAuthData();
+            dispatch(logout());
+          }}
+        >
+          Return to Login
+        </button>
       </div>
     );
   }
 
   // Render the routes using useRoutes - without the test buttons
-  return (
-    <>
-      {element}
-    </>
-  );
+  return <>{element}</>;
 };
 
 // Inside App.jsx, add a debugging panel component for CORS issues
 const DebugPanel = () => {
   const [visible, setVisible] = useState(false);
-  const [useProxy, setUseProxy] = useState(
-    localStorage.getItem('use_proxy_for_auth') === 'true'
-  );
+  const [useProxy, setUseProxy] = useState(localStorage.getItem('use_proxy_for_auth') === 'true');
 
   const toggleProxy = () => {
     const newValue = !useProxy;
@@ -209,7 +205,7 @@ const DebugPanel = () => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.shiftKey && e.altKey && e.key === 'D') {
-        setVisible(prev => !prev);
+        setVisible((prev) => !prev);
       }
     };
 
@@ -220,25 +216,23 @@ const DebugPanel = () => {
   if (!visible) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: '10px',
-      right: '10px',
-      background: 'rgba(0,0,0,0.8)',
-      padding: '10px',
-      borderRadius: '5px',
-      color: 'white',
-      zIndex: 9999,
-      fontSize: '12px'
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        bottom: '10px',
+        right: '10px',
+        background: 'rgba(0,0,0,0.8)',
+        padding: '10px',
+        borderRadius: '5px',
+        color: 'white',
+        zIndex: 9999,
+        fontSize: '12px',
+      }}
+    >
       <h4 style={{ margin: '0 0 8px 0' }}>Debug Tools</h4>
       <div>
         <label>
-          <input
-            type="checkbox"
-            checked={useProxy}
-            onChange={toggleProxy}
-          />
+          <input type="checkbox" checked={useProxy} onChange={toggleProxy} />
           Use CORS proxy for auth
         </label>
       </div>
@@ -254,7 +248,7 @@ const DebugPanel = () => {
           border: 'none',
           borderRadius: '3px',
           color: 'white',
-          cursor: 'pointer'
+          cursor: 'pointer',
         }}
       >
         Clear All & Reload

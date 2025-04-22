@@ -75,10 +75,15 @@ export const loadComponent = (path, options = {}) => {
       if (options.errorComponent) {
         return { default: options.errorComponent };
       }
-      return { 
-        default: () => React.createElement('div', { 
-          style: { color: 'red', padding: '10px', border: '1px solid red' } 
-        }, `Failed to load component: ${path}`) 
+      return {
+        default: () =>
+          React.createElement(
+            'div',
+            {
+              style: { color: 'red', padding: '10px', border: '1px solid red' },
+            },
+            `Failed to load component: ${path}`
+          ),
       };
     }
   });
@@ -94,14 +99,17 @@ export const loadComponent = (path, options = {}) => {
   };
 
   // Add displayName for debugging and to fix ESLint warning
-  const componentName = path.split('/').pop().replace(/\.\w+$/, '');
+  const componentName = path
+    .split('/')
+    .pop()
+    .replace(/\.\w+$/, '');
   DynamicComponent.displayName = `DynamicComponent(${componentName})`;
 
   return DynamicComponent;
 };
 
 // Provide a global shim for require if it doesn't exist
-if (typeof window !== "undefined" && typeof window.require === "undefined") {
+if (typeof window !== 'undefined' && typeof window.require === 'undefined') {
   window.require = function (path) {
     console.warn(`[Global Require] Using require shim for ${path}`);
     return requireShim(path);
@@ -113,11 +121,11 @@ if (typeof window !== "undefined" && typeof window.require === "undefined") {
 }
 
 window.__DYNAMIC_IMPORT_LOADED = true;
-console.log("[Dynamic Import] Shim loaded successfully");
+console.log('[Dynamic Import] Shim loaded successfully');
 
 // Export for module usage
 export default {
   safeImport,
   requireShim,
-  loadComponent
+  loadComponent,
 };

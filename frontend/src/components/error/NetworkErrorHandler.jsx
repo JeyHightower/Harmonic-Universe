@@ -13,7 +13,7 @@ const NetworkErrorHandler = ({ children }) => {
     const handleError = (event) => {
       // Check if this is a network-related error
       const errorText = event.reason?.message || event.message || '';
-      
+
       if (
         errorText.includes('Network Error') ||
         errorText.includes('CORS') ||
@@ -24,9 +24,9 @@ const NetworkErrorHandler = ({ children }) => {
         setError({
           type: 'network',
           message: errorText,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         // Prevent the error from being handled elsewhere
         event.preventDefault();
       }
@@ -62,20 +62,18 @@ const NetworkErrorHandler = ({ children }) => {
           <li>Network connectivity problems</li>
         </ul>
         <div style={detailsStyle}>
-          <p><strong>Error details:</strong> {error.message}</p>
-          <p><strong>Time:</strong> {new Date(error.timestamp).toLocaleTimeString()}</p>
+          <p>
+            <strong>Error details:</strong> {error.message}
+          </p>
+          <p>
+            <strong>Time:</strong> {new Date(error.timestamp).toLocaleTimeString()}
+          </p>
         </div>
         <div style={actionsStyle}>
-          <button 
-            onClick={() => setError(null)} 
-            style={primaryButtonStyle}
-          >
+          <button onClick={() => setError(null)} style={primaryButtonStyle}>
             Dismiss
           </button>
-          <button 
-            onClick={() => window.location.reload()} 
-            style={secondaryButtonStyle}
-          >
+          <button onClick={() => window.location.reload()} style={secondaryButtonStyle}>
             Reload Page
           </button>
         </div>
@@ -162,4 +160,4 @@ NetworkErrorHandler.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-export default NetworkErrorHandler; 
+export default NetworkErrorHandler;

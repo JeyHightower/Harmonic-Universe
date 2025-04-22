@@ -29,11 +29,15 @@ export function applyReactFixes() {
       },
       createContext: function () {
         return {
-          Provider: function (props) { return props.children; },
-          Consumer: function (props) { return props.children; }
+          Provider: function (props) {
+            return props.children;
+          },
+          Consumer: function (props) {
+            return props.children;
+          },
         };
       },
-      Fragment: Symbol('React.Fragment')
+      Fragment: Symbol('React.Fragment'),
     };
 
     window.jsx = window.React.createElement;
@@ -77,10 +81,9 @@ function fixPointerEvents() {
   }
 
   // Make modal elements interactive
-  document.querySelectorAll('.modal-overlay, .modal-content, .modal-body')
-    .forEach(el => {
-      el.style.pointerEvents = 'auto';
-    });
+  document.querySelectorAll('.modal-overlay, .modal-content, .modal-body').forEach((el) => {
+    el.style.pointerEvents = 'auto';
+  });
 
   console.log('Applied basic pointer-events fixes');
 }

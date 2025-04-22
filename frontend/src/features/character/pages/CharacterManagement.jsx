@@ -1,6 +1,6 @@
-import React from "react";
-import { useParams, Navigate } from "react-router-dom";
-import { CharactersPage } from "..";
+import React from 'react';
+import { useParams, Navigate } from 'react-router-dom';
+import { CharactersPage } from '..';
 
 /**
  * Character Management component
@@ -12,10 +12,8 @@ const CharacterManagement = () => {
   const { universeId } = useParams();
 
   // Validate universe ID
-  if (!universeId || universeId === "undefined" || universeId === "null") {
-    console.warn(
-      "CharacterManagement: Invalid universe ID, redirecting to dashboard"
-    );
+  if (!universeId || universeId === 'undefined' || universeId === 'null') {
+    console.warn('CharacterManagement: Invalid universe ID, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 

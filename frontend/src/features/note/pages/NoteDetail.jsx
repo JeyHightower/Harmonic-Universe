@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import PropTypes from "prop-types";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Dialog,
   DialogTitle,
@@ -11,10 +11,10 @@ import {
   Typography,
   Chip,
   IconButton,
-} from "@mui/material";
-import { Close as CloseIcon } from "@mui/icons-material";
-import { fetchNote } from "../../../store/thunks/noteThunks";
-import "../styles/NoteDetail.css";
+} from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
+import { fetchNote } from '../../../store/thunks/noteThunks';
+import '../styles/NoteDetail.css';
 
 const NoteDetail = ({ noteId }) => {
   const dispatch = useDispatch();
@@ -28,10 +28,7 @@ const NoteDetail = ({ noteId }) => {
 
   if (loading) {
     return (
-      <Dialog
-        open={true}
-        onClose={() => dispatch({ type: "notes/closeModal" })}
-      >
+      <Dialog open={true} onClose={() => dispatch({ type: 'notes/closeModal' })}>
         <DialogContent>
           <Typography>Loading...</Typography>
         </DialogContent>
@@ -41,10 +38,7 @@ const NoteDetail = ({ noteId }) => {
 
   if (error) {
     return (
-      <Dialog
-        open={true}
-        onClose={() => dispatch({ type: "notes/closeModal" })}
-      >
+      <Dialog open={true} onClose={() => dispatch({ type: 'notes/closeModal' })}>
         <DialogContent>
           <Typography color="error">{error}</Typography>
         </DialogContent>
@@ -59,7 +53,7 @@ const NoteDetail = ({ noteId }) => {
   return (
     <Dialog
       open={true}
-      onClose={() => dispatch({ type: "notes/closeModal" })}
+      onClose={() => dispatch({ type: 'notes/closeModal' })}
       maxWidth="md"
       fullWidth
       className="note-detail-modal"
@@ -68,9 +62,9 @@ const NoteDetail = ({ noteId }) => {
         {currentNote.title}
         <IconButton
           aria-label="close"
-          onClick={() => dispatch({ type: "notes/closeModal" })}
+          onClick={() => dispatch({ type: 'notes/closeModal' })}
           sx={{
-            position: "absolute",
+            position: 'absolute',
             right: 8,
             top: 8,
           }}
@@ -84,8 +78,7 @@ const NoteDetail = ({ noteId }) => {
             Created: {new Date(currentNote.created_at).toLocaleDateString()}
           </Typography>
           <Typography variant="subtitle2" color="text.secondary">
-            Last Updated:{" "}
-            {new Date(currentNote.updated_at).toLocaleDateString()}
+            Last Updated: {new Date(currentNote.updated_at).toLocaleDateString()}
           </Typography>
         </Box>
         <Typography variant="body1" className="note-detail-text">
@@ -100,25 +93,17 @@ const NoteDetail = ({ noteId }) => {
         )}
         <Box className="note-detail-status">
           <Chip
-            label={currentNote.is_public ? "Public" : "Private"}
-            color={currentNote.is_public ? "primary" : "default"}
+            label={currentNote.is_public ? 'Public' : 'Private'}
+            color={currentNote.is_public ? 'primary' : 'default'}
             size="small"
           />
           {currentNote.is_archived && (
-            <Chip
-              label="Archived"
-              color="secondary"
-              size="small"
-              sx={{ ml: 1 }}
-            />
+            <Chip label="Archived" color="secondary" size="small" sx={{ ml: 1 }} />
           )}
         </Box>
       </DialogContent>
       <DialogActions className="note-detail-actions">
-        <Button
-          onClick={() => dispatch({ type: "notes/closeModal" })}
-          color="primary"
-        >
+        <Button onClick={() => dispatch({ type: 'notes/closeModal' })} color="primary">
           Close
         </Button>
       </DialogActions>
@@ -127,7 +112,7 @@ const NoteDetail = ({ noteId }) => {
 };
 
 NoteDetail.propTypes = {
-  noteId: PropTypes.string.isRequired
+  noteId: PropTypes.string.isRequired,
 };
 
-export default NoteDetail; 
+export default NoteDetail;

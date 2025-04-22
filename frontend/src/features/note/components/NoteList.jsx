@@ -1,17 +1,17 @@
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
-import { Box, Typography, Button, CircularProgress, Grid } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
+import { Box, Typography, Button, CircularProgress, Grid } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import {
   fetchUniverseNotes,
   fetchSceneNotes,
   fetchCharacterNotes,
-} from "../../../store/thunks/noteThunks";
-import { openModal } from "../../../store/slices/noteSlice";
-import NoteFormModal from "../modals/NoteFormModal";
-import NoteCard from "./NoteCard";
-import "../styles/NoteList.css";
+} from '../../../store/thunks/noteThunks';
+import { openModal } from '../../../store/slices/noteSlice';
+import NoteFormModal from '../modals/NoteFormModal';
+import NoteCard from './NoteCard';
+import '../styles/NoteList.css';
 
 const NoteList = () => {
   const dispatch = useDispatch();
@@ -31,11 +31,11 @@ const NoteList = () => {
   }, [dispatch, universeId, sceneId, characterId]);
 
   const handleAddNote = () => {
-    dispatch(openModal("create"));
+    dispatch(openModal('create'));
   };
 
   const handleCloseModal = () => {
-    dispatch({ type: "notes/closeModal" });
+    dispatch({ type: 'notes/closeModal' });
   };
 
   const handleSuccess = () => {
@@ -104,4 +104,4 @@ const NoteList = () => {
   );
 };
 
-export default NoteList; 
+export default NoteList;

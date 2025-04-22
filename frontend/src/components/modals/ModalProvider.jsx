@@ -1,8 +1,8 @@
-import PropTypes from "prop-types";
-import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import GlobalModal from "./GlobalModal";
-import { ModalProvider as ContextModalProvider } from "../../contexts/ModalContext";
+import PropTypes from 'prop-types';
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import GlobalModal from './GlobalModal';
+import { ModalProvider as ContextModalProvider } from '../../contexts/ModalContext';
 
 const ModalProvider = ({ children }) => {
   return (
@@ -24,8 +24,8 @@ export const useModalRoute = () => {
 
   const openModalRoute = (modalType, modalId = null, queryParams = {}) => {
     const searchParams = new URLSearchParams(location.search);
-    searchParams.set("modal", modalType);
-    if (modalId) searchParams.set("modalId", modalId);
+    searchParams.set('modal', modalType);
+    if (modalId) searchParams.set('modalId', modalId);
 
     // Add additional query parameters
     Object.entries(queryParams).forEach(([key, value]) => {
@@ -37,22 +37,20 @@ export const useModalRoute = () => {
 
   const closeModalRoute = (preserveQueryParams = false) => {
     const searchParams = new URLSearchParams(location.search);
-    searchParams.delete("modal");
-    searchParams.delete("modalId");
+    searchParams.delete('modal');
+    searchParams.delete('modalId');
 
     if (!preserveQueryParams) {
       navigate(location.pathname);
     } else {
       navigate(
-        `${location.pathname}${
-          searchParams.toString() ? `?${searchParams.toString()}` : ""
-        }`
+        `${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
       );
     }
   };
 
-  const currentModal = new URLSearchParams(location.search).get("modal");
-  const currentModalId = new URLSearchParams(location.search).get("modalId");
+  const currentModal = new URLSearchParams(location.search).get('modal');
+  const currentModalId = new URLSearchParams(location.search).get('modalId');
 
   return {
     openModalRoute,

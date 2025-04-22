@@ -1,6 +1,6 @@
-import "../../styles/Spinner.css";
+import '../../styles/Spinner.css';
 
-function Spinner({ size = "medium" }) {
+function Spinner({ size = 'medium' }) {
   return (
     <div className={`spinner spinner-${size}`}>
       <div className="spinner-inner"></div>

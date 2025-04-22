@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import Button from "../../../components/common/Button";
-import Input from "../../../components/common/Input";
-import { ModalSystem } from "../../../components/modals/index.mjs";
-import "../../../styles/Modal.css";
+import Button from '../../../components/common/Button';
+import Input from '../../../components/common/Input';
+import { ModalSystem } from '../../../components/modals/index.mjs';
+import '../../../styles/Modal.css';
 
 const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
   const [physicsParams, setPhysicsParams] = useState(initialPhysicsParams);
@@ -15,7 +15,7 @@ const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
   }, [initialPhysicsParams]);
 
   const validateParameter = (name, value) => {
-    if (typeof value === "number") {
+    if (typeof value === 'number') {
       const param = physicsParams[name];
       if (value < param.min || value > param.max) {
         return `Value must be between ${param.min} and ${param.max}`;
@@ -27,7 +27,7 @@ const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
         value >= param.max - param.warning_threshold
       ) {
         return `Value is close to ${
-          value <= param.min + param.warning_threshold ? "minimum" : "maximum"
+          value <= param.min + param.warning_threshold ? 'minimum' : 'maximum'
         } limit`;
       }
     }
@@ -60,14 +60,14 @@ const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
       // Check for errors before submitting
       const hasErrors = Object.values(errors).some((error) => error !== null);
       if (hasErrors) {
-        throw new Error("Please fix the errors before saving.");
+        throw new Error('Please fix the errors before saving.');
       }
 
       // Call the onSave callback with the updated physics parameters
       await onSave(physicsParams);
       onClose();
     } catch (error) {
-      console.error("Error saving physics parameters:", error);
+      console.error('Error saving physics parameters:', error);
       // Handle the error (you might want to display an error message)
     } finally {
       setIsSubmitting(false);
@@ -76,14 +76,12 @@ const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
 
   const renderPhysicsParameter = (key, param) => {
     const hasError = errors[key] !== undefined && errors[key] !== null;
-    const isWarning = errors[key]?.includes("close to");
+    const isWarning = errors[key]?.includes('close to');
 
     return (
       <div className="physics-parameter" key={key}>
         <Input
-          label={`${
-            key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ")
-          } (${param.unit})`}
+          label={`${key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')} (${param.unit})`}
           type="number"
           value={param.value}
           onChange={(value) => handleParameterChange(key, parseFloat(value))}
@@ -102,14 +100,12 @@ const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
       <div className="modal-content">
         <h2>Physics Settings</h2>
         <p className="modal-description">
-          Adjust the physical laws and properties of your universe. These
-          settings will affect how objects interact within your simulation.
+          Adjust the physical laws and properties of your universe. These settings will affect how
+          objects interact within your simulation.
         </p>
 
         <div className="physics-parameters-grid">
-          {Object.entries(physicsParams).map(([key, param]) =>
-            renderPhysicsParameter(key, param)
-          )}
+          {Object.entries(physicsParams).map(([key, param]) => renderPhysicsParameter(key, param))}
         </div>
 
         <div className="modal-actions">
@@ -122,9 +118,7 @@ const PhysicsSettingsModal = ({ initialPhysicsParams, onSave, onClose }) => {
             loading={isSubmitting}
             disabled={
               isSubmitting ||
-              Object.values(errors).some(
-                (error) => error !== null && !error.includes("close to")
-              )
+              Object.values(errors).some((error) => error !== null && !error.includes('close to'))
             }
           >
             Save Changes
@@ -139,7 +133,7 @@ PhysicsSettingsModal.propTypes = {
   universeId: PropTypes.string.isRequired,
   initialPhysicsParams: PropTypes.object,
   onSave: PropTypes.func.isRequired,
-  onClose: PropTypes.func.isRequired
+  onClose: PropTypes.func.isRequired,
 };
 
 export default PhysicsSettingsModal;

@@ -1,8 +1,8 @@
-import { DownloadOutlined } from "@ant-design/icons";
-import { Button, Form, message, Modal, Select } from "antd";
-import { useState } from "react";
+import { DownloadOutlined } from '@ant-design/icons';
+import { Button, Form, message, Modal, Select } from 'antd';
+import { useState } from 'react';
 
-const ExportModal = ({ visible, onClose, data, type = "json" }) => {
+const ExportModal = ({ visible, onClose, data, type = 'json' }) => {
   const [format, setFormat] = useState(type);
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +23,7 @@ const ExportModal = ({ visible, onClose, data, type = "json" }) => {
         // Create header row from first item's keys
         const headers = Object.keys(data[0]).join(',');
         // Create data rows
-        const rows = data.map(item => Object.values(item).join(',')).join('\n');
+        const rows = data.map((item) => Object.values(item).join(',')).join('\n');
         exportData = `${headers}\n${rows}`;
         break;
       default:
@@ -53,11 +53,11 @@ const ExportModal = ({ visible, onClose, data, type = "json" }) => {
 
       generateExportFile();
 
-      message.success("Export successful");
+      message.success('Export successful');
       onClose();
     } catch (error) {
-      console.error("Export failed:", error);
-      message.error("Failed to export data");
+      console.error('Export failed:', error);
+      message.error('Failed to export data');
     } finally {
       setLoading(false);
     }

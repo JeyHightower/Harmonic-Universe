@@ -1,22 +1,22 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
-import { Provider } from "react-redux";
-import { BrowserRouter as Router } from "react-router-dom";
-import { PersistGate } from "redux-persist/integration/react";
-import App from "./App.jsx";
-import store, { persistor } from "./store";
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { PersistGate } from 'redux-persist/integration/react';
+import App from './App.jsx';
+import store, { persistor } from './store';
 // CSS imports in correct order to prevent conflicts
 import 'antd/dist/reset.css'; // Import Ant Design styles first
-import "./styles/App.css"; // Last: App-specific styles
-import "./styles/buttons.css"; // Sixth: Button styles
-import "./styles/common.css"; // Fifth: Common component styles
-import "./styles/global.css"; // Fourth: Global styles
-import "./styles/index.css"; // Seventh: Additional global styles
-import "./styles/reset.css"; // First: Reset browser defaults
-import "./styles/theme.css"; // Third: Define theme variables
-import "./styles/variables.css"; // Second: Define CSS variables
-import { AUTH_CONFIG, ensurePortalRoot } from "./utils";
-import { setupModalDebugging } from "./utils/modalDebug.mjs";
+import './styles/App.css'; // Last: App-specific styles
+import './styles/buttons.css'; // Sixth: Button styles
+import './styles/common.css'; // Fifth: Common component styles
+import './styles/global.css'; // Fourth: Global styles
+import './styles/index.css'; // Seventh: Additional global styles
+import './styles/reset.css'; // First: Reset browser defaults
+import './styles/theme.css'; // Third: Define theme variables
+import './styles/variables.css'; // Second: Define CSS variables
+import { AUTH_CONFIG, ensurePortalRoot } from './utils';
+import { setupModalDebugging } from './utils/modalDebug.mjs';
 
 // Setup global error handling
 const handleGlobalError = (error, info) => {
@@ -26,11 +26,14 @@ const handleGlobalError = (error, info) => {
   // Send error to monitoring service (if implemented)
   try {
     // Example: errorMonitoringService.reportError(error);
-    localStorage.setItem('lastError', JSON.stringify({
-      message: error.message,
-      stack: error.stack,
-      time: new Date().toISOString()
-    }));
+    localStorage.setItem(
+      'lastError',
+      JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        time: new Date().toISOString(),
+      })
+    );
   } catch (e) {
     console.error('Error reporting failure:', e);
   }
@@ -75,7 +78,7 @@ if (typeof window.structuredClone !== 'function') {
 
 // Add polyfill for CustomEvent if needed
 if (typeof window.CustomEvent !== 'function') {
-  window.CustomEvent = function(event, params) {
+  window.CustomEvent = function (event, params) {
     params = params || { bubbles: false, cancelable: false, detail: null };
     const evt = document.createEvent('CustomEvent');
     evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
@@ -84,16 +87,13 @@ if (typeof window.CustomEvent !== 'function') {
 }
 
 // Setup storage event listener for auth sync across tabs
-window.addEventListener("storage", (event) => {
-  if (
-    event.key === AUTH_CONFIG.TOKEN_KEY ||
-    event.key === AUTH_CONFIG.USER_KEY
-  ) {
-    console.log("Auth storage changed in another tab, syncing state");
+window.addEventListener('storage', (event) => {
+  if (event.key === AUTH_CONFIG.TOKEN_KEY || event.key === AUTH_CONFIG.USER_KEY) {
+    console.log('Auth storage changed in another tab, syncing state');
 
     // Dispatch a custom event that our app can listen for
     window.dispatchEvent(
-      new window.CustomEvent("auth-storage-changed", {
+      new window.CustomEvent('auth-storage-changed', {
         detail: { key: event.key, newValue: event.newValue },
       })
     );
@@ -102,11 +102,11 @@ window.addEventListener("storage", (event) => {
 
 // Get or create the root element
 const getRootElement = () => {
-  let rootElement = document.getElementById("root");
+  let rootElement = document.getElementById('root');
   if (!rootElement) {
-    console.error("Root element not found, creating one");
-    rootElement = document.createElement("div");
-    rootElement.id = "root";
+    console.error('Root element not found, creating one');
+    rootElement = document.createElement('div');
+    rootElement.id = 'root';
     document.body.appendChild(rootElement);
   }
   return rootElement;
@@ -118,7 +118,7 @@ const renderApp = () => {
   try {
     ensurePortalRoot();
   } catch (error) {
-    console.error("Error initializing portal root:", error);
+    console.error('Error initializing portal root:', error);
   }
 
   try {
@@ -136,22 +136,21 @@ const renderApp = () => {
       </React.StrictMode>
     );
   } catch (error) {
-    console.error("Error rendering with React 18 API:", error);
+    console.error('Error rendering with React 18 API:', error);
 
     // Fallback to simple rendering
     try {
       const rootDiv = getRootElement();
-      rootDiv.innerHTML = "";
+      rootDiv.innerHTML = '';
 
       // Display fallback message
-      const message = document.createElement("div");
-      message.innerHTML =
-        "<h1>Harmonic Universe</h1><p>Application is loading...</p>";
+      const message = document.createElement('div');
+      message.innerHTML = '<h1>Harmonic Universe</h1><p>Application is loading...</p>';
       rootDiv.appendChild(message);
     } catch (fallbackError) {
-      console.error("Complete render failure:", fallbackError);
+      console.error('Complete render failure:', fallbackError);
       getRootElement().innerHTML =
-        "<div><h1>Harmonic Universe</h1><p>Application failed to initialize. Please try again later.</p></div>";
+        '<div><h1>Harmonic Universe</h1><p>Application failed to initialize. Please try again later.</p></div>';
     }
   }
 };
@@ -160,23 +159,23 @@ const renderApp = () => {
 const init = async () => {
   try {
     // Initialize portal root
-    const portalRoot = document.getElementById("portal-root");
+    const portalRoot = document.getElementById('portal-root');
     if (!portalRoot) {
-      const newPortalRoot = document.createElement("div");
-      newPortalRoot.id = "portal-root";
+      const newPortalRoot = document.createElement('div');
+      newPortalRoot.id = 'portal-root';
       document.body.appendChild(newPortalRoot);
     }
 
     // Render the application
     renderApp();
   } catch (error) {
-    console.error("Error initializing application:", error);
+    console.error('Error initializing application:', error);
   }
 };
 
 // Initialize the application
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
 }

@@ -1,12 +1,12 @@
-import React from "react";
-import { ModalSystem } from "../modals";
-import { MODAL_CONFIG } from "../../utils/config";
-import AlertModal from "../modals/AlertModal";
-import ConfirmationModal from "../modals/ConfirmationModal";
-import FormModal from "../modals/FormModal";
-import LoginModal from "../auth/LoginModal";
-import SignupModal from "../auth/SignupModal";
-import HarmonyParametersModal from "../harmony/HarmonyParametersModal";
+import React from 'react';
+import { ModalSystem } from '../modals';
+import { MODAL_CONFIG } from '../../utils/config';
+import AlertModal from '../modals/AlertModal';
+import ConfirmationModal from '../modals/ConfirmationModal';
+import FormModal from '../modals/FormModal';
+import LoginModal from '../auth/LoginModal';
+import SignupModal from '../auth/SignupModal';
+import HarmonyParametersModal from '../harmony/HarmonyParametersModal';
 
 /**
  * Helper function to get the modal component by type
@@ -21,7 +21,7 @@ export const getModalComponent = (modalType) => {
 
   // Import modal components based on type
   switch (modalType) {
-    case "NETWORK_ERROR":
+    case 'NETWORK_ERROR':
       return (props) => {
         return (
           <ModalSystem
@@ -33,15 +33,12 @@ export const getModalComponent = (modalType) => {
             showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
             data-modal-type="network-error"
           >
-            <NetworkErrorModalContent
-              message={props.message}
-              onClose={props.onClose}
-            />
+            <NetworkErrorModalContent message={props.message} onClose={props.onClose} />
           </ModalSystem>
         );
       };
 
-    case "LOGIN":
+    case 'LOGIN':
       return (props) => {
         return (
           <ModalSystem
@@ -58,7 +55,7 @@ export const getModalComponent = (modalType) => {
         );
       };
 
-    case "SIGNUP":
+    case 'SIGNUP':
       return (props) => {
         return (
           <ModalSystem
@@ -75,17 +72,13 @@ export const getModalComponent = (modalType) => {
         );
       };
 
-    case "HARMONY_PARAMETERS":
+    case 'HARMONY_PARAMETERS':
       return (props) => {
         return (
           <ModalSystem
             isOpen={true}
             onClose={props.onClose}
-            title={
-              props.initialData
-                ? "Edit Harmony Parameter"
-                : "Create Harmony Parameter"
-            }
+            title={props.initialData ? 'Edit Harmony Parameter' : 'Create Harmony Parameter'}
             size={MODAL_CONFIG.SIZES.MEDIUM}
             type={MODAL_CONFIG.TYPES.FORM}
             showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
@@ -97,14 +90,12 @@ export const getModalComponent = (modalType) => {
       };
 
     default:
-      console.warn(
-        `No specific modal handler for type: ${modalType}, using default wrapper`
-      );
+      console.warn(`No specific modal handler for type: ${modalType}, using default wrapper`);
       return (props) => (
         <ModalSystem
           isOpen={true}
           onClose={props.onClose}
-          title={props.title || "Modal"}
+          title={props.title || 'Modal'}
           size={props.size || MODAL_CONFIG.SIZES.MEDIUM}
           type={props.type || MODAL_CONFIG.TYPES.DEFAULT}
           showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
@@ -125,7 +116,7 @@ export const getModalComponent = (modalType) => {
  */
 export const validateModalProps = (props) => {
   if (!props) {
-    console.error("Modal props are required");
+    console.error('Modal props are required');
     return false;
   }
 
@@ -139,18 +130,12 @@ export const validateModalProps = (props) => {
     return false;
   }
 
-  if (
-    props.animation &&
-    !Object.values(MODAL_CONFIG.ANIMATIONS).includes(props.animation)
-  ) {
+  if (props.animation && !Object.values(MODAL_CONFIG.ANIMATIONS).includes(props.animation)) {
     console.error(`Invalid modal animation: ${props.animation}`);
     return false;
   }
 
-  if (
-    props.position &&
-    !Object.values(MODAL_CONFIG.POSITIONS).includes(props.position)
-  ) {
+  if (props.position && !Object.values(MODAL_CONFIG.POSITIONS).includes(props.position)) {
     console.error(`Invalid modal position: ${props.position}`);
     return false;
   }

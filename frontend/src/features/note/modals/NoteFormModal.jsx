@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -14,11 +14,11 @@ import {
   IconButton,
   Typography,
   CircularProgress,
-} from "@mui/material";
-import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
-import PropTypes from "prop-types";
-import apiClient from "../../../services/api.adapter";
-import "../styles/NoteFormModal.css";
+} from '@mui/material';
+import { Close as CloseIcon, Add as AddIcon } from '@mui/icons-material';
+import PropTypes from 'prop-types';
+import apiClient from '../../../services/api.adapter';
+import '../styles/NoteFormModal.css';
 
 const NoteFormModal = ({
   isOpen,
@@ -27,33 +27,33 @@ const NoteFormModal = ({
   universeId,
   sceneId,
   characterId,
-  type = "create",
+  type = 'create',
   onSuccess,
 }) => {
   const [formData, setFormData] = useState({
-    title: "",
-    content: "",
+    title: '',
+    content: '',
     tags: [],
     is_public: false,
     universe_id: universeId,
     scene_id: sceneId,
     character_id: characterId,
   });
-  const [tagInput, setTagInput] = useState("");
+  const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [note, setNote] = useState(null);
 
   useEffect(() => {
-    if (isOpen && noteId && (type === "edit" || type === "view")) {
+    if (isOpen && noteId && (type === 'edit' || type === 'view')) {
       setLoading(true);
       apiClient
         .getNote(noteId)
         .then((response) => {
           setNote(response.data.note);
           setFormData({
-            title: response.data.note.title || "",
-            content: response.data.note.content || "",
+            title: response.data.note.title || '',
+            content: response.data.note.content || '',
             tags: response.data.note.tags || [],
             is_public: response.data.note.is_public || false,
             universe_id: response.data.note.universe_id,
@@ -63,15 +63,15 @@ const NoteFormModal = ({
           setLoading(false);
         })
         .catch((err) => {
-          setError("Failed to load note details");
+          setError('Failed to load note details');
           setLoading(false);
-          console.error("Error fetching note:", err);
+          console.error('Error fetching note:', err);
         });
     } else {
       // Reset form for new notes or when modal is opened
       setFormData({
-        title: "",
-        content: "",
+        title: '',
+        content: '',
         tags: [],
         is_public: false,
         universe_id: universeId,
@@ -85,7 +85,7 @@ const NoteFormModal = ({
     const { name, value, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "is_public" ? checked : value,
+      [name]: name === 'is_public' ? checked : value,
     }));
   };
 
@@ -94,8 +94,8 @@ const NoteFormModal = ({
   };
 
   const handleAddTag = (e) => {
-    if ((e.key === "Enter" || e.type === "click") && tagInput.trim()) {
-      if (e.key === "Enter") {
+    if ((e.key === 'Enter' || e.type === 'click') && tagInput.trim()) {
+      if (e.key === 'Enter') {
         e.preventDefault();
       }
       if (!formData.tags.includes(tagInput.trim())) {
@@ -104,7 +104,7 @@ const NoteFormModal = ({
           tags: [...prev.tags, tagInput.trim()],
         }));
       }
-      setTagInput("");
+      setTagInput('');
     }
   };
 
@@ -121,24 +121,21 @@ const NoteFormModal = ({
     setError(null);
 
     try {
-      if (type === "create") {
+      if (type === 'create') {
         const response = await apiClient.createNote(formData);
         if (onSuccess) onSuccess(response.data.note);
-      } else if (type === "edit" && noteId) {
+      } else if (type === 'edit' && noteId) {
         const response = await apiClient.updateNote(noteId, formData);
         if (onSuccess) onSuccess(response.data.note);
-      } else if (type === "delete" && noteId) {
+      } else if (type === 'delete' && noteId) {
         await apiClient.deleteNote(noteId);
         if (onSuccess) onSuccess();
       }
 
       onClose();
     } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          "An error occurred while processing your request"
-      );
-      console.error("Error submitting note form:", err);
+      setError(err.response?.data?.error || 'An error occurred while processing your request');
+      console.error('Error submitting note form:', err);
     } finally {
       setLoading(false);
     }
@@ -146,20 +143,20 @@ const NoteFormModal = ({
 
   const getTitle = () => {
     switch (type) {
-      case "create":
-        return "Create New Note";
-      case "edit":
-        return "Edit Note";
-      case "view":
-        return "Note Details";
-      case "delete":
-        return "Delete Note";
+      case 'create':
+        return 'Create New Note';
+      case 'edit':
+        return 'Edit Note';
+      case 'view':
+        return 'Note Details';
+      case 'delete':
+        return 'Delete Note';
       default:
-        return "Note";
+        return 'Note';
     }
   };
 
-  if (loading && (type === "edit" || type === "view") && !note) {
+  if (loading && (type === 'edit' || type === 'view') && !note) {
     return (
       <Dialog open={isOpen} onClose={onClose} className="note-form-modal">
         <DialogContent>
@@ -183,7 +180,7 @@ const NoteFormModal = ({
       aria-labelledby="note-form-title"
       aria-describedby="note-form-description"
       BackdropProps={{
-        "aria-hidden": null,
+        'aria-hidden': null,
       }}
     >
       <DialogTitle id="note-form-title">
@@ -192,7 +189,7 @@ const NoteFormModal = ({
           aria-label="close"
           onClick={onClose}
           sx={{
-            position: "absolute",
+            position: 'absolute',
             right: 8,
             top: 8,
           }}
@@ -204,8 +201,8 @@ const NoteFormModal = ({
         {error && (
           <Box
             sx={{
-              bgcolor: "error.light",
-              color: "error.dark",
+              bgcolor: 'error.light',
+              color: 'error.dark',
               p: 2,
               borderRadius: 1,
               mb: 2,
@@ -214,10 +211,9 @@ const NoteFormModal = ({
             <Typography variant="body2">{error}</Typography>
           </Box>
         )}
-        {type === "delete" ? (
+        {type === 'delete' ? (
           <Typography variant="body1">
-            Are you sure you want to delete this note? This action cannot be
-            undone.
+            Are you sure you want to delete this note? This action cannot be undone.
           </Typography>
         ) : (
           <>
@@ -231,8 +227,8 @@ const NoteFormModal = ({
               fullWidth
               value={formData.title}
               onChange={handleChange}
-              required={type !== "view"}
-              disabled={type === "view"}
+              required={type !== 'view'}
+              disabled={type === 'view'}
               sx={{ mb: 2 }}
             />
             <TextField
@@ -245,12 +241,12 @@ const NoteFormModal = ({
               fullWidth
               value={formData.content}
               onChange={handleChange}
-              required={type !== "view"}
-              disabled={type === "view"}
+              required={type !== 'view'}
+              disabled={type === 'view'}
               sx={{ mb: 2 }}
             />
 
-            {type !== "view" && (
+            {type !== 'view' && (
               <TextField
                 margin="dense"
                 id="note-tags"
@@ -273,12 +269,12 @@ const NoteFormModal = ({
               />
             )}
 
-            <Box sx={{ display: "flex", flexWrap: "wrap", mb: 2, gap: 1 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', mb: 2, gap: 1 }}>
               {formData.tags.map((tag) => (
                 <Chip
                   key={tag}
                   label={tag}
-                  onDelete={type !== "view" ? () => handleRemoveTag(tag) : undefined}
+                  onDelete={type !== 'view' ? () => handleRemoveTag(tag) : undefined}
                   color="primary"
                   variant="outlined"
                   size="small"
@@ -292,7 +288,7 @@ const NoteFormModal = ({
                   checked={formData.is_public}
                   onChange={handleChange}
                   name="is_public"
-                  disabled={type === "view"}
+                  disabled={type === 'view'}
                 />
               }
               label="Make note public"
@@ -302,23 +298,23 @@ const NoteFormModal = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} variant="outlined">
-          {type === "view" ? "Close" : "Cancel"}
+          {type === 'view' ? 'Close' : 'Cancel'}
         </Button>
-        {type !== "view" && (
+        {type !== 'view' && (
           <Button
             onClick={handleSubmit}
             variant="contained"
-            color={type === "delete" ? "error" : "primary"}
+            color={type === 'delete' ? 'error' : 'primary'}
             disabled={loading}
           >
             {loading ? (
               <CircularProgress size={24} />
-            ) : type === "create" ? (
-              "Create"
-            ) : type === "edit" ? (
-              "Save"
+            ) : type === 'create' ? (
+              'Create'
+            ) : type === 'edit' ? (
+              'Save'
             ) : (
-              "Delete"
+              'Delete'
             )}
           </Button>
         )}
@@ -334,8 +330,8 @@ NoteFormModal.propTypes = {
   universeId: PropTypes.string,
   sceneId: PropTypes.string,
   characterId: PropTypes.string,
-  type: PropTypes.oneOf(["create", "edit", "view", "delete"]),
+  type: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
   onSuccess: PropTypes.func,
 };
 
-export default NoteFormModal; 
+export default NoteFormModal;

@@ -289,11 +289,11 @@
 }
 
 /* Fix for dialog inner elements */
-[role="dialog"] {
+[role='dialog'] {
   pointer-events: auto !important;
 }
 
-[role="dialog"] * {
+[role='dialog'] * {
   pointer-events: auto !important;
 }
 

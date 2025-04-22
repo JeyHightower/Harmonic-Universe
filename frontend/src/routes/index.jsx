@@ -1,10 +1,10 @@
-import { lazy, Suspense, useEffect } from "react";
-import { Navigate, useParams, useNavigate } from "react-router-dom";
-import Layout from "../components/layout/Layout";
-import ProtectedRoute from "../components/routing/ProtectedRoute";
-import { ROUTES } from "../utils/routes";
-import { SceneModal } from "../features/scene/index.mjs";
-import { ModalProvider } from "../contexts/ModalContext";
+import { lazy, Suspense, useEffect } from 'react';
+import { Navigate, useParams, useNavigate } from 'react-router-dom';
+import Layout from '../components/layout/Layout';
+import ProtectedRoute from '../components/routing/ProtectedRoute';
+import { ROUTES } from '../utils/routes';
+import { SceneModal } from '../features/scene/index.mjs';
+import { ModalProvider } from '../contexts/ModalContext';
 
 // Create a wrapper component for SceneModal in routes
 export const SceneCreateRoute = () => {
@@ -36,20 +36,20 @@ const WrappedLayout = () => (
 );
 
 // Lazy load components
-const SettingsPage = lazy(() => import("../features/settings/pages/SettingsPage"));
-const Dashboard = lazy(() => import("../features/dashboard/pages/Dashboard"));
-const Home = lazy(() => import("../features/home/pages/Home"));
-const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"));
-const UniverseDetail = lazy(() => import("../features/universe/pages/UniverseDetail"));
-const ScenesPage = lazy(() => import("../features/scene/pages/ScenesPage"));
-const SceneDetail = lazy(() => import("../features/scene/pages/SceneDetail"));
-const SceneEditPage = lazy(() => import("../features/scene/pages/SceneEditPage"));
-const SceneEditRedirect = lazy(() => import("../components/routing/SceneEditRedirect"));
-const PhysicsPage = lazy(() => import("../features/physics/pages/PhysicsPage"));
+const SettingsPage = lazy(() => import('../features/settings/pages/SettingsPage'));
+const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard'));
+const Home = lazy(() => import('../features/home/pages/Home'));
+const LoginPage = lazy(() => import('../features/auth/pages/LoginPage'));
+const UniverseDetail = lazy(() => import('../features/universe/pages/UniverseDetail'));
+const ScenesPage = lazy(() => import('../features/scene/pages/ScenesPage'));
+const SceneDetail = lazy(() => import('../features/scene/pages/SceneDetail'));
+const SceneEditPage = lazy(() => import('../features/scene/pages/SceneEditPage'));
+const SceneEditRedirect = lazy(() => import('../components/routing/SceneEditRedirect'));
+const PhysicsPage = lazy(() => import('../features/physics/pages/PhysicsPage'));
 
 // New character and note pages
-const CharactersPage = lazy(() => import("../features/character/pages/CharactersPage"));
-const NotesPage = lazy(() => import("../features/note/pages/NotesPage"));
+const CharactersPage = lazy(() => import('../features/character/pages/CharactersPage'));
+const NotesPage = lazy(() => import('../features/note/pages/NotesPage'));
 
 // Create a special route handler for characters to validate the universeId
 export const CharactersRouteHandler = () => {
@@ -59,23 +59,19 @@ export const CharactersRouteHandler = () => {
   // Stricter validation to check for valid numeric ID
   const isValidId =
     universeId &&
-    universeId !== "undefined" &&
-    universeId !== "null" &&
+    universeId !== 'undefined' &&
+    universeId !== 'null' &&
     !isNaN(parseInt(universeId, 10)) &&
     parseInt(universeId, 10) > 0;
 
   if (!isValidId) {
-    console.log(
-      `Invalid universeId in route params (${universeId}), redirecting to dashboard`
-    );
+    console.log(`Invalid universeId in route params (${universeId}), redirecting to dashboard`);
     return <Navigate to="/dashboard" replace />;
   }
 
   // Explicitly parse the ID to ensure it's numeric
   const parsedId = parseInt(universeId, 10);
-  console.log(
-    `CharactersRouteHandler: Rendering CharactersPage with universeId=${parsedId}`
-  );
+  console.log(`CharactersRouteHandler: Rendering CharactersPage with universeId=${parsedId}`);
 
   // Only render if we have a valid ID
   return (
@@ -84,10 +80,10 @@ export const CharactersRouteHandler = () => {
         <div
           className="loading-container"
           style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "50vh",
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '50vh',
           }}
         >
           <div className="loading-spinner"></div>
@@ -108,8 +104,8 @@ export const NotesRouteHandler = () => {
   // Stricter validation to check for valid numeric ID
   const isValidId =
     universeId &&
-    universeId !== "undefined" &&
-    universeId !== "null" &&
+    universeId !== 'undefined' &&
+    universeId !== 'null' &&
     !isNaN(parseInt(universeId, 10)) &&
     parseInt(universeId, 10) > 0;
 
@@ -122,9 +118,7 @@ export const NotesRouteHandler = () => {
 
   // Explicitly parse the ID to ensure it's numeric
   const parsedId = parseInt(universeId, 10);
-  console.log(
-    `NotesRouteHandler: Rendering NotesPage with universeId=${parsedId}`
-  );
+  console.log(`NotesRouteHandler: Rendering NotesPage with universeId=${parsedId}`);
 
   // Only render if we have a valid ID
   return (
@@ -133,10 +127,10 @@ export const NotesRouteHandler = () => {
         <div
           className="loading-container"
           style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "50vh",
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '50vh',
           }}
         >
           <div className="loading-spinner"></div>
@@ -155,17 +149,15 @@ export const LoginRedirect = () => {
 
   // Redirect to home page with login modal parameter
   useEffect(() => {
-    navigate("/?modal=login", { replace: true });
+    navigate('/?modal=login', { replace: true });
   }, [navigate]);
 
   return <div className="redirect-loader">Redirecting to login...</div>;
 };
 
 // Legacy components that are currently used
-const CharacterDetail = lazy(() =>
-  import("../features/character/pages/CharacterDetail")
-);
-const NoteDetail = lazy(() => import("../features/note/pages/NoteDetail"));
+const CharacterDetail = lazy(() => import('../features/character/pages/CharacterDetail'));
+const NoteDetail = lazy(() => import('../features/note/pages/NoteDetail'));
 
 // Create a wrapper component for SceneModal in routes
 const routes = [
@@ -327,7 +319,7 @@ const routes = [
       },
       // Catch-all route for 404
       {
-        path: "*",
+        path: '*',
         element: <Navigate to="/" replace />,
       },
     ],

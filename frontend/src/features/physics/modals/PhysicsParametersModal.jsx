@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import apiClient from "../../../services/api.adapter";
-import Button from "../../../components/common/Button";
-import Icon from "../../../components/common/Icon";
-import Input from "../../../components/common/Input";
-import Spinner from "../../../components/common/Spinner";
-import "../styles/PhysicsParameters.css";
-import { endpoints } from "../../../services/endpoints";
+import apiClient from '../../../services/api.adapter';
+import Button from '../../../components/common/Button';
+import Icon from '../../../components/common/Icon';
+import Input from '../../../components/common/Input';
+import Spinner from '../../../components/common/Spinner';
+import '../styles/PhysicsParameters.css';
+import { endpoints } from '../../../services/endpoints';
 
 // Default physics parameters
 const DEFAULT_PHYSICS_PARAMS = {
-  name: "",
-  description: "",
+  name: '',
+  description: '',
   gravity_x: 0,
   gravity_y: -9.81,
   gravity_z: 0,
@@ -24,15 +24,8 @@ const DEFAULT_PHYSICS_PARAMS = {
 };
 
 const PhysicsParametersModal = (props) => {
-  // Extract props 
-  const {
-    sceneId,
-    paramsId,
-    onClose,
-    onSuccess,
-    mode = "create",
-    initialData = null,
-  } = props;
+  // Extract props
+  const { sceneId, paramsId, onClose, onSuccess, mode = 'create', initialData = null } = props;
 
   // State for form data
   const [formData, setFormData] = useState({
@@ -49,33 +42,28 @@ const PhysicsParametersModal = (props) => {
   const [submitSuccess, setSubmitSuccess] = useState(null);
 
   // State for loading
-  const [isLoading, setIsLoading] = useState(
-    mode === "edit" || mode === "view"
-  );
+  const [isLoading, setIsLoading] = useState(mode === 'edit' || mode === 'view');
 
   // Get modal title based on mode
   const getModalTitle = () => {
     switch (mode) {
-      case "create":
-        return "Create Physics Parameters";
-      case "edit":
-        return "Edit Physics Parameters";
-      case "view":
-        return "Physics Parameters Details";
-      case "delete":
-        return "Delete Physics Parameters";
+      case 'create':
+        return 'Create Physics Parameters';
+      case 'edit':
+        return 'Edit Physics Parameters';
+      case 'view':
+        return 'Physics Parameters Details';
+      case 'delete':
+        return 'Delete Physics Parameters';
       default:
-        return "Physics Parameters";
+        return 'Physics Parameters';
     }
   };
 
   // Fetch physics parameters data when in edit or view mode
   useEffect(() => {
     const fetchPhysicsParameters = async () => {
-      if (
-        (mode === "edit" || mode === "view" || mode === "delete") &&
-        paramsId
-      ) {
+      if ((mode === 'edit' || mode === 'view' || mode === 'delete') && paramsId) {
         try {
           setIsLoading(true);
           const response = await apiClient.get(
@@ -86,10 +74,8 @@ const PhysicsParametersModal = (props) => {
             scene_id: sceneId,
           });
         } catch (error) {
-          console.error("Error fetching physics parameters:", error);
-          setSubmitError(
-            "Failed to load physics parameters. Please try again."
-          );
+          console.error('Error fetching physics parameters:', error);
+          setSubmitError('Failed to load physics parameters. Please try again.');
         } finally {
           setIsLoading(false);
         }
@@ -97,10 +83,7 @@ const PhysicsParametersModal = (props) => {
     };
 
     // If initialData is provided, use it instead of fetching
-    if (
-      initialData &&
-      (mode === "edit" || mode === "view" || mode === "delete")
-    ) {
+    if (initialData && (mode === 'edit' || mode === 'view' || mode === 'delete')) {
       setFormData({
         ...initialData,
         scene_id: sceneId,
@@ -116,7 +99,7 @@ const PhysicsParametersModal = (props) => {
     const { name, value, type } = e.target;
 
     // Convert numeric values
-    const processedValue = type === "number" ? parseFloat(value) : value;
+    const processedValue = type === 'number' ? parseFloat(value) : value;
 
     setFormData((prevData) => ({
       ...prevData,
@@ -135,57 +118,57 @@ const PhysicsParametersModal = (props) => {
   // Validate a specific field
   const validateField = (name, value) => {
     switch (name) {
-      case "name":
-        if (!value || value.trim() === "") {
-          return "Name is required";
+      case 'name':
+        if (!value || value.trim() === '') {
+          return 'Name is required';
         }
         if (value.length > 100) {
-          return "Name must be less than 100 characters";
+          return 'Name must be less than 100 characters';
         }
         return null;
-      case "description":
+      case 'description':
         if (value && value.length > 500) {
-          return "Description must be less than 500 characters";
+          return 'Description must be less than 500 characters';
         }
         return null;
-      case "gravity_x":
-      case "gravity_y":
-      case "gravity_z":
+      case 'gravity_x':
+      case 'gravity_y':
+      case 'gravity_z':
         if (value === undefined || value === null || isNaN(value)) {
-          return "Gravity must be a valid number";
+          return 'Gravity must be a valid number';
         }
         return null;
-      case "time_scale":
+      case 'time_scale':
         if (value === undefined || value === null || isNaN(value)) {
-          return "Time scale must be a valid number";
+          return 'Time scale must be a valid number';
         }
         if (value <= 0) {
-          return "Time scale must be greater than 0";
+          return 'Time scale must be greater than 0';
         }
         return null;
-      case "air_resistance":
+      case 'air_resistance':
         if (value === undefined || value === null || isNaN(value)) {
-          return "Air resistance must be a valid number";
+          return 'Air resistance must be a valid number';
         }
         if (value < 0) {
-          return "Air resistance must be greater than or equal to 0";
+          return 'Air resistance must be greater than or equal to 0';
         }
         return null;
-      case "friction":
-      case "bounce_factor":
+      case 'friction':
+      case 'bounce_factor':
         if (value === undefined || value === null || isNaN(value)) {
-          return "Value must be a valid number";
+          return 'Value must be a valid number';
         }
         if (value < 0 || value > 1) {
-          return "Value must be between 0 and 1";
+          return 'Value must be between 0 and 1';
         }
         return null;
-      case "solver_iterations":
+      case 'solver_iterations':
         if (value === undefined || value === null || isNaN(value)) {
-          return "Solver iterations must be a valid number";
+          return 'Solver iterations must be a valid number';
         }
         if (!Number.isInteger(Number(value)) || value < 1) {
-          return "Solver iterations must be a positive integer";
+          return 'Solver iterations must be a positive integer';
         }
         return null;
       default:
@@ -214,13 +197,13 @@ const PhysicsParametersModal = (props) => {
     e.preventDefault();
 
     // Don't submit if in view mode
-    if (mode === "view") {
+    if (mode === 'view') {
       onClose();
       return;
     }
 
     // Don't validate in delete mode
-    if (mode !== "delete" && !validateForm()) {
+    if (mode !== 'delete' && !validateForm()) {
       return;
     }
 
@@ -231,26 +214,26 @@ const PhysicsParametersModal = (props) => {
     try {
       let response;
 
-      if (mode === "create") {
+      if (mode === 'create') {
         // Create new physics parameters
         response = await apiClient.post(
           `${endpoints.scenes.detail(sceneId)}/physics_parameters`,
           formData
         );
-        setSubmitSuccess("Physics parameters created successfully!");
-      } else if (mode === "edit") {
+        setSubmitSuccess('Physics parameters created successfully!');
+      } else if (mode === 'edit') {
         // Update existing physics parameters
         response = await apiClient.put(
           `${endpoints.scenes.detail(sceneId)}/physics_parameters/${paramsId}`,
           formData
         );
-        setSubmitSuccess("Physics parameters updated successfully!");
-      } else if (mode === "delete") {
+        setSubmitSuccess('Physics parameters updated successfully!');
+      } else if (mode === 'delete') {
         // Delete physics parameters
         response = await apiClient.delete(
           `${endpoints.scenes.detail(sceneId)}/physics_parameters/${paramsId}`
         );
-        setSubmitSuccess("Physics parameters deleted successfully!");
+        setSubmitSuccess('Physics parameters deleted successfully!');
       }
 
       // Call onSuccess with the response data and mode
@@ -263,15 +246,13 @@ const PhysicsParametersModal = (props) => {
         onClose();
       }, 1500);
     } catch (error) {
-      console.error("Error submitting physics parameters:", error);
+      console.error('Error submitting physics parameters:', error);
 
       // Handle API validation errors
       if (error.response && error.response.data && error.response.data.errors) {
         setErrors(error.response.data.errors);
       } else {
-        setSubmitError(
-          "An error occurred while processing your request. Please try again."
-        );
+        setSubmitError('An error occurred while processing your request. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -289,37 +270,27 @@ const PhysicsParametersModal = (props) => {
       );
     }
 
-    if (mode === "delete") {
+    if (mode === 'delete') {
       return (
         <div className="delete-confirmation">
           <Icon name="warning" size="large" />
           <p>
-            Are you sure you want to delete{" "}
-            <strong>{formData.name || "these physics parameters"}</strong>?
+            Are you sure you want to delete{' '}
+            <strong>{formData.name || 'these physics parameters'}</strong>?
           </p>
           <p>This action cannot be undone.</p>
 
           <div className="modal-actions">
-            <Button
-              variant="secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
+            <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button
-              variant="danger"
-              onClick={handleSubmit}
-              loading={isSubmitting}
-            >
+            <Button variant="danger" onClick={handleSubmit} loading={isSubmitting}>
               Delete
             </Button>
           </div>
 
           {submitError && <div className="error-message">{submitError}</div>}
-          {submitSuccess && (
-            <div className="success-message">{submitSuccess}</div>
-          )}
+          {submitSuccess && <div className="success-message">{submitSuccess}</div>}
         </div>
       );
     }
@@ -333,8 +304,8 @@ const PhysicsParametersModal = (props) => {
             value={formData.name}
             onChange={handleInputChange}
             error={errors.name}
-            disabled={mode === "view"}
-            required={mode !== "view"}
+            disabled={mode === 'view'}
+            required={mode !== 'view'}
             placeholder="Enter parameter set name"
           />
         </div>
@@ -346,7 +317,7 @@ const PhysicsParametersModal = (props) => {
             value={formData.description}
             onChange={handleInputChange}
             error={errors.description}
-            disabled={mode === "view"}
+            disabled={mode === 'view'}
             multiline
             rows={3}
             placeholder="Enter optional description"
@@ -364,7 +335,7 @@ const PhysicsParametersModal = (props) => {
                 value={formData.gravity_x}
                 onChange={handleInputChange}
                 error={errors.gravity_x}
-                disabled={mode === "view"}
+                disabled={mode === 'view'}
                 placeholder="0"
                 step="0.01"
               />
@@ -377,7 +348,7 @@ const PhysicsParametersModal = (props) => {
                 value={formData.gravity_y}
                 onChange={handleInputChange}
                 error={errors.gravity_y}
-                disabled={mode === "view"}
+                disabled={mode === 'view'}
                 placeholder="-9.81"
                 step="0.01"
               />
@@ -390,7 +361,7 @@ const PhysicsParametersModal = (props) => {
                 value={formData.gravity_z}
                 onChange={handleInputChange}
                 error={errors.gravity_z}
-                disabled={mode === "view"}
+                disabled={mode === 'view'}
                 placeholder="0"
                 step="0.01"
               />
@@ -409,7 +380,7 @@ const PhysicsParametersModal = (props) => {
                 value={formData.time_scale}
                 onChange={handleInputChange}
                 error={errors.time_scale}
-                disabled={mode === "view"}
+                disabled={mode === 'view'}
                 placeholder="1.0"
                 min="0.1"
                 step="0.1"
@@ -423,7 +394,7 @@ const PhysicsParametersModal = (props) => {
                 value={formData.solver_iterations}
                 onChange={handleInputChange}
                 error={errors.solver_iterations}
-                disabled={mode === "view"}
+                disabled={mode === 'view'}
                 placeholder="10"
                 min="1"
                 step="1"
@@ -443,7 +414,7 @@ const PhysicsParametersModal = (props) => {
                 value={formData.air_resistance}
                 onChange={handleInputChange}
                 error={errors.air_resistance}
-                disabled={mode === "view"}
+                disabled={mode === 'view'}
                 placeholder="0.1"
                 min="0"
                 max="1"
@@ -458,7 +429,7 @@ const PhysicsParametersModal = (props) => {
                 value={formData.friction}
                 onChange={handleInputChange}
                 error={errors.friction}
-                disabled={mode === "view"}
+                disabled={mode === 'view'}
                 placeholder="0.5"
                 min="0"
                 max="1"
@@ -473,7 +444,7 @@ const PhysicsParametersModal = (props) => {
                 value={formData.bounce_factor}
                 onChange={handleInputChange}
                 error={errors.bounce_factor}
-                disabled={mode === "view"}
+                disabled={mode === 'view'}
                 placeholder="0.7"
                 min="0"
                 max="1"
@@ -488,14 +459,18 @@ const PhysicsParametersModal = (props) => {
             Cancel
           </Button>
           <Button variant="primary" loading={isSubmitting}>
-            {isSubmitting ? (mode === "edit" ? "Updating..." : "Creating...") : (mode === "edit" ? "Update" : "Create")}
+            {isSubmitting
+              ? mode === 'edit'
+                ? 'Updating...'
+                : 'Creating...'
+              : mode === 'edit'
+                ? 'Update'
+                : 'Create'}
           </Button>
         </div>
 
         {submitError && <div className="error-message">{submitError}</div>}
-        {submitSuccess && (
-          <div className="success-message">{submitSuccess}</div>
-        )}
+        {submitSuccess && <div className="success-message">{submitSuccess}</div>}
       </form>
     );
   };
@@ -506,12 +481,7 @@ const PhysicsParametersModal = (props) => {
         <h2 className="modal-title">
           <Icon name="physics" /> {getModalTitle()}
         </h2>
-        <Button
-          variant="icon"
-          onClick={onClose}
-          icon="close"
-          disabled={isSubmitting}
-        />
+        <Button variant="icon" onClick={onClose} icon="close" disabled={isSubmitting} />
       </div>
       <div className="modal-content">{renderModalContent()}</div>
     </div>
@@ -524,8 +494,8 @@ PhysicsParametersModal.propTypes = {
   paramsId: PropTypes.string,
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
-  mode: PropTypes.oneOf(["create", "edit", "view", "delete"]),
-  initialData: PropTypes.object
+  mode: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
+  initialData: PropTypes.object,
 };
 
 export default PhysicsParametersModal;

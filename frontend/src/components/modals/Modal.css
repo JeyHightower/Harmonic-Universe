@@ -301,9 +301,12 @@
 }
 
 /* Ensure forms are interactive */
-form, form *,
-.form-control, .form-control *,
-.input-group, .input-group * {
+form,
+form *,
+.form-control,
+.form-control *,
+.input-group,
+.input-group * {
   pointer-events: auto !important;
 }
 

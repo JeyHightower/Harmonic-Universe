@@ -1,12 +1,11 @@
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import { API_MODAL_ROUTES } from "../../utils/routes";
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { API_MODAL_ROUTES } from '../../utils/routes';
 import apiClient from '../../services/api';
 
 const handleError = (error) => {
-  console.error("API Error:", error);
+  console.error('API Error:', error);
   return {
-    message:
-      error.response?.data?.message || error.message || "An error occurred",
+    message: error.response?.data?.message || error.message || 'An error occurred',
     status: error.response?.status,
     data: error.response?.data,
   };
@@ -14,7 +13,7 @@ const handleError = (error) => {
 
 // Fetch all notes for a universe
 export const fetchUniverseNotes = createAsyncThunk(
-  "notes/fetchUniverseNotes",
+  'notes/fetchUniverseNotes',
   async (universeId, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(`/notes/universe/${universeId}`);
@@ -27,7 +26,7 @@ export const fetchUniverseNotes = createAsyncThunk(
 
 // Fetch all notes for a scene
 export const fetchSceneNotes = createAsyncThunk(
-  "notes/fetchSceneNotes",
+  'notes/fetchSceneNotes',
   async (sceneId, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(`/notes/scene/${sceneId}`);
@@ -40,7 +39,7 @@ export const fetchSceneNotes = createAsyncThunk(
 
 // Fetch all notes for a character
 export const fetchCharacterNotes = createAsyncThunk(
-  "notes/fetchCharacterNotes",
+  'notes/fetchCharacterNotes',
   async (characterId, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(`/notes/character/${characterId}`);
@@ -53,7 +52,7 @@ export const fetchCharacterNotes = createAsyncThunk(
 
 // Fetch a single note
 export const fetchNote = createAsyncThunk(
-  "notes/fetchNote",
+  'notes/fetchNote',
   async (noteId, { rejectWithValue }) => {
     try {
       const response = await apiClient.get(`/notes/${noteId}`);
@@ -66,7 +65,7 @@ export const fetchNote = createAsyncThunk(
 
 // Create a new note
 export const createNote = createAsyncThunk(
-  "notes/createNote",
+  'notes/createNote',
   async (noteData, { rejectWithValue }) => {
     try {
       const response = await apiClient.createNote(noteData);
@@ -79,7 +78,7 @@ export const createNote = createAsyncThunk(
 
 // Update a note
 export const updateNote = createAsyncThunk(
-  "notes/updateNote",
+  'notes/updateNote',
   async ({ noteId, noteData }, { rejectWithValue }) => {
     try {
       const response = await apiClient.updateNote(noteId, noteData);
@@ -92,7 +91,7 @@ export const updateNote = createAsyncThunk(
 
 // Delete a note
 export const deleteNote = createAsyncThunk(
-  "notes/deleteNote",
+  'notes/deleteNote',
   async (noteId, { rejectWithValue }) => {
     try {
       await apiClient.deleteNote(noteId);
@@ -105,10 +104,10 @@ export const deleteNote = createAsyncThunk(
 
 // Archive a note
 export const archiveNote = createAsyncThunk(
-  "notes/archiveNote",
+  'notes/archiveNote',
   async (noteId, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post(API_MODAL_ROUTES.ARCHIVE_NOTE.replace(":id", noteId));
+      const response = await apiClient.post(API_MODAL_ROUTES.ARCHIVE_NOTE.replace(':id', noteId));
       return response.data;
     } catch (error) {
       return rejectWithValue(handleError(error));
@@ -118,13 +117,13 @@ export const archiveNote = createAsyncThunk(
 
 // Unarchive a note
 export const unarchiveNote = createAsyncThunk(
-  "notes/unarchiveNote",
+  'notes/unarchiveNote',
   async (noteId, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post(API_MODAL_ROUTES.UNARCHIVE_NOTE.replace(":id", noteId));
+      const response = await apiClient.post(API_MODAL_ROUTES.UNARCHIVE_NOTE.replace(':id', noteId));
       return response.data;
     } catch (error) {
       return rejectWithValue(handleError(error));
     }
   }
-); 
+);

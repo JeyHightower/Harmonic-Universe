@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
-import Button from "../../../components/common/Button.jsx";
-import Spinner from "../../../components/common/Spinner.jsx";
-import { fetchUniverseById } from "../../../store/thunks/universeThunks.mjs";
-import "../styles/Storyboard.css";
-import apiClient from "../../../services/api.adapter";
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
+import Button from '../../../components/common/Button.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
+import { fetchUniverseById } from '../../../store/thunks/universeThunks.mjs';
+import '../styles/Storyboard.css';
+import apiClient from '../../../services/api.adapter';
 
 const StoryboardList = () => {
   const { universeId } = useParams();
@@ -17,8 +17,8 @@ const StoryboardList = () => {
   const [error, setError] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newStoryboard, setNewStoryboard] = useState({
-    name: "",
-    description: "",
+    name: '',
+    description: '',
   });
 
   const universe = useSelector((state) => state.universe.currentUniverse);
@@ -38,10 +38,8 @@ const StoryboardList = () => {
 
         // Check if the API endpoints are available
         if (!apiClient.endpoints.storyboards) {
-          console.error("Storyboard endpoints not available");
-          setError(
-            "Storyboard feature is not available yet. Please check back later."
-          );
+          console.error('Storyboard endpoints not available');
+          setError('Storyboard feature is not available yet. Please check back later.');
           setStoryboards([]);
           setLoading(false);
           return;
@@ -51,15 +49,13 @@ const StoryboardList = () => {
         setStoryboards(response.storyboards || []);
         setError(null);
       } catch (err) {
-        console.error("Error fetching storyboards:", err);
+        console.error('Error fetching storyboards:', err);
 
         // Handle 404 errors (endpoint not found)
         if (err.response && err.response.status === 404) {
-          setError(
-            "Storyboard feature is not available yet. Please check back later."
-          );
+          setError('Storyboard feature is not available yet. Please check back later.');
         } else {
-          setError("Failed to load storyboards. Please try again.");
+          setError('Failed to load storyboards. Please try again.');
         }
 
         // Set empty array to prevent null reference errors
@@ -76,7 +72,7 @@ const StoryboardList = () => {
     e.preventDefault();
 
     if (!newStoryboard.name.trim()) {
-      setError("Storyboard name is required");
+      setError('Storyboard name is required');
       return;
     }
 
@@ -85,9 +81,7 @@ const StoryboardList = () => {
 
       // Check if the API endpoints are available
       if (!apiClient.endpoints.storyboards || !apiClient.endpoints.storyboards.create) {
-        setError(
-          "Storyboard creation is not available yet. Please check back later."
-        );
+        setError('Storyboard creation is not available yet. Please check back later.');
         setLoading(false);
         return;
       }
@@ -101,19 +95,17 @@ const StoryboardList = () => {
       setStoryboards([...storyboards, response]);
 
       // Reset form
-      setNewStoryboard({ name: "", description: "" });
+      setNewStoryboard({ name: '', description: '' });
       setShowCreateForm(false);
       setError(null);
     } catch (err) {
-      console.error("Error creating storyboard:", err);
+      console.error('Error creating storyboard:', err);
 
       // Handle 404 errors (endpoint not found)
       if (err.response && err.response.status === 404) {
-        setError(
-          "Storyboard creation is not available yet. Please check back later."
-        );
+        setError('Storyboard creation is not available yet. Please check back later.');
       } else {
-        setError("Failed to create storyboard. Please try again.");
+        setError('Failed to create storyboard. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -121,7 +113,7 @@ const StoryboardList = () => {
   };
 
   const handleDeleteStoryboard = async (storyboardId) => {
-    if (!window.confirm("Are you sure you want to delete this storyboard?")) {
+    if (!window.confirm('Are you sure you want to delete this storyboard?')) {
       return;
     }
 
@@ -132,8 +124,8 @@ const StoryboardList = () => {
       // Remove deleted storyboard from the list
       setStoryboards(storyboards.filter((sb) => sb.id !== storyboardId));
     } catch (err) {
-      console.error("Error deleting storyboard:", err);
-      setError("Failed to delete storyboard. Please try again.");
+      console.error('Error deleting storyboard:', err);
+      setError('Failed to delete storyboard. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -159,12 +151,9 @@ const StoryboardList = () => {
   return (
     <div className="storyboard-list-container">
       <div className="storyboard-list-header">
-        <h1>Storyboards for {universe?.name || "Universe"}</h1>
-        <Button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          variant="primary"
-        >
-          {showCreateForm ? "Cancel" : "Create Storyboard"}
+        <h1>Storyboards for {universe?.name || 'Universe'}</h1>
+        <Button onClick={() => setShowCreateForm(!showCreateForm)} variant="primary">
+          {showCreateForm ? 'Cancel' : 'Create Storyboard'}
         </Button>
       </div>
 
@@ -204,15 +193,11 @@ const StoryboardList = () => {
             </div>
 
             <div className="form-actions">
-              <Button
-                type="button"
-                onClick={() => setShowCreateForm(false)}
-                variant="secondary"
-              >
+              <Button type="button" onClick={() => setShowCreateForm(false)} variant="secondary">
                 Cancel
               </Button>
               <Button variant="primary" disabled={loading}>
-                {loading ? "Creating..." : "Create Storyboard"}
+                {loading ? 'Creating...' : 'Create Storyboard'}
               </Button>
             </div>
           </form>
@@ -222,10 +207,7 @@ const StoryboardList = () => {
       {storyboards.length === 0 ? (
         <div className="empty-state">
           <h2>No Storyboards Found</h2>
-          <p>
-            Create your first storyboard to start building your universe's
-            story.
-          </p>
+          <p>Create your first storyboard to start building your universe's story.</p>
           <Button onClick={() => setShowCreateForm(true)} variant="primary">
             Create Storyboard
           </Button>
@@ -235,22 +217,15 @@ const StoryboardList = () => {
           {storyboards.map((storyboard) => (
             <div key={storyboard.id} className="storyboard-card">
               <h3>{storyboard.name}</h3>
-              <p>{storyboard.description || "No description"}</p>
+              <p>{storyboard.description || 'No description'}</p>
 
               <div className="storyboard-card-footer">
-                <span>
-                  Created:{" "}
-                  {new Date(storyboard.created_at).toLocaleDateString()}
-                </span>
+                <span>Created: {new Date(storyboard.created_at).toLocaleDateString()}</span>
               </div>
 
               <div className="storyboard-card-actions">
                 <Button
-                  onClick={() =>
-                    navigate(
-                      `/universes/${universeId}/storyboards/${storyboard.id}`
-                    )
-                  }
+                  onClick={() => navigate(`/universes/${universeId}/storyboards/${storyboard.id}`)}
                   variant="primary"
                   size="small"
                 >
@@ -258,8 +233,7 @@ const StoryboardList = () => {
                 </Button>
                 <Button
                   onClick={() =>
-                    navigate(
-                      `/universes/${universeId}/storyboards/${storyboard.id}/edit`                    )
+                    navigate(`/universes/${universeId}/storyboards/${storyboard.id}/edit`)
                   }
                   variant="secondary"
                   size="small"
@@ -283,4 +257,3 @@ const StoryboardList = () => {
 };
 
 export default StoryboardList;
-

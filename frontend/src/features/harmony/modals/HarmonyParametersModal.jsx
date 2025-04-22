@@ -1,20 +1,9 @@
-import {
-  Button,
-  Col,
-  Divider,
-  Form,
-  Input,
-  InputNumber,
-  message,
-  Row,
-  Select,
-  Slider,
-} from "antd";
-import PropTypes from "prop-types";
-import React, { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import "../styles/HarmonyParametersModal.css";
-import apiClient from "../../../services/api";
+import { Button, Col, Divider, Form, Input, InputNumber, message, Row, Select, Slider } from 'antd';
+import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import '../styles/HarmonyParametersModal.css';
+import apiClient from '../../../services/api';
 
 const { Option } = Select;
 
@@ -28,13 +17,13 @@ const HarmonyParametersModal = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [scales, setScales] = useState([
-    "Major",
-    "Minor",
-    "Dorian",
-    "Phrygian",
-    "Lydian",
-    "Mixolydian",
-    "Locrian",
+    'Major',
+    'Minor',
+    'Dorian',
+    'Phrygian',
+    'Lydian',
+    'Mixolydian',
+    'Locrian',
   ]);
   const [tempos, setTempos] = useState({
     min: 60,
@@ -70,16 +59,16 @@ const HarmonyParametersModal = ({
 
       message.success(
         initialData
-          ? "Harmony parameters updated successfully!"
-          : "Harmony parameters created successfully!"
+          ? 'Harmony parameters updated successfully!'
+          : 'Harmony parameters created successfully!'
       );
 
       if (onClose) {
         onClose(response);
       }
     } catch (error) {
-      console.error("Error saving harmony parameters:", error);
-      message.error("Failed to save harmony parameters. Please try again.");
+      console.error('Error saving harmony parameters:', error);
+      message.error('Failed to save harmony parameters. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -92,12 +81,12 @@ const HarmonyParametersModal = ({
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
-          name: "",
-          description: "",
-          scale: "Major",
-          key: "C",
+          name: '',
+          description: '',
+          scale: 'Major',
+          key: 'C',
           tempo: 120,
-          mood: "Neutral",
+          mood: 'Neutral',
           complexity: 5,
         }}
       >
@@ -106,7 +95,7 @@ const HarmonyParametersModal = ({
             <Form.Item
               name="name"
               label="Name"
-              rules={[{ required: true, message: "Please enter a name" }]}
+              rules={[{ required: true, message: 'Please enter a name' }]}
             >
               <Input placeholder="Enter harmony parameter name" />
             </Form.Item>
@@ -126,23 +115,10 @@ const HarmonyParametersModal = ({
             <Form.Item
               name="key"
               label="Key"
-              rules={[{ required: true, message: "Please select a key" }]}
+              rules={[{ required: true, message: 'Please select a key' }]}
             >
               <Select placeholder="Select a key">
-                {[
-                  "C",
-                  "C#",
-                  "D",
-                  "D#",
-                  "E",
-                  "F",
-                  "F#",
-                  "G",
-                  "G#",
-                  "A",
-                  "A#",
-                  "B",
-                ].map((key) => (
+                {['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map((key) => (
                   <Option key={key} value={key}>
                     {key}
                   </Option>
@@ -155,7 +131,7 @@ const HarmonyParametersModal = ({
             <Form.Item
               name="scale"
               label="Scale"
-              rules={[{ required: true, message: "Please select a scale" }]}
+              rules={[{ required: true, message: 'Please select a scale' }]}
             >
               <Select placeholder="Select a scale">
                 {scales.map((scale) => (
@@ -171,7 +147,7 @@ const HarmonyParametersModal = ({
             <Form.Item
               name="tempo"
               label="Tempo (BPM)"
-              rules={[{ required: true, message: "Please set a tempo" }]}
+              rules={[{ required: true, message: 'Please set a tempo' }]}
             >
               <Row>
                 <Col span={18}>
@@ -182,11 +158,7 @@ const HarmonyParametersModal = ({
                   />
                 </Col>
                 <Col span={6}>
-                  <InputNumber
-                    min={tempos.min}
-                    max={tempos.max}
-                    style={{ marginLeft: 16 }}
-                  />
+                  <InputNumber min={tempos.min} max={tempos.max} style={{ marginLeft: 16 }} />
                 </Col>
               </Row>
             </Form.Item>
@@ -200,22 +172,16 @@ const HarmonyParametersModal = ({
             <Form.Item
               name="mood"
               label="Mood"
-              rules={[{ required: true, message: "Please select a mood" }]}
+              rules={[{ required: true, message: 'Please select a mood' }]}
             >
               <Select placeholder="Select a mood">
-                {[
-                  "Happy",
-                  "Sad",
-                  "Energetic",
-                  "Calm",
-                  "Tense",
-                  "Relaxed",
-                  "Neutral",
-                ].map((mood) => (
-                  <Option key={mood} value={mood}>
-                    {mood}
-                  </Option>
-                ))}
+                {['Happy', 'Sad', 'Energetic', 'Calm', 'Tense', 'Relaxed', 'Neutral'].map(
+                  (mood) => (
+                    <Option key={mood} value={mood}>
+                      {mood}
+                    </Option>
+                  )
+                )}
               </Select>
             </Form.Item>
           </Col>
@@ -224,16 +190,14 @@ const HarmonyParametersModal = ({
             <Form.Item
               name="complexity"
               label="Complexity"
-              rules={[{ required: true, message: "Please set complexity" }]}
+              rules={[{ required: true, message: 'Please set complexity' }]}
             >
               <Row>
                 <Col span={18}>
                   <Slider
                     min={1}
                     max={10}
-                    onChange={(value) =>
-                      form.setFieldsValue({ complexity: value })
-                    }
+                    onChange={(value) => form.setFieldsValue({ complexity: value })}
                   />
                 </Col>
                 <Col span={6}>
@@ -249,7 +213,7 @@ const HarmonyParametersModal = ({
             Cancel
           </Button>
           <Button variant="primary" htmlType="submit" loading={loading}>
-            {initialData ? "Update" : "Create"}
+            {initialData ? 'Update' : 'Create'}
           </Button>
         </div>
       </Form>
@@ -265,4 +229,4 @@ HarmonyParametersModal.propTypes = {
   isGlobalModal: PropTypes.bool,
 };
 
-export default HarmonyParametersModal; 
+export default HarmonyParametersModal;

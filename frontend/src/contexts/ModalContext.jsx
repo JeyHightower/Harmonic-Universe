@@ -3,24 +3,29 @@ import { Suspense, createContext, useCallback, useContext, useEffect, useState }
 import { useDispatch, useSelector } from 'react-redux';
 import StableModalWrapper from '../components/modals/StableModalWrapper';
 import {
-    closeModal,
-    closeModalComplete,
-    openModal,
-    selectIsModalOpen,
-    selectIsModalTransitioning,
-    selectModalProps,
-    selectModalType,
-    updateModalProps
+  closeModal,
+  closeModalComplete,
+  openModal,
+  selectIsModalOpen,
+  selectIsModalTransitioning,
+  selectModalProps,
+  selectModalType,
+  updateModalProps,
 } from '../store/slices/modalSlice';
 import {
-    MODAL_CONFIG,
-    getModalAnimationStyles,
-    getModalPositionStyles,
-    getModalSizeStyles,
-    getModalTypeStyles,
+  MODAL_CONFIG,
+  getModalAnimationStyles,
+  getModalPositionStyles,
+  getModalSizeStyles,
+  getModalTypeStyles,
 } from '../utils/config';
 import modalRegistry from '../utils/modalRegistry';
-import { cleanupAllPortals, createPortalContainer, ensurePortalRoot, removePortalContainer } from '../utils/portalUtils';
+import {
+  cleanupAllPortals,
+  createPortalContainer,
+  ensurePortalRoot,
+  removePortalContainer,
+} from '../utils/portalUtils';
 
 // Create a registry to track registered modals
 const registeredModals = {};
@@ -47,78 +52,81 @@ const ModalRenderer = ({ type, props, onClose }) => {
   console.log('ModalRenderer: Rendering modal of type:', type, 'with props:', props);
 
   // Enhanced close handler that ensures proper cleanup
-  const handleClose = useCallback((e) => {
-    // If there's no event, this is an explicit close call (like from a button)
-    // In this case, we should proceed with closing
-    if (!e || !e.target) {
-      console.log('ModalRenderer: Explicit close call for modal of type:', type);
+  const handleClose = useCallback(
+    (e) => {
+      // If there's no event, this is an explicit close call (like from a button)
+      // In this case, we should proceed with closing
+      if (!e || !e.target) {
+        console.log('ModalRenderer: Explicit close call for modal of type:', type);
+        if (onClose && typeof onClose === 'function') {
+          onClose();
+        }
+        return;
+      }
+
+      // If there is an event with a target, we need to determine if this is a backdrop click
+      // Get the closest modal container or content element
+      const modalContent = e.target.closest('.modal-content, .ant-modal-content');
+      const modalContainer = e.target.closest('.modal-container, .ant-modal-wrap');
+
+      // Check if click is directly on the backdrop (on container but not on content)
+      const isBackdropClick = modalContainer && !modalContent;
+
+      console.log('ModalRenderer: Click detected', {
+        isBackdropClick,
+        hasModalContent: !!modalContent,
+        hasModalContainer: !!modalContainer,
+        targetClass: e.target.className,
+      });
+
+      // If clicking inside modal content, don't close
+      if (modalContent) {
+        console.log('ModalRenderer: Click detected inside modal content, preventing close');
+        e.stopPropagation();
+        return; // Don't close if clicked inside modal content
+      }
+
+      // If it's not a backdrop click, also prevent close
+      if (!isBackdropClick) {
+        console.log('ModalRenderer: Click not on backdrop, preventing close');
+        e.stopPropagation();
+        return;
+      }
+
+      // Only proceed with close if this is a backdrop click
+      console.log('ModalRenderer: Backdrop click detected, closing modal of type:', type);
+
+      // Always stop propagation to prevent bubbling
+      if (e && e.stopPropagation) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+
+      // Call the original onClose first
       if (onClose && typeof onClose === 'function') {
         onClose();
       }
-      return;
-    }
 
-    // If there is an event with a target, we need to determine if this is a backdrop click
-    // Get the closest modal container or content element
-    const modalContent = e.target.closest('.modal-content, .ant-modal-content');
-    const modalContainer = e.target.closest('.modal-container, .ant-modal-wrap');
+      // Ensure body scroll is properly restored
+      document.body.classList.remove('modal-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
 
-    // Check if click is directly on the backdrop (on container but not on content)
-    const isBackdropClick = modalContainer && !modalContent;
+      // Clean up the portal container
+      setTimeout(() => {
+        removePortalContainer(portalContainerId);
+      }, 300); // Wait for animation to complete
 
-    console.log('ModalRenderer: Click detected', {
-      isBackdropClick,
-      hasModalContent: !!modalContent,
-      hasModalContainer: !!modalContainer,
-      targetClass: e.target.className
-    });
+      // Dispatch an event to reset the UI state
+      window.dispatchEvent(new CustomEvent('storage'));
 
-    // If clicking inside modal content, don't close
-    if (modalContent) {
-      console.log('ModalRenderer: Click detected inside modal content, preventing close');
-      e.stopPropagation();
-      return; // Don't close if clicked inside modal content
-    }
-
-    // If it's not a backdrop click, also prevent close
-    if (!isBackdropClick) {
-      console.log('ModalRenderer: Click not on backdrop, preventing close');
-      e.stopPropagation();
-      return;
-    }
-
-    // Only proceed with close if this is a backdrop click
-    console.log('ModalRenderer: Backdrop click detected, closing modal of type:', type);
-
-    // Always stop propagation to prevent bubbling
-    if (e && e.stopPropagation) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-
-    // Call the original onClose first
-    if (onClose && typeof onClose === 'function') {
-      onClose();
-    }
-
-    // Ensure body scroll is properly restored
-    document.body.classList.remove('modal-open');
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.body.style.overflow = '';
-
-    // Clean up the portal container
-    setTimeout(() => {
-      removePortalContainer(portalContainerId);
-    }, 300); // Wait for animation to complete
-
-    // Dispatch an event to reset the UI state
-    window.dispatchEvent(new CustomEvent('storage'));
-
-    // Dispatch Redux action to complete modal closing
-    dispatch(closeModalComplete());
-  }, [type, onClose, dispatch, portalContainerId]);
+      // Dispatch Redux action to complete modal closing
+      dispatch(closeModalComplete());
+    },
+    [type, onClose, dispatch, portalContainerId]
+  );
 
   useEffect(() => {
     // Ensure the portal root exists
@@ -192,8 +200,8 @@ const ModalRenderer = ({ type, props, onClose }) => {
   // Use different wrapper approach based on component type
   // Most components should be wrapped in StableModalWrapper
   // Some components might already have their own Modal implementation
-  const hasBuiltInModal = ModalComponent.hasOwnProperty('__hasBuiltInModal') &&
-                          ModalComponent.__hasBuiltInModal === true;
+  const hasBuiltInModal =
+    ModalComponent.hasOwnProperty('__hasBuiltInModal') && ModalComponent.__hasBuiltInModal === true;
 
   // The onClick handler to prevent events from reaching parent elements
   const handleModalContainerClick = (e) => {
@@ -211,7 +219,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
       isDirectContainerClick,
       isWithinContent,
       targetClass: target.className,
-      currentTargetClass: e.currentTarget.className
+      currentTargetClass: e.currentTarget.className,
     });
 
     // If it's a backdrop click (direct container click and not within content)
@@ -254,7 +262,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          pointerEvents: 'auto'
+          pointerEvents: 'auto',
         }}
       >
         <div
@@ -263,7 +271,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
           style={{
             pointerEvents: 'auto',
             zIndex: 1051,
-            position: 'relative'
+            position: 'relative',
           }}
         >
           <ModalComponent
@@ -295,7 +303,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          pointerEvents: 'none'
+          pointerEvents: 'none',
         }}
       >
         <StableModalWrapper
@@ -311,7 +319,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
             style={{
               pointerEvents: 'auto',
               position: 'relative',
-              zIndex: 1051
+              zIndex: 1051,
             }}
           >
             <ModalComponent
@@ -325,7 +333,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
                 ...props.style,
                 pointerEvents: 'auto',
                 position: 'relative',
-                zIndex: 1055
+                zIndex: 1055,
               }}
               className="modal-interactive"
             />
@@ -383,8 +391,9 @@ export const ModalProvider = ({ children }) => {
       console.log(`ModalProvider: Auto-registering modal type '${modalType}'`);
 
       // Load the component using modalRegistry
-      modalRegistry.getModalComponent(modalType)
-        .then(component => {
+      modalRegistry
+        .getModalComponent(modalType)
+        .then((component) => {
           if (component) {
             registeredModals[modalType] = component;
             console.log(`ModalProvider: Successfully registered component for type '${modalType}'`);
@@ -392,7 +401,7 @@ export const ModalProvider = ({ children }) => {
             console.error(`ModalProvider: Failed to load component for modal type '${modalType}'`);
           }
         })
-        .catch(error => {
+        .catch((error) => {
           console.error(`ModalProvider: Error registering modal type '${modalType}':`, error);
         });
     }

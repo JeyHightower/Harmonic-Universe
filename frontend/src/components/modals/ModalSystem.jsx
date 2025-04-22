@@ -303,10 +303,15 @@ const ModalSystem = forwardRef(
             transform: draggable
               ? `translate(${dragPosition.x}px, ${dragPosition.y}px)`
               : undefined,
-            pointerEvents: 'auto'
+            pointerEvents: 'auto',
           }}
         >
-          <div className="modal-header" onMouseDown={draggable ? handleMouseDown : undefined} onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+          <div
+            className="modal-header"
+            onMouseDown={draggable ? handleMouseDown : undefined}
+            onClick={(e) => e.stopPropagation()}
+            style={{ pointerEvents: 'auto' }}
+          >
             <h2 id={titleId} className="modal-title">
               {title}
             </h2>
@@ -326,10 +331,23 @@ const ModalSystem = forwardRef(
               </button>
             )}
           </div>
-          <div id={contentId} className="modal-body" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+          <div
+            id={contentId}
+            className="modal-body"
+            onClick={(e) => e.stopPropagation()}
+            style={{ pointerEvents: 'auto' }}
+          >
             {children}
           </div>
-          {footerContent && <div className="modal-footer" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>{footerContent}</div>}
+          {footerContent && (
+            <div
+              className="modal-footer"
+              onClick={(e) => e.stopPropagation()}
+              style={{ pointerEvents: 'auto' }}
+            >
+              {footerContent}
+            </div>
+          )}
         </div>
       </div>
     );

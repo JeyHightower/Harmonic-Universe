@@ -1,16 +1,9 @@
-import React from "react";
-import PropTypes from "prop-types";
-import { ModalSystem } from "./index.mjs";
-import { MODAL_CONFIG } from "../../utils/config";
+import React from 'react';
+import PropTypes from 'prop-types';
+import { ModalSystem } from './index.mjs';
+import { MODAL_CONFIG } from '../../utils/config';
 
-const AlertModal = ({
-  title,
-  message,
-  confirmText = "OK",
-  onConfirm,
-  onClose,
-  ...props
-}) => {
+const AlertModal = ({ title, message, confirmText = 'OK', onConfirm, onClose, ...props }) => {
   return (
     <ModalSystem
       type="alert"

@@ -3,12 +3,12 @@
 
 // Mock the babel transform function
 function babelPlugin() {
-    return {
-        name: 'mock-react-refresh-babel',
-        visitor: {
-            // Empty visitor
-        }
-    };
+  return {
+    name: 'mock-react-refresh-babel',
+    visitor: {
+      // Empty visitor
+    },
+  };
 }
 
 module.exports = babelPlugin;

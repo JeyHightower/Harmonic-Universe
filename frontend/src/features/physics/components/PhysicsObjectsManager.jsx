@@ -1,20 +1,18 @@
-import React, { useEffect } from "react";
-import PropTypes from "prop-types";
-import { useDispatch, useSelector } from "react-redux";
-import { useModal } from "../../../contexts/ModalContext";
-import { fetchPhysicsObjects } from "../../../store/thunks/physicsObjectsThunks";
-import { MODAL_TYPES } from "../../../constants/modalTypes";
-import Button from "../../../components/common/Button";
-import Icon from "../../../components/common/Icon";
-import "../styles/PhysicsObjects.css";
-import PhysicsObjectsList from "./PhysicsObjectsList";
+import React, { useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from 'react-redux';
+import { useModal } from '../../../contexts/ModalContext';
+import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
+import Button from '../../../components/common/Button';
+import Icon from '../../../components/common/Icon';
+import '../styles/PhysicsObjects.css';
+import PhysicsObjectsList from './PhysicsObjectsList';
 
 const PhysicsObjectsManager = ({ sceneId }) => {
   const dispatch = useDispatch();
   const { openModalByType } = useModal();
-  const { physicsObjects, loading, error } = useSelector(
-    (state) => state.physicsObjects
-  );
+  const { physicsObjects, loading, error } = useSelector((state) => state.physicsObjects);
 
   useEffect(() => {
     if (sceneId) {
@@ -64,7 +62,7 @@ const PhysicsObjectsManager = ({ sceneId }) => {
     }
 
     openModalByType(MODAL_TYPES.CONFIRM_DELETE, {
-      entityType: "physics object",
+      entityType: 'physics object',
       entityId: objectId,
       entityName: objectToDelete.name,
       onConfirm: () => {
@@ -114,7 +112,7 @@ const PhysicsObjectsManager = ({ sceneId }) => {
 };
 
 PhysicsObjectsManager.propTypes = {
-  sceneId: PropTypes.string.isRequired
+  sceneId: PropTypes.string.isRequired,
 };
 
 export default PhysicsObjectsManager;

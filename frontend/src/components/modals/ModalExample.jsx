@@ -1,21 +1,17 @@
-import React, { useState } from "react";
-import { useModal } from "../../contexts/ModalContext";
-import {
-  createAlertModal,
-  createConfirmModal,
-  createFormModal,
-} from "../../utils/modalHelpers";
-import { Button } from "../common";
-import { DraggableModal } from "./";
-import Input from "../common/Input";
-import "./ModalExample.css";
+import React, { useState } from 'react';
+import { useModal } from '../../contexts/ModalContext';
+import { createAlertModal, createConfirmModal, createFormModal } from '../../utils/modalHelpers';
+import { Button } from '../common';
+import { DraggableModal } from './';
+import Input from '../common/Input';
+import './ModalExample.css';
 
 // Example form component for the form modal
 const ExampleForm = ({ onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    message: "",
+    name: '',
+    email: '',
+    message: '',
   });
 
   const handleChange = (e) => {
@@ -33,13 +29,7 @@ const ExampleForm = ({ onSubmit, onClose }) => {
 
   return (
     <>
-      <Input
-        label="Name"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        required
-      />
+      <Input label="Name" name="name" value={formData.name} onChange={handleChange} required />
       <Input
         label="Email"
         name="email"
@@ -68,12 +58,11 @@ const ModalExample = () => {
 
   // Alert modal example
   const handleOpenAlertModal = () => {
-    console.log("Opening alert modal");
+    console.log('Opening alert modal');
     openModal(
-      createAlertModal(
-        "This is an alert message to inform the user about something important.",
-        { title: "Information" }
-      )
+      createAlertModal('This is an alert message to inform the user about something important.', {
+        title: 'Information',
+      })
     );
   };
 
@@ -81,19 +70,19 @@ const ModalExample = () => {
   const handleOpenConfirmModal = () => {
     openModal(
       createConfirmModal(
-        "Are you sure you want to proceed with this action?",
+        'Are you sure you want to proceed with this action?',
         () => {
           openModal(
-            createAlertModal("Action confirmed successfully!", {
-              title: "Success",
-              animation: "zoom",
+            createAlertModal('Action confirmed successfully!', {
+              title: 'Success',
+              animation: 'zoom',
             })
           );
         },
         {
-          title: "Please Confirm",
-          confirmText: "Yes, Proceed",
-          cancelText: "Cancel",
+          title: 'Please Confirm',
+          confirmText: 'Yes, Proceed',
+          cancelText: 'Cancel',
         }
       )
     );
@@ -102,22 +91,22 @@ const ModalExample = () => {
   const handleOpenDeleteConfirmModal = () => {
     openModal(
       createConfirmModal(
-        "Are you sure you want to delete this item? This action cannot be undone.",
+        'Are you sure you want to delete this item? This action cannot be undone.',
         () => {
           openModal(
-            createAlertModal("Item deleted successfully!", {
-              title: "Deleted",
-              animation: "zoom",
-              type: "alert",
+            createAlertModal('Item deleted successfully!', {
+              title: 'Deleted',
+              animation: 'zoom',
+              type: 'alert',
             })
           );
         },
         {
-          title: "Delete Item",
-          confirmText: "Delete",
-          cancelText: "Cancel",
+          title: 'Delete Item',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
           isDestructive: true,
-          animation: "slide",
+          animation: 'slide',
         }
       )
     );
@@ -138,7 +127,7 @@ const ModalExample = () => {
       openModal(
         createAlertModal(
           `Form submitted successfully with name: ${data.name}, email: ${data.email}`,
-          { title: "Form Submitted" }
+          { title: 'Form Submitted' }
         )
       );
     };
@@ -151,11 +140,11 @@ const ModalExample = () => {
           isSubmitting,
         },
         {
-          title: "Contact Form",
-          submitText: "Submit Form",
-          cancelText: "Cancel",
-          size: "medium",
-          position: "center",
+          title: 'Contact Form',
+          submitText: 'Submit Form',
+          cancelText: 'Cancel',
+          size: 'medium',
+          position: 'center',
         }
       )
     );
@@ -164,67 +153,64 @@ const ModalExample = () => {
   // Size variant examples
   const handleOpenSmallModal = () => {
     openModal(
-      createAlertModal("This is a small modal", {
-        title: "Small Modal",
-        size: "small",
+      createAlertModal('This is a small modal', {
+        title: 'Small Modal',
+        size: 'small',
       })
     );
   };
 
   const handleOpenMediumModal = () => {
     openModal(
-      createAlertModal("This is a medium modal (default size)", {
-        title: "Medium Modal",
-        size: "medium",
+      createAlertModal('This is a medium modal (default size)', {
+        title: 'Medium Modal',
+        size: 'medium',
       })
     );
   };
 
   const handleOpenLargeModal = () => {
     openModal(
-      createAlertModal("This is a large modal for displaying more content", {
-        title: "Large Modal",
-        size: "large",
+      createAlertModal('This is a large modal for displaying more content', {
+        title: 'Large Modal',
+        size: 'large',
       })
     );
   };
 
   const handleOpenFullModal = () => {
     openModal(
-      createAlertModal(
-        "This is a full-sized modal that takes up most of the screen",
-        {
-          title: "Full Modal",
-          size: "full",
-        }
-      )
+      createAlertModal('This is a full-sized modal that takes up most of the screen', {
+        title: 'Full Modal',
+        size: 'full',
+      })
     );
   };
 
   // Animation variant examples
   const handleOpenFadeModal = () => {
     openModal(
-      createAlertModal("This modal uses a fade animation (default)", {
-        title: "Fade Animation",
-        animation: "fade",
+      createAlertModal('This modal uses a fade animation (default)', {
+        title: 'Fade Animation',
+        animation: 'fade',
       })
     );
   };
 
   const handleOpenSlideModal = () => {
     openModal(
-      createAlertModal("This modal uses a slide animation", {
-        title: "Slide Animation",
-        animation: "slide",
+      createAlertModal('This modal uses a slide animation', {
+        title: 'Slide Animation',
+        animation: 'slide',
       })
     );
   };
 
   const handleOpenZoomModal = () => {
     openModal(
-      createAlertModal("This modal uses a zoom animation", {
-        title: "Zoom Animation",
-        animation: "zoom",
+      createAlertModal('This modal uses a zoom animation', {
+        title: 'Zoom Animation',
+        animation: 'zoom',
       })
     );
   };
@@ -232,30 +218,27 @@ const ModalExample = () => {
   // Position variant examples
   const handleOpenTopModal = () => {
     openModal(
-      createAlertModal("This modal appears at the top of the screen", {
-        title: "Top Position",
-        position: "top",
+      createAlertModal('This modal appears at the top of the screen', {
+        title: 'Top Position',
+        position: 'top',
       })
     );
   };
 
   const handleOpenCenterModal = () => {
     openModal(
-      createAlertModal(
-        "This modal appears in the center of the screen (default)",
-        {
-          title: "Center Position",
-          position: "center",
-        }
-      )
+      createAlertModal('This modal appears in the center of the screen (default)', {
+        title: 'Center Position',
+        position: 'center',
+      })
     );
   };
 
   const handleOpenBottomModal = () => {
     openModal(
-      createAlertModal("This modal appears at the bottom of the screen", {
-        title: "Bottom Position",
-        position: "bottom",
+      createAlertModal('This modal appears at the bottom of the screen', {
+        title: 'Bottom Position',
+        position: 'bottom',
       })
     );
   };
@@ -263,27 +246,24 @@ const ModalExample = () => {
   // Stacked modals example
   const handleOpenStackedModals = () => {
     openModal(
-      createAlertModal("This is the first modal", {
-        title: "Modal 1",
-        animation: "fade",
+      createAlertModal('This is the first modal', {
+        title: 'Modal 1',
+        animation: 'fade',
         footerContent: (
           <Button
             onClick={() => {
               openModal(
-                createAlertModal("This is the second modal stacked on top", {
-                  title: "Modal 2",
-                  animation: "slide",
+                createAlertModal('This is the second modal stacked on top', {
+                  title: 'Modal 2',
+                  animation: 'slide',
                   footerContent: (
                     <Button
                       onClick={() => {
                         openModal(
-                          createAlertModal(
-                            "This is the third modal stacked on top",
-                            {
-                              title: "Modal 3",
-                              animation: "zoom",
-                            }
-                          )
+                          createAlertModal('This is the third modal stacked on top', {
+                            title: 'Modal 3',
+                            animation: 'zoom',
+                          })
                         );
                       }}
                     >
@@ -314,23 +294,20 @@ const ModalExample = () => {
     <div className="modal-examples">
       <h1>Modal System Examples</h1>
       <p className="intro">
-        Harmonic Universe provides a powerful and flexible modal system for
-        displaying alerts, confirmations, forms, and custom content. Explore the
-        examples below to see what's possible.
+        Harmonic Universe provides a powerful and flexible modal system for displaying alerts,
+        confirmations, forms, and custom content. Explore the examples below to see what's possible.
       </p>
 
       <section className="examples-section">
         <h2>Modal Types</h2>
         <p className="description">
-          The modal system supports various types of modals for different use
-          cases, including alert messages, confirmation dialogs, and forms.
+          The modal system supports various types of modals for different use cases, including alert
+          messages, confirmation dialogs, and forms.
         </p>
         <div className="button-group">
           <Button onClick={handleOpenAlertModal}>Alert Modal</Button>
           <Button onClick={handleOpenConfirmModal}>Confirm Modal</Button>
-          <Button onClick={handleOpenDeleteConfirmModal}>
-            Delete Confirm Modal
-          </Button>
+          <Button onClick={handleOpenDeleteConfirmModal}>Delete Confirm Modal</Button>
           <Button onClick={handleOpenFormModal}>Form Modal</Button>
         </div>
       </section>
@@ -338,8 +315,8 @@ const ModalExample = () => {
       <section className="examples-section">
         <h2>Modal Sizes</h2>
         <p className="description">
-          Modals come in different sizes to accommodate various amounts of
-          content, from simple messages to complex forms.
+          Modals come in different sizes to accommodate various amounts of content, from simple
+          messages to complex forms.
         </p>
         <div className="button-group">
           <Button onClick={handleOpenSmallModal}>Small Modal</Button>
@@ -352,8 +329,8 @@ const ModalExample = () => {
       <section className="examples-section">
         <h2>Modal Animations</h2>
         <p className="description">
-          Choose from different animation styles to provide visual feedback when
-          opening and closing modals.
+          Choose from different animation styles to provide visual feedback when opening and closing
+          modals.
         </p>
         <div className="button-group">
           <Button onClick={handleOpenFadeModal}>Fade Animation</Button>
@@ -365,8 +342,8 @@ const ModalExample = () => {
       <section className="examples-section">
         <h2>Modal Positions</h2>
         <p className="description">
-          Position your modals at the top, center, or bottom of the screen based
-          on your UX requirements.
+          Position your modals at the top, center, or bottom of the screen based on your UX
+          requirements.
         </p>
         <div className="button-group">
           <Button onClick={handleOpenTopModal}>Top Position</Button>
@@ -378,8 +355,8 @@ const ModalExample = () => {
       <section className="examples-section">
         <h2>Stacked Modals</h2>
         <p className="description">
-          The modal system supports opening multiple modals on top of each
-          other, maintaining proper focus management and z-index stacking.
+          The modal system supports opening multiple modals on top of each other, maintaining proper
+          focus management and z-index stacking.
         </p>
         <div className="button-group">
           <Button onClick={handleOpenStackedModals}>Open Stacked Modals</Button>
@@ -389,14 +366,11 @@ const ModalExample = () => {
       <section className="examples-section">
         <h2>Draggable Modal</h2>
         <p className="description">
-          Draggable modals can be moved around the screen by clicking and
-          dragging the modal header. This is useful for comparing information
-          between a modal and the content behind it.
+          Draggable modals can be moved around the screen by clicking and dragging the modal header.
+          This is useful for comparing information between a modal and the content behind it.
         </p>
         <div className="button-group">
-          <Button onClick={handleOpenDraggableModal}>
-            Open Draggable Modal
-          </Button>
+          <Button onClick={handleOpenDraggableModal}>Open Draggable Modal</Button>
         </div>
       </section>
 
@@ -416,18 +390,12 @@ const ModalExample = () => {
         size="medium"
       >
         <div className="draggable-content">
+          <p>This modal can be moved by clicking and dragging its header. Try it now!</p>
           <p>
-            This modal can be moved by clicking and dragging its header. Try it
-            now!
+            Draggable modals are useful when you need to compare information or interact with
+            content behind the modal.
           </p>
-          <p>
-            Draggable modals are useful when you need to compare information or
-            interact with content behind the modal.
-          </p>
-          <div
-            className="modal-actions"
-            style={{ marginTop: "20px", textAlign: "right" }}
-          >
+          <div className="modal-actions" style={{ marginTop: '20px', textAlign: 'right' }}>
             <Button onClick={handleCloseDraggableModal}>Close</Button>
           </div>
         </div>

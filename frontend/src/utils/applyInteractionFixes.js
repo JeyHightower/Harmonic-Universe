@@ -20,14 +20,18 @@ export const applyInteractionFixes = () => {
   }
 
   // Fix modal elements without cloning or replacing them
-  const modalElements = document.querySelectorAll('.modal-content, .modal-overlay, .modal-backdrop, .modal-body');
-  modalElements.forEach(el => {
+  const modalElements = document.querySelectorAll(
+    '.modal-content, .modal-overlay, .modal-backdrop, .modal-body'
+  );
+  modalElements.forEach((el) => {
     el.style.pointerEvents = 'auto';
   });
 
   // Fix any interactive elements that might have pointer-events: none
-  const interactiveElements = document.querySelectorAll('button, a, input, select, textarea, [role="button"]');
-  interactiveElements.forEach(el => {
+  const interactiveElements = document.querySelectorAll(
+    'button, a, input, select, textarea, [role="button"]'
+  );
+  interactiveElements.forEach((el) => {
     el.style.pointerEvents = 'auto';
   });
 

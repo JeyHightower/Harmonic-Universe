@@ -1,21 +1,21 @@
-import React from "react";
-import PropTypes from "prop-types";
-import { Card, CardContent, Typography, IconButton, Box } from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
-import { useDispatch } from "react-redux";
-import { openModal } from "../../../store/slices/noteSlice";
-import { deleteNote as _deleteNote } from "../../../store/thunks/noteThunks";
-import "../styles/NoteCard.css";
+import React from 'react';
+import PropTypes from 'prop-types';
+import { Card, CardContent, Typography, IconButton, Box } from '@mui/material';
+import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { useDispatch } from 'react-redux';
+import { openModal } from '../../../store/slices/noteSlice';
+import { deleteNote as _deleteNote } from '../../../store/thunks/noteThunks';
+import '../styles/NoteCard.css';
 
 const NoteCard = ({ note }) => {
   const dispatch = useDispatch();
 
   const handleEdit = () => {
-    dispatch(openModal({ type: "edit", note }));
+    dispatch(openModal({ type: 'edit', note }));
   };
 
   const handleDelete = () => {
-    dispatch(openModal({ type: "delete", note }));
+    dispatch(openModal({ type: 'delete', note }));
   };
 
   return (
@@ -39,9 +39,9 @@ const NoteCard = ({ note }) => {
             </IconButton>
           </Box>
         </Box>
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
+        <Typography
+          variant="body2"
+          color="text.secondary"
           sx={{ mt: 1 }}
           className="note-card-content"
         >
@@ -56,8 +56,8 @@ NoteCard.propTypes = {
   note: PropTypes.shape({
     id: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
-    content: PropTypes.string.isRequired
-  }).isRequired
+    content: PropTypes.string.isRequired,
+  }).isRequired,
 };
 
-export default NoteCard; 
+export default NoteCard;

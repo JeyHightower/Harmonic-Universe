@@ -1,6 +1,6 @@
-import React from "react";
-import ThemeSelector from "../../../components/theme/ThemeSelector";
-import "../styles/SettingsPage.css";
+import React from 'react';
+import ThemeSelector from '../../../components/theme/ThemeSelector';
+import '../styles/SettingsPage.css';
 
 const SettingsPage = () => {
   return (
@@ -9,8 +9,7 @@ const SettingsPage = () => {
         <div className="settings-header">
           <h1>Settings</h1>
           <p className="settings-description">
-            Customize your Harmonic Universe experience. Changes are
-            automatically saved.
+            Customize your Harmonic Universe experience. Changes are automatically saved.
           </p>
         </div>
 
@@ -19,9 +18,7 @@ const SettingsPage = () => {
             <h2>Appearance</h2>
             <div className="settings-card">
               <h3>Theme</h3>
-              <p>
-                Choose how Harmonic Universe looks to you. Select a theme below.
-              </p>
+              <p>Choose how Harmonic Universe looks to you. Select a theme below.</p>
               <ThemeSelector />
             </div>
           </div>

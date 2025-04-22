@@ -35,11 +35,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(114, 137, 218, 0.08),
-    rgba(66, 133, 244, 0.05)
-  );
+  background: linear-gradient(135deg, rgba(114, 137, 218, 0.08), rgba(66, 133, 244, 0.05));
   z-index: 0;
 }
 
@@ -150,7 +146,9 @@
   color: white;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .music-control-button:hover {
@@ -242,7 +240,9 @@
   padding: 12px 16px;
   width: 100%;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
   position: relative;
 }
 
@@ -261,7 +261,9 @@
 .info-icon {
   color: #1890ff;
   opacity: 0.8;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .music-info:hover .info-icon {
@@ -655,7 +657,7 @@
   .music-manager-content {
     flex-direction: column;
   }
-  
+
   .music-sidebar {
     flex: 0 0 auto;
     width: 100%;
@@ -666,17 +668,17 @@
     padding-bottom: var(--spacing-md);
     margin-bottom: var(--spacing-md);
   }
-  
+
   .music-manager-header {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-sm);
   }
-  
+
   .music-manager-header button {
     align-self: flex-end;
   }
-  
+
   .music-modal {
     width: 100%;
     max-width: 100%;
@@ -687,29 +689,29 @@
   .music-player {
     max-width: 100%;
   }
-  
+
   .control-buttons .ant-btn {
     width: 40px;
     height: 40px;
   }
-  
+
   .audio-visualizer {
     height: 100px;
   }
-  
+
   .info-row {
     flex-direction: column;
   }
-  
+
   .info-label {
     min-width: auto;
   }
-  
+
   .melody-preview {
     flex-direction: column;
   }
-  
+
   .note-preview {
     width: 100%;
   }
-} 
+}

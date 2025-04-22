@@ -6,48 +6,43 @@ import React, {
   Suspense,
   useRef,
   useTransition,
-} from "react";
-import { Outlet } from "react-router-dom";
-import { useModal } from "../../contexts/ModalContext";
-import { MODAL_TYPES } from "../../constants/modalTypes";
-import { useSelector } from "react-redux";
+} from 'react';
+import { Outlet } from 'react-router-dom';
+import { useModal } from '../../contexts/ModalContext';
+import { MODAL_TYPES } from '../../constants/modalTypes';
+import { useSelector } from 'react-redux';
 
 // Import Navigation component
-import Navigation from "../navigation/Navigation";
+import Navigation from '../navigation/Navigation';
 
 // Import safe versions of hooks
-import {
-  safeUseLocation,
-  safeUseNavigate,
-} from "../../utils/ensure-router-provider";
-import { safeUseDispatch } from "../../utils/ensure-redux-provider";
-import { safeImport } from "../../utils/dynamic-import";
-import { ensureRouterProvider } from "../../utils/ensure-router-provider";
+import { safeUseLocation, safeUseNavigate } from '../../utils/ensure-router-provider';
+import { safeUseDispatch } from '../../utils/ensure-redux-provider';
+import { safeImport } from '../../utils/dynamic-import';
+import { ensureRouterProvider } from '../../utils/ensure-router-provider';
 
 // Import authSlice directly instead of using dynamic import
-import { demoLogin } from "../../store/slices/authSlice";
+import { demoLogin } from '../../store/slices/authSlice';
 
 // Footer with React.lazy for code splitting
 const FooterFallback = () => (
   <footer
     className="footer-fallback"
     style={{
-      padding: "10px 20px",
-      backgroundColor: "#f0f0f0",
-      textAlign: "center",
-      marginTop: "auto",
+      padding: '10px 20px',
+      backgroundColor: '#f0f0f0',
+      textAlign: 'center',
+      marginTop: 'auto',
     }}
   >
-    <p style={{ margin: 0 }}>
-      Harmonic Universe &copy; {new Date().getFullYear()}
-    </p>
+    <p style={{ margin: 0 }}>Harmonic Universe &copy; {new Date().getFullYear()}</p>
   </footer>
 );
 
 // Use React.lazy instead of require
 const Footer = lazy(() =>
-  import("../layout/Footer").catch((error) => {
-    console.warn("[Layout] Footer component not available, using fallback");
+  import('../layout/Footer').catch((error) => {
+    console.warn('[Layout] Footer component not available, using fallback');
     return { default: FooterFallback };
   })
 );
@@ -64,8 +59,8 @@ class ContentErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error("[Layout] Error caught in ContentErrorBoundary:", error);
-    console.error("[Layout] Error info:", info);
+    console.error('[Layout] Error caught in ContentErrorBoundary:', error);
+    console.error('[Layout] Error info:', info);
     this.setState({ error });
   }
 
@@ -75,26 +70,26 @@ class ContentErrorBoundary extends React.Component {
         <div
           className="error-container"
           style={{
-            padding: "20px",
-            textAlign: "center",
-            backgroundColor: "#ffdddd",
-            borderRadius: "5px",
-            margin: "20px 0",
+            padding: '20px',
+            textAlign: 'center',
+            backgroundColor: '#ffdddd',
+            borderRadius: '5px',
+            margin: '20px 0',
           }}
         >
           <h2>Something went wrong</h2>
           <p>An error occurred while rendering the content.</p>
-          <p>Error: {this.state.error?.message || "Unknown error"}</p>
+          <p>Error: {this.state.error?.message || 'Unknown error'}</p>
           <button
             onClick={() => window.location.reload()}
             style={{
-              padding: "10px 15px",
-              backgroundColor: "#f44336",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              marginTop: "10px",
+              padding: '10px 15px',
+              backgroundColor: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              marginTop: '10px',
             }}
           >
             Reload Page
@@ -126,34 +121,34 @@ function Layout() {
 
   // Handle demo login with error handling
   const handleDemoLogin = useCallback(async () => {
-    if (!dispatch || typeof demoLogin !== "function") {
-      console.error("[Layout] Redux dispatch or demoLogin not available");
+    if (!dispatch || typeof demoLogin !== 'function') {
+      console.error('[Layout] Redux dispatch or demoLogin not available');
       return;
     }
 
-    console.log("[Layout] Executing demo login...");
+    console.log('[Layout] Executing demo login...');
 
     try {
-      console.log("[Layout] Dispatching demo login action");
+      console.log('[Layout] Dispatching demo login action');
       const resultAction = await dispatch(demoLogin());
 
-      if (resultAction.meta?.requestStatus === "fulfilled") {
-        console.log("[Layout] Demo login successful, navigating to dashboard");
-        navigate("/dashboard", { replace: true });
+      if (resultAction.meta?.requestStatus === 'fulfilled') {
+        console.log('[Layout] Demo login successful, navigating to dashboard');
+        navigate('/dashboard', { replace: true });
       } else {
-        console.error("[Layout] Demo login failed:", resultAction.error);
+        console.error('[Layout] Demo login failed:', resultAction.error);
       }
     } catch (error) {
-      console.error("[Layout] Error during demo login:", error);
+      console.error('[Layout] Error during demo login:', error);
     }
   }, [dispatch, navigate]);
 
   // Log component mount
   useEffect(() => {
-    console.log("[Layout] Component mounted successfully");
+    console.log('[Layout] Component mounted successfully');
 
     // Log available contexts and hooks
-    console.log("[Layout] Context check:", {
+    console.log('[Layout] Context check:', {
       location: !!location,
       navigate: !!navigate,
       dispatch: !!dispatch,
@@ -164,7 +159,7 @@ function Layout() {
     setInitialized(true);
 
     return () => {
-      console.log("[Layout] Component unmounted");
+      console.log('[Layout] Component unmounted');
     };
   }, [openModal]);
 
@@ -185,29 +180,29 @@ function Layout() {
 
     try {
       const searchParams = new URLSearchParams(location.search);
-      const modalParam = searchParams.get("modal");
-      const demoParam = searchParams.get("demo");
+      const modalParam = searchParams.get('modal');
+      const demoParam = searchParams.get('demo');
 
       // Handle modal parameter
       if (modalParam && openModal) {
-        console.log("[Layout] Detected modal parameter:", modalParam);
-        if (modalParam === "login") {
+        console.log('[Layout] Detected modal parameter:', modalParam);
+        if (modalParam === 'login') {
           openModal(MODAL_TYPES.LOGIN);
-        } else if (modalParam === "signup") {
+        } else if (modalParam === 'signup') {
           openModal(MODAL_TYPES.SIGNUP);
         }
       }
 
       // Handle demo parameter
-      if (demoParam === "true") {
-        console.log("[Layout] Detected demo parameter");
+      if (demoParam === 'true') {
+        console.log('[Layout] Detected demo parameter');
         handleDemoLogin();
       }
 
       // Mark parameters as handled
       hasHandledParams.current = true;
     } catch (error) {
-      console.error("[Layout] Error handling URL parameters:", error);
+      console.error('[Layout] Error handling URL parameters:', error);
       setError(error);
     }
   }, [location, dispatch, handleDemoLogin, openModal]);

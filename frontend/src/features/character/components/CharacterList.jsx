@@ -1,12 +1,12 @@
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Box, Typography, Button, CircularProgress } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
-import { fetchCharacters } from "../../../store/thunks/characterThunks";
-import { openModal } from "../../../store/slices/characterSlice";
-import { CharacterForm } from "..";
-import CharacterCard from "./CharacterCard";
-import "../styles/Character.css";
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Box, Typography, Button, CircularProgress } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
+import { fetchCharacters } from '../../../store/thunks/characterThunks';
+import { openModal } from '../../../store/slices/characterSlice';
+import { CharacterForm } from '..';
+import CharacterCard from './CharacterCard';
+import '../styles/Character.css';
 
 const CharacterList = ({ sceneId }) => {
   const dispatch = useDispatch();
@@ -21,17 +21,12 @@ const CharacterList = ({ sceneId }) => {
   }, [dispatch, sceneId]);
 
   const handleAddCharacter = () => {
-    dispatch(openModal("create"));
+    dispatch(openModal('create'));
   };
 
   if (loading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress />
       </Box>
     );
@@ -67,9 +62,7 @@ const CharacterList = ({ sceneId }) => {
         ))}
       </div>
 
-      {modalOpen && (
-        <CharacterForm open={modalOpen} type={modalType} sceneId={sceneId} />
-      )}
+      {modalOpen && <CharacterForm open={modalOpen} type={modalType} sceneId={sceneId} />}
     </div>
   );
 };

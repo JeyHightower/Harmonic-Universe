@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate, Navigate } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -17,7 +17,7 @@ import {
   CardMedia,
   CardHeader,
   Chip,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -25,7 +25,7 @@ import {
   Visibility as ViewIcon,
   Search as SearchIcon,
   ArrowBack as ArrowBackIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 
 // Create a dummy CharacterModal component since we can't find the actual one
 const CharacterModal = ({ open, onClose, type, characterId }) => {
@@ -39,10 +39,10 @@ const CharacterModal = ({ open, onClose, type, characterId }) => {
 };
 
 // Fix the API import path
-import { useDispatch, useSelector } from "react-redux";
-import api from "../../../services/api.adapter";
-import { clearCharacters } from "../../../store/slices/characterSlice";
-import { fetchCharactersByUniverse } from "../../../store/thunks/characterThunks";
+import { useDispatch, useSelector } from 'react-redux';
+import api from '../../../services/api.adapter';
+import { clearCharacters } from '../../../store/slices/characterSlice';
+import { fetchCharactersByUniverse } from '../../../store/thunks/characterThunks';
 
 // Remove test console.log
 // console.log(
@@ -62,17 +62,15 @@ const CharactersPageWrapper = () => {
     const isValidUniverseId =
       universeId !== undefined &&
       universeId !== null &&
-      universeId !== "undefined" &&
-      universeId !== "null" &&
-      universeId !== "" &&
+      universeId !== 'undefined' &&
+      universeId !== 'null' &&
+      universeId !== '' &&
       !isNaN(parseInt(universeId, 10)) &&
       parseInt(universeId, 10) > 0;
 
     if (!isValidUniverseId) {
-      console.log(
-        `Invalid universe ID detected (${universeId}), redirecting to dashboard`
-      );
-      navigate("/dashboard", { replace: true });
+      console.log(`Invalid universe ID detected (${universeId}), redirecting to dashboard`);
+      navigate('/dashboard', { replace: true });
     } else {
       setIsValidating(false);
     }
@@ -93,9 +91,7 @@ const CharactersPageWrapper = () => {
   // Validation is complete and universeId is valid
   // Parse universeId to make sure it's a number
   const parsedUniverseId = parseInt(universeId, 10);
-  console.log(
-    `CharactersPageWrapper: Rendering for valid universe ID: ${parsedUniverseId}`
-  );
+  console.log(`CharactersPageWrapper: Rendering for valid universe ID: ${parsedUniverseId}`);
 
   // If universeId is valid, render the main component
   return <CharactersPageContent universeId={parsedUniverseId} />;
@@ -108,27 +104,21 @@ const CharactersPageContent = ({ universeId }) => {
 
   // Double-check universeId is valid, even after wrapper validation
   const safeUniverseId =
-    universeId &&
-    !isNaN(parseInt(universeId, 10)) &&
-    parseInt(universeId, 10) > 0
+    universeId && !isNaN(parseInt(universeId, 10)) && parseInt(universeId, 10) > 0
       ? parseInt(universeId, 10)
       : null;
 
   // Get characters from Redux store
-  const { universeCharacters, isLoading: reduxLoading } = useSelector(
-    (state) => state.characters
-  );
+  const { universeCharacters, isLoading: reduxLoading } = useSelector((state) => state.characters);
   const characters =
-    universeId && universeCharacters[universeId]
-      ? universeCharacters[universeId]
-      : [];
+    universeId && universeCharacters[universeId] ? universeCharacters[universeId] : [];
   const loading = reduxLoading;
   const error = useSelector((state) => state.characters.error);
   const [universe, setUniverse] = useState(null);
   const [scenes, setScenes] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState("create");
+  const [modalType, setModalType] = useState('create');
   const [selectedCharacterId, setSelectedCharacterId] = useState(null);
 
   // Update local state when Redux state changes
@@ -146,10 +136,8 @@ const CharactersPageContent = ({ universeId }) => {
   useEffect(() => {
     // Early return to prevent any API calls if universeId is invalid or null
     if (!safeUniverseId) {
-      console.warn(
-        `Invalid universeId for API calls: ${universeId}, skipping data fetch`
-      );
-      setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
+      console.warn(`Invalid universeId for API calls: ${universeId}, skipping data fetch`);
+      setTimeout(() => navigate('/dashboard', { replace: true }), 1500);
       return;
     }
 
@@ -158,7 +146,7 @@ const CharactersPageContent = ({ universeId }) => {
         console.log(`Fetching data for valid universe ID: ${safeUniverseId}`);
 
         // Check for cached characters first
-        const CHARACTER_CACHE_KEY = "harmonic_universe_character_cache";
+        const CHARACTER_CACHE_KEY = 'harmonic_universe_character_cache';
         try {
           // Try to get characters from cache first before making any API calls
           const cacheString = localStorage.getItem(CHARACTER_CACHE_KEY);
@@ -178,7 +166,7 @@ const CharactersPageContent = ({ universeId }) => {
             }
           }
         } catch (cacheError) {
-          console.error("Error reading characters from cache:", cacheError);
+          console.error('Error reading characters from cache:', cacheError);
           // Continue with normal fetching if cache fails
         }
 
@@ -187,17 +175,17 @@ const CharactersPageContent = ({ universeId }) => {
           const universeResponse = await api.getUniverse(safeUniverseId, {
             includeScenes: true,
           });
-          console.log("Universe response:", universeResponse);
+          console.log('Universe response:', universeResponse);
 
           // Add null checks before accessing data
           if (!universeResponse || !universeResponse.data) {
-            console.error("Empty response from getUniverse API");
-            throw new Error("Failed to fetch universe data");
+            console.error('Empty response from getUniverse API');
+            throw new Error('Failed to fetch universe data');
           }
 
           // Set universe with fallback to empty object if undefined
           const universeData = universeResponse.data.universe || {};
-          console.log("Extracted universe data:", universeData);
+          console.log('Extracted universe data:', universeData);
           setUniverse(universeData);
 
           // Improved scene fetching and processing
@@ -209,16 +197,13 @@ const CharactersPageContent = ({ universeId }) => {
             Array.isArray(universeResponse.data.universe.scenes)
           ) {
             console.log(
-              "Found scenes in universe response:",
+              'Found scenes in universe response:',
               universeResponse.data.universe.scenes.length
             );
             universeScenes = universeResponse.data.universe.scenes;
-          } else if (
-            universeResponse.data.scenes &&
-            Array.isArray(universeResponse.data.scenes)
-          ) {
+          } else if (universeResponse.data.scenes && Array.isArray(universeResponse.data.scenes)) {
             console.log(
-              "Found scenes at top level of response:",
+              'Found scenes at top level of response:',
               universeResponse.data.scenes.length
             );
             universeScenes = universeResponse.data.scenes;
@@ -228,33 +213,25 @@ const CharactersPageContent = ({ universeId }) => {
           if (universeScenes.length === 0) {
             try {
               console.log(
-                "No scenes in universe response, fetching directly for universe",
+                'No scenes in universe response, fetching directly for universe',
                 safeUniverseId
               );
-              const scenesResponse = await api.getUniverseScenes(
-                safeUniverseId
-              );
-              console.log("Direct scenes response:", scenesResponse);
+              const scenesResponse = await api.getUniverseScenes(safeUniverseId);
+              console.log('Direct scenes response:', scenesResponse);
 
               // Handle various response formats
-              if (
-                scenesResponse.data?.scenes &&
-                Array.isArray(scenesResponse.data.scenes)
-              ) {
+              if (scenesResponse.data?.scenes && Array.isArray(scenesResponse.data.scenes)) {
                 console.log(
-                  "Found scenes in dedicated scenes array:",
+                  'Found scenes in dedicated scenes array:',
                   scenesResponse.data.scenes.length
                 );
                 universeScenes = scenesResponse.data.scenes;
               } else if (Array.isArray(scenesResponse.data)) {
-                console.log(
-                  "Found scenes as direct array:",
-                  scenesResponse.data.length
-                );
+                console.log('Found scenes as direct array:', scenesResponse.data.length);
                 universeScenes = scenesResponse.data;
               } else if (scenesResponse.data) {
                 // Search for any array property that might contain scenes
-                console.log("Searching response object for scene arrays");
+                console.log('Searching response object for scene arrays');
                 const responseObj = scenesResponse.data;
 
                 for (const key in responseObj) {
@@ -275,19 +252,16 @@ const CharactersPageContent = ({ universeId }) => {
                 }
               }
             } catch (sceneError) {
-              console.error("Error fetching scenes:", sceneError);
+              console.error('Error fetching scenes:', sceneError);
               // Continue with other data fetching even if scenes fail
             }
           }
 
           // Log the final result of scene fetching
-          console.log("Final scenes for universe:", universeScenes);
+          console.log('Final scenes for universe:', universeScenes);
           setScenes(universeScenes || []);
         } catch (universeErr) {
-          console.error(
-            `Error fetching universe ${safeUniverseId}:`,
-            universeErr
-          );
+          console.error(`Error fetching universe ${safeUniverseId}:`, universeErr);
           // Initialize with empty data to prevent null errors
           setUniverse({});
           setScenes([]);
@@ -296,26 +270,22 @@ const CharactersPageContent = ({ universeId }) => {
 
         // Get characters for this universe using Redux thunk action
         try {
-          console.log(
-            `Fetching characters for universe ID: ${safeUniverseId} from Redux`
-          );
+          console.log(`Fetching characters for universe ID: ${safeUniverseId} from Redux`);
 
           // Characters will be updated via the useEffect that watches characters
-          console.log("Characters fetched from Redux store");
+          console.log('Characters fetched from Redux store');
         } catch (charactersErr) {
-          console.error("Error fetching characters from Redux:", charactersErr);
+          console.error('Error fetching characters from Redux:', charactersErr);
           // Don't call setError, just log the error
         }
       } catch (err) {
-        console.error("Error in fetchData:", err);
+        console.error('Error in fetchData:', err);
       }
     };
 
     // Only run fetchData if universeId is valid and defined
     if (safeUniverseId && safeUniverseId > 0) {
-      console.log(
-        `CharactersPageContent: useEffect triggered with universeId=${safeUniverseId}`
-      );
+      console.log(`CharactersPageContent: useEffect triggered with universeId=${safeUniverseId}`);
       fetchData();
     } else {
       console.warn(
@@ -325,27 +295,27 @@ const CharactersPageContent = ({ universeId }) => {
   }, [safeUniverseId, navigate, dispatch]);
 
   const handleCreateCharacter = () => {
-    console.log("Creating character for universe:", safeUniverseId);
-    console.log("Available scenes for character:", scenes);
-    setModalType("create");
+    console.log('Creating character for universe:', safeUniverseId);
+    console.log('Available scenes for character:', scenes);
+    setModalType('create');
     setSelectedCharacterId(null);
     setModalOpen(true);
   };
 
   const handleEditCharacter = (characterId) => {
-    setModalType("edit");
+    setModalType('edit');
     setSelectedCharacterId(characterId);
     setModalOpen(true);
   };
 
   const handleViewCharacter = (characterId) => {
-    setModalType("view");
+    setModalType('view');
     setSelectedCharacterId(characterId);
     setModalOpen(true);
   };
 
   const handleDeleteCharacter = (characterId) => {
-    setModalType("delete");
+    setModalType('delete');
     setSelectedCharacterId(characterId);
     setModalOpen(true);
   };
@@ -353,7 +323,7 @@ const CharactersPageContent = ({ universeId }) => {
   const handleModalClose = () => {
     setModalOpen(false);
     // Reset modal state
-    if (modalType === "create") {
+    if (modalType === 'create') {
       setSelectedCharacterId(null);
     }
   };
@@ -389,8 +359,7 @@ const CharactersPageContent = ({ universeId }) => {
             No Scenes Available
           </Typography>
           <Typography variant="body2" color="textSecondary" paragraph>
-            Characters need to be placed in a scene. Create your first scene to
-            get started.
+            Characters need to be placed in a scene. Create your first scene to get started.
           </Typography>
           <Button
             variant="contained"
@@ -408,18 +377,13 @@ const CharactersPageContent = ({ universeId }) => {
 
   return (
     <Container maxWidth="lg" className="characters-page">
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={4}
-      >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Box display="flex" alignItems="center">
           <IconButton onClick={handleBackToUniverse} sx={{ mr: 1 }}>
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h4" component="h1">
-            Characters {universe ? `for ${universe.name}` : ""}
+            Characters {universe ? `for ${universe.name}` : ''}
           </Typography>
         </Box>
         <Button
@@ -456,9 +420,7 @@ const CharactersPageContent = ({ universeId }) => {
         </Box>
       ) : error ? (
         <Alert severity="error" sx={{ my: 2 }}>
-          {typeof error === "object"
-            ? error.message || "Failed to load characters"
-            : error}
+          {typeof error === 'object' ? error.message || 'Failed to load characters' : error}
         </Alert>
       ) : filteredCharacters.length === 0 ? (
         <Box my={4} textAlign="center">
@@ -482,11 +444,7 @@ const CharactersPageContent = ({ universeId }) => {
             <Grid item xs={12} sm={6} md={4} key={character.id}>
               <Card elevation={3} className="character-card">
                 <CardContent>
-                  <Typography
-                    variant="h6"
-                    component="h2"
-                    className="character-card-title"
-                  >
+                  <Typography variant="h6" component="h2" className="character-card-title">
                     {character.name}
                   </Typography>
                   <Typography
@@ -494,7 +452,7 @@ const CharactersPageContent = ({ universeId }) => {
                     color="textSecondary"
                     className="character-card-description"
                   >
-                    {character.description || "No description available"}
+                    {character.description || 'No description available'}
                   </Typography>
                 </CardContent>
                 <CardActions className="character-card-actions">

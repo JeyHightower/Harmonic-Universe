@@ -123,13 +123,7 @@ const SignupModal = ({ onClose }) => {
   };
 
   return (
-    <Dialog
-      open={true}
-      onClose={forceClose}
-      maxWidth="sm"
-      fullWidth
-      onClick={handleContentClick}
-    >
+    <Dialog open={true} onClose={forceClose} maxWidth="sm" fullWidth onClick={handleContentClick}>
       <DialogTitle>Sign Up</DialogTitle>
       <DialogContent onClick={handleContentClick}>
         <Form form={form} onFinish={handleSubmit} layout="vertical" className="auth-form">

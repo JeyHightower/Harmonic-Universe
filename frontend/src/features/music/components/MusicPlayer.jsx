@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Box,
@@ -19,8 +19,8 @@ import {
   FormControl,
   InputLabel,
   Stack,
-  CardMedia
-} from "@mui/material";
+  CardMedia,
+} from '@mui/material';
 import {
   PlayArrow,
   Pause,
@@ -32,27 +32,27 @@ import {
   SkipNext,
   SkipPrevious,
   VolumeUp,
-  Loop
-} from "@mui/icons-material";
-import * as Tone from "tone";
-import PropTypes from "prop-types";
-import { MODAL_TYPES } from "../../../constants/modalTypes";
-import { createVisualizer, drawVisualization } from "../../../utils/visualizerUtils";
-import "../styles/Music.css";
+  Loop,
+} from '@mui/icons-material';
+import * as Tone from 'tone';
+import PropTypes from 'prop-types';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { createVisualizer, drawVisualization } from '../../../utils/visualizerUtils';
+import '../styles/Music.css';
 
 // Define window globals to fix ESLint errors
 const { requestAnimationFrame, cancelAnimationFrame } = window;
 
 /**
  * Music Player Component
- * 
+ *
  * A component for playing, visualizing, and generating music
  */
 const MusicPlayer = ({
   universeId,
   initialMusic = null,
   onMusicGenerated = null,
-  mode = "standard", // "standard", "minimal", "visualizer-only"
+  mode = 'standard', // "standard", "minimal", "visualizer-only"
 }) => {
   // State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -63,15 +63,15 @@ const MusicPlayer = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [customizationEnabled, setCustomizationEnabled] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
-  const [aiStyle, setAiStyle] = useState("default");
+  const [aiStyle, setAiStyle] = useState('default');
   const [audioContextInitialized, setAudioContextInitialized] = useState(false);
   const [customParams, setCustomParams] = useState({
     tempo: 120,
-    scale_type: "major",
-    root_note: "C",
+    scale_type: 'major',
+    root_note: 'C',
     melody_complexity: 0.5,
   });
-  const [visualizationType, setVisualizationType] = useState("2D"); // '2D' or '3D'
+  const [visualizationType, setVisualizationType] = useState('2D'); // '2D' or '3D'
   const [showMusicInfoModal, setShowMusicInfoModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -87,12 +87,12 @@ const MusicPlayer = ({
   const initializeTone = async () => {
     try {
       await Tone.start();
-      
+
       if (!synthRef.current) {
         // Create synthesizer
         synthRef.current = new Tone.PolySynth(Tone.Synth, {
           oscillator: {
-            type: "sine",
+            type: 'sine',
           },
           envelope: {
             attack: 0.05,
@@ -108,15 +108,15 @@ const MusicPlayer = ({
 
       // Create analyzer for visualization
       if (!analyzerRef.current) {
-        analyzerRef.current = new Tone.Analyser("waveform", 128);
+        analyzerRef.current = new Tone.Analyser('waveform', 128);
         synthRef.current.connect(analyzerRef.current);
       }
 
       setAudioContextInitialized(true);
       return true;
     } catch (error) {
-      console.error("Failed to start audio context:", error);
-      setError("Failed to start audio playback. Please try again.");
+      console.error('Failed to start audio context:', error);
+      setError('Failed to start audio playback. Please try again.');
       return false;
     }
   };
@@ -138,11 +138,11 @@ const MusicPlayer = ({
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      
+
       if (sequenceRef.current) {
         sequenceRef.current.dispose();
       }
-      
+
       if (synthRef.current) {
         synthRef.current.dispose();
       }
@@ -157,7 +157,7 @@ const MusicPlayer = ({
         drawVisualization(visualizerRef.current, data, visualizationType);
         animationRef.current = requestAnimationFrame(updateVisualizer);
       };
-      
+
       updateVisualizer();
     } else if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -167,7 +167,7 @@ const MusicPlayer = ({
   // Create a music sequence from the provided data
   const createMusicSequence = (data) => {
     if (!data || !data.melody || !data.melody.length) {
-      setError("Invalid music data");
+      setError('Invalid music data');
       return;
     }
 
@@ -188,35 +188,35 @@ const MusicPlayer = ({
 
       // Create new sequence
       const melody = data.melody;
-      
+
       sequenceRef.current = new Tone.Sequence(
         (time, note) => {
           synthRef.current.triggerAttackRelease(
-            Tone.Frequency(note.note, "midi").toFrequency(),
+            Tone.Frequency(note.note, 'midi').toFrequency(),
             note.duration,
             time,
             note.velocity
           );
         },
-        melody.map(n => ({ 
-          note: n.note, 
-          duration: n.duration, 
-          velocity: n.velocity || 0.7 
+        melody.map((n) => ({
+          note: n.note,
+          duration: n.duration,
+          velocity: n.velocity || 0.7,
         })),
-        "8n"
+        '8n'
       );
 
       // Start transport if not started
-      if (Tone.Transport.state !== "started") {
+      if (Tone.Transport.state !== 'started') {
         Tone.Transport.start();
       }
 
       sequenceRef.current.loop = true;
-      
+
       return true;
     } catch (error) {
-      console.error("Error creating music sequence:", error);
-      setError("Failed to create music sequence");
+      console.error('Error creating music sequence:', error);
+      setError('Failed to create music sequence');
       return false;
     }
   };
@@ -229,7 +229,7 @@ const MusicPlayer = ({
     }
 
     const targetState = forcedState !== null ? forcedState : !isPlaying;
-    
+
     try {
       if (targetState) {
         // Start playback
@@ -256,8 +256,8 @@ const MusicPlayer = ({
 
       setIsPlaying(targetState);
     } catch (error) {
-      console.error("Error toggling playback:", error);
-      setError("Failed to toggle playback");
+      console.error('Error toggling playback:', error);
+      setError('Failed to toggle playback');
     }
   };
 
@@ -266,25 +266,25 @@ const MusicPlayer = ({
     setIsLoading(true);
     setError(null);
     setSuccessMessage(null);
-    
+
     try {
       // Initialize audio context if needed
       if (!audioContextInitialized) {
         await initializeTone();
       }
-      
+
       // Stop any current playback
       if (isPlaying) {
         await togglePlayback(false);
       }
-      
+
       // Call your music generation API with parameters
       const params = {
         universe_id: universeId,
         ...customParams,
         ai_style: aiEnabled ? aiStyle : null,
       };
-      
+
       // Example API call (replace with your actual API)
       const response = await fetch('/api/music/generate', {
         method: 'POST',
@@ -293,30 +293,30 @@ const MusicPlayer = ({
         },
         body: JSON.stringify(params),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to generate music');
       }
-      
+
       const data = await response.json();
-      
+
       // Update state with the generated music
       setMusicData(data);
-      
+
       // Notify parent component if callback provided
       if (onMusicGenerated) {
         onMusicGenerated(data);
       }
-      
+
       // Create and play the sequence
       const sequenceCreated = createMusicSequence(data);
       if (sequenceCreated) {
         togglePlayback(true);
-        setSuccessMessage("Music generated successfully!");
+        setSuccessMessage('Music generated successfully!');
       }
     } catch (error) {
-      console.error("Error generating music:", error);
-      setError("Failed to generate music. Please try again.");
+      console.error('Error generating music:', error);
+      setError('Failed to generate music. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -325,19 +325,19 @@ const MusicPlayer = ({
   // Download the current music as MIDI
   const downloadMusic = async () => {
     if (!musicData) {
-      setError("No music to download");
+      setError('No music to download');
       return;
     }
-    
+
     setIsDownloading(true);
-    
+
     try {
       // Example download logic (replace with your actual implementation)
       const response = await fetch(`/api/music/${musicData.id}/download`);
       if (!response.ok) {
         throw new Error('Failed to download music');
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -347,11 +347,11 @@ const MusicPlayer = ({
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
-      setSuccessMessage("Music downloaded successfully!");
+
+      setSuccessMessage('Music downloaded successfully!');
     } catch (error) {
-      console.error("Error downloading music:", error);
-      setError("Failed to download music. Please try again.");
+      console.error('Error downloading music:', error);
+      setError('Failed to download music. Please try again.');
     } finally {
       setIsDownloading(false);
     }
@@ -359,15 +359,15 @@ const MusicPlayer = ({
 
   // Handle parameter changes for music generation
   const handleParamChange = (param, value) => {
-    setCustomParams(prev => ({
+    setCustomParams((prev) => ({
       ...prev,
-      [param]: value
+      [param]: value,
     }));
   };
 
   // Toggle between 2D and 3D visualization
   const toggleVisualizationType = () => {
-    setVisualizationType(prev => prev === '2D' ? '3D' : '2D');
+    setVisualizationType((prev) => (prev === '2D' ? '3D' : '2D'));
   };
 
   // Show music info modal
@@ -389,24 +389,19 @@ const MusicPlayer = ({
       <Stack spacing={2} sx={{ p: 2 }}>
         {/* Playback controls */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
-          <IconButton 
-            color="primary" 
+          <IconButton
+            color="primary"
             onClick={() => togglePlayback()}
             disabled={isLoading}
             size="large"
           >
             {isPlaying ? <Pause /> : <PlayArrow />}
           </IconButton>
-          
-          <IconButton
-            color="primary"
-            onClick={generateMusic}
-            disabled={isLoading}
-            size="large"
-          >
+
+          <IconButton color="primary" onClick={generateMusic} disabled={isLoading} size="large">
             <Sync />
           </IconButton>
-          
+
           <IconButton
             color="primary"
             onClick={downloadMusic}
@@ -416,7 +411,7 @@ const MusicPlayer = ({
             <Download />
           </IconButton>
         </Box>
-        
+
         {/* Volume slider */}
         <Box sx={{ px: 3 }}>
           <Typography id="volume-slider" gutterBottom>
@@ -431,12 +426,12 @@ const MusicPlayer = ({
             max={100}
           />
         </Box>
-        
+
         {/* Additional controls for standard mode */}
-        {mode === "standard" && (
+        {mode === 'standard' && (
           <>
             <Divider />
-            
+
             <Box sx={{ px: 1 }}>
               <FormControlLabel
                 control={
@@ -448,14 +443,14 @@ const MusicPlayer = ({
                 label="Advanced Options"
               />
             </Box>
-            
+
             {/* Advanced options when enabled */}
             {customizationEnabled && (
               <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
                 <Typography variant="subtitle2" gutterBottom>
                   Music Parameters
                 </Typography>
-                
+
                 <Grid container spacing={3}>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small" sx={{ mb: 2 }}>
@@ -475,7 +470,7 @@ const MusicPlayer = ({
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                       <InputLabel id="root-note-label">Root</InputLabel>
@@ -501,7 +496,7 @@ const MusicPlayer = ({
                     </FormControl>
                   </Grid>
                 </Grid>
-                
+
                 <Box sx={{ mb: 2 }}>
                   <Typography id="tempo-slider" gutterBottom variant="body2">
                     Tempo: {customParams.tempo} BPM
@@ -515,7 +510,7 @@ const MusicPlayer = ({
                     step={1}
                   />
                 </Box>
-                
+
                 <Box sx={{ mb: 2 }}>
                   <Typography id="complexity-slider" gutterBottom variant="body2">
                     Melody Complexity: {(customParams.melody_complexity * 100).toFixed(0)}%
@@ -529,11 +524,11 @@ const MusicPlayer = ({
                     step={0.01}
                   />
                 </Box>
-                
+
                 <Box sx={{ mb: 2 }}>
-                  <IconButton 
-                    onClick={toggleVisualizationType} 
-                    size="small" 
+                  <IconButton
+                    onClick={toggleVisualizationType}
+                    size="small"
                     color="primary"
                     sx={{ mr: 1 }}
                   >
@@ -545,18 +540,15 @@ const MusicPlayer = ({
                 </Box>
               </Box>
             )}
-            
+
             <Box>
               <FormControlLabel
                 control={
-                  <Switch
-                    checked={aiEnabled}
-                    onChange={(e) => setAiEnabled(e.target.checked)}
-                  />
+                  <Switch checked={aiEnabled} onChange={(e) => setAiEnabled(e.target.checked)} />
                 }
                 label="AI Style"
               />
-              
+
               {aiEnabled && (
                 <Box sx={{ mt: 2, mx: 2 }}>
                   <FormControl fullWidth>
@@ -591,52 +583,52 @@ const MusicPlayer = ({
           {error}
         </Alert>
       )}
-      
+
       {successMessage && (
         <Alert severity="success" sx={{ m: 2 }}>
           {successMessage}
         </Alert>
       )}
-      
+
       {isLoading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
           <CircularProgress />
         </Box>
       )}
-      
+
       {/* Canvas for visualization */}
-      <Box 
-        sx={{ 
-          width: '100%', 
-          height: 200, 
-          bgcolor: 'rgba(0, 0, 0, 0.05)', 
+      <Box
+        sx={{
+          width: '100%',
+          height: 200,
+          bgcolor: 'rgba(0, 0, 0, 0.05)',
           borderRadius: 1,
           overflow: 'hidden',
           position: 'relative',
-          mb: 2
+          mb: 2,
         }}
       >
-        <canvas 
-          ref={canvasRef} 
-          width={800} 
-          height={200} 
-          style={{ 
-            width: '100%', 
+        <canvas
+          ref={canvasRef}
+          width={800}
+          height={200}
+          style={{
+            width: '100%',
             height: '100%',
-            display: visualizationType === '2D' ? 'block' : 'none'
+            display: visualizationType === '2D' ? 'block' : 'none',
           }}
         />
-        
+
         {visualizationType === '3D' && (
           <Box sx={{ width: '100%', height: '100%', position: 'absolute', top: 0 }}>
             {/* 3D visualization would go here */}
-            <Typography 
-              sx={{ 
-                position: 'absolute', 
-                top: '50%', 
-                left: '50%', 
-                transform: 'translate(-50%, -50%)', 
-                color: 'text.secondary' 
+            <Typography
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'text.secondary',
               }}
             >
               3D Visualization
@@ -644,7 +636,7 @@ const MusicPlayer = ({
           </Box>
         )}
       </Box>
-      
+
       {/* Controls */}
       {renderControls()}
     </Card>
@@ -655,14 +647,14 @@ MusicPlayer.propTypes = {
   universeId: PropTypes.string,
   initialMusic: PropTypes.object,
   onMusicGenerated: PropTypes.func,
-  mode: PropTypes.string
+  mode: PropTypes.string,
 };
 
 MusicPlayer.defaultProps = {
-  universeId: "",
+  universeId: '',
   initialMusic: null,
   onMusicGenerated: () => {},
-  mode: "standalone"
+  mode: 'standalone',
 };
 
-export default MusicPlayer; 
+export default MusicPlayer;

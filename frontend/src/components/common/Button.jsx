@@ -1,8 +1,8 @@
-import PropTypes from "prop-types";
-import React from "react";
-import { Link } from "react-router-dom";
-import "../../styles/buttons.css";
-import Spinner from "./Spinner";
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import '../../styles/buttons.css';
+import Spinner from './Spinner';
 
 /**
  * Button component that supports various styles and states
@@ -17,13 +17,13 @@ const Button = React.forwardRef(
   (
     {
       children,
-      variant = "primary",
-      size = "medium",
+      variant = 'primary',
+      size = 'medium',
       fullWidth = false,
       disabled = false,
       loading = false,
-      as: Component = "button",
-      className = "",
+      as: Component = 'button',
+      className = '',
       onClick,
       ...props
     },
@@ -33,15 +33,15 @@ const Button = React.forwardRef(
     button
     button-${variant}
     button-${size}
-    ${fullWidth ? "button-full-width" : ""}
-    ${disabled || loading ? "button-disabled" : ""}
-    ${loading ? "button-loading" : ""}
-    ${variant === "icon" ? "button-icon" : ""}
-    ${variant === "icon-danger" ? "button-icon button-icon-danger" : ""}
+    ${fullWidth ? 'button-full-width' : ''}
+    ${disabled || loading ? 'button-disabled' : ''}
+    ${loading ? 'button-loading' : ''}
+    ${variant === 'icon' ? 'button-icon' : ''}
+    ${variant === 'icon-danger' ? 'button-icon button-icon-danger' : ''}
     ${className}
   `
       .trim()
-      .replace(/\s+/g, " ");
+      .replace(/\s+/g, ' ');
 
     // If it's a Link and disabled/loading, render a button instead
     if (Component === Link && (disabled || loading)) {
@@ -74,18 +74,18 @@ const Button = React.forwardRef(
 
 Button.propTypes = {
   variant: PropTypes.oneOf([
-    "primary",
-    "secondary",
-    "tertiary",
-    "danger",
-    "icon",
-    "icon-danger",
-    "accent",
-    "coral",
-    "mint",
-    "gold",
+    'primary',
+    'secondary',
+    'tertiary',
+    'danger',
+    'icon',
+    'icon-danger',
+    'accent',
+    'coral',
+    'mint',
+    'gold',
   ]),
-  size: PropTypes.oneOf(["small", "medium", "large"]),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
   fullWidth: PropTypes.bool,
   disabled: PropTypes.bool,
   loading: PropTypes.bool,
@@ -95,6 +95,6 @@ Button.propTypes = {
   children: PropTypes.node,
 };
 
-Button.displayName = "Button";
+Button.displayName = 'Button';
 
 export default Button;

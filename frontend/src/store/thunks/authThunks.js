@@ -1,22 +1,13 @@
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import apiClient from "../../services/api.js";
-import {
-    handleOfflineAuthentication,
-    shouldUseFallback,
-} from "../../utils/authFallback";
-import { AUTH_CONFIG } from "../../utils/config.js";
-import {
-    loginFailure,
-    loginStart,
-    loginSuccess,
-    updateUser,
-} from "../slices/authSlice.js";
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import apiClient from '../../services/api.js';
+import { handleOfflineAuthentication, shouldUseFallback } from '../../utils/authFallback';
+import { AUTH_CONFIG } from '../../utils/config.js';
+import { loginFailure, loginStart, loginSuccess, updateUser } from '../slices/authSlice.js';
 
 const handleError = (error) => {
-  console.error("API Error:", error);
+  console.error('API Error:', error);
   return {
-    message:
-      error.response?.data?.message || error.message || "An error occurred",
+    message: error.response?.data?.message || error.message || 'An error occurred',
     status: error.response?.status,
     data: error.response?.data,
   };
@@ -24,14 +15,14 @@ const handleError = (error) => {
 
 // Login
 export const login = createAsyncThunk(
-  "auth/login",
+  'auth/login',
   async (credentials, { dispatch, rejectWithValue }) => {
     try {
       dispatch(loginStart());
-      console.debug("Logging in user:", credentials.email);
+      console.debug('Logging in user:', credentials.email);
 
       const response = await apiClient.login(credentials);
-      console.debug("Login successful:", response);
+      console.debug('Login successful:', response);
 
       // Extract relevant data from response
       const responseData = response.data || response;
@@ -39,10 +30,10 @@ export const login = createAsyncThunk(
       const token = responseData.token || responseData.access_token;
       const refreshToken = responseData.refresh_token;
 
-      console.debug("Extracted login data:", {
+      console.debug('Extracted login data:', {
         userData,
         hasToken: !!token,
-        hasRefreshToken: !!refreshToken
+        hasRefreshToken: !!refreshToken,
       });
 
       // Store tokens
@@ -60,17 +51,17 @@ export const login = createAsyncThunk(
       const authData = {
         user: userData,
         token,
-        refresh_token: refreshToken
+        refresh_token: refreshToken,
       };
 
       dispatch(loginSuccess(authData));
       return authData;
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error('Login failed:', error);
 
       // Check if we should use the fallback authentication
       if (shouldUseFallback(error)) {
-        console.warn("Using offline authentication fallback for login");
+        console.warn('Using offline authentication fallback for login');
         const fallbackData = handleOfflineAuthentication();
 
         // Store tokens from fallback
@@ -95,13 +86,13 @@ export const login = createAsyncThunk(
 
 // Register
 export const register = createAsyncThunk(
-  "auth/register",
+  'auth/register',
   async (userData, { dispatch, rejectWithValue }) => {
     try {
-      console.debug("Registering user:", userData.email);
+      console.debug('Registering user:', userData.email);
 
       const response = await apiClient.register(userData);
-      console.debug("Registration successful:", response);
+      console.debug('Registration successful:', response);
 
       // Store tokens
       if (response.data.token) {
@@ -119,7 +110,7 @@ export const register = createAsyncThunk(
       dispatch(loginSuccess(response.data));
       return response.data;
     } catch (error) {
-      console.error("Registration failed:", error);
+      console.error('Registration failed:', error);
       return rejectWithValue(handleError(error));
     }
   }
@@ -127,17 +118,17 @@ export const register = createAsyncThunk(
 
 // Demo login
 export const demoLogin = createAsyncThunk(
-  "auth/demoLogin",
+  'auth/demoLogin',
   async (_, { dispatch, rejectWithValue }) => {
     try {
       dispatch(loginStart());
-      console.log("Thunk - Starting demo login process");
+      console.log('Thunk - Starting demo login process');
 
       try {
         // Try using the API first
-        console.log("Thunk - Calling demo login API endpoint");
+        console.log('Thunk - Calling demo login API endpoint');
         const response = await apiClient.demoLogin();
-        console.log("Thunk - Demo login API response:", response);
+        console.log('Thunk - Demo login API response:', response);
 
         // Handle different response structures
         let userData, token, refreshToken;
@@ -150,23 +141,23 @@ export const demoLogin = createAsyncThunk(
           token = response.data.token || response.data.access_token;
           refreshToken = response.data.refresh_token;
 
-          console.log("Thunk - Extracted data from response:", {
+          console.log('Thunk - Extracted data from response:', {
             hasUserData: !!userData,
             hasToken: !!token,
-            tokenLength: token ? token.length : 0
+            tokenLength: token ? token.length : 0,
           });
         } else {
-          console.error("Thunk - Unexpected response format:", response);
-          throw new Error("Invalid response format from server");
+          console.error('Thunk - Unexpected response format:', response);
+          throw new Error('Invalid response format from server');
         }
 
         // Store authentication data
         if (token) {
-          console.log("Thunk - Storing token in localStorage");
+          console.log('Thunk - Storing token in localStorage');
           localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
         } else {
-          console.error("Thunk - No token in response");
-          throw new Error("No token received from server");
+          console.error('Thunk - No token in response');
+          throw new Error('No token received from server');
         }
 
         if (refreshToken) {
@@ -174,41 +165,41 @@ export const demoLogin = createAsyncThunk(
         }
 
         if (userData) {
-          console.log("Thunk - Storing user data in localStorage");
+          console.log('Thunk - Storing user data in localStorage');
           localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
         } else {
-          console.error("Thunk - No user data in response");
-          throw new Error("No user data received from server");
+          console.error('Thunk - No user data in response');
+          throw new Error('No user data received from server');
         }
 
         // Create auth data object for Redux store
         const authData = {
           user: userData,
           token,
-          refresh_token: refreshToken
+          refresh_token: refreshToken,
         };
 
-        console.log("Thunk - Dispatching loginSuccess with:", {
+        console.log('Thunk - Dispatching loginSuccess with:', {
           userId: userData?.id,
-          hasToken: !!token
+          hasToken: !!token,
         });
 
         // Update Redux state
         dispatch(loginSuccess(authData));
 
         // Dispatch a storage event to notify other components
-        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event('storage'));
 
-        console.log("Thunk - Demo login successful");
+        console.log('Thunk - Demo login successful');
         return authData;
       } catch (apiError) {
-        console.error("Thunk - API demo login failed:", apiError);
+        console.error('Thunk - API demo login failed:', apiError);
 
         // We won't use the fallback for demo login anymore since we have a working endpoint
         throw apiError;
       }
     } catch (error) {
-      console.error("Thunk - Demo login failed:", error);
+      console.error('Thunk - Demo login failed:', error);
       dispatch(loginFailure(handleError(error)));
       return rejectWithValue(handleError(error));
     }
@@ -217,14 +208,14 @@ export const demoLogin = createAsyncThunk(
 
 // Register a new user
 export const registerUser = createAsyncThunk(
-  "auth/registerUser",
+  'auth/registerUser',
   async (userData, { dispatch, rejectWithValue }) => {
     try {
       dispatch(loginStart());
-      console.debug("Registering user:", userData);
+      console.debug('Registering user:', userData);
 
       const response = await apiClient.register(userData);
-      console.debug("Registration successful:", response);
+      console.debug('Registration successful:', response);
 
       // Store tokens
       if (response.data.token) {
@@ -244,7 +235,7 @@ export const registerUser = createAsyncThunk(
 
       return response;
     } catch (error) {
-      console.error("Registration failed:", error);
+      console.error('Registration failed:', error);
       const errorData = handleError(error);
       dispatch(loginFailure(errorData.message));
       return rejectWithValue(errorData);
@@ -254,19 +245,19 @@ export const registerUser = createAsyncThunk(
 
 // Update user profile
 export const updateUserProfile = createAsyncThunk(
-  "auth/updateUserProfile",
+  'auth/updateUserProfile',
   async (profileData, { dispatch, rejectWithValue }) => {
     try {
-      console.debug("Updating user profile:", profileData);
+      console.debug('Updating user profile:', profileData);
       const response = await apiClient.updateUserProfile(profileData);
-      console.debug("User profile updated:", response);
+      console.debug('User profile updated:', response);
 
       // Update the user in the Redux store
       dispatch(updateUser(response));
 
       return response;
     } catch (error) {
-      console.error("Failed to update user profile:", error);
+      console.error('Failed to update user profile:', error);
       return rejectWithValue(handleError(error));
     }
   }
@@ -274,14 +265,14 @@ export const updateUserProfile = createAsyncThunk(
 
 // Login user
 export const loginUser = createAsyncThunk(
-  "auth/loginUser",
+  'auth/loginUser',
   async (loginData, { dispatch, rejectWithValue }) => {
     try {
       dispatch(loginStart());
-      console.debug("Logging in user:", loginData);
+      console.debug('Logging in user:', loginData);
 
       const response = await apiClient.login(loginData);
-      console.debug("Login successful:", response);
+      console.debug('Login successful:', response);
 
       // Store tokens
       if (response.data.token) {
@@ -301,7 +292,7 @@ export const loginUser = createAsyncThunk(
 
       return response;
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error('Login failed:', error);
       const errorData = handleError(error);
       dispatch(loginFailure(errorData.message));
       return rejectWithValue(errorData);
@@ -310,56 +301,53 @@ export const loginUser = createAsyncThunk(
 );
 
 // Logout
-export const logout = createAsyncThunk(
-  "auth/logout",
-  async (_, { dispatch, rejectWithValue }) => {
-    try {
-      console.debug("Logging out user");
+export const logout = createAsyncThunk('auth/logout', async (_, { dispatch, rejectWithValue }) => {
+  try {
+    console.debug('Logging out user');
 
-      // Get token before making request
-      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-      if (!token) {
-        console.debug("No token found, clearing state and navigating");
-        // Still clear storage and navigate
-        localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-        localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-        window.location.href = "/";
-        return { message: "Logged out successfully" };
-      }
-
-      // Call backend logout endpoint
-      const response = await apiClient.logout();
-      console.debug("Logout API call successful:", response);
-
-      // Clear local storage after successful API call
+    // Get token before making request
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    if (!token) {
+      console.debug('No token found, clearing state and navigating');
+      // Still clear storage and navigate
       localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
       localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-
-      // Clear auth state
-      dispatch(loginFailure({ message: "Logged out successfully" }));
-
-      // Log out is complete - navigate to homepage
-      // Simulate a click on the root path to navigate cleanly to home
-      const homeLink = document.createElement('a');
-      homeLink.href = '/';
-      homeLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = '/';
-      });
-
-      // Create a click event and dispatch it on the link
-      const clickEvent = new Event('click');
-      homeLink.dispatchEvent(clickEvent);
-
-      return { message: "Logged out successfully" };
-    } catch (error) {
-      console.error("Logout failed:", error);
-      // Still clear tokens even if API call fails
-      localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-      localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-      // Still navigate to home even if logout fails
-      window.location.href = "/";
-      return rejectWithValue(handleError(error));
+      window.location.href = '/';
+      return { message: 'Logged out successfully' };
     }
+
+    // Call backend logout endpoint
+    const response = await apiClient.logout();
+    console.debug('Logout API call successful:', response);
+
+    // Clear local storage after successful API call
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+
+    // Clear auth state
+    dispatch(loginFailure({ message: 'Logged out successfully' }));
+
+    // Log out is complete - navigate to homepage
+    // Simulate a click on the root path to navigate cleanly to home
+    const homeLink = document.createElement('a');
+    homeLink.href = '/';
+    homeLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/';
+    });
+
+    // Create a click event and dispatch it on the link
+    const clickEvent = new Event('click');
+    homeLink.dispatchEvent(clickEvent);
+
+    return { message: 'Logged out successfully' };
+  } catch (error) {
+    console.error('Logout failed:', error);
+    // Still clear tokens even if API call fails
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+    // Still navigate to home even if logout fails
+    window.location.href = '/';
+    return rejectWithValue(handleError(error));
   }
-);
+});

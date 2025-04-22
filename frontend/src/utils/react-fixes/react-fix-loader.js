@@ -1,6 +1,6 @@
 /**
  * React Fix Loader - Resolves common React module loading issues
- * 
+ *
  * This script helps with:
  * 1. MIME type issues for module scripts
  * 2. Fixing missing React references
@@ -18,11 +18,15 @@ if (typeof React === 'undefined') {
     },
     createContext: function () {
       return {
-        Provider: function (props) { return props.children; },
-        Consumer: function (props) { return props.children; }
+        Provider: function (props) {
+          return props.children;
+        },
+        Consumer: function (props) {
+          return props.children;
+        },
       };
     },
-    Fragment: Symbol('React.Fragment')
+    Fragment: Symbol('React.Fragment'),
   };
 
   // Add JSX runtime compatibility
@@ -46,21 +50,21 @@ if (!window.jsx || !window.jsxs) {
     module.exports = {
       jsx: window.jsx,
       jsxs: window.jsxs,
-      Fragment: window.React.Fragment
+      Fragment: window.React.Fragment,
     };
   }
 }
 
 // Create utility functions to help with browser extension compatibility issues
 window.utils = {
-  checkExtensionCompatibility: function() {
+  checkExtensionCompatibility: function () {
     console.log('Extension compatibility check complete');
     return true;
   },
-  suppressExtensionErrors: function() {
+  suppressExtensionErrors: function () {
     console.log('Extension error suppression active');
     return true;
-  }
+  },
 };
 
 // Create extensionState object to prevent console errors
@@ -68,15 +72,21 @@ window.extensionState = {
   initialized: true,
   features: {},
   settings: {},
-  getState: function() { return this; },
-  getSetting: function(key, defaultValue) { return defaultValue; }
+  getState: function () {
+    return this;
+  },
+  getSetting: function (key, defaultValue) {
+    return defaultValue;
+  },
 };
 
 // Create heuristicsRedefinitions object to prevent console errors
 window.heuristicsRedefinitions = {
   enabled: true,
   registry: {},
-  register: function() { return null; }
+  register: function () {
+    return null;
+  },
 };
 
 // Ensure proper MIME type for module scripts
@@ -85,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const moduleScripts = document.querySelectorAll('script[type="module"]');
   console.log(`Found ${moduleScripts.length} module scripts to fix`);
 
-  moduleScripts.forEach(script => {
+  moduleScripts.forEach((script) => {
     if (script.src && !script.getAttribute('data-fixed')) {
       console.log('Applying MIME type fix for module script:', script.src);
 
@@ -125,4 +135,4 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   console.log('React fixes applied successfully');
-}); 
+});

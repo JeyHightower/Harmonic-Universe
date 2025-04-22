@@ -1,11 +1,11 @@
-import PropTypes from "prop-types";
-import React from "react";
-import { Link } from "react-router-dom";
-import "../styles/SceneCardSimple.css";
-import { formatDate } from "../../../utils";
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import '../styles/SceneCardSimple.css';
+import { formatDate } from '../../../utils';
 
 const SceneCardSimple = ({ scene, onEdit, onDelete }) => {
-  const defaultImage = "/images/default-scene.jpg";
+  const defaultImage = '/images/default-scene.jpg';
 
   return (
     <div className="scene-card-simple">
@@ -13,7 +13,7 @@ const SceneCardSimple = ({ scene, onEdit, onDelete }) => {
         <h3>{scene.title || scene.name}</h3>
       </div>
       <div className="scene-card-info">
-        <p>{scene.description || "No description provided"}</p>
+        <p>{scene.description || 'No description provided'}</p>
         <div className="scene-meta">
           <span>Created: {formatDate(scene.created_at)}</span>
         </div>
@@ -26,14 +26,14 @@ const SceneCardSimple = ({ scene, onEdit, onDelete }) => {
           className="edit-button"
           onClick={() => onEdit && onEdit(scene)}
           style={{
-            padding: "10px 20px",
-            backgroundColor: "#4285f4",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            margin: "5px",
-            cursor: "pointer",
-            fontSize: "16px",
+            padding: '10px 20px',
+            backgroundColor: '#4285f4',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            margin: '5px',
+            cursor: 'pointer',
+            fontSize: '16px',
           }}
         >
           Edit Scene
@@ -42,14 +42,14 @@ const SceneCardSimple = ({ scene, onEdit, onDelete }) => {
           className="delete-button"
           onClick={() => onDelete && onDelete(scene)}
           style={{
-            padding: "10px 20px",
-            backgroundColor: "#ea4335",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            margin: "5px",
-            cursor: "pointer",
-            fontSize: "16px",
+            padding: '10px 20px',
+            backgroundColor: '#ea4335',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            margin: '5px',
+            cursor: 'pointer',
+            fontSize: '16px',
           }}
         >
           Delete Scene
@@ -72,4 +72,4 @@ SceneCardSimple.propTypes = {
   onDelete: PropTypes.func,
 };
 
-export default SceneCardSimple; 
+export default SceneCardSimple;

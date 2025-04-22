@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -14,27 +14,27 @@ import {
   Select,
   MenuItem,
   FormHelperText,
-} from "@mui/material";
-import apiClient from "../../services/api";
-import { useDispatch } from "react-redux";
-import "../character/Characters.css";
-import PropTypes from "prop-types";
-import { fetchScenes } from "../../store/thunks/consolidated/scenesThunks";
-import { openModal } from "../../store/slices/modalSlice";
-import { MODAL_TYPES } from "../../constants/modalTypes";
-import { getCharacterWithRetry } from "../../utils/apiUtils";
+} from '@mui/material';
+import apiClient from '../../services/api';
+import { useDispatch } from 'react-redux';
+import '../character/Characters.css';
+import PropTypes from 'prop-types';
+import { fetchScenes } from '../../store/thunks/consolidated/scenesThunks';
+import { openModal } from '../../store/slices/modalSlice';
+import { MODAL_TYPES } from '../../constants/modalTypes';
+import { getCharacterWithRetry } from '../../utils/apiUtils';
 import {
   createCharacter,
   updateCharacter,
   deleteCharacter,
-} from "../../store/thunks/characterThunks";
+} from '../../store/thunks/characterThunks';
 
 // Import local storage utilities for caching
-const CHARACTER_CACHE_KEY = "character_cache";
+const CHARACTER_CACHE_KEY = 'character_cache';
 const CHARACTER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Add scene caching
-const SCENE_CACHE_KEY = "scene_cache";
+const SCENE_CACHE_KEY = 'scene_cache';
 const SCENE_CACHE_TTL = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 // Helper function to get cached character data
@@ -54,7 +54,7 @@ const getCachedCharacter = (characterId) => {
 
     return null;
   } catch (error) {
-    console.error("Error reading from character cache:", error);
+    console.error('Error reading from character cache:', error);
     return null;
   }
 };
@@ -82,7 +82,7 @@ const cacheCharacter = (characterId, data) => {
     localStorage.setItem(CHARACTER_CACHE_KEY, JSON.stringify(cache));
     console.log(`Cached character data for id: ${characterId}`);
   } catch (error) {
-    console.error("Error writing to character cache:", error);
+    console.error('Error writing to character cache:', error);
   }
 };
 
@@ -103,7 +103,7 @@ const getCachedScenes = (universeId) => {
 
     return null;
   } catch (error) {
-    console.error("Error reading from scene cache:", error);
+    console.error('Error reading from scene cache:', error);
     return null;
   }
 };
@@ -128,11 +128,9 @@ const cacheScenes = (universeId, scenesData) => {
     });
 
     localStorage.setItem(SCENE_CACHE_KEY, JSON.stringify(cache));
-    console.log(
-      `Cached ${scenesData.length} scenes for universe id: ${universeId}`
-    );
+    console.log(`Cached ${scenesData.length} scenes for universe id: ${universeId}`);
   } catch (error) {
-    console.error("Error writing to scene cache:", error);
+    console.error('Error writing to scene cache:', error);
   }
 };
 
@@ -142,15 +140,15 @@ const CharacterFormModal = ({
   characterId = null,
   universeId,
   sceneId,
-  type = "create",
+  type = 'create',
   onSuccess,
   availableScenes = [],
 }) => {
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    scene_id: "", // Initialize as empty string to avoid undefined issues
+    name: '',
+    description: '',
+    scene_id: '', // Initialize as empty string to avoid undefined issues
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -168,18 +166,12 @@ const CharacterFormModal = ({
 
   // Helper function to validate scene_id against available scenes
   const getValidSceneId = (sceneIdToValidate, availableScenesList) => {
-    if (
-      !sceneIdToValidate ||
-      !availableScenesList ||
-      availableScenesList.length === 0
-    ) {
-      return "";
+    if (!sceneIdToValidate || !availableScenesList || availableScenesList.length === 0) {
+      return '';
     }
 
     const sceneIdStr = String(sceneIdToValidate);
-    const sceneExists = availableScenesList.some(
-      (scene) => String(scene.id) === sceneIdStr
-    );
+    const sceneExists = availableScenesList.some((scene) => String(scene.id) === sceneIdStr);
 
     if (sceneExists) {
       return sceneIdStr;
@@ -187,9 +179,7 @@ const CharacterFormModal = ({
       console.log(
         `Scene ID ${sceneIdStr} not found in available scenes, using first available scene`
       );
-      return availableScenesList.length > 0
-        ? String(availableScenesList[0].id)
-        : "";
+      return availableScenesList.length > 0 ? String(availableScenesList[0].id) : '';
     }
   };
 
@@ -198,7 +188,7 @@ const CharacterFormModal = ({
     if (sceneId && !formData.scene_id) {
       const validSceneId = getValidSceneId(sceneId, scenes);
       if (validSceneId) {
-        console.log("Setting initial scene_id from props:", validSceneId);
+        console.log('Setting initial scene_id from props:', validSceneId);
         setFormData((prev) => ({
           ...prev,
           scene_id: validSceneId,
@@ -213,9 +203,7 @@ const CharacterFormModal = ({
       return [];
     }
 
-    console.log(
-      `Filtering ${scenes.length} scenes for universe ${targetUniverseId}`
-    );
+    console.log(`Filtering ${scenes.length} scenes for universe ${targetUniverseId}`);
 
     // Convert to string for consistent comparison
     const universeIdStr = String(targetUniverseId);
@@ -224,22 +212,17 @@ const CharacterFormModal = ({
       if (!scene) return false;
 
       // Handle both string and number IDs for comparison
-      const sceneUniverseId =
-        scene.universe_id !== undefined ? String(scene.universe_id) : null;
+      const sceneUniverseId = scene.universe_id !== undefined ? String(scene.universe_id) : null;
       const matched = sceneUniverseId === universeIdStr;
 
       if (matched) {
-        console.log(
-          `Scene ${scene.id} (${scene.name}) matched universe ${universeIdStr}`
-        );
+        console.log(`Scene ${scene.id} (${scene.name}) matched universe ${universeIdStr}`);
       }
 
       return matched;
     });
 
-    console.log(
-      `Found ${filteredScenes.length} scenes matching universe ${targetUniverseId}`
-    );
+    console.log(`Found ${filteredScenes.length} scenes matching universe ${targetUniverseId}`);
     return filteredScenes;
   };
 
@@ -265,7 +248,7 @@ const CharacterFormModal = ({
   // Use availableScenes when provided
   useEffect(() => {
     if (availableScenes.length > 0) {
-      console.log("Using provided scenes:", availableScenes);
+      console.log('Using provided scenes:', availableScenes);
       setScenes(availableScenes);
       setSceneOptions(availableScenes);
 
@@ -274,7 +257,7 @@ const CharacterFormModal = ({
 
       // Only update if it's different to avoid infinite loops
       if (validSceneId !== formData.scene_id) {
-        console.log("Updating scene_id after validation:", validSceneId);
+        console.log('Updating scene_id after validation:', validSceneId);
         setFormData((prev) => ({
           ...prev,
           scene_id: validSceneId,
@@ -287,22 +270,14 @@ const CharacterFormModal = ({
   useEffect(() => {
     if (universeId && !loadedUniverseRef.current.has(universeId)) {
       // Check if we already have appropriate scenes
-      if (
-        scenes.length > 0 &&
-        scenes.some((scene) => scene.universe_id === universeId)
-      ) {
-        console.log(
-          `Already have scenes for universe ${universeId}, skipping fetch`
-        );
+      if (scenes.length > 0 && scenes.some((scene) => scene.universe_id === universeId)) {
+        console.log(`Already have scenes for universe ${universeId}, skipping fetch`);
         loadedUniverseRef.current.add(universeId);
         return;
       }
 
       // If scenes are from a different universe, clear them
-      if (
-        scenes.length > 0 &&
-        !scenes.some((scene) => scene.universe_id === universeId)
-      ) {
+      if (scenes.length > 0 && !scenes.some((scene) => scene.universe_id === universeId)) {
         console.log(
           `Clearing scenes from a different universe before loading universe ${universeId}`
         );
@@ -317,16 +292,14 @@ const CharacterFormModal = ({
         .getScenes({ universeId: universeId })
         .then((response) => {
           const scenesData = response.data?.scenes || [];
-          console.log(
-            `Fetched ${scenesData.length} scenes for universe ${universeId}`
-          );
+          console.log(`Fetched ${scenesData.length} scenes for universe ${universeId}`);
           setScenes(scenesData);
           setSceneOptions(scenesData);
           loadedUniverseRef.current.add(universeId);
         })
         .catch((error) => {
-          console.error("Error fetching scenes:", error);
-          setError("Failed to load scenes");
+          console.error('Error fetching scenes:', error);
+          setError('Failed to load scenes');
         })
         .finally(() => {
           setScenesLoading(false);
@@ -335,18 +308,18 @@ const CharacterFormModal = ({
   }, [universeId]);
 
   useEffect(() => {
-    if (isOpen && characterId && (type === "edit" || type === "view")) {
+    if (isOpen && characterId && (type === 'edit' || type === 'view')) {
       setLoading(true);
       setError(null);
 
       // Helper function to process character data, centralized to avoid code duplication
       const processCharacterData = (characterData) => {
-        console.log("Processing character data:", characterData);
+        console.log('Processing character data:', characterData);
 
         // Ensure we have a valid character object
         if (!characterData) {
-          console.error("No character data to process");
-          setError("Failed to load character data");
+          console.error('No character data to process');
+          setError('Failed to load character data');
           return;
         }
 
@@ -354,9 +327,7 @@ const CharacterFormModal = ({
         setCharacter(characterData);
 
         // Get scene_id from character data or validate against available scenes
-        const characterSceneId = characterData?.scene_id
-          ? String(characterData.scene_id)
-          : "";
+        const characterSceneId = characterData?.scene_id ? String(characterData.scene_id) : '';
 
         // Store the universe_id from the character data if available
         const characterUniverseId = characterData?.universe_id;
@@ -366,16 +337,11 @@ const CharacterFormModal = ({
         if (
           characterUniverseId &&
           (scenes.length === 0 ||
-            type === "edit" ||
-            !scenes.some(
-              (scene) => scene.universe_id === characterUniverseId
-            )) &&
+            type === 'edit' ||
+            !scenes.some((scene) => scene.universe_id === characterUniverseId)) &&
           !loadedUniverseRef.current.has(characterUniverseId)
         ) {
-          console.log(
-            "Loading scenes for character's universe:",
-            characterUniverseId
-          );
+          console.log("Loading scenes for character's universe:", characterUniverseId);
           setScenesLoading(true);
 
           // Mark this universe as loaded to prevent repeated fetches
@@ -389,27 +355,22 @@ const CharacterFormModal = ({
             .getUniverseScenes(characterUniverseId)
             .then((scenesResponse) => {
               const scenesData = scenesResponse.data?.scenes || [];
-              console.log(
-                `Found ${scenesData.length} scenes for universe ${characterUniverseId}`
-              );
+              console.log(`Found ${scenesData.length} scenes for universe ${characterUniverseId}`);
 
               if (scenesData.length > 0) {
-                console.log("Setting scenes from universe:", scenesData);
+                console.log('Setting scenes from universe:', scenesData);
                 setScenes(scenesData);
                 setSceneOptions(scenesData);
               } else if (existingScenes.length > 0) {
                 // If we got no scenes but had some before, keep the existing ones
-                console.log("No new scenes found, keeping existing scenes");
+                console.log('No new scenes found, keeping existing scenes');
                 setScenes(existingScenes);
                 setSceneOptions(existingScenes);
               }
               setScenesLoading(false);
             })
             .catch((err) => {
-              console.error(
-                `Error loading scenes for universe ${characterUniverseId}:`,
-                err
-              );
+              console.error(`Error loading scenes for universe ${characterUniverseId}:`, err);
               // In case of error, keep existing scenes to prevent UI breakage
               if (existingScenes.length > 0) {
                 setScenes(existingScenes);
@@ -423,8 +384,8 @@ const CharacterFormModal = ({
 
         // Use default empty values if data is missing
         setFormData({
-          name: characterData?.name || "",
-          description: characterData?.description || "",
+          name: characterData?.name || '',
+          description: characterData?.description || '',
           scene_id: validSceneId,
           // Store universe_id in form data to ensure it's available for updates
           universe_id: characterData?.universe_id || universeId,
@@ -438,7 +399,7 @@ const CharacterFormModal = ({
       const cachedCharacter = getCachedCharacter(characterId);
       if (cachedCharacter) {
         // Use cached data
-        console.log("Using cached character data");
+        console.log('Using cached character data');
         processCharacterData(cachedCharacter);
         setLoading(false);
         return;
@@ -449,46 +410,33 @@ const CharacterFormModal = ({
         .then((data) => {
           // Extract character data - handle both response formats
           const characterData = data.character || data;
-          console.log(
-            "Character data received with retry utility:",
-            characterData
-          );
+          console.log('Character data received with retry utility:', characterData);
           processCharacterData(characterData);
           setLoading(false);
         })
         .catch((retryError) => {
-          console.error(
-            "Retry utility failed, falling back to standard API:",
-            retryError
-          );
+          console.error('Retry utility failed, falling back to standard API:', retryError);
 
           // Fall back to regular API call if retry utility fails for some reason
           apiClient
             .getCharacter(characterId)
             .then((response) => {
-              console.log(
-                "Character data received from fallback:",
-                response.data
-              );
+              console.log('Character data received from fallback:', response.data);
               const characterData = response.data.character;
               processCharacterData(characterData);
               setLoading(false);
             })
             .catch((err) => {
-              console.error(
-                "Error fetching character (both methods failed):",
-                err
-              );
+              console.error('Error fetching character (both methods failed):', err);
               setError(
-                err.response?.data?.error ||
-                  "Failed to load character details. Please try again."
+                err.response?.data?.error || 'Failed to load character details. Please try again.'
               );
 
               // Set minimal default data so the form isn't completely empty
               setFormData({
-                name: "",
-                description: "",
-                scene_id: getValidSceneId("", scenes),
+                name: '',
+                description: '',
+                scene_id: getValidSceneId('', scenes),
                 universe_id: universeId, // Ensure universe_id is set
               });
 
@@ -500,9 +448,9 @@ const CharacterFormModal = ({
 
   // Reset form data when opening the modal for character creation
   useEffect(() => {
-    if (isOpen && type === "create" && !characterId) {
+    if (isOpen && type === 'create' && !characterId) {
       console.log(
-        "Resetting form data for new character creation, current scene_id:",
+        'Resetting form data for new character creation, current scene_id:',
         formData.scene_id
       );
 
@@ -510,8 +458,8 @@ const CharacterFormModal = ({
       const validSceneId = getValidSceneId(formData.scene_id, scenes);
 
       setFormData({
-        name: "",
-        description: "",
+        name: '',
+        description: '',
         scene_id: validSceneId,
         universe_id: universeId, // Ensure universe_id is set for new characters too
       });
@@ -533,7 +481,7 @@ const CharacterFormModal = ({
     const { name, value } = e.target;
 
     // Special handling for scene_id to ensure it updates correctly
-    if (name === "scene_id") {
+    if (name === 'scene_id') {
       console.log(`Scene selection changed to ID:`, value);
 
       // Clear any scene_id error when the user selects a valid scene
@@ -569,9 +517,9 @@ const CharacterFormModal = ({
   const handleClose = () => {
     // Reset form data when closing
     setFormData({
-      name: "",
-      description: "",
-      scene_id: getValidSceneId("", scenes),
+      name: '',
+      description: '',
+      scene_id: getValidSceneId('', scenes),
     });
     setError(null);
     onClose();
@@ -583,16 +531,16 @@ const CharacterFormModal = ({
     setError(null);
 
     try {
-      if (type === "create") {
+      if (type === 'create') {
         // Validate required fields
         if (!formData.name || !formData.name.trim()) {
-          setError("Character name is required");
+          setError('Character name is required');
           setLoading(false);
           return;
         }
 
         if (!formData.scene_id) {
-          setError("Please select a scene for the character");
+          setError('Please select a scene for the character');
           setLoading(false);
           return;
         }
@@ -603,24 +551,24 @@ const CharacterFormModal = ({
           scene_id: formData.scene_id,
         };
 
-        console.log("Submitting character data:", data);
+        console.log('Submitting character data:', data);
 
         // Use Redux thunk action
         try {
           // Use imported createCharacter thunk directly
           const newCharacter = await dispatch(createCharacter(data));
-          console.log("Character created through Redux:", newCharacter);
+          console.log('Character created through Redux:', newCharacter);
 
           // Call onSuccess with the created character
           if (onSuccess) onSuccess(newCharacter);
         } catch (reduxError) {
-          console.error("Error using Redux to create character:", reduxError);
+          console.error('Error using Redux to create character:', reduxError);
 
           // Fallback to direct API call if Redux fails
           const response = await apiClient.createCharacter(data);
           if (onSuccess) onSuccess(response.data.character);
         }
-      } else if (type === "edit" && characterId) {
+      } else if (type === 'edit' && characterId) {
         // Include universe_id when editing to prevent the warning
         const data = {
           ...formData,
@@ -633,28 +581,28 @@ const CharacterFormModal = ({
           const updatedCharacter = await dispatch(
             updateCharacter({ characterId, characterData: data })
           );
-          console.log("Character updated through Redux:", updatedCharacter);
+          console.log('Character updated through Redux:', updatedCharacter);
 
           // Call onSuccess with the updated character
           if (onSuccess) onSuccess(updatedCharacter);
         } catch (reduxError) {
-          console.error("Error using Redux to update character:", reduxError);
+          console.error('Error using Redux to update character:', reduxError);
 
           // Fallback to direct API call if Redux fails
           const response = await apiClient.updateCharacter(characterId, data);
           if (onSuccess) onSuccess(response.data.character);
         }
-      } else if (type === "delete" && characterId) {
+      } else if (type === 'delete' && characterId) {
         // Use Redux thunk action
         try {
           // Use imported deleteCharacter thunk directly
           await dispatch(deleteCharacter(characterId));
-          console.log("Character deleted through Redux");
+          console.log('Character deleted through Redux');
 
           // Call onSuccess
           if (onSuccess) onSuccess();
         } catch (reduxError) {
-          console.error("Error using Redux to delete character:", reduxError);
+          console.error('Error using Redux to delete character:', reduxError);
 
           // Fallback to direct API call if Redux fails
           await apiClient.deleteCharacter(characterId);
@@ -667,9 +615,9 @@ const CharacterFormModal = ({
       setError(
         err.response?.data?.error ||
           err.message ||
-          "An error occurred while processing your request"
+          'An error occurred while processing your request'
       );
-      console.error("Error submitting character form:", err);
+      console.error('Error submitting character form:', err);
     } finally {
       setLoading(false);
     }
@@ -678,18 +626,16 @@ const CharacterFormModal = ({
   // Get modal title based on type
   const getTitle = () => {
     switch (type) {
-      case "create":
-        return "Create Character";
-      case "edit":
-        return "Edit Character";
-      case "view":
-        return character?.name
-          ? `View Character: ${character.name}`
-          : "View Character";
-      case "delete":
-        return "Delete Character";
+      case 'create':
+        return 'Create Character';
+      case 'edit':
+        return 'Edit Character';
+      case 'view':
+        return character?.name ? `View Character: ${character.name}` : 'View Character';
+      case 'delete':
+        return 'Delete Character';
       default:
-        return "Character";
+        return 'Character';
     }
   };
 
@@ -704,7 +650,7 @@ const CharacterFormModal = ({
         props: {
           universeId: universeId,
           onSuccess: (newScene) => {
-            console.log("New scene created:", newScene);
+            console.log('New scene created:', newScene);
             // Add the new scene to our local state
             const updatedScenes = [...scenes, newScene];
             setScenes(updatedScenes);
@@ -731,46 +677,39 @@ const CharacterFormModal = ({
             labelId="scene-select-label"
             id="scene_id"
             name="scene_id"
-            value={formData.scene_id || ""}
+            value={formData.scene_id || ''}
             onChange={handleChange}
             label="Scene"
             displayEmpty
             disabled={!universeId || scenesLoading}
           >
             <MenuItem value="" disabled>
-              {scenesLoading ? "Loading scenes..." : "Select a scene"}
+              {scenesLoading ? 'Loading scenes...' : 'Select a scene'}
             </MenuItem>
 
             {Array.isArray(sceneOptions) && sceneOptions.length > 0 ? (
               sceneOptions.map((scene) =>
                 scene && scene.id ? (
                   <MenuItem key={scene.id} value={scene.id}>
-                    {scene.name || "Unnamed scene"}
+                    {scene.name || 'Unnamed scene'}
                   </MenuItem>
                 ) : null
               )
             ) : (
               <MenuItem value="" disabled>
                 {universeId
-                  ? "No scenes available. Please create a scene first."
-                  : "Please select a universe first"}
+                  ? 'No scenes available. Please create a scene first.'
+                  : 'Please select a universe first'}
               </MenuItem>
             )}
           </Select>
 
-          {formErrors.scene_id && (
-            <FormHelperText error>{formErrors.scene_id}</FormHelperText>
-          )}
+          {formErrors.scene_id && <FormHelperText error>{formErrors.scene_id}</FormHelperText>}
         </FormControl>
 
         {sceneOptions.length === 0 && universeId && !scenesLoading && (
-          <Box mt={1} sx={{ textAlign: "center", py: 1 }}>
-            <Typography
-              variant="subtitle2"
-              color="primary"
-              display="block"
-              gutterBottom
-            >
+          <Box mt={1} sx={{ textAlign: 'center', py: 1 }}>
+            <Typography variant="subtitle2" color="primary" display="block" gutterBottom>
               No scenes found for this universe.
             </Typography>
             <Typography
@@ -805,9 +744,7 @@ const CharacterFormModal = ({
       characterUniverseId <= 0 ||
       isNaN(parseInt(characterUniverseId, 10))
     ) {
-      console.warn(
-        `Invalid universeId for scene loading: ${characterUniverseId}`
-      );
+      console.warn(`Invalid universeId for scene loading: ${characterUniverseId}`);
       return;
     }
 
@@ -823,9 +760,7 @@ const CharacterFormModal = ({
     // Check if we have cached scenes for this universe
     const cachedScenes = getCachedScenes(parsedUniverseId);
     if (cachedScenes) {
-      console.log(
-        `Using ${cachedScenes.length} cached scenes for universe ${parsedUniverseId}`
-      );
+      console.log(`Using ${cachedScenes.length} cached scenes for universe ${parsedUniverseId}`);
       setScenes(cachedScenes);
       setSceneOptions(cachedScenes);
       loadedUniverseRef.current.add(parsedUniverseId);
@@ -854,7 +789,7 @@ const CharacterFormModal = ({
         setScenesLoading(false);
         setFormErrors({
           ...formErrors,
-          scene_id: "Loading scenes timed out. Please try again later.",
+          scene_id: 'Loading scenes timed out. Please try again later.',
         });
       }
     }, 10000); // 10 second timeout
@@ -863,19 +798,15 @@ const CharacterFormModal = ({
     apiClient
       .getScenes({ universeId: parsedUniverseId })
       .then((response) => {
-        console.log("Direct API scenes response:", response);
+        console.log('Direct API scenes response:', response);
         let scenesData = [];
 
         // Try different possible data structures
         if (Array.isArray(response.data)) {
           scenesData = response.data;
-        } else if (
-          response.data &&
-          response.data.scenes &&
-          Array.isArray(response.data.scenes)
-        ) {
+        } else if (response.data && response.data.scenes && Array.isArray(response.data.scenes)) {
           scenesData = response.data.scenes;
-        } else if (response.data && typeof response.data === "object") {
+        } else if (response.data && typeof response.data === 'object') {
           // If we have an object but not a clear scenes array, look for it
           const possibleArrays = Object.entries(response.data)
             .filter(([_, value]) => Array.isArray(value))
@@ -887,16 +818,13 @@ const CharacterFormModal = ({
           }
         }
 
-        console.log("Processed scenes data:", scenesData);
+        console.log('Processed scenes data:', scenesData);
 
         if (scenesData && scenesData.length > 0) {
           // We found scenes through direct API call
           setScenes(scenesData);
           setSceneOptions(scenesData);
-          console.log(
-            "Set scene options from direct API call:",
-            scenesData.length
-          );
+          console.log('Set scene options from direct API call:', scenesData.length);
 
           // Cache the scenes for future use
           cacheScenes(parsedUniverseId, scenesData);
@@ -910,20 +838,17 @@ const CharacterFormModal = ({
           }
         } else {
           // If direct API call doesn't return scenes, try through Redux
-          console.log("No scenes from direct API, trying Redux thunk");
+          console.log('No scenes from direct API, trying Redux thunk');
           dispatch(fetchScenes(parsedUniverseId))
             .unwrap()
             .then((result) => {
-              console.log("Redux thunk scenes result:", result);
+              console.log('Redux thunk scenes result:', result);
               let reduxScenes = result.scenes || [];
 
               if (Array.isArray(reduxScenes) && reduxScenes.length > 0) {
                 setScenes(reduxScenes);
                 setSceneOptions(reduxScenes);
-                console.log(
-                  "Set scene options from Redux:",
-                  reduxScenes.length
-                );
+                console.log('Set scene options from Redux:', reduxScenes.length);
 
                 // Cache the scenes for future use
                 cacheScenes(parsedUniverseId, reduxScenes);
@@ -936,12 +861,12 @@ const CharacterFormModal = ({
                   }));
                 }
               } else {
-                console.log("No scenes found from Redux thunk either");
+                console.log('No scenes found from Redux thunk either');
                 setSceneOptions([]);
               }
             })
             .catch((error) => {
-              console.error("Redux thunk error:", error);
+              console.error('Redux thunk error:', error);
               setSceneOptions([]);
             });
         }
@@ -950,12 +875,12 @@ const CharacterFormModal = ({
         clearTimeout(timeoutIdRef.current);
       })
       .catch((error) => {
-        console.error("Direct API error:", error);
+        console.error('Direct API error:', error);
         // Fallback to Redux thunk on API error
         dispatch(fetchScenes(parsedUniverseId))
           .unwrap()
           .then((result) => {
-            console.log("Fallback Redux scenes:", result);
+            console.log('Fallback Redux scenes:', result);
             const fallbackScenes = result.scenes || [];
             if (Array.isArray(fallbackScenes) && fallbackScenes.length > 0) {
               setScenes(fallbackScenes);
@@ -985,19 +910,19 @@ const CharacterFormModal = ({
       });
   };
 
-  if (loading && (type === "edit" || type === "view") && !character) {
+  if (loading && (type === 'edit' || type === 'view') && !character) {
     return (
       <Dialog open={isOpen} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle>
-          {type === "create" ? "Create " : type === "edit" ? "Edit " : "View "}
+          {type === 'create' ? 'Create ' : type === 'edit' ? 'Edit ' : 'View '}
           Character
         </DialogTitle>
         <DialogContent
           sx={{
-            minHeight: "300px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            minHeight: '300px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
           }}
         >
           <CircularProgress />
@@ -1025,10 +950,9 @@ const CharacterFormModal = ({
             </Box>
           )}
 
-          {type === "delete" ? (
+          {type === 'delete' ? (
             <Typography variant="body1">
-              Are you sure you want to delete this character? This action cannot
-              be undone.
+              Are you sure you want to delete this character? This action cannot be undone.
             </Typography>
           ) : (
             <>
@@ -1037,12 +961,12 @@ const CharacterFormModal = ({
                 margin="normal"
                 label="Name"
                 name="name"
-                value={formData.name || ""}
+                value={formData.name || ''}
                 onChange={handleChange}
-                disabled={loading || type === "view"}
+                disabled={loading || type === 'view'}
                 error={!!formErrors.name}
                 helperText={formErrors.name}
-                required={type !== "view"}
+                required={type !== 'view'}
               />
 
               <TextField
@@ -1050,29 +974,28 @@ const CharacterFormModal = ({
                 margin="normal"
                 label="Description"
                 name="description"
-                value={formData.description || ""}
+                value={formData.description || ''}
                 onChange={handleChange}
                 multiline
                 rows={4}
-                disabled={loading || type === "view"}
+                disabled={loading || type === 'view'}
                 error={!!formErrors.description}
                 helperText={formErrors.description}
               />
 
               {/* Show scene selector for both create and edit modes */}
-              {(type === "create" || type === "edit") && renderSceneSelector()}
+              {(type === 'create' || type === 'edit') && renderSceneSelector()}
 
               {/* Only show this non-editable field in view mode */}
-              {type === "view" && (
+              {type === 'view' && (
                 <TextField
                   fullWidth
                   margin="normal"
                   label="Scene"
                   name="scene_display"
                   value={
-                    scenes.find(
-                      (s) => String(s.id) === String(formData.scene_id)
-                    )?.name || "Scene not found"
+                    scenes.find((s) => String(s.id) === String(formData.scene_id))?.name ||
+                    'Scene not found'
                   }
                   disabled={true}
                 />
@@ -1084,31 +1007,29 @@ const CharacterFormModal = ({
           <Button onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
-          {type !== "view" && (
+          {type !== 'view' && (
             <Button
               type="submit"
               variant="contained"
-              color={type === "delete" ? "error" : "primary"}
+              color={type === 'delete' ? 'error' : 'primary'}
               disabled={
-                loading ||
-                (type === "create" &&
-                  (!formData.scene_id || sceneOptions.length === 0))
+                loading || (type === 'create' && (!formData.scene_id || sceneOptions.length === 0))
               }
               title={
-                type === "create" && sceneOptions.length === 0
-                  ? "Please create a scene first"
-                  : type === "create" && !formData.scene_id
-                  ? "Please select a scene"
-                  : ""
+                type === 'create' && sceneOptions.length === 0
+                  ? 'Please create a scene first'
+                  : type === 'create' && !formData.scene_id
+                    ? 'Please select a scene'
+                    : ''
               }
             >
               {loading
-                ? "Processing..."
-                : type === "create"
-                ? "Create"
-                : type === "edit"
-                ? "Save"
-                : "Delete"}
+                ? 'Processing...'
+                : type === 'create'
+                  ? 'Create'
+                  : type === 'edit'
+                    ? 'Save'
+                    : 'Delete'}
             </Button>
           )}
         </DialogActions>
@@ -1123,7 +1044,7 @@ CharacterFormModal.propTypes = {
   characterId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   sceneId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  type: PropTypes.oneOf(["create", "edit", "view", "delete"]),
+  type: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
   onSuccess: PropTypes.func,
   availableScenes: PropTypes.array,
 };

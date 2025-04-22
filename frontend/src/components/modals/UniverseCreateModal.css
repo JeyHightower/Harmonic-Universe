@@ -16,7 +16,7 @@
   color: var(--text-primary);
 }
 
-.form-group input[type="text"],
+.form-group input[type='text'],
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
@@ -32,7 +32,7 @@
   resize: vertical;
 }
 
-.form-group input[type="text"]:focus,
+.form-group input[type='text']:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: var(--primary-color);
@@ -51,7 +51,7 @@
   cursor: pointer;
 }
 
-.checkbox-label input[type="checkbox"] {
+.checkbox-label input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;

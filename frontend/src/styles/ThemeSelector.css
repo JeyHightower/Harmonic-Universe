@@ -24,7 +24,8 @@
   cursor: pointer;
   padding: var(--spacing-xs);
   border-radius: var(--border-radius);
-  transition: transform var(--transition-fast),
+  transition:
+    transform var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 

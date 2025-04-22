@@ -1,6 +1,6 @@
-import PropTypes from "prop-types";
-import { MODAL_CONFIG } from "../../utils/config";
-import { ModalSystem } from "../modals";
+import PropTypes from 'prop-types';
+import { MODAL_CONFIG } from '../../utils/config';
+import { ModalSystem } from '../modals';
 
 /**
  * Modal component that provides backward compatibility with the original Modal API
@@ -31,7 +31,7 @@ const Modal = ({
 
       // If clicking inside modal content (not backdrop), don't close
       if (isModalContent && !isModalBackdrop) {
-        console.log("Modal: Content click, not closing");
+        console.log('Modal: Content click, not closing');
         if (e.stopPropagation) {
           e.stopPropagation();
           e.preventDefault();
@@ -57,7 +57,10 @@ const Modal = ({
   };
 
   const enhancedChildren = (
-    <div onClick={contentClickHandler} style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+    <div
+      onClick={contentClickHandler}
+      style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}
+    >
       {children}
     </div>
   );
@@ -81,7 +84,7 @@ const Modal = ({
       style={{
         zIndex: 1050,
         pointerEvents: 'auto',
-        ...style
+        ...style,
       }}
     >
       {enhancedChildren}

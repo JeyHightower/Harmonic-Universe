@@ -1,51 +1,51 @@
-import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
-import { useDispatch, useSelector } from "react-redux";
-import { useModal } from "../../../contexts/ModalContext";
-import { updatePhysicsParams } from "../../../store/thunks/universeThunks";
-import { MODAL_TYPES } from "../../../constants/modalTypes";
-import Button from "../../../components/common/Button";
-import "../styles/PhysicsPanel.css";
+import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from 'react-redux';
+import { useModal } from '../../../contexts/ModalContext';
+import { updatePhysicsParams } from '../../../store/thunks/universeThunks';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
+import Button from '../../../components/common/Button';
+import '../styles/PhysicsPanel.css';
 
 const DEFAULT_PHYSICS_PARAMS = {
   gravity: {
     value: 9.81,
-    unit: "m/s²",
+    unit: 'm/s²',
     min: 0.01,
     max: 20,
     warning_threshold: 1.0,
   },
   air_resistance: {
     value: 0.0,
-    unit: "kg/m³",
+    unit: 'kg/m³',
     min: 0,
     max: 1,
     warning_threshold: 0.001,
   },
   elasticity: {
     value: 1.0,
-    unit: "coefficient",
+    unit: 'coefficient',
     min: 0.1,
     max: 1,
     warning_threshold: 0.2,
   },
   friction: {
     value: 0.1,
-    unit: "coefficient",
+    unit: 'coefficient',
     min: 0.01,
     max: 1,
     warning_threshold: 0.05,
   },
   temperature: {
     value: 293.15,
-    unit: "K",
+    unit: 'K',
     min: 1,
     max: 1000,
     warning_threshold: 50,
   },
   pressure: {
     value: 101.325,
-    unit: "kPa",
+    unit: 'kPa',
     min: 0.1,
     max: 200,
     warning_threshold: 10,
@@ -60,9 +60,7 @@ function PhysicsPanel({
 }) {
   const dispatch = useDispatch();
   const { openModalByType } = useModal();
-  const currentUniverse = useSelector(
-    (state) => state.universe.currentUniverse
-  );
+  const currentUniverse = useSelector((state) => state.universe.currentUniverse);
   const [physicsParams, setPhysicsParams] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +72,7 @@ function PhysicsPanel({
     (currentUniverse === null
       ? !readOnly
       : // Once loaded, check actual permissions
-        currentUniverse?.user_role === "owner");
+        currentUniverse?.user_role === 'owner');
 
   // Initialize and sync with props/store
   useEffect(() => {
@@ -86,9 +84,7 @@ function PhysicsPanel({
     setIsLoading(true);
     // Always prioritize Redux store data if available
     if (currentUniverse?.id === universeId && currentUniverse?.physics_params) {
-      const storeParams = JSON.parse(
-        JSON.stringify(currentUniverse.physics_params)
-      );
+      const storeParams = JSON.parse(JSON.stringify(currentUniverse.physics_params));
       const updatedParams = Object.entries(storeParams).reduce(
         (acc, [key, param]) => ({
           ...acc,
@@ -163,7 +159,7 @@ function PhysicsPanel({
 
       return true;
     } catch (error) {
-      console.error("Failed to update physics parameters:", error);
+      console.error('Failed to update physics parameters:', error);
       return false;
     } finally {
       setIsSubmitting(false);
@@ -172,7 +168,7 @@ function PhysicsPanel({
 
   // Format values for display
   const formatPhysicsValue = (value, unit) => {
-    if (typeof value !== "number") return "N/A";
+    if (typeof value !== 'number') return 'N/A';
 
     // Handle decimal precision based on the range
     let formattedValue;
@@ -212,11 +208,7 @@ function PhysicsPanel({
       <div className="physics-panel-header">
         <h2>Physics Properties</h2>
         {canEdit && (
-          <Button
-            variant="primary"
-            onClick={handleOpenPhysicsModal}
-            disabled={isSubmitting}
-          >
+          <Button variant="primary" onClick={handleOpenPhysicsModal} disabled={isSubmitting}>
             Edit Physics
           </Button>
         )}
@@ -227,7 +219,7 @@ function PhysicsPanel({
           {Object.entries(physicsParams).map(([key, param]) => (
             <div key={key} className="physics-property">
               <div className="physics-property-label">
-                {key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ")}
+                {key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')}
               </div>
               <div className="physics-property-value">
                 {formatPhysicsValue(param.value, param.unit)}
@@ -244,13 +236,13 @@ PhysicsPanel.propTypes = {
   universeId: PropTypes.string.isRequired,
   initialPhysicsParams: PropTypes.object,
   readOnly: PropTypes.bool,
-  onPhysicsParamsChange: PropTypes.func
+  onPhysicsParamsChange: PropTypes.func,
 };
 
 PhysicsPanel.defaultProps = {
   initialPhysicsParams: null,
   readOnly: false,
-  onPhysicsParamsChange: null
+  onPhysicsParamsChange: null,
 };
 
 export default PhysicsPanel;

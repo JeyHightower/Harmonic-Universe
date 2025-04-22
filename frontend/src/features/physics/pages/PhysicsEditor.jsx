@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import PropTypes from "prop-types";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import {
   Box,
   Typography,
@@ -16,7 +16,7 @@ import {
   CardContent,
   Divider,
   Alert,
-} from "@mui/material";
+} from '@mui/material';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -36,13 +36,13 @@ function TabPanel({ children, value, index, ...other }) {
 TabPanel.propTypes = {
   children: PropTypes.node,
   value: PropTypes.number.isRequired,
-  index: PropTypes.number.isRequired
+  index: PropTypes.number.isRequired,
 };
 
 function a11yProps(index) {
   return {
     id: `physics-tab-${index}`,
-    "aria-controls": `physics-tabpanel-${index}`,
+    'aria-controls': `physics-tabpanel-${index}`,
   };
 }
 
@@ -79,19 +79,15 @@ export default function PhysicsEditor({ entityType, entityId }) {
         }
 
         // Fetch physics objects
-        response = await fetch(
-          `/api/physics/objects?${entityType}_id=${entityId}`
-        );
+        response = await fetch(`/api/physics/objects?${entityType}_id=${entityId}`);
         const objectsData = await response.json();
         if (objectsData.success) {
           setObjects(objectsData.data);
         }
 
         // Fetch physics constraints
-        if (entityType === "scene") {
-          response = await fetch(
-            `/api/physics/constraints?scene_id=${entityId}`
-          );
+        if (entityType === 'scene') {
+          response = await fetch(`/api/physics/constraints?scene_id=${entityId}`);
           const constraintsData = await response.json();
           if (constraintsData.success) {
             setConstraints(constraintsData.data);
@@ -105,7 +101,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
           setIs2D(entityData.data.is_2d !== false); // Default to true if not specified
         }
       } catch (err) {
-        setError("Error loading physics data: " + err.message);
+        setError('Error loading physics data: ' + err.message);
       } finally {
         setLoading(false);
       }
@@ -122,16 +118,14 @@ export default function PhysicsEditor({ entityType, entityId }) {
 
   const handleSavePhysics2D = async () => {
     try {
-      const method = physics2D.id ? "PUT" : "POST";
-      const url = physics2D.id
-        ? `/api/physics/2d/${physics2D.id}`
-        : `/api/physics/2d`;
+      const method = physics2D.id ? 'PUT' : 'POST';
+      const url = physics2D.id ? `/api/physics/2d/${physics2D.id}` : `/api/physics/2d`;
 
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(physics2D),
       });
@@ -141,25 +135,23 @@ export default function PhysicsEditor({ entityType, entityId }) {
         setPhysics2D(data.data);
         setError(null);
       } else {
-        setError(data.error || "Failed to save 2D physics settings");
+        setError(data.error || 'Failed to save 2D physics settings');
       }
     } catch (err) {
-      setError("Error saving 2D physics settings: " + err.message);
+      setError('Error saving 2D physics settings: ' + err.message);
     }
   };
 
   const handleSavePhysics3D = async () => {
     try {
-      const method = physics3D.id ? "PUT" : "POST";
-      const url = physics3D.id
-        ? `/api/physics/3d/${physics3D.id}`
-        : `/api/physics/3d`;
+      const method = physics3D.id ? 'PUT' : 'POST';
+      const url = physics3D.id ? `/api/physics/3d/${physics3D.id}` : `/api/physics/3d`;
 
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(physics3D),
       });
@@ -169,10 +161,10 @@ export default function PhysicsEditor({ entityType, entityId }) {
         setPhysics3D(data.data);
         setError(null);
       } else {
-        setError(data.error || "Failed to save 3D physics settings");
+        setError(data.error || 'Failed to save 3D physics settings');
       }
     } catch (err) {
-      setError("Error saving 3D physics settings: " + err.message);
+      setError('Error saving 3D physics settings: ' + err.message);
     }
   };
 
@@ -180,7 +172,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
     const { name, value, type, checked } = e.target;
     setPhysics2D((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -188,15 +180,13 @@ export default function PhysicsEditor({ entityType, entityId }) {
     const { name, value, type, checked } = e.target;
     setPhysics3D((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const createNew2DPhysics = () => {
     setPhysics2D({
-      name: `${
-        entityType.charAt(0).toUpperCase() + entityType.slice(1)
-      } Physics`,
+      name: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} Physics`,
       description: `2D physics for this ${entityType}`,
       gravity_x: 0.0,
       gravity_y: 9.8,
@@ -211,9 +201,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
 
   const createNew3DPhysics = () => {
     setPhysics3D({
-      name: `${
-        entityType.charAt(0).toUpperCase() + entityType.slice(1)
-      } Physics`,
+      name: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} Physics`,
       description: `3D physics for this ${entityType}`,
       gravity_x: 0.0,
       gravity_y: -9.8,
@@ -236,18 +224,12 @@ export default function PhysicsEditor({ entityType, entityId }) {
   }
 
   return (
-    <Box sx={{ width: "100%" }}>
-      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          aria-label="physics tabs"
-        >
+    <Box sx={{ width: '100%' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="physics tabs">
           <Tab label="Physics Settings" {...a11yProps(0)} />
           <Tab label="Objects" {...a11yProps(1)} />
-          {entityType === "scene" && (
-            <Tab label="Constraints" {...a11yProps(2)} />
-          )}
+          {entityType === 'scene' && <Tab label="Constraints" {...a11yProps(2)} />}
         </Tabs>
       </Box>
 
@@ -261,11 +243,10 @@ export default function PhysicsEditor({ entityType, entityId }) {
         <Box sx={{ mb: 2 }}>
           <FormControlLabel
             control={<Switch checked={is2D} onChange={() => setIs2D(!is2D)} />}
-            label={is2D ? "2D Physics" : "3D Physics"}
+            label={is2D ? '2D Physics' : '3D Physics'}
           />
           <Typography variant="caption" display="block">
-            Set the physics mode to 2D or 3D. This affects how physics
-            calculations are performed.
+            Set the physics mode to 2D or 3D. This affects how physics calculations are performed.
           </Typography>
         </Box>
 
@@ -278,14 +259,8 @@ export default function PhysicsEditor({ entityType, entityId }) {
 
               {!physics2D ? (
                 <Box sx={{ my: 2 }}>
-                  <Typography>
-                    No 2D physics settings found for this {entityType}.
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    onClick={createNew2DPhysics}
-                    sx={{ mt: 1 }}
-                  >
+                  <Typography>No 2D physics settings found for this {entityType}.</Typography>
+                  <Button variant="contained" onClick={createNew2DPhysics} sx={{ mt: 1 }}>
                     Create New
                   </Button>
                 </Box>
@@ -296,7 +271,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
                       fullWidth
                       label="Name"
                       name="name"
-                      value={physics2D.name || ""}
+                      value={physics2D.name || ''}
                       onChange={handleChange2D}
                       margin="normal"
                     />
@@ -306,7 +281,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
                       fullWidth
                       label="Description"
                       name="description"
-                      value={physics2D.description || ""}
+                      value={physics2D.description || ''}
                       onChange={handleChange2D}
                       margin="normal"
                       multiline
@@ -484,14 +459,8 @@ export default function PhysicsEditor({ entityType, entityId }) {
 
               {!physics3D ? (
                 <Box sx={{ my: 2 }}>
-                  <Typography>
-                    No 3D physics settings found for this {entityType}.
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    onClick={createNew3DPhysics}
-                    sx={{ mt: 1 }}
-                  >
+                  <Typography>No 3D physics settings found for this {entityType}.</Typography>
+                  <Button variant="contained" onClick={createNew3DPhysics} sx={{ mt: 1 }}>
                     Create New
                   </Button>
                 </Box>
@@ -502,7 +471,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
                       fullWidth
                       label="Name"
                       name="name"
-                      value={physics3D.name || ""}
+                      value={physics3D.name || ''}
                       onChange={handleChange3D}
                       margin="normal"
                     />
@@ -512,7 +481,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
                       fullWidth
                       label="Description"
                       name="description"
-                      value={physics3D.description || ""}
+                      value={physics3D.description || ''}
                       onChange={handleChange3D}
                       margin="normal"
                       multiline
@@ -756,9 +725,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
         <Box sx={{ mb: 2 }}>
           <Button
             variant="contained"
-            onClick={() =>
-              navigate(`/${entityType}s/${entityId}/physics/objects/new`)
-            }
+            onClick={() => navigate(`/${entityType}s/${entityId}/physics/objects/new`)}
           >
             Add New Object
           </Button>
@@ -776,19 +743,17 @@ export default function PhysicsEditor({ entityType, entityId }) {
                   <CardContent>
                     <Typography variant="h6">{obj.name}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {obj.object_type} ({obj.is_2d ? "2D" : "3D"})
+                      {obj.object_type} ({obj.is_2d ? '2D' : '3D'})
                     </Typography>
                     <Typography variant="body2">
-                      {obj.is_static ? "Static (Immovable)" : "Dynamic"}
+                      {obj.is_static ? 'Static (Immovable)' : 'Dynamic'}
                     </Typography>
                     <Button
                       variant="outlined"
                       size="small"
                       sx={{ mt: 1 }}
                       onClick={() =>
-                        navigate(
-                          `/${entityType}s/${entityId}/physics/objects/${obj.id}`
-                        )
+                        navigate(`/${entityType}s/${entityId}/physics/objects/${obj.id}`)
                       }
                     >
                       Edit
@@ -801,7 +766,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
         )}
       </TabPanel>
 
-      {entityType === "scene" && (
+      {entityType === 'scene' && (
         <TabPanel value={tabValue} index={2}>
           <Typography variant="h6" gutterBottom>
             Physics Constraints
@@ -810,9 +775,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
           <Box sx={{ mb: 2 }}>
             <Button
               variant="contained"
-              onClick={() =>
-                navigate(`/scenes/${entityId}/physics/constraints/new`)
-              }
+              onClick={() => navigate(`/scenes/${entityId}/physics/constraints/new`)}
             >
               Add New Constraint
             </Button>
@@ -820,8 +783,8 @@ export default function PhysicsEditor({ entityType, entityId }) {
 
           {constraints.length === 0 ? (
             <Typography>
-              No physics constraints found. Constraints connect objects together
-              with various joint types.
+              No physics constraints found. Constraints connect objects together with various joint
+              types.
             </Typography>
           ) : (
             <Grid container spacing={2}>
@@ -838,9 +801,7 @@ export default function PhysicsEditor({ entityType, entityId }) {
                         size="small"
                         sx={{ mt: 1 }}
                         onClick={() =>
-                          navigate(
-                            `/scenes/${entityId}/physics/constraints/${constraint.id}`
-                          )
+                          navigate(`/scenes/${entityId}/physics/constraints/${constraint.id}`)
                         }
                       >
                         Edit
@@ -860,5 +821,5 @@ export default function PhysicsEditor({ entityType, entityId }) {
 // Add PropTypes for PhysicsEditor
 PhysicsEditor.propTypes = {
   entityType: PropTypes.string.isRequired,
-  entityId: PropTypes.string.isRequired
+  entityId: PropTypes.string.isRequired,
 };

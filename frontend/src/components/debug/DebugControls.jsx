@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { BugOutlined, SettingOutlined } from "@ant-design/icons";
-import { Button, Card, Space, Switch, Tooltip } from "antd";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { MODAL_TYPES } from "../../constants/modalTypes";
-import { useModal } from "../../contexts/ModalContext";
-import "./DebugControls.css";
-import { AUTH_CONFIG } from "../../utils/config";
+import React, { useEffect, useState } from 'react';
+import { BugOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Card, Space, Switch, Tooltip } from 'antd';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { MODAL_TYPES } from '../../constants/modalTypes';
+import { useModal } from '../../contexts/ModalContext';
+import './DebugControls.css';
+import { AUTH_CONFIG } from '../../utils/config';
 
 // Define a fallback for process.env if it's not available in the environment
-const processEnv = typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
+const processEnv =
+  typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
 
 /**
  * Debug Controls Panel - For testing modal and login functionality
@@ -27,7 +28,7 @@ const DebugControls = () => {
   // Handle direct modal testing
   const testLoginModal = () => {
     try {
-      addLog("Opening LOGIN modal via ModalContext");
+      addLog('Opening LOGIN modal via ModalContext');
       closeAllModals();
       openModal(MODAL_TYPES.LOGIN);
     } catch (error) {
@@ -37,7 +38,7 @@ const DebugControls = () => {
 
   const testRegisterModal = () => {
     try {
-      addLog("Opening REGISTER modal via ModalContext");
+      addLog('Opening REGISTER modal via ModalContext');
       closeAllModals();
       openModal(MODAL_TYPES.REGISTER);
     } catch (error) {
@@ -48,11 +49,11 @@ const DebugControls = () => {
   // Handle direct access modal testing
   const testDirectLoginModal = () => {
     try {
-      addLog("Opening LOGIN modal via direct window function");
+      addLog('Opening LOGIN modal via direct window function');
       if (window.openLoginModal) {
         window.openLoginModal();
       } else {
-        addLog("window.openLoginModal function not found");
+        addLog('window.openLoginModal function not found');
       }
     } catch (error) {
       addLog(`Error with direct login modal: ${error.message}`);
@@ -61,11 +62,11 @@ const DebugControls = () => {
 
   const testDirectRegisterModal = () => {
     try {
-      addLog("Opening REGISTER modal via direct window function");
+      addLog('Opening REGISTER modal via direct window function');
       if (window.openRegisterModal) {
         window.openRegisterModal();
       } else {
-        addLog("window.openRegisterModal function not found");
+        addLog('window.openRegisterModal function not found');
       }
     } catch (error) {
       addLog(`Error with direct register modal: ${error.message}`);
@@ -75,17 +76,17 @@ const DebugControls = () => {
   // Handle demo login testing
   const testDemoLogin = () => {
     try {
-      addLog("Testing demo login via button click");
+      addLog('Testing demo login via button click');
       const demoButton =
-        document.querySelector(".button-tertiary") ||
-        document.getElementById("demo-button") ||
-        document.getElementById("direct-demo-button");
+        document.querySelector('.button-tertiary') ||
+        document.getElementById('demo-button') ||
+        document.getElementById('direct-demo-button');
 
       if (demoButton) {
         addLog(`Found demo button: ${demoButton.id || demoButton.className}`);
         demoButton.click();
       } else {
-        addLog("Demo button not found in the DOM");
+        addLog('Demo button not found in the DOM');
       }
     } catch (error) {
       addLog(`Error with demo login: ${error.message}`);
@@ -95,13 +96,13 @@ const DebugControls = () => {
   // Handle direct demo login function
   const testDirectDemoLogin = () => {
     try {
-      addLog("Testing demo login via global function");
+      addLog('Testing demo login via global function');
       if (window.executeDemoLogin) {
         window.executeDemoLogin();
       } else if (window.demoLoginHandler) {
         window.demoLoginHandler();
       } else {
-        addLog("No global demo login function found");
+        addLog('No global demo login function found');
       }
     } catch (error) {
       addLog(`Error with direct demo login: ${error.message}`);
@@ -120,14 +121,14 @@ const DebugControls = () => {
 
   const testSignupModal = () => {
     openModal(MODAL_TYPES.SIGNUP);
-    addLog("Opening signup modal");
+    addLog('Opening signup modal');
   };
 
   const testDirectSignupModal = () => {
     if (window.openSignupModal) {
       window.openSignupModal();
     } else {
-      addLog("window.openSignupModal function not found");
+      addLog('window.openSignupModal function not found');
     }
   };
 
@@ -150,14 +151,13 @@ const DebugControls = () => {
 
   // Check for environment and initialize visibility
   useEffect(() => {
-    const isDevMode = processEnv.NODE_ENV === "development";
-    const isDebugMode =
-      window.debugMode || localStorage.getItem("debugMode") === "true";
+    const isDevMode = processEnv.NODE_ENV === 'development';
+    const isDebugMode = window.debugMode || localStorage.getItem('debugMode') === 'true';
 
     setVisible(isDevMode || isDebugMode);
 
     if (isDevMode || isDebugMode) {
-      addLog("Debug controls initialized");
+      addLog('Debug controls initialized');
       addLog(`Environment: ${processEnv.NODE_ENV}`);
       addLog(`URL: ${window.location.href}`);
     }
@@ -165,16 +165,16 @@ const DebugControls = () => {
     // Add global keyboard shortcut to toggle debug panel
     const handleKeyDown = (e) => {
       // Ctrl+Shift+D or Cmd+Shift+D
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "d") {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'd') {
         e.preventDefault();
         setVisible((prev) => !prev);
-        localStorage.setItem("debugMode", (!visible).toString());
+        localStorage.setItem('debugMode', (!visible).toString());
         window.debugMode = !visible;
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [visible]);
 
   // Don't render if not visible
@@ -192,15 +192,13 @@ const DebugControls = () => {
       addLog(`Active modals: ${modalState.length}`);
 
       // Check modal DOM elements
-      const modalRoot = document.getElementById("portal-root");
-      const modalElements = document.querySelectorAll(
-        ".modal-content, .modal-backdrop"
-      );
+      const modalRoot = document.getElementById('portal-root');
+      const modalElements = document.querySelectorAll('.modal-content, .modal-backdrop');
 
       addLog(`Modal root exists: ${!!modalRoot}`);
       addLog(`Modal elements in DOM: ${modalElements.length}`);
 
-      console.log("Debug State Check:", {
+      console.log('Debug State Check:', {
         modalState,
         hasToken,
         modalRoot,
@@ -217,34 +215,32 @@ const DebugControls = () => {
   // Check direct DOM access to app elements
   const checkDOM = () => {
     try {
-      addLog("Checking DOM for key elements");
+      addLog('Checking DOM for key elements');
 
       const elements = [
-        { name: "Root", selector: "#root" },
-        { name: "Portal Root", selector: "#portal-root" },
-        { name: "Login Button", selector: "#login-button, .button-primary" },
+        { name: 'Root', selector: '#root' },
+        { name: 'Portal Root', selector: '#portal-root' },
+        { name: 'Login Button', selector: '#login-button, .button-primary' },
         {
-          name: "Register Button",
-          selector: "#register-button, .button-secondary",
+          name: 'Register Button',
+          selector: '#register-button, .button-secondary',
         },
-        { name: "Demo Button", selector: "#demo-button, .button-tertiary" },
+        { name: 'Demo Button', selector: '#demo-button, .button-tertiary' },
       ];
 
       elements.forEach((item) => {
         const element = document.querySelector(item.selector);
-        addLog(`${item.name}: ${element ? "Found" : "Not found"}`);
+        addLog(`${item.name}: ${element ? 'Found' : 'Not found'}`);
       });
 
       // Add event listener to login button if found
-      const loginButton = document.querySelector(
-        "#login-button, .button-primary"
-      );
+      const loginButton = document.querySelector('#login-button, .button-primary');
       if (loginButton && !loginButton._debugListenerAdded) {
         loginButton._debugListenerAdded = true;
-        loginButton.addEventListener("click", () => {
-          addLog("Login button clicked via DOM listener");
+        loginButton.addEventListener('click', () => {
+          addLog('Login button clicked via DOM listener');
         });
-        addLog("Added debug listener to login button");
+        addLog('Added debug listener to login button');
       }
     } catch (error) {
       addLog(`Error checking DOM: ${error.message}`);
@@ -259,22 +255,22 @@ const DebugControls = () => {
   // Enable debug mode globally
   const enableDebugMode = () => {
     window.debugMode = true;
-    localStorage.setItem("debugMode", "true");
-    addLog("Debug mode enabled globally");
+    localStorage.setItem('debugMode', 'true');
+    addLog('Debug mode enabled globally');
 
     // Reload the page to apply debug mode
-    if (!processEnv.NODE_ENV === "development") {
+    if (!processEnv.NODE_ENV === 'development') {
       window.location.reload();
     }
   };
 
   const toggleDebug = () => {
-    dispatch({ type: "universe/setDebug", payload: !debug });
+    dispatch({ type: 'universe/setDebug', payload: !debug });
   };
 
   return (
-    <Card title="Debug Controls" size="small" style={{ marginBottom: "1rem" }}>
-      <Space direction="vertical" style={{ width: "100%" }}>
+    <Card title="Debug Controls" size="small" style={{ marginBottom: '1rem' }}>
+      <Space direction="vertical" style={{ width: '100%' }}>
         <Space>
           <Switch
             checked={debug}
@@ -287,19 +283,12 @@ const DebugControls = () => {
           </Tooltip>
         </Space>
 
-        <Button
-          type="primary"
-          icon={<SettingOutlined />}
-          size="small"
-          disabled={!debug}
-        >
+        <Button type="primary" icon={<SettingOutlined />} size="small" disabled={!debug}>
           Advanced Settings
         </Button>
 
         <Button onClick={testSignupModal}>Test Signup Modal</Button>
-        <Button onClick={testDirectSignupModal}>
-          Test Direct Signup Modal
-        </Button>
+        <Button onClick={testDirectSignupModal}>Test Direct Signup Modal</Button>
       </Space>
     </Card>
   );

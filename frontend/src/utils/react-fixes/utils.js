@@ -3,28 +3,28 @@
  * This file provides utility functions for browser extension compatibility
  */
 
-(function() {
+(function () {
   // Define global utils object if not already present
   window.utils = window.utils || {
-    checkExtensionCompatibility: function() {
+    checkExtensionCompatibility: function () {
       console.log('Extension compatibility check complete');
       return true;
     },
-    
-    suppressExtensionErrors: function() {
+
+    suppressExtensionErrors: function () {
       console.log('Extension error suppression active');
       return true;
     },
-    
-    isExtensionEnabled: function(name) {
+
+    isExtensionEnabled: function (name) {
       return false;
     },
-    
-    registerExtension: function(name, version) {
+
+    registerExtension: function (name, version) {
       console.log(`Extension registration attempted: ${name} v${version}`);
       return { name, version, registered: true };
-    }
+    },
   };
-  
+
   console.log('[Browser Extension Compatibility] Utils loaded');
-})(); 
+})();

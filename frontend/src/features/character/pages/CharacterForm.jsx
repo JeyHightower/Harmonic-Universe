@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Dialog,
   DialogTitle,
@@ -10,28 +10,26 @@ import {
   Box,
   Typography,
   CircularProgress,
-} from "@mui/material";
+} from '@mui/material';
 import {
   createCharacter,
   updateCharacter,
   deleteCharacter,
   fetchCharacter,
-} from "../../../store/thunks/characterThunks";
-import { closeModal } from "../../../store/slices/characterSlice";
-import "../styles/Character.css";
+} from '../../../store/thunks/characterThunks';
+import { closeModal } from '../../../store/slices/characterSlice';
+import '../styles/Character.css';
 
 const CharacterForm = ({ open, type, sceneId, characterId }) => {
   const dispatch = useDispatch();
-  const { currentCharacter, loading, error } = useSelector(
-    (state) => state.characters
-  );
+  const { currentCharacter, loading, error } = useSelector((state) => state.characters);
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
+    name: '',
+    description: '',
   });
 
   useEffect(() => {
-    if (type === "edit" || type === "view") {
+    if (type === 'edit' || type === 'view') {
       dispatch(fetchCharacter(characterId));
     }
   }, [dispatch, type, characterId]);
@@ -40,7 +38,7 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
     if (currentCharacter) {
       setFormData({
         name: currentCharacter.name,
-        description: currentCharacter.description || "",
+        description: currentCharacter.description || '',
       });
     }
   }, [currentCharacter]);
@@ -56,21 +54,21 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (type === "create") {
+      if (type === 'create') {
         await dispatch(
           createCharacter({
             ...formData,
             scene_id: sceneId,
           })
         );
-      } else if (type === "edit") {
+      } else if (type === 'edit') {
         await dispatch(updateCharacter({ id: characterId, ...formData }));
-      } else if (type === "delete") {
+      } else if (type === 'delete') {
         await dispatch(deleteCharacter(characterId));
       }
       dispatch(closeModal());
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error('Error submitting form:', error);
     }
   };
 
@@ -80,26 +78,22 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
 
   const getTitle = () => {
     switch (type) {
-      case "create":
-        return "Create New Character";
-      case "edit":
-        return "Edit Character";
-      case "view":
-        return "Character Details";
-      case "delete":
-        return "Delete Character";
+      case 'create':
+        return 'Create New Character';
+      case 'edit':
+        return 'Edit Character';
+      case 'view':
+        return 'Character Details';
+      case 'delete':
+        return 'Delete Character';
       default:
-        return "Character";
+        return 'Character';
     }
   };
 
-  if (loading && (type === "edit" || type === "view")) {
+  if (loading && (type === 'edit' || type === 'view')) {
     return (
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        className="character-form-modal"
-      >
+      <Dialog open={open} onClose={handleClose} className="character-form-modal">
         <DialogContent>
           <Box display="flex" justifyContent="center" p={3}>
             <CircularProgress />
@@ -126,7 +120,7 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
                 {error}
               </Typography>
             )}
-            {type !== "delete" ? (
+            {type !== 'delete' ? (
               <Box>
                 <TextField
                   autoFocus
@@ -137,7 +131,7 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
                   fullWidth
                   value={formData.name}
                   onChange={handleChange}
-                  disabled={type === "view"}
+                  disabled={type === 'view'}
                   required
                   className="character-form-field"
                 />
@@ -151,32 +145,27 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
                   rows={4}
                   value={formData.description}
                   onChange={handleChange}
-                  disabled={type === "view"}
+                  disabled={type === 'view'}
                   className="character-form-field"
                 />
               </Box>
             ) : (
               <Typography>
-                Are you sure you want to delete this character? This action
-                cannot be undone.
+                Are you sure you want to delete this character? This action cannot be undone.
               </Typography>
             )}
           </Box>
         </DialogContent>
         <DialogActions className="character-form-actions">
           <Button onClick={handleClose}>Cancel</Button>
-          {type !== "view" && (
+          {type !== 'view' && (
             <Button
               type="submit"
               variant="contained"
-              color={type === "delete" ? "error" : "primary"}
+              color={type === 'delete' ? 'error' : 'primary'}
               disabled={loading}
             >
-              {loading
-                ? "Deleting..."
-                : type === "create"
-                ? "Create"
-                : "Delete"}
+              {loading ? 'Deleting...' : type === 'create' ? 'Create' : 'Delete'}
             </Button>
           )}
         </DialogActions>

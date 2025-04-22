@@ -1,19 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Button } from "antd";
-import "../../styles/Debug.css";
-import {
-  clearLogs,
-  enableDebugMode,
-  getLogs,
-  toggleLogging,
-} from "../../utils/logger";
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Button } from 'antd';
+import '../../styles/Debug.css';
+import { clearLogs, enableDebugMode, getLogs, toggleLogging } from '../../utils/logger';
 
 // Define window globals to fix ESLint errors
 const { clearInterval, setInterval } = window;
 
 // Define a fallback for process.env if it's not available in the environment
-const processEnv = typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
+const processEnv =
+  typeof process !== 'undefined' && process.env ? process.env : { NODE_ENV: 'development' };
 
 /**
  * Debug panel component for viewing logs in production
@@ -62,8 +58,8 @@ const Debug = () => {
 
   // Format data for display
   const formatData = (data) => {
-    if (!data) return "";
-    if (typeof data === "string") return data;
+    if (!data) return '';
+    if (typeof data === 'string') return data;
 
     try {
       return JSON.stringify(data, null, 2);
@@ -94,22 +90,18 @@ const Debug = () => {
 
   // Categories for filtering
   const categories = [
-    { id: null, label: "All Logs" },
-    { id: "modal", label: "Modal" },
-    { id: "auth", label: "Auth" },
-    { id: "api", label: "API" },
-    { id: "error", label: "Errors" },
-    { id: "general", label: "General" },
+    { id: null, label: 'All Logs' },
+    { id: 'modal', label: 'Modal' },
+    { id: 'auth', label: 'Auth' },
+    { id: 'api', label: 'API' },
+    { id: 'error', label: 'Errors' },
+    { id: 'general', label: 'General' },
   ];
 
   return (
     <div className="debug-panel">
       {/* Toggle button - always visible */}
-      <button
-        className="debug-toggle-button"
-        onClick={togglePanel}
-        title="Toggle Debug Panel"
-      >
+      <button className="debug-toggle-button" onClick={togglePanel} title="Toggle Debug Panel">
         🐞
       </button>
 
@@ -128,10 +120,7 @@ const Debug = () => {
               <button onClick={handleEnableDebug} title="Enable Debug Mode">
                 🔧
               </button>
-              <button
-                onClick={handleClearUrlParams}
-                title="Clear URL Parameters"
-              >
+              <button onClick={handleClearUrlParams} title="Clear URL Parameters">
                 🧹
               </button>
               <label>
@@ -151,10 +140,8 @@ const Debug = () => {
           <div className="debug-categories">
             {categories.map((category) => (
               <button
-                key={category.id || "all"}
-                className={`category-button ${
-                  selectedCategory === category.id ? "active" : ""
-                }`}
+                key={category.id || 'all'}
+                className={`category-button ${selectedCategory === category.id ? 'active' : ''}`}
                 onClick={() => handleToggleCategory(category.id)}
               >
                 {category.label}
@@ -167,16 +154,9 @@ const Debug = () => {
               <div className="debug-no-logs">No logs to display</div>
             ) : (
               logs.map((log, index) => (
-                <div
-                  key={index}
-                  className={`debug-log-entry debug-category-${log.category}`}
-                >
-                  <div className="debug-log-time">
-                    {new Date(log.time).toLocaleTimeString()}
-                  </div>
-                  <div className="debug-log-category">
-                    {log.category.toUpperCase()}
-                  </div>
+                <div key={index} className={`debug-log-entry debug-category-${log.category}`}>
+                  <div className="debug-log-time">{new Date(log.time).toLocaleTimeString()}</div>
+                  <div className="debug-log-category">{log.category.toUpperCase()}</div>
                   <div className="debug-log-message">{log.message}</div>
                   {log.data && Object.keys(log.data).length > 0 && (
                     <div className="debug-log-data">

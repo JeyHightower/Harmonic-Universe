@@ -1,6 +1,6 @@
-import PropTypes from "prop-types";
-import React from "react";
-import Modal from "../common/Modal";
+import PropTypes from 'prop-types';
+import React from 'react';
+import Modal from '../common/Modal';
 
 /**
  * Modal component to display when a network error occurs
@@ -36,10 +36,7 @@ const NetworkErrorModal = ({ isOpen, onClose, message }) => {
           </svg>
         </div>
         <div className="network-error-message">
-          <p>
-            {message ||
-              "Could not connect to server. Some features may be unavailable."}
-          </p>
+          <p>{message || 'Could not connect to server. Some features may be unavailable.'}</p>
           <p className="network-error-help">
             Please check your internet connection and try again later.
           </p>
@@ -70,7 +67,7 @@ NetworkErrorModal.propTypes = {
 
 NetworkErrorModal.defaultProps = {
   isOpen: false,
-  message: "Could not connect to server. Some features may be unavailable.",
+  message: 'Could not connect to server. Some features may be unavailable.',
 };
 
 export default NetworkErrorModal;

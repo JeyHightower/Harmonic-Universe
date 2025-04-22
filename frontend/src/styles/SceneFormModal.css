@@ -93,7 +93,7 @@
   margin-top: 0.5rem;
 }
 
-.scene-form .checkbox-field input[type="checkbox"] {
+.scene-form .checkbox-field input[type='checkbox'] {
   width: 1.25rem;
   height: 1.25rem;
   accent-color: var(--primary-color);
@@ -120,7 +120,7 @@
 }
 
 /* Duration input styling */
-.scene-form input[type="number"] {
+.scene-form input[type='number'] {
   -moz-appearance: textfield; /* Firefox */
 }
 

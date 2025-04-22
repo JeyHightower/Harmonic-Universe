@@ -32,18 +32,16 @@ const Select = ({
   const searchInputRef = useRef(null);
 
   // Find the selected option object
-  const selectedOption = options.find(option => option.value === value);
+  const selectedOption = options.find((option) => option.value === value);
 
   // Filter options based on search term
   const filteredOptions = searchTerm
-    ? options.filter(option =>
-        option.label.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    ? options.filter((option) => option.label.toLowerCase().includes(searchTerm.toLowerCase()))
     : options;
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = event => {
+    const handleClickOutside = (event) => {
       if (selectRef.current && !selectRef.current.contains(event.target)) {
         setIsOpen(false);
       }
@@ -71,19 +69,19 @@ const Select = ({
   };
 
   // Handle option selection
-  const handleSelect = option => {
+  const handleSelect = (option) => {
     onChange(option.value);
     setIsOpen(false);
     setSearchTerm('');
   };
 
   // Handle search input
-  const handleSearch = e => {
+  const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
   // Handle keyboard navigation
-  const handleKeyDown = e => {
+  const handleKeyDown = (e) => {
     if (disabled) return;
 
     switch (e.key) {
@@ -108,9 +106,7 @@ const Select = ({
 
   return (
     <div
-      className={`select-container ${className || ''} ${
-        disabled ? 'disabled' : ''
-      }`}
+      className={`select-container ${className || ''} ${disabled ? 'disabled' : ''}`}
       ref={selectRef}
     >
       <div
@@ -149,19 +145,17 @@ const Select = ({
                 onChange={handleSearch}
                 placeholder="Search..."
                 className="select-search-input"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               />
             </div>
           )}
 
           <div className="select-options">
             {filteredOptions.length > 0 ? (
-              filteredOptions.map(option => (
+              filteredOptions.map((option) => (
                 <div
                   key={option.value}
-                  className={`select-option ${
-                    option.value === value ? 'selected' : ''
-                  }`}
+                  className={`select-option ${option.value === value ? 'selected' : ''}`}
                   onClick={() => handleSelect(option)}
                   role="option"
                   aria-selected={option.value === value}
@@ -185,8 +179,7 @@ Select.propTypes = {
   onChange: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(
     PropTypes.shape({
-      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        .isRequired,
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       label: PropTypes.string.isRequired,
     })
   ).isRequired,

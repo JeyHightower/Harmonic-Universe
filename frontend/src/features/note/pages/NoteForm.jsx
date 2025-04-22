@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import PropTypes from "prop-types";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   TextField,
   Button,
@@ -12,30 +12,30 @@ import {
   IconButton,
   Paper,
   Typography,
-} from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
-import { createNote, updateNote } from "../../../store/thunks/noteThunks";
-import "../styles/NoteForm.css";
+} from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
+import { createNote, updateNote } from '../../../store/thunks/noteThunks';
+import '../styles/NoteForm.css';
 
 const NoteForm = ({ note, universeId, sceneId, characterId, onSuccess, onCancel }) => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.notes);
   const [formData, setFormData] = useState({
-    title: "",
-    content: "",
+    title: '',
+    content: '',
     tags: [],
     is_public: false,
     universe_id: universeId,
     scene_id: sceneId,
     character_id: characterId,
   });
-  const [tagInput, setTagInput] = useState("");
+  const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     if (note) {
       setFormData({
-        title: note.title || "",
-        content: note.content || "",
+        title: note.title || '',
+        content: note.content || '',
         tags: note.tags || [],
         is_public: note.is_public || false,
         universe_id: note.universe_id || universeId,
@@ -45,8 +45,8 @@ const NoteForm = ({ note, universeId, sceneId, characterId, onSuccess, onCancel 
     } else {
       // Reset form for new notes
       setFormData({
-        title: "",
-        content: "",
+        title: '',
+        content: '',
         tags: [],
         is_public: false,
         universe_id: universeId,
@@ -60,7 +60,7 @@ const NoteForm = ({ note, universeId, sceneId, characterId, onSuccess, onCancel 
     const { name, value, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "is_public" ? checked : value,
+      [name]: name === 'is_public' ? checked : value,
     }));
   };
 
@@ -69,8 +69,8 @@ const NoteForm = ({ note, universeId, sceneId, characterId, onSuccess, onCancel 
   };
 
   const handleAddTag = (e) => {
-    if ((e.key === "Enter" || e.type === "click") && tagInput.trim()) {
-      if (e.key === "Enter") {
+    if ((e.key === 'Enter' || e.type === 'click') && tagInput.trim()) {
+      if (e.key === 'Enter') {
         e.preventDefault();
       }
       if (!formData.tags.includes(tagInput.trim())) {
@@ -79,7 +79,7 @@ const NoteForm = ({ note, universeId, sceneId, characterId, onSuccess, onCancel 
           tags: [...prev.tags, tagInput.trim()],
         }));
       }
-      setTagInput("");
+      setTagInput('');
     }
   };
 
@@ -100,16 +100,16 @@ const NoteForm = ({ note, universeId, sceneId, characterId, onSuccess, onCancel 
       }
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error submitting note:", error);
+      console.error('Error submitting note:', error);
     }
   };
 
   return (
     <Paper className="note-form-container" elevation={3}>
       <Typography variant="h5" className="note-form-title">
-        {note ? "Edit Note" : "Create New Note"}
+        {note ? 'Edit Note' : 'Create New Note'}
       </Typography>
-      
+
       <form onSubmit={handleSubmit} className="note-form">
         {error && <div className="note-form-error">{error}</div>}
         <TextField
@@ -171,31 +171,16 @@ const NoteForm = ({ note, universeId, sceneId, characterId, onSuccess, onCancel 
           ))}
         </Box>
         <FormControlLabel
-          control={
-            <Switch
-              checked={formData.is_public}
-              onChange={handleChange}
-              name="is_public"
-            />
-          }
+          control={<Switch checked={formData.is_public} onChange={handleChange} name="is_public" />}
           label="Make Note Public"
           className="note-form-field"
         />
         <Box className="note-form-actions">
-          <Button 
-            onClick={onCancel} 
-            color="primary"
-            variant="outlined"
-          >
+          <Button onClick={onCancel} color="primary" variant="outlined">
             Cancel
           </Button>
-          <Button
-            type="submit"
-            color="primary"
-            variant="contained"
-            disabled={loading}
-          >
-            {loading ? "Saving..." : note ? "Update" : "Create"}
+          <Button type="submit" color="primary" variant="contained" disabled={loading}>
+            {loading ? 'Saving...' : note ? 'Update' : 'Create'}
           </Button>
         </Box>
       </form>
@@ -212,19 +197,19 @@ NoteForm.propTypes = {
     is_public: PropTypes.bool,
     universe_id: PropTypes.string,
     scene_id: PropTypes.string,
-    character_id: PropTypes.string
+    character_id: PropTypes.string,
   }),
   universeId: PropTypes.string,
   sceneId: PropTypes.string,
   characterId: PropTypes.string,
   onSuccess: PropTypes.func,
-  onCancel: PropTypes.func
+  onCancel: PropTypes.func,
 };
 
 NoteForm.defaultProps = {
   note: null,
   onSuccess: () => {},
-  onCancel: () => {}
+  onCancel: () => {},
 };
 
-export default NoteForm; 
+export default NoteForm;

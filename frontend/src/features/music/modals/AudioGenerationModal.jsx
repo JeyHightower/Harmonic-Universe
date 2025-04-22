@@ -1,16 +1,16 @@
-import PropTypes from "prop-types";
-import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import * as Tone from "tone";
-import Button from "../../../components/common/Button";
-import Input from "../../../components/common/Input";
-import { ModalSystem } from "../../../components/modals/index.mjs";
-import Select from "../../../components/common/Select";
-import Slider from "../../../components/common/Slider";
-import Spinner from "../../../components/common/Spinner";
-import "../../../styles/Modal.css";
-import { audioService } from "../../../services";
-import { generateRandomId } from "../../../utils/idGenerators.mjs";
+import PropTypes from 'prop-types';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import * as Tone from 'tone';
+import Button from '../../../components/common/Button';
+import Input from '../../../components/common/Input';
+import { ModalSystem } from '../../../components/modals/index.mjs';
+import Select from '../../../components/common/Select';
+import Slider from '../../../components/common/Slider';
+import Spinner from '../../../components/common/Spinner';
+import '../../../styles/Modal.css';
+import { audioService } from '../../../services';
+import { generateRandomId } from '../../../utils/idGenerators.mjs';
 
 /**
  * Modal for generating audio based on the physics of a universe and scene.
@@ -32,12 +32,12 @@ const AudioGenerationModal = ({
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    algorithm: "harmonic_synthesis",
+    name: '',
+    description: '',
+    algorithm: 'harmonic_synthesis',
     duration: 30,
-    key: "C",
-    scale: "major",
+    key: 'C',
+    scale: 'major',
     parameters: {
       // Harmonic Synthesis parameters
       amplitude: 0.5,
@@ -47,12 +47,12 @@ const AudioGenerationModal = ({
       decay: 0.2,
       sustain: 0.7,
       release: 0.5,
-      
+
       // Granular Synthesis parameters
       grain_size: 0.1,
       grain_overlap: 0.5,
       grain_randomization: 0.2,
-      
+
       // Physical Modeling parameters
       stiffness: 0.5,
       mass: 1.0,
@@ -61,17 +61,17 @@ const AudioGenerationModal = ({
     },
     ...initialData,
   });
-  
-  const [audioUrl, setAudioUrl] = useState("");
+
+  const [audioUrl, setAudioUrl] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(initialData?.id ? true : false);
   const audioPlayer = useRef(null);
   const synthRef = useRef(null);
-  
+
   // Initialize Tone.js
   useEffect(() => {
     // Clean up if component is unmounted during playback
@@ -80,12 +80,12 @@ const AudioGenerationModal = ({
       if (synth) {
         synth.dispose();
       }
-      if (Tone.Transport.state === "started") {
+      if (Tone.Transport.state === 'started') {
         Tone.Transport.stop();
       }
     };
   }, []);
-  
+
   // Fetch audio data if editing
   useEffect(() => {
     const fetchAudioData = async () => {
@@ -102,20 +102,20 @@ const AudioGenerationModal = ({
               setAudioUrl(response.data.audio_url);
             }
           } else {
-            throw new Error(response.message || "Failed to load audio data");
+            throw new Error(response.message || 'Failed to load audio data');
           }
         } catch (error) {
-          console.error("Error fetching audio:", error);
-          setError("Failed to load audio data. Please try again.");
+          console.error('Error fetching audio:', error);
+          setError('Failed to load audio data. Please try again.');
         } finally {
           setIsLoading(false);
         }
       }
     };
-    
+
     fetchAudioData();
   }, [initialData?.id, universeId, sceneId, formData]);
-  
+
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -124,7 +124,7 @@ const AudioGenerationModal = ({
       [name]: value,
     });
   };
-  
+
   // Handle algorithm change
   const handleAlgorithmChange = (e) => {
     setFormData({
@@ -132,7 +132,7 @@ const AudioGenerationModal = ({
       algorithm: e.target.value,
     });
   };
-  
+
   // Handle parameter changes
   const handleParameterChange = (parameter, value) => {
     setFormData({
@@ -143,17 +143,17 @@ const AudioGenerationModal = ({
       },
     });
   };
-  
+
   // Generate audio based on current parameters
   const handleGenerate = async () => {
-    setError("");
-    setSuccessMessage("");
+    setError('');
+    setSuccessMessage('');
     setIsGenerating(true);
-    
+
     try {
       // Start audio context if not already started
       await Tone.start();
-      
+
       // Generate audio using the API
       const response = await audioService.generateAudio(universeId, sceneId, {
         algorithm: formData.algorithm,
@@ -162,46 +162,47 @@ const AudioGenerationModal = ({
         scale: formData.scale,
         parameters: formData.parameters,
       });
-      
+
       if (response.success) {
         setAudioUrl(response.data.audio_url);
-        setSuccessMessage("Audio generated successfully!");
-        
+        setSuccessMessage('Audio generated successfully!');
+
         // Play the audio automatically
         window.setTimeout(() => {
           if (audioPlayer.current) {
             audioPlayer.current.load();
-            audioPlayer.current.play()
+            audioPlayer.current
+              .play()
               .then(() => setIsPlaying(true))
-              .catch(e => console.error("Error playing audio", e));
+              .catch((e) => console.error('Error playing audio', e));
           }
         }, 500);
       } else {
-        throw new Error(response.message || "Failed to generate audio");
+        throw new Error(response.message || 'Failed to generate audio');
       }
     } catch (error) {
-      console.error("Error generating audio:", error);
-      setError("Failed to generate audio. Please try again.");
+      console.error('Error generating audio:', error);
+      setError('Failed to generate audio. Please try again.');
     } finally {
       setIsGenerating(false);
     }
   };
-  
+
   // Save the generated audio
   const handleSave = async () => {
     if (!audioUrl) {
-      setError("Please generate audio before saving");
+      setError('Please generate audio before saving');
       return;
     }
-    
+
     if (!formData.name.trim()) {
-      setError("Please provide a name for the audio");
+      setError('Please provide a name for the audio');
       return;
     }
-    
-    setError("");
+
+    setError('');
     setIsSaving(true);
-    
+
     try {
       const saveData = {
         name: formData.name,
@@ -213,36 +214,31 @@ const AudioGenerationModal = ({
         parameters: formData.parameters,
         audio_url: audioUrl,
       };
-      
-      const response = await audioService.saveAudio(
-        universeId,
-        sceneId,
-        saveData,
-        initialData?.id
-      );
-      
+
+      const response = await audioService.saveAudio(universeId, sceneId, saveData, initialData?.id);
+
       if (response.success) {
-        setSuccessMessage("Audio saved successfully!");
+        setSuccessMessage('Audio saved successfully!');
         window.setTimeout(() => {
           if (isGlobalModal) {
             // Navigate to the scene page
             navigate(`/universes/${universeId}/scenes/${sceneId}`);
           } else {
             // Return to the parent component with the saved audio
-            onClose({ action: "save", audio: response.data });
+            onClose({ action: 'save', audio: response.data });
           }
         }, 1500);
       } else {
-        throw new Error(response.message || "Failed to save audio");
+        throw new Error(response.message || 'Failed to save audio');
       }
     } catch (error) {
-      console.error("Error saving audio:", error);
-      setError("Failed to save audio. Please try again.");
+      console.error('Error saving audio:', error);
+      setError('Failed to save audio. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
-  
+
   // Play/pause the generated audio
   const handlePlayPause = () => {
     if (audioPlayer.current) {
@@ -254,15 +250,15 @@ const AudioGenerationModal = ({
       setIsPlaying(!isPlaying);
     }
   };
-  
+
   // Render algorithm-specific parameters
   const renderAlgorithmParameters = () => {
     switch (formData.algorithm) {
-      case "harmonic_synthesis":
+      case 'harmonic_synthesis':
         return (
           <div className="parameters-section">
             <h3>Harmonic Synthesis Parameters</h3>
-            
+
             <div className="parameter-row">
               <label>Amplitude</label>
               <Slider
@@ -270,11 +266,11 @@ const AudioGenerationModal = ({
                 max={1}
                 step={0.01}
                 value={formData.parameters.amplitude}
-                onChange={(value) => handleParameterChange("amplitude", value)}
+                onChange={(value) => handleParameterChange('amplitude', value)}
               />
               <span>{formData.parameters.amplitude.toFixed(2)}</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Frequency (Hz)</label>
               <Slider
@@ -282,11 +278,11 @@ const AudioGenerationModal = ({
                 max={1000}
                 step={1}
                 value={formData.parameters.frequency}
-                onChange={(value) => handleParameterChange("frequency", value)}
+                onChange={(value) => handleParameterChange('frequency', value)}
               />
               <span>{Math.round(formData.parameters.frequency)} Hz</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Harmonics</label>
               <Slider
@@ -294,11 +290,11 @@ const AudioGenerationModal = ({
                 max={16}
                 step={1}
                 value={formData.parameters.harmonics}
-                onChange={(value) => handleParameterChange("harmonics", value)}
+                onChange={(value) => handleParameterChange('harmonics', value)}
               />
               <span>{Math.round(formData.parameters.harmonics)}</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Attack (s)</label>
               <Slider
@@ -306,11 +302,11 @@ const AudioGenerationModal = ({
                 max={2}
                 step={0.01}
                 value={formData.parameters.attack}
-                onChange={(value) => handleParameterChange("attack", value)}
+                onChange={(value) => handleParameterChange('attack', value)}
               />
               <span>{formData.parameters.attack.toFixed(2)} s</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Decay (s)</label>
               <Slider
@@ -318,11 +314,11 @@ const AudioGenerationModal = ({
                 max={2}
                 step={0.01}
                 value={formData.parameters.decay}
-                onChange={(value) => handleParameterChange("decay", value)}
+                onChange={(value) => handleParameterChange('decay', value)}
               />
               <span>{formData.parameters.decay.toFixed(2)} s</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Sustain</label>
               <Slider
@@ -330,11 +326,11 @@ const AudioGenerationModal = ({
                 max={1}
                 step={0.01}
                 value={formData.parameters.sustain}
-                onChange={(value) => handleParameterChange("sustain", value)}
+                onChange={(value) => handleParameterChange('sustain', value)}
               />
               <span>{formData.parameters.sustain.toFixed(2)}</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Release (s)</label>
               <Slider
@@ -342,18 +338,18 @@ const AudioGenerationModal = ({
                 max={5}
                 step={0.01}
                 value={formData.parameters.release}
-                onChange={(value) => handleParameterChange("release", value)}
+                onChange={(value) => handleParameterChange('release', value)}
               />
               <span>{formData.parameters.release.toFixed(2)} s</span>
             </div>
           </div>
         );
-        
-      case "granular_synthesis":
+
+      case 'granular_synthesis':
         return (
           <div className="parameters-section">
             <h3>Granular Synthesis Parameters</h3>
-            
+
             <div className="parameter-row">
               <label>Grain Size (s)</label>
               <Slider
@@ -361,11 +357,11 @@ const AudioGenerationModal = ({
                 max={1}
                 step={0.01}
                 value={formData.parameters.grain_size}
-                onChange={(value) => handleParameterChange("grain_size", value)}
+                onChange={(value) => handleParameterChange('grain_size', value)}
               />
               <span>{formData.parameters.grain_size.toFixed(2)} s</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Grain Overlap</label>
               <Slider
@@ -373,11 +369,11 @@ const AudioGenerationModal = ({
                 max={0.9}
                 step={0.01}
                 value={formData.parameters.grain_overlap}
-                onChange={(value) => handleParameterChange("grain_overlap", value)}
+                onChange={(value) => handleParameterChange('grain_overlap', value)}
               />
               <span>{formData.parameters.grain_overlap.toFixed(2)}</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Randomization</label>
               <Slider
@@ -385,18 +381,18 @@ const AudioGenerationModal = ({
                 max={1}
                 step={0.01}
                 value={formData.parameters.grain_randomization}
-                onChange={(value) => handleParameterChange("grain_randomization", value)}
+                onChange={(value) => handleParameterChange('grain_randomization', value)}
               />
               <span>{formData.parameters.grain_randomization.toFixed(2)}</span>
             </div>
           </div>
         );
-        
-      case "physical_modeling":
+
+      case 'physical_modeling':
         return (
           <div className="parameters-section">
             <h3>Physical Modeling Parameters</h3>
-            
+
             <div className="parameter-row">
               <label>Stiffness</label>
               <Slider
@@ -404,11 +400,11 @@ const AudioGenerationModal = ({
                 max={10}
                 step={0.1}
                 value={formData.parameters.stiffness}
-                onChange={(value) => handleParameterChange("stiffness", value)}
+                onChange={(value) => handleParameterChange('stiffness', value)}
               />
               <span>{formData.parameters.stiffness.toFixed(1)}</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Mass</label>
               <Slider
@@ -416,11 +412,11 @@ const AudioGenerationModal = ({
                 max={10}
                 step={0.1}
                 value={formData.parameters.mass}
-                onChange={(value) => handleParameterChange("mass", value)}
+                onChange={(value) => handleParameterChange('mass', value)}
               />
               <span>{formData.parameters.mass.toFixed(1)}</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Damping</label>
               <Slider
@@ -428,11 +424,11 @@ const AudioGenerationModal = ({
                 max={1}
                 step={0.01}
                 value={formData.parameters.damping}
-                onChange={(value) => handleParameterChange("damping", value)}
+                onChange={(value) => handleParameterChange('damping', value)}
               />
               <span>{formData.parameters.damping.toFixed(2)}</span>
             </div>
-            
+
             <div className="parameter-row">
               <label>Tension</label>
               <Slider
@@ -440,21 +436,21 @@ const AudioGenerationModal = ({
                 max={2}
                 step={0.01}
                 value={formData.parameters.tension}
-                onChange={(value) => handleParameterChange("tension", value)}
+                onChange={(value) => handleParameterChange('tension', value)}
               />
               <span>{formData.parameters.tension.toFixed(2)}</span>
             </div>
           </div>
         );
-        
+
       default:
         return null;
     }
   };
-  
+
   return (
     <ModalSystem
-      title={initialData ? "Edit Audio" : "Generate Audio"}
+      title={initialData ? 'Edit Audio' : 'Generate Audio'}
       onClose={onClose}
       {...modalProps}
     >
@@ -493,9 +489,9 @@ const AudioGenerationModal = ({
             value={formData.algorithm}
             onChange={handleAlgorithmChange}
             options={[
-              { value: "harmonic_synthesis", label: "Harmonic Synthesis" },
-              { value: "granular_synthesis", label: "Granular Synthesis" },
-              { value: "physical_modeling", label: "Physical Modeling" },
+              { value: 'harmonic_synthesis', label: 'Harmonic Synthesis' },
+              { value: 'granular_synthesis', label: 'Granular Synthesis' },
+              { value: 'physical_modeling', label: 'Physical Modeling' },
             ]}
           />
         </div>
@@ -522,18 +518,18 @@ const AudioGenerationModal = ({
             value={formData.key}
             onChange={handleInputChange}
             options={[
-              { value: "C", label: "C" },
-              { value: "C#", label: "C#" },
-              { value: "D", label: "D" },
-              { value: "D#", label: "D#" },
-              { value: "E", label: "E" },
-              { value: "F", label: "F" },
-              { value: "F#", label: "F#" },
-              { value: "G", label: "G" },
-              { value: "G#", label: "G#" },
-              { value: "A", label: "A" },
-              { value: "A#", label: "A#" },
-              { value: "B", label: "B" },
+              { value: 'C', label: 'C' },
+              { value: 'C#', label: 'C#' },
+              { value: 'D', label: 'D' },
+              { value: 'D#', label: 'D#' },
+              { value: 'E', label: 'E' },
+              { value: 'F', label: 'F' },
+              { value: 'F#', label: 'F#' },
+              { value: 'G', label: 'G' },
+              { value: 'G#', label: 'G#' },
+              { value: 'A', label: 'A' },
+              { value: 'A#', label: 'A#' },
+              { value: 'B', label: 'B' },
             ]}
           />
         </div>
@@ -545,17 +541,17 @@ const AudioGenerationModal = ({
             value={formData.scale}
             onChange={handleInputChange}
             options={[
-              { value: "major", label: "Major" },
-              { value: "minor", label: "Minor" },
-              { value: "harmonic_minor", label: "Harmonic Minor" },
-              { value: "melodic_minor", label: "Melodic Minor" },
-              { value: "pentatonic", label: "Pentatonic" },
-              { value: "blues", label: "Blues" },
-              { value: "dorian", label: "Dorian" },
-              { value: "phrygian", label: "Phrygian" },
-              { value: "lydian", label: "Lydian" },
-              { value: "mixolydian", label: "Mixolydian" },
-              { value: "locrian", label: "Locrian" },
+              { value: 'major', label: 'Major' },
+              { value: 'minor', label: 'Minor' },
+              { value: 'harmonic_minor', label: 'Harmonic Minor' },
+              { value: 'melodic_minor', label: 'Melodic Minor' },
+              { value: 'pentatonic', label: 'Pentatonic' },
+              { value: 'blues', label: 'Blues' },
+              { value: 'dorian', label: 'Dorian' },
+              { value: 'phrygian', label: 'Phrygian' },
+              { value: 'lydian', label: 'Lydian' },
+              { value: 'mixolydian', label: 'Mixolydian' },
+              { value: 'locrian', label: 'Locrian' },
             ]}
           />
         </div>
@@ -576,17 +572,10 @@ const AudioGenerationModal = ({
             onEnded={() => setIsPlaying(false)}
           />
           <div className="audio-controls">
-            <Button
-              onClick={handlePlayPause}
-              variant="outlined"
-              color="primary"
-            >
-              {isPlaying ? "Pause" : "Play"}
+            <Button onClick={handlePlayPause} variant="outlined" color="primary">
+              {isPlaying ? 'Pause' : 'Play'}
             </Button>
-            <Button
-              onClick={() => window.open(audioUrl, "_blank")}
-              variant="outlined"
-            >
+            <Button onClick={() => window.open(audioUrl, '_blank')} variant="outlined">
               Download
             </Button>
           </div>
@@ -594,16 +583,14 @@ const AudioGenerationModal = ({
       )}
 
       {/* Success message */}
-      {successMessage && (
-        <div className="success-message">{successMessage}</div>
-      )}
+      {successMessage && <div className="success-message">{successMessage}</div>}
 
       {/* Action buttons */}
       <div className="modal-footer">
         <Button onClick={onClose} variant="outlined">
           Cancel
         </Button>
-        
+
         <div className="button-group">
           <Button
             onClick={handleGenerate}
@@ -611,16 +598,16 @@ const AudioGenerationModal = ({
             color="primary"
             disabled={isGenerating || isSaving}
           >
-            {isGenerating ? <Spinner size="small" /> : "Generate"}
+            {isGenerating ? <Spinner size="small" /> : 'Generate'}
           </Button>
-          
+
           <Button
             onClick={handleSave}
             variant="contained"
             color="primary"
             disabled={!audioUrl || isGenerating || isSaving}
           >
-            {isSaving ? <Spinner size="small" /> : "Save"}
+            {isSaving ? <Spinner size="small" /> : 'Save'}
           </Button>
         </div>
       </div>
@@ -644,4 +631,4 @@ AudioGenerationModal.defaultProps = {
   isGlobalModal: false,
 };
 
-export default AudioGenerationModal; 
+export default AudioGenerationModal;

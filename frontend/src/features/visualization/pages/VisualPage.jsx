@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useModal } from '../../../contexts/ModalContext';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import '../../../styles/VisualPage.css';
-import Button from "../../../components/common/Button";
+import Button from '../../../components/common/Button';
 import { PictureOutlined, AppstoreOutlined, PlusOutlined } from '@ant-design/icons';
 
 // Placeholder image for visualization examples
@@ -24,7 +24,7 @@ const VisualPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('gallery');
 
-  const universe = useSelector(state => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universe.currentUniverse);
 
   useEffect(() => {
     const loadUniverse = async () => {
@@ -45,17 +45,17 @@ const VisualPage = () => {
     // Implementation for creating a new visualization
     console.log('Create visualization');
   };
-  
+
   const handleViewVisualization = (id) => {
     // Implementation for viewing a visualization
     console.log('View visualization', id);
   };
-  
+
   const handleEditVisualization = (id) => {
     // Implementation for editing a visualization
     console.log('Edit visualization', id);
   };
-  
+
   const handleDeleteVisualization = (id) => {
     // Implementation for deleting a visualization
     console.log('Delete visualization', id);
@@ -113,13 +113,25 @@ const VisualPage = () => {
                               </div>
                             }
                             actions={[
-                              <Button variant="tertiary" key="view" onClick={() => handleViewVisualization('sample-id')}>
+                              <Button
+                                variant="tertiary"
+                                key="view"
+                                onClick={() => handleViewVisualization('sample-id')}
+                              >
                                 View
                               </Button>,
-                              <Button variant="tertiary" key="edit" onClick={() => handleEditVisualization('sample-id')}>
+                              <Button
+                                variant="tertiary"
+                                key="edit"
+                                onClick={() => handleEditVisualization('sample-id')}
+                              >
                                 Edit
                               </Button>,
-                              <Button variant="danger" key="delete" onClick={() => handleDeleteVisualization('sample-id')}>
+                              <Button
+                                variant="danger"
+                                key="delete"
+                                onClick={() => handleDeleteVisualization('sample-id')}
+                              >
                                 Delete
                               </Button>,
                             ]}
@@ -160,11 +172,7 @@ const VisualPage = () => {
                 <div className="visual-templates">
                   <Row gutter={[16, 16]}>
                     <Col xs={24} sm={12} md={8} lg={6}>
-                      <Card
-                        className="template-card"
-                        hoverable
-                        onClick={handleCreateVisualization}
-                      >
+                      <Card className="template-card" hoverable onClick={handleCreateVisualization}>
                         <div className="template-icon">
                           <PlusOutlined />
                         </div>
@@ -173,42 +181,25 @@ const VisualPage = () => {
                       </Card>
                     </Col>
                     <Col xs={24} sm={12} md={8} lg={6}>
-                      <Card
-                        className="template-card"
-                        hoverable
-                        onClick={handleCreateVisualization}
-                      >
+                      <Card className="template-card" hoverable onClick={handleCreateVisualization}>
                         <div className="template-icon">
                           <PlusOutlined />
                         </div>
                         <h3>Abstract Harmony</h3>
-                        <p>
-                          Abstract visualization based on harmony parameters
-                        </p>
+                        <p>Abstract visualization based on harmony parameters</p>
                       </Card>
                     </Col>
                     <Col xs={24} sm={12} md={8} lg={6}>
-                      <Card
-                        className="template-card"
-                        hoverable
-                        onClick={handleCreateVisualization}
-                      >
+                      <Card className="template-card" hoverable onClick={handleCreateVisualization}>
                         <div className="template-icon">
                           <PlusOutlined />
                         </div>
                         <h3>Physics Simulation</h3>
-                        <p>
-                          Visualization of physics objects and their
-                          interactions
-                        </p>
+                        <p>Visualization of physics objects and their interactions</p>
                       </Card>
                     </Col>
                     <Col xs={24} sm={12} md={8} lg={6}>
-                      <Card
-                        className="template-card"
-                        hoverable
-                        onClick={handleCreateVisualization}
-                      >
+                      <Card className="template-card" hoverable onClick={handleCreateVisualization}>
                         <div className="template-icon">
                           <PlusOutlined />
                         </div>

@@ -1,13 +1,13 @@
-import PropTypes from "prop-types";
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Button from "./Button";
-import Icon from "./Icon";
-import Input from "./Input";
-import Modal from "./Modal";
-import Spinner from "../../components/common/Spinner";
-import "../../styles/Modal.css";
-import { API_CONFIG } from "../../utils/config";
+import PropTypes from 'prop-types';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Button from './Button';
+import Icon from './Icon';
+import Input from './Input';
+import Modal from './Modal';
+import Spinner from '../../components/common/Spinner';
+import '../../styles/Modal.css';
+import { API_CONFIG } from '../../utils/config';
 
 /**
  * Modal for creating and editing visualizations.
@@ -34,23 +34,23 @@ const VisualizationFormModal = ({
   const [fetchLoading, setFetchLoading] = useState(!!visualizationId);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
-    type: "PARTICLE",
+    name: '',
+    type: 'PARTICLE',
     parameters: {
       particleCount: 100,
       particleSize: 5,
-      particleColor: "#00AAFF",
-      backgroundColor: "#000000",
+      particleColor: '#00AAFF',
+      backgroundColor: '#000000',
       speedFactor: 1.0,
     },
   });
 
   // Visualization types
   const visualizationTypes = [
-    { value: "PARTICLE", label: "Particle System" },
-    { value: "WAVEFORM", label: "Waveform" },
-    { value: "SPECTRUM", label: "Frequency Spectrum" },
-    { value: "CIRCULAR", label: "Circular" },
+    { value: 'PARTICLE', label: 'Particle System' },
+    { value: 'WAVEFORM', label: 'Waveform' },
+    { value: 'SPECTRUM', label: 'Frequency Spectrum' },
+    { value: 'CIRCULAR', label: 'Circular' },
   ];
 
   // Fetch visualization data if editing
@@ -62,7 +62,7 @@ const VisualizationFormModal = ({
         const response = await fetch(`/api/visualizations/${visualizationId}`);
 
         if (!response.ok) {
-          throw new Error("Failed to fetch visualization data");
+          throw new Error('Failed to fetch visualization data');
         }
 
         const data = await response.json();
@@ -72,15 +72,13 @@ const VisualizationFormModal = ({
           parameters: data.parameters || {
             particleCount: 100,
             particleSize: 5,
-            particleColor: "#00AAFF",
-            backgroundColor: "#000000",
+            particleColor: '#00AAFF',
+            backgroundColor: '#000000',
             speedFactor: 1.0,
           },
         });
       } catch (err) {
-        setError(
-          err.message || "An error occurred while fetching visualization data"
-        );
+        setError(err.message || 'An error occurred while fetching visualization data');
       } finally {
         setFetchLoading(false);
       }
@@ -102,7 +100,7 @@ const VisualizationFormModal = ({
     let processedValue = value;
 
     // Convert numeric fields to numbers
-    if (["particleCount", "particleSize", "speedFactor"].includes(name)) {
+    if (['particleCount', 'particleSize', 'speedFactor'].includes(name)) {
       processedValue = parseFloat(value);
     }
 
@@ -125,7 +123,7 @@ const VisualizationFormModal = ({
         ? `/api/visualizations/${visualizationId}`
         : `/api/visualizations`;
 
-      const method = visualizationId ? "PUT" : "POST";
+      const method = visualizationId ? 'PUT' : 'POST';
 
       // Prepare data for API
       const apiData = {
@@ -143,7 +141,7 @@ const VisualizationFormModal = ({
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(apiData),
       });
@@ -151,8 +149,7 @@ const VisualizationFormModal = ({
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.message ||
-            `Failed to ${visualizationId ? "update" : "create"} visualization`
+          errorData.message || `Failed to ${visualizationId ? 'update' : 'create'} visualization`
         );
       }
 
@@ -163,7 +160,7 @@ const VisualizationFormModal = ({
         navigate(`/universes/${universeId}`);
       }
     } catch (err) {
-      setError(err.message || "An error occurred while saving visualization");
+      setError(err.message || 'An error occurred while saving visualization');
     } finally {
       setLoading(false);
     }
@@ -175,11 +172,7 @@ const VisualizationFormModal = ({
   // Show loading spinner while fetching existing data
   if (fetchLoading) {
     return (
-      <Modal
-        {...modalProps}
-        onClose={onClose}
-        className="visualization-form-modal"
-      >
+      <Modal {...modalProps} onClose={onClose} className="visualization-form-modal">
         <div className="modal-body centered">
           <Spinner size="medium" />
           <p>Loading visualization data...</p>
@@ -189,16 +182,9 @@ const VisualizationFormModal = ({
   }
 
   return (
-    <Modal
-      {...modalProps}
-      onClose={onClose}
-      className="visualization-form-modal"
-    >
+    <Modal {...modalProps} onClose={onClose} className="visualization-form-modal">
       <div className="modal-header">
-        <h2>
-          {modalProps.title ||
-            (isEditing ? "Edit Visualization" : "Create Visualization")}
-        </h2>
+        <h2>{modalProps.title || (isEditing ? 'Edit Visualization' : 'Create Visualization')}</h2>
       </div>
 
       <div className="modal-body">
@@ -238,7 +224,7 @@ const VisualizationFormModal = ({
           <fieldset className="parameters-fieldset">
             <legend>Visualization Parameters</legend>
 
-            {formData.type === "PARTICLE" && (
+            {formData.type === 'PARTICLE' && (
               <>
                 <div className="form-group">
                   <label htmlFor="particleCount">Particle Count</label>
@@ -319,9 +305,9 @@ const VisualizationFormModal = ({
               {loading ? (
                 <Spinner size="small" />
               ) : isEditing ? (
-                "Save Changes"
+                'Save Changes'
               ) : (
-                "Create Visualization"
+                'Create Visualization'
               )}
             </Button>
           </div>

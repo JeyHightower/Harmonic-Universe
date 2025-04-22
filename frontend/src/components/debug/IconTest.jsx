@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import Icon from "../common/Icon";
-import SafeIcon from "../common/SafeIcon";
-import * as AntIcons from "@ant-design/icons";
+import React, { useEffect, useState } from 'react';
+import Icon from '../common/Icon';
+import SafeIcon from '../common/SafeIcon';
+import * as AntIcons from '@ant-design/icons';
 
 const IconTest = () => {
   const [testResults, setTestResults] = useState([]);
@@ -10,24 +10,24 @@ const IconTest = () => {
   useEffect(() => {
     const results = [];
     results.push({
-      type: "info",
-      message: "IconTest component mounted - Using standard Icon component",
+      type: 'info',
+      message: 'IconTest component mounted - Using standard Icon component',
     });
 
     // Get available icons
-    const standardIconNames = ["add", "delete", "edit", "info", "warning", "error"];
+    const standardIconNames = ['add', 'delete', 'edit', 'info', 'warning', 'error'];
     setIconKeys(standardIconNames);
-    
-    results.push({ 
-      type: "info", 
-      message: `Testing standard icons: ${standardIconNames.join(", ")}` 
+
+    results.push({
+      type: 'info',
+      message: `Testing standard icons: ${standardIconNames.join(', ')}`,
     });
 
     // Test icons
-    standardIconNames.forEach(iconName => {
+    standardIconNames.forEach((iconName) => {
       results.push({
-        type: "success",
-        message: `Testing icon: ${iconName}`
+        type: 'success',
+        message: `Testing icon: ${iconName}`,
       });
     });
 
@@ -39,10 +39,7 @@ const IconTest = () => {
       <h2>Icon Test Component</h2>
       <div className="test-results">
         {testResults.map((result, index) => (
-          <div
-            key={index}
-            className={`test-result test-result-${result.type}`}
-          >
+          <div key={index} className={`test-result test-result-${result.type}`}>
             {result.message}
           </div>
         ))}
@@ -57,7 +54,7 @@ const IconTest = () => {
       </div>
       <h3>Ant Design Icons via SafeIcon</h3>
       <div className="icon-grid">
-        {["UserOutlined", "SettingOutlined", "HomeOutlined"].map((iconName) => (
+        {['UserOutlined', 'SettingOutlined', 'HomeOutlined'].map((iconName) => (
           <div key={iconName} className="icon-test-item">
             <SafeIcon icon={AntIcons[iconName]} />
             <span>{iconName}</span>

@@ -1,25 +1,25 @@
 import {
-    Add as AddIcon,
-    ArrowBack as ArrowBackIcon,
-    Delete as DeleteIcon,
-    Edit as EditIcon,
-    Search as SearchIcon,
-    Visibility as ViewIcon,
+  Add as AddIcon,
+  ArrowBack as ArrowBackIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Search as SearchIcon,
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
 import {
-    Alert,
-    Box,
-    Button,
-    Card,
-    CardActions,
-    CardContent,
-    CircularProgress,
-    Container,
-    Grid,
-    IconButton,
-    InputAdornment,
-    TextField,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CircularProgress,
+  Container,
+  Grid,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import { useEffect, useMemo, useState } from 'react';
@@ -28,8 +28,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { safeId } from '../../../services/endpoints.mjs';
 import {
-    deleteSceneAndRefresh,
-    fetchScenes,
+  deleteSceneAndRefresh,
+  fetchScenes,
 } from '../../../store/thunks/consolidated/scenesThunks';
 import SceneModal from '../modals/SceneModal';
 
@@ -532,7 +532,7 @@ const ScenesPageContent = ({ universeId }) => {
       safeUniverseId,
       modalType: 'create',
       selectedSceneId: null,
-      currentModalOpen: modalOpen
+      currentModalOpen: modalOpen,
     });
 
     // Set modal properties for creation
@@ -552,7 +552,7 @@ const ScenesPageContent = ({ universeId }) => {
     console.log('ScenesPage - Modal will render if all these are true:', {
       modalOpenState: true,
       safeUniverseIdExists: !!safeUniverseId,
-      safeUniverseIdValue: safeUniverseId
+      safeUniverseIdValue: safeUniverseId,
     });
   };
 
@@ -848,7 +848,7 @@ const ScenesPageContent = ({ universeId }) => {
       {console.log('ScenesPage - Modal render condition check:', {
         modalOpen,
         safeUniverseId,
-        shouldRenderModal: !!(modalOpen && safeUniverseId)
+        shouldRenderModal: !!(modalOpen && safeUniverseId),
       })}
 
       {/* Scene Modal */}

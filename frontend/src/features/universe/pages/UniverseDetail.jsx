@@ -4,9 +4,9 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { UniverseDeleteModal, UniverseModal } from '../';
 import Button from '../../../components/common/Button';
 import {
-    createSceneAndRefresh,
-    deleteSceneAndRefresh,
-    fetchScenesForUniverse,
+  createSceneAndRefresh,
+  deleteSceneAndRefresh,
+  fetchScenesForUniverse,
 } from '../../../store/thunks/consolidated/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { SceneCard, SceneModal } from '../../scene/index.mjs';
@@ -101,7 +101,7 @@ const UniverseDetail = () => {
     setTimeout(() => {
       console.log('UniverseDetail - State after update (timeout):', {
         isCreateSceneModalOpen: isCreateSceneModalOpen,
-        dummyState: dummyState
+        dummyState: dummyState,
       });
     }, 100);
   };
@@ -110,10 +110,12 @@ const UniverseDetail = () => {
     console.log('UniverseDetail - handleCreateSceneSuccess called with:', newScene);
     setIsCreateSceneModalOpen(false);
     // Dispatch action to create scene using Redux with auto-refresh
-    dispatch(createSceneAndRefresh({
-      ...newScene,
-      universe_id: id
-    }));
+    dispatch(
+      createSceneAndRefresh({
+        ...newScene,
+        universe_id: id,
+      })
+    );
   };
 
   const handleEditScene = (scene) => {
@@ -165,10 +167,12 @@ const UniverseDetail = () => {
         `Are you sure you want to delete "${scene.title || scene.name}"? This cannot be undone.`
       )
     ) {
-      dispatch(deleteSceneAndRefresh({
-        sceneId: scene.id,
-        universeId: id
-      })).catch((error) => {
+      dispatch(
+        deleteSceneAndRefresh({
+          sceneId: scene.id,
+          universeId: id,
+        })
+      ).catch((error) => {
         console.error('Error deleting scene:', error);
       });
     }

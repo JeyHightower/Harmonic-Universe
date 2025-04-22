@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useDispatch } from "react-redux";
-import { ConfirmationModal } from "../modals/index.mjs";
-import { deleteScene } from "../../store/thunks/consolidated/scenesThunks";
+import React, { useEffect, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { ConfirmationModal } from '../modals/index.mjs';
+import { deleteScene } from '../../store/thunks/consolidated/scenesThunks';
 
 // Global state to prevent modal from unmounting
 let modalVisible = false;
@@ -28,7 +28,7 @@ const ConfirmDeleteWrapper = ({
   const entityIdRef = useRef(entityId);
   const entityNameRef = useRef(entityName);
 
-  console.log("ConfirmDeleteWrapper rendering:", {
+  console.log('ConfirmDeleteWrapper rendering:', {
     entityType,
     entityId,
     entityName,
@@ -45,7 +45,7 @@ const ConfirmDeleteWrapper = ({
 
   // Set up visibility
   useEffect(() => {
-    console.log("ConfirmDeleteWrapper useEffect running");
+    console.log('ConfirmDeleteWrapper useEffect running');
 
     // Save the data globally to persist across mounts
     if (entityId) {
@@ -55,7 +55,7 @@ const ConfirmDeleteWrapper = ({
       currentOnCloseFn = onClose;
       currentOnConfirmFn = onConfirm;
       modalVisible = true;
-      console.log("Setting modalVisible to true for ConfirmDeleteWrapper");
+      console.log('Setting modalVisible to true for ConfirmDeleteWrapper');
     }
 
     // Set local state
@@ -63,14 +63,14 @@ const ConfirmDeleteWrapper = ({
 
     // Clean up function
     return () => {
-      console.log("ConfirmDeleteWrapper cleanup function running");
+      console.log('ConfirmDeleteWrapper cleanup function running');
       // Don't reset the global state on unmount - that's the key to our fix
     };
   }, [entityType, entityId, entityName, onClose, onConfirm]);
 
   // Function to safely close the modal
   const handleModalClose = () => {
-    console.log("ConfirmDeleteWrapper handleModalClose called");
+    console.log('ConfirmDeleteWrapper handleModalClose called');
     modalVisible = false;
     savedEntityType = null;
     savedEntityId = null;
@@ -86,7 +86,7 @@ const ConfirmDeleteWrapper = ({
 
   // Function to handle confirmation
   const handleConfirm = async () => {
-    console.log("ConfirmDeleteWrapper handleConfirm called");
+    console.log('ConfirmDeleteWrapper handleConfirm called');
     const displayEntityType = entityType || savedEntityType;
     const displayEntityId = entityId || savedEntityId;
 
@@ -94,10 +94,10 @@ const ConfirmDeleteWrapper = ({
 
     try {
       // Handle entity deletion based on entity type
-      if (displayEntityType === "scene") {
+      if (displayEntityType === 'scene') {
         console.log(`Deleting scene with ID: ${displayEntityId}`);
         await dispatch(deleteScene(displayEntityId)).unwrap();
-        console.log("Scene deleted successfully");
+        console.log('Scene deleted successfully');
       } else {
         // For other entity types, use the provided callback
         if (currentOnConfirmFn) {
@@ -121,18 +121,16 @@ const ConfirmDeleteWrapper = ({
 
   // If we don't have required data or modal is not visible, don't render
   if ((!entityId && !savedEntityId) || !modalVisible) {
-    console.log(
-      "ConfirmDeleteWrapper returning null - missing required data or not visible"
-    );
+    console.log('ConfirmDeleteWrapper returning null - missing required data or not visible');
     return null;
   }
 
   // Use saved values if current props are null
-  const displayEntityType = entityType || savedEntityType || "item";
+  const displayEntityType = entityType || savedEntityType || 'item';
   const displayEntityId = entityId || savedEntityId;
-  const displayEntityName = entityName || savedEntityName || "";
+  const displayEntityName = entityName || savedEntityName || '';
 
-  console.log("ConfirmDeleteWrapper rendering modal with:", {
+  console.log('ConfirmDeleteWrapper rendering modal with:', {
     displayEntityType,
     displayEntityId,
     displayEntityName,
@@ -141,17 +139,17 @@ const ConfirmDeleteWrapper = ({
   return (
     <div
       style={{
-        position: "fixed",
+        position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 1000,
-        pointerEvents: "auto",
+        pointerEvents: 'auto',
       }}
       onClick={(e) => {
         // Only close if the backdrop itself was clicked
@@ -162,13 +160,13 @@ const ConfirmDeleteWrapper = ({
     >
       <div
         style={{
-          backgroundColor: "white",
-          borderRadius: "8px",
-          padding: "20px",
-          maxWidth: "500px",
-          width: "90%",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-          pointerEvents: "auto",
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '20px',
+          maxWidth: '500px',
+          width: '90%',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          pointerEvents: 'auto',
           zIndex: 1001,
         }}
         onClick={(e) => e.stopPropagation()}

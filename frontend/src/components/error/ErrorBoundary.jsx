@@ -14,9 +14,9 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // Log the error to console
-    console.error("React Error Boundary caught an error:", error, errorInfo);
+    console.error('React Error Boundary caught an error:', error, errorInfo);
     this.setState({ errorInfo });
-    
+
     // You can also log the error to an error reporting service
     // logErrorToService(error, errorInfo);
   }
@@ -35,10 +35,7 @@ class ErrorBoundary extends React.Component {
               {this.state.errorInfo?.componentStack}
             </pre>
           </details>
-          <button 
-            onClick={() => this.setState({ hasError: false })}
-            style={buttonStyle}
-          >
+          <button onClick={() => this.setState({ hasError: false })} style={buttonStyle}>
             Try again
           </button>
         </div>
@@ -57,26 +54,26 @@ const errorContainerStyle = {
   border: '1px solid #ffb6b6',
   borderRadius: '4px',
   maxWidth: '700px',
-  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
 };
 
 const headingStyle = {
   color: '#e53935',
-  marginTop: 0
+  marginTop: 0,
 };
 
 const textStyle = {
-  color: '#333'
+  color: '#333',
 };
 
 const detailsStyle = {
-  marginTop: '15px'
+  marginTop: '15px',
 };
 
 const summaryStyle = {
   cursor: 'pointer',
   color: '#e53935',
-  fontWeight: 'bold'
+  fontWeight: 'bold',
 };
 
 const preStyle = {
@@ -85,7 +82,7 @@ const preStyle = {
   padding: '10px',
   borderRadius: '4px',
   overflow: 'auto',
-  maxHeight: '200px'
+  maxHeight: '200px',
 };
 
 const buttonStyle = {
@@ -95,11 +92,11 @@ const buttonStyle = {
   color: 'white',
   border: 'none',
   borderRadius: '4px',
-  cursor: 'pointer'
+  cursor: 'pointer',
 };
 
 ErrorBoundary.propTypes = {
-  children: PropTypes.node.isRequired
+  children: PropTypes.node.isRequired,
 };
 
-export default ErrorBoundary; 
+export default ErrorBoundary;

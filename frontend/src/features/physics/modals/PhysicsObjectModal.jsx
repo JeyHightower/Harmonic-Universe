@@ -63,7 +63,7 @@ const COLLISION_SHAPE_OPTIONS = [
 
 /**
  * Physics Object Modal Component
- * 
+ *
  * A single component that handles creating, editing, viewing, and deleting physics objects
  * Replaces separate CreatePhysicsObjectModal, EditPhysicsObjectModal, etc.
  */
@@ -78,7 +78,7 @@ const PhysicsObjectModal = ({
 }) => {
   const dispatch = useDispatch();
   const { currentPhysicsObject, loading: storeLoading } = useSelector(
-    state => state.physicsObjects
+    (state) => state.physicsObjects
   );
 
   // Local state
@@ -115,7 +115,7 @@ const PhysicsObjectModal = ({
   // Initialize form values from props or Redux store
   useEffect(() => {
     if (!open) return;
-    
+
     let initialFormData = { ...DEFAULT_PHYSICS_OBJECT };
 
     if (initialData) {
@@ -185,8 +185,7 @@ const PhysicsObjectModal = ({
     const { restitution, friction, density } = formData.material_properties;
 
     if (restitution < 0 || restitution > 1) {
-      newErrors['material_properties.restitution'] =
-        'Restitution must be between 0 and 1';
+      newErrors['material_properties.restitution'] = 'Restitution must be between 0 and 1';
     }
 
     if (friction < 0) {
@@ -206,26 +205,26 @@ const PhysicsObjectModal = ({
    */
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     // Handle checkbox inputs
     if (type === 'checkbox') {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: checked
+        [name]: checked,
       }));
 
       // If setting is_static to true, also update mass to 0
       if (name === 'is_static' && checked) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           [name]: checked,
-          mass: 0
+          mass: 0,
         }));
       }
 
       // Clear field error when changing
       if (errors[name]) {
-        setErrors(prev => {
+        setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors[name];
           return newErrors;
@@ -237,63 +236,63 @@ const PhysicsObjectModal = ({
     // Handle numeric inputs
     if (type === 'number') {
       const numericValue = parseFloat(value);
-      
-      setFormData(prev => {
+
+      setFormData((prev) => {
         const newFormData = { ...prev };
-        
+
         // Handle nested properties (e.g., position.x)
         if (name.includes('.')) {
           const [object, property] = name.split('.');
           newFormData[object] = {
             ...newFormData[object],
-            [property]: numericValue
+            [property]: numericValue,
           };
-        } 
+        }
         // Handle material properties (e.g., material_properties.restitution)
         else if (name.includes('material_properties.')) {
           const property = name.replace('material_properties.', '');
           newFormData.material_properties = {
             ...newFormData.material_properties,
-            [property]: numericValue
+            [property]: numericValue,
           };
-        } 
+        }
         // Handle regular properties
         else {
           newFormData[name] = numericValue;
         }
-        
+
         return newFormData;
       });
-    } 
+    }
     // Handle text and other inputs
     else {
-      setFormData(prev => {
+      setFormData((prev) => {
         const newFormData = { ...prev };
-        
+
         // Handle nested properties
         if (name.includes('.')) {
           const [object, property] = name.split('.');
           newFormData[object] = {
             ...newFormData[object],
-            [property]: value
+            [property]: value,
           };
         } else {
           newFormData[name] = value;
         }
-        
+
         return newFormData;
       });
     }
-    
+
     // Validate field and update errors
     const fieldError = validateField(name, value);
     if (fieldError) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: fieldError
+        [name]: fieldError,
       }));
     } else if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -310,42 +309,46 @@ const PhysicsObjectModal = ({
       onClose();
       return;
     }
-    
+
     // Validate form before submission
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
     setErrorMessage(null);
     setSuccessMessage(null);
-    
+
     try {
       let result;
-      
+
       // Create or update based on mode
       if (isCreateMode) {
-        result = await dispatch(createPhysicsObject({
-          sceneId,
-          physicsObject: formData
-        })).unwrap();
-        
+        result = await dispatch(
+          createPhysicsObject({
+            sceneId,
+            physicsObject: formData,
+          })
+        ).unwrap();
+
         setSuccessMessage('Physics object created successfully');
       } else if (isEditMode) {
-        result = await dispatch(updatePhysicsObject({
-          objectId,
-          sceneId,
-          physicsObject: formData
-        })).unwrap();
-        
+        result = await dispatch(
+          updatePhysicsObject({
+            objectId,
+            sceneId,
+            physicsObject: formData,
+          })
+        ).unwrap();
+
         setSuccessMessage('Physics object updated successfully');
       }
-      
+
       // Call success callback with result
       if (onSuccess) {
         onSuccess(result);
       }
-      
+
       // Close modal after short delay to show success message
       window.setTimeout(() => {
         onClose();
@@ -366,23 +369,25 @@ const PhysicsObjectModal = ({
       setErrorMessage('Cannot delete: Missing object ID');
       return;
     }
-    
+
     setLoading(true);
     setErrorMessage(null);
-    
+
     try {
-      await dispatch(deletePhysicsObject({
-        objectId,
-        sceneId
-      })).unwrap();
-      
+      await dispatch(
+        deletePhysicsObject({
+          objectId,
+          sceneId,
+        })
+      ).unwrap();
+
       setSuccessMessage('Physics object deleted successfully');
-      
+
       // Call success callback
       if (onSuccess) {
         onSuccess({ id: objectId }, 'delete');
       }
-      
+
       // Close modal after short delay
       window.setTimeout(() => {
         onClose();
@@ -447,9 +452,7 @@ const PhysicsObjectModal = ({
               }
               label="Static Object"
             />
-            <FormHelperText>
-              Static objects don&apos;t move but affect other objects
-            </FormHelperText>
+            <FormHelperText>Static objects don&apos;t move but affect other objects</FormHelperText>
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControlLabel
@@ -476,15 +479,13 @@ const PhysicsObjectModal = ({
                 onChange={handleInputChange}
                 label="Collision Shape"
               >
-                {COLLISION_SHAPE_OPTIONS.map(option => (
+                {COLLISION_SHAPE_OPTIONS.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>
                 ))}
               </Select>
-              <FormHelperText>
-                The shape used for physics collision detection
-              </FormHelperText>
+              <FormHelperText>The shape used for physics collision detection</FormHelperText>
             </FormControl>
           </Grid>
         </Grid>
@@ -645,10 +646,7 @@ const PhysicsObjectModal = ({
               inputProps={{ min: 0, max: 1, step: 0.1 }}
               disabled={isReadOnly}
               error={!!errors['material_properties.restitution']}
-              helperText={
-                errors['material_properties.restitution'] || 
-                'How bouncy (0-1)'
-              }
+              helperText={errors['material_properties.restitution'] || 'How bouncy (0-1)'}
             />
           </Grid>
           <Grid item xs={12} sm={4}>
@@ -662,10 +660,7 @@ const PhysicsObjectModal = ({
               inputProps={{ min: 0, step: 0.1 }}
               disabled={isReadOnly}
               error={!!errors['material_properties.friction']}
-              helperText={
-                errors['material_properties.friction'] || 
-                'Resistance to sliding'
-              }
+              helperText={errors['material_properties.friction'] || 'Resistance to sliding'}
             />
           </Grid>
           <Grid item xs={12} sm={4}>
@@ -679,10 +674,7 @@ const PhysicsObjectModal = ({
               inputProps={{ min: 0, step: 0.1 }}
               disabled={isReadOnly}
               error={!!errors['material_properties.density']}
-              helperText={
-                errors['material_properties.density'] || 
-                'Mass per volume unit'
-              }
+              helperText={errors['material_properties.density'] || 'Mass per volume unit'}
             />
           </Grid>
         </Grid>
@@ -711,21 +703,16 @@ const PhysicsObjectModal = ({
   );
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={() => !loading && onClose()}
-      maxWidth="md"
-      fullWidth
-    >
+    <Dialog open={open} onClose={() => !loading && onClose()} maxWidth="md" fullWidth>
       <DialogTitle>{modalTitle}</DialogTitle>
-      
+
       <DialogContent dividers>
         {errorMessage && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {errorMessage}
           </Alert>
         )}
-        
+
         {successMessage && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {successMessage}
@@ -742,28 +729,19 @@ const PhysicsObjectModal = ({
           renderFormContent()
         )}
       </DialogContent>
-      
+
       <DialogActions>
-        <Button 
-          onClick={onClose} 
-          disabled={loading}
-          color="inherit"
-        >
+        <Button onClick={onClose} disabled={loading} color="inherit">
           Cancel
         </Button>
-        
+
         {isDeleteMode ? (
-          <Button 
-            onClick={handleDelete} 
-            disabled={loading}
-            color="error"
-            variant="contained"
-          >
+          <Button onClick={handleDelete} disabled={loading} color="error" variant="contained">
             Delete
           </Button>
         ) : (
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             disabled={loading || (isViewMode && !isEditMode)}
             color="primary"
             variant="contained"
@@ -783,7 +761,7 @@ PhysicsObjectModal.propTypes = {
   objectId: PropTypes.string,
   initialData: PropTypes.object,
   mode: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
-  onSuccess: PropTypes.func
+  onSuccess: PropTypes.func,
 };
 
-export default PhysicsObjectModal; 
+export default PhysicsObjectModal;

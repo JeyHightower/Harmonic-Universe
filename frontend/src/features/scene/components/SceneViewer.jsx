@@ -10,7 +10,9 @@ const SceneViewer = React.memo(({ scene }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const formattedSceneType = useMemo(() => {
-    return scene.sceneType ? scene.sceneType.charAt(0).toUpperCase() + scene.sceneType.slice(1) : 'Unknown';
+    return scene.sceneType
+      ? scene.sceneType.charAt(0).toUpperCase() + scene.sceneType.slice(1)
+      : 'Unknown';
   }, [scene.sceneType]);
 
   const sceneTypeColor = useMemo(() => {
@@ -19,21 +21,24 @@ const SceneViewer = React.memo(({ scene }) => {
       dialogue: 'green',
       exposition: 'orange',
       climax: 'red',
-      resolution: 'purple'
+      resolution: 'purple',
     };
     return colors[scene.sceneType?.toLowerCase()] || 'default';
   }, [scene.sceneType]);
 
-  const sceneDetails = useMemo(() => ({
-    title: scene.title || 'Untitled Scene',
-    description: scene.description || 'No description available',
-    createdAt: formatDate(scene.createdAt),
-    updatedAt: formatDate(scene.updatedAt),
-    characters: scene.characters || [],
-    location: scene.location || 'Unknown location',
-    timeOfDay: scene.timeOfDay || 'Not specified',
-    weather: scene.weather || 'Not specified'
-  }), [scene]);
+  const sceneDetails = useMemo(
+    () => ({
+      title: scene.title || 'Untitled Scene',
+      description: scene.description || 'No description available',
+      createdAt: formatDate(scene.createdAt),
+      updatedAt: formatDate(scene.updatedAt),
+      characters: scene.characters || [],
+      location: scene.location || 'Unknown location',
+      timeOfDay: scene.timeOfDay || 'Not specified',
+      weather: scene.weather || 'Not specified',
+    }),
+    [scene]
+  );
 
   return (
     <div className="scene-viewer">
@@ -49,7 +54,7 @@ const SceneViewer = React.memo(({ scene }) => {
                     height: '300px',
                     position: 'absolute',
                     top: 0,
-                    left: 0
+                    left: 0,
                   }}
                 />
               )}
@@ -67,13 +72,20 @@ const SceneViewer = React.memo(({ scene }) => {
         <div className="scene-details">
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <div className="scene-header">
-              <Title level={2} className="scene-title">{sceneDetails.title}</Title>
-              <Tag color={sceneTypeColor} className="scene-type-tag">{formattedSceneType}</Tag>
+              <Title level={2} className="scene-title">
+                {sceneDetails.title}
+              </Title>
+              <Tag color={sceneTypeColor} className="scene-type-tag">
+                {formattedSceneType}
+              </Tag>
             </div>
 
             <div className="scene-description">
               <Title level={4}>Description</Title>
-              <Paragraph className="description-text" ellipsis={{ rows: 3, expandable: true, symbol: 'more' }}>
+              <Paragraph
+                className="description-text"
+                ellipsis={{ rows: 3, expandable: true, symbol: 'more' }}
+              >
                 {sceneDetails.description}
               </Paragraph>
             </div>
@@ -90,8 +102,10 @@ const SceneViewer = React.memo(({ scene }) => {
               </Descriptions.Item>
               <Descriptions.Item label="Characters">
                 <Space wrap>
-                  {sceneDetails.characters.map(character => (
-                    <Tag key={character.id} color="blue">{character.name}</Tag>
+                  {sceneDetails.characters.map((character) => (
+                    <Tag key={character.id} color="blue">
+                      {character.name}
+                    </Tag>
                   ))}
                 </Space>
               </Descriptions.Item>
@@ -122,12 +136,12 @@ SceneViewer.propTypes = {
     characters: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-        name: PropTypes.string
+        name: PropTypes.string,
       })
     ),
     createdAt: PropTypes.string,
-    updatedAt: PropTypes.string
-  }).isRequired
+    updatedAt: PropTypes.string,
+  }).isRequired,
 };
 
 SceneViewer.displayName = 'SceneViewer';

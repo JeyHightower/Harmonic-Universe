@@ -1,8 +1,8 @@
-import { InboxOutlined } from "@ant-design/icons";
-import { Button, Form, Modal, Upload } from "antd";
-import { useState } from "react";
+import { InboxOutlined } from '@ant-design/icons';
+import { Button, Form, Modal, Upload } from 'antd';
+import { useState } from 'react';
 
-const ImportModal = ({ visible, onClose, onImport, type = "json" }) => {
+const ImportModal = ({ visible, onClose, onImport, type = 'json' }) => {
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [error, setError] = useState(null);
@@ -23,7 +23,7 @@ const ImportModal = ({ visible, onClose, onImport, type = "json" }) => {
           // This is simplified and may need more robust parsing logic
           const lines = event.target.result.split('\n');
           const headers = lines[0].split(',');
-          importedData = lines.slice(1).map(line => {
+          importedData = lines.slice(1).map((line) => {
             const values = line.split(',');
             return headers.reduce((obj, header, i) => {
               obj[header] = values[i];
@@ -75,7 +75,7 @@ const ImportModal = ({ visible, onClose, onImport, type = "json" }) => {
       <Form layout="vertical">
         <Form.Item>
           <Upload.Dragger
-            accept={type === "json" ? ".json" : ".csv"}
+            accept={type === 'json' ? '.json' : '.csv'}
             fileList={fileList}
             onChange={handleFileChange}
             beforeUpload={() => false}
@@ -84,12 +84,8 @@ const ImportModal = ({ visible, onClose, onImport, type = "json" }) => {
             <p className="ant-upload-drag-icon">
               <InboxOutlined />
             </p>
-            <p className="ant-upload-text">
-              Click or drag file to this area to upload
-            </p>
-            <p className="ant-upload-hint">
-              Support for a single {type.toUpperCase()} file.
-            </p>
+            <p className="ant-upload-text">Click or drag file to this area to upload</p>
+            <p className="ant-upload-hint">Support for a single {type.toUpperCase()} file.</p>
           </Upload.Dragger>
         </Form.Item>
       </Form>

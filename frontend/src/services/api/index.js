@@ -5,10 +5,8 @@
 
 import audioApi from './audioApi';
 
-export {
-  audioApi
-};
+export { audioApi };
 
 export default {
-  audioApi
-}; 
+  audioApi,
+};

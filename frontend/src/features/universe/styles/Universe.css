@@ -4,11 +4,7 @@
   --universe-secondary: #3a0ca3;
   --universe-tertiary: #7209b7;
   --universe-accent: #f72585;
-  --universe-bg-gradient: linear-gradient(
-    135deg,
-    rgba(23, 25, 35, 0.8),
-    rgba(33, 39, 55, 0.9)
-  );
+  --universe-bg-gradient: linear-gradient(135deg, rgba(23, 25, 35, 0.8), rgba(33, 39, 55, 0.9));
   --universe-card-bg: rgba(255, 255, 255, 0.05);
   --universe-card-border: rgba(255, 255, 255, 0.1);
   --universe-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -25,23 +21,21 @@
   right: 0;
   bottom: 0;
   z-index: -1;
-  background: var(--universe-bg-gradient),
-    url("/images/default-universe.svg") center/cover no-repeat;
+  background:
+    var(--universe-bg-gradient),
+    url('/images/default-universe.svg') center/cover no-repeat;
   overflow: hidden;
 }
 
 .universe-background::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: radial-gradient(
-      1px 1px at 25% 10%,
-      var(--star-color-1) 1px,
-      transparent 0
-    ),
+  background-image:
+    radial-gradient(1px 1px at 25% 10%, var(--star-color-1) 1px, transparent 0),
     radial-gradient(1px 1px at 50% 25%, var(--star-color-2) 1px, transparent 0),
     radial-gradient(1px 1px at 75% 40%, var(--star-color-3) 1px, transparent 0),
     radial-gradient(2px 2px at 15% 65%, var(--star-color-1) 1px, transparent 0),
@@ -111,7 +105,9 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   background-color: #fff;
   text-decoration: none;
   color: inherit;

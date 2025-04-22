@@ -1,10 +1,10 @@
-import React from "react";
-import PropTypes from "prop-types";
-import { ModalSystem } from "./index.mjs";
+import React from 'react';
+import PropTypes from 'prop-types';
+import { ModalSystem } from './index.mjs';
 
 const NetworkErrorModal = ({
-  title = "Network Error",
-  message = "A network error occurred. Please check your connection and try again.",
+  title = 'Network Error',
+  message = 'A network error occurred. Please check your connection and try again.',
   onRetry,
   onClose,
   ...props

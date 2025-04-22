@@ -1,7 +1,9 @@
 /* Note Card Styles */
 .note-card {
   margin-bottom: 16px;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
 }
 
 .note-card:hover {
@@ -32,4 +34,4 @@
 .note-card-actions {
   display: flex;
   align-items: center;
-} 
+}

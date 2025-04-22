@@ -42,7 +42,7 @@ export const generateAudio = (universeId, sceneId, options) => {
   return audioService.generateMusic({
     universeId,
     sceneId,
-    ...options
+    ...options,
   });
 };
 
@@ -58,7 +58,7 @@ export const saveAudio = (universeId, sceneId, audioData) => {
   return audioService.createAudioTrack({
     universeId,
     sceneId,
-    ...audioData
+    ...audioData,
   });
 };
 
@@ -99,5 +99,5 @@ export default {
   saveAudio,
   downloadAudio,
   getAudioTracks,
-  updateAudio
-}; 
+  updateAudio,
+};

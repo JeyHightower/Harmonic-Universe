@@ -1,21 +1,21 @@
 import { ArrowLeftOutlined, SaveOutlined, WarningOutlined } from '@ant-design/icons';
 import {
-    Alert,
-    Button,
-    Card,
-    Col,
-    DatePicker,
-    Divider,
-    Form,
-    Input,
-    Radio,
-    Row,
-    Select,
-    Space,
-    Spin,
-    Typography,
-    message,
-    notification,
+  Alert,
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Divider,
+  Form,
+  Input,
+  Radio,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Typography,
+  message,
+  notification,
 } from 'antd';
 import dayjs from 'dayjs';
 import moment from 'moment';
@@ -186,7 +186,9 @@ const SceneForm = ({
 
       // Check if we already have characters for this universe
       if (characters.length > 0) {
-        console.log(`SceneForm - Already have ${characters.length} characters loaded, skipping fetch`);
+        console.log(
+          `SceneForm - Already have ${characters.length} characters loaded, skipping fetch`
+        );
         return;
       }
 

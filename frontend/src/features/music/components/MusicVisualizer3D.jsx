@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Scene,
   PerspectiveCamera,
@@ -12,7 +12,7 @@ import {
   AdditiveBlending,
   Color,
   ShaderMaterial,
-} from "three";
+} from 'three';
 import * as THREE from 'three';
 import PropTypes from 'prop-types';
 import '../styles/MusicVisualizer3D.css';
@@ -34,12 +34,12 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
   const visualizerStartTime = useRef(Date.now());
   const effectsRef = useRef({
     energy: 0.5,
-    mood: "neutral",
+    mood: 'neutral',
     complexity: 0.5,
-    style: "default",
+    style: 'default',
   });
   const [isThreeAvailable, setIsThreeAvailable] = useState(
-    typeof THREE !== "undefined" && typeof THREE.Scene === "function"
+    typeof THREE !== 'undefined' && typeof THREE.Scene === 'function'
   );
 
   // Create particle system
@@ -52,9 +52,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     }
 
     // Particle count based on complexity of music (if available)
-    const particleCount = musicData?.melody?.length
-      ? musicData.melody.length * 100
-      : 1000;
+    const particleCount = musicData?.melody?.length ? musicData.melody.length * 100 : 1000;
 
     // Create geometry
     const geometry = new THREE.BufferGeometry();
@@ -83,9 +81,9 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       sizes[i] = Math.random() * 0.5 + 0.5;
     }
 
-    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    geometry.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
     // Create material
     const material = new THREE.PointsMaterial({
@@ -133,11 +131,8 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       starSizes[i] = Math.random() * 2 + 0.5;
     }
 
-    starGeometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(starPositions, 3)
-    );
-    starGeometry.setAttribute("size", new THREE.BufferAttribute(starSizes, 1));
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
 
     const starMaterial = new THREE.ShaderMaterial({
       uniforms: {
@@ -177,7 +172,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     if (!sceneRef.current) return;
 
     switch (style) {
-      case "ambient":
+      case 'ambient':
         // Slower, more ethereal movement with soft blue/purple colors
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -193,7 +188,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
         }
         break;
 
-      case "classical":
+      case 'classical':
         // More ordered, golden/warm colors
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -209,7 +204,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
         }
         break;
 
-      case "electronic":
+      case 'electronic':
         // Vibrant, techy colors with more motion
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -225,7 +220,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
         }
         break;
 
-      case "jazz":
+      case 'jazz':
         // Deep, rich colors with subtle variations
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -233,7 +228,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
             colors.setXYZ(
               i,
               0.4 + Math.random() * 0.3, // deep red
-              0.1 + Math.random() * 0.2, // hints of 
+              0.1 + Math.random() * 0.2, // hints of
               0.3 + Math.random() * 0.2 // purple/blue
             );
           }
@@ -241,7 +236,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
         }
         break;
 
-      case "epic":
+      case 'epic':
         // Bold, dramatic colors with strong movement
         if (particlesRef.current) {
           const colors = particlesRef.current.geometry.attributes.color;
@@ -282,66 +277,67 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
   }, []);
 
   // Update particles based on analyzer data
-  const updateParticles = React.useCallback((dataArray) => {
-    if (!particlesRef.current || !musicData) return;
+  const updateParticles = React.useCallback(
+    (dataArray) => {
+      if (!particlesRef.current || !musicData) return;
 
-    const particles = particlesRef.current;
-    const positions = particles.geometry.attributes.position.array;
-    const sizes = particles.geometry.attributes.size.array;
-    const particleCount = sizes.length;
+      const particles = particlesRef.current;
+      const positions = particles.geometry.attributes.position.array;
+      const sizes = particles.geometry.attributes.size.array;
+      const particleCount = sizes.length;
 
-    // Calculate overall intensity of the sound
-    const intensity =
-      dataArray.reduce((sum, value) => sum + Math.abs(value), 0) /
-      dataArray.length;
+      // Calculate overall intensity of the sound
+      const intensity =
+        dataArray.reduce((sum, value) => sum + Math.abs(value), 0) / dataArray.length;
 
-    // Update particles based on audio data and elapsed time
-    const time = (Date.now() - visualizerStartTime.current) / 1000;
-    const tempo = musicData.tempo / 60; // Beats per second
+      // Update particles based on audio data and elapsed time
+      const time = (Date.now() - visualizerStartTime.current) / 1000;
+      const tempo = musicData.tempo / 60; // Beats per second
 
-    // Apply effects based on AI metadata
-    const effects = effectsRef.current;
-    const energyFactor = effects.energy || 0.5;
-    const complexityFactor = effects.complexity || 0.5;
+      // Apply effects based on AI metadata
+      const effects = effectsRef.current;
+      const energyFactor = effects.energy || 0.5;
+      const complexityFactor = effects.complexity || 0.5;
 
-    for (let i = 0; i < particleCount; i++) {
-      // Get the particle's current position
-      const x = positions[i * 3];
-      const y = positions[i * 3 + 1];
-      const z = positions[i * 3 + 2];
+      for (let i = 0; i < particleCount; i++) {
+        // Get the particle's current position
+        const x = positions[i * 3];
+        const y = positions[i * 3 + 1];
+        const z = positions[i * 3 + 2];
 
-      // Get distance from origin
-      const distance = Math.sqrt(x * x + y * y + z * z);
+        // Get distance from origin
+        const distance = Math.sqrt(x * x + y * y + z * z);
 
-      // Pulsate based on beat and energy
-      const pulseFactor = 0.05 * Math.sin(time * tempo * Math.PI) + 1;
+        // Pulsate based on beat and energy
+        const pulseFactor = 0.05 * Math.sin(time * tempo * Math.PI) + 1;
 
-      // Apply modifier from analyzer data
-      const dataIndex = Math.floor((i / particleCount) * dataArray.length);
-      const dataValue = Math.abs(dataArray[dataIndex] || 0);
+        // Apply modifier from analyzer data
+        const dataIndex = Math.floor((i / particleCount) * dataArray.length);
+        const dataValue = Math.abs(dataArray[dataIndex] || 0);
 
-      // Modify particle position based on AI energy factor
-      const newDistance =
-        distance * (pulseFactor + dataValue * 0.2 * energyFactor);
-      const scale = newDistance / distance;
+        // Modify particle position based on AI energy factor
+        const newDistance = distance * (pulseFactor + dataValue * 0.2 * energyFactor);
+        const scale = newDistance / distance;
 
-      positions[i * 3] = x * scale;
-      positions[i * 3 + 1] = y * scale;
-      positions[i * 3 + 2] = z * scale;
+        positions[i * 3] = x * scale;
+        positions[i * 3 + 1] = y * scale;
+        positions[i * 3 + 2] = z * scale;
 
-      // Update particle size based on analyzer data, beat, and complexity
-      sizes[i] =
-        (0.5 + Math.random() * 0.5 * complexityFactor) *
-        (1 + dataValue + 0.1 * Math.sin(time * tempo * Math.PI) * energyFactor);
-    }
+        // Update particle size based on analyzer data, beat, and complexity
+        sizes[i] =
+          (0.5 + Math.random() * 0.5 * complexityFactor) *
+          (1 + dataValue + 0.1 * Math.sin(time * tempo * Math.PI) * energyFactor);
+      }
 
-    // Mark attributes for update
-    particles.geometry.attributes.position.needsUpdate = true;
-    particles.geometry.attributes.size.needsUpdate = true;
+      // Mark attributes for update
+      particles.geometry.attributes.position.needsUpdate = true;
+      particles.geometry.attributes.size.needsUpdate = true;
 
-    // Also rotate the scene based on the beat and energy
-    rotateScene(0.001 + 0.001 * intensity * energyFactor);
-  }, [musicData, rotateScene]);
+      // Also rotate the scene based on the beat and energy
+      rotateScene(0.001 + 0.001 * intensity * energyFactor);
+    },
+    [musicData, rotateScene]
+  );
 
   // Rotate the entire scene
   const rotateScene = React.useCallback((speed) => {
@@ -374,10 +370,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
 
     // Create renderer
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(
-      containerRef.current.clientWidth,
-      containerRef.current.clientHeight
-    );
+    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     renderer.setClearColor(0x000000, 0);
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
@@ -399,8 +392,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
 
     // Handle window resize
     const handleResize = () => {
-      if (!containerRef.current || !cameraRef.current || !rendererRef.current)
-        return;
+      if (!containerRef.current || !cameraRef.current || !rendererRef.current) return;
 
       cameraRef.current.aspect =
         containerRef.current.clientWidth / containerRef.current.clientHeight;
@@ -411,14 +403,14 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       );
     };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
 
     // Capture the DOM element for cleanup
     const container = containerRef.current;
     const domElement = rendererRef.current.domElement;
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener('resize', handleResize);
       if (frameIdRef.current) {
         cancelAnimationFrame(frameIdRef.current);
       }
@@ -466,9 +458,9 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
       if (musicData.ai_metadata) {
         effectsRef.current = {
           energy: musicData.ai_metadata.energy || 0.5,
-          mood: musicData.ai_metadata.mood || "neutral",
+          mood: musicData.ai_metadata.mood || 'neutral',
           complexity: musicData.ai_metadata.complexity || 0.5,
-          style: musicData.ai_metadata.style || "default",
+          style: musicData.ai_metadata.style || 'default',
         };
 
         // Update scene based on style
@@ -489,9 +481,9 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     <div
       ref={containerRef}
       style={{
-        width: "100%",
-        height: "100%",
-        position: "absolute",
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
         top: 0,
         left: 0,
         zIndex: 0,
@@ -508,4 +500,4 @@ MusicVisualizer3D.propTypes = {
 
 MusicVisualizer3D.displayName = 'MusicVisualizer3D';
 
-export default MusicVisualizer3D; 
+export default MusicVisualizer3D;

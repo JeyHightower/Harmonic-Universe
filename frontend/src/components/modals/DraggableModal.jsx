@@ -1,6 +1,6 @@
-import PropTypes from "prop-types";
-import React, { useCallback, useEffect, useState } from "react";
-import { ModalSystem } from "./index.mjs";
+import PropTypes from 'prop-types';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ModalSystem } from './index.mjs';
 
 const DraggableModal = ({ children, ...modalProps }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -19,14 +19,14 @@ const DraggableModal = ({ children, ...modalProps }) => {
   const modalRefCallback = useCallback((node) => {
     if (node !== null) {
       // The node is the modal overlay, find the actual modal element
-      const modalElement = node.querySelector(".modal-content");
+      const modalElement = node.querySelector('.modal-content');
       setModalEl(modalElement);
     }
   }, []);
 
   const handleMouseDown = (e) => {
     // Only allow dragging from the header
-    if (!e.target.closest(".modal-header")) return;
+    if (!e.target.closest('.modal-header')) return;
 
     setIsDragging(true);
 
@@ -60,16 +60,16 @@ const DraggableModal = ({ children, ...modalProps }) => {
   // Add and remove event listeners
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     } else {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
     }
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging]);
 
@@ -87,9 +87,7 @@ const DraggableModal = ({ children, ...modalProps }) => {
   return (
     <ModalSystem
       {...modalProps}
-      className={`draggable-modal ${modalProps.className || ""} ${
-        isDragging ? "dragging" : ""
-      }`}
+      className={`draggable-modal ${modalProps.className || ''} ${isDragging ? 'dragging' : ''}`}
       ref={modalRefCallback}
     >
       {draggableContent}

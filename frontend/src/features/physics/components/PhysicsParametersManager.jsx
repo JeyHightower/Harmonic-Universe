@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from "react";
-import PropTypes from "prop-types";
-import { useNavigate } from "react-router-dom";
-import apiClient from "../../../services/api";
-import { endpoints } from "../../../services/endpoints";
-import Button from "../../../components/common/Button";
-import Icon from "../../../components/common/Icon";
-import Spinner from "../../../components/common/Spinner";
-import "../styles/PhysicsParameters.css";
-import { useModalRedux } from "../../../hooks/useModal";
-import { MODAL_TYPES } from "../../../constants/modalTypes";
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
+import apiClient from '../../../services/api';
+import { endpoints } from '../../../services/endpoints';
+import Button from '../../../components/common/Button';
+import Icon from '../../../components/common/Icon';
+import Spinner from '../../../components/common/Spinner';
+import '../styles/PhysicsParameters.css';
+import { useModalRedux } from '../../../hooks/useModal';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
 
 const PhysicsParametersManager = ({ sceneId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [physicsParameters, setPhysicsParameters] = useState([]);
   const [selectedParamsId, setSelectedParamsId] = useState(null);
-  const [modalMode, setModalMode] = useState("create");
+  const [modalMode, setModalMode] = useState('create');
   const [selectedParams, setSelectedParams] = useState(null);
   const [reloadTrigger, setReloadTrigger] = useState(0);
-  
+
   // Use Redux modal system
   const modalRedux = useModalRedux();
 
@@ -26,15 +26,15 @@ const PhysicsParametersManager = ({ sceneId }) => {
   useEffect(() => {
     const fetchPhysicsParameters = async () => {
       if (selectedParamsId) {
-        console.log("Fetching specific parameter:", selectedParamsId);
+        console.log('Fetching specific parameter:', selectedParamsId);
         const response = await apiClient.getPhysicsParameters(selectedParamsId);
         setPhysicsParameters(response.data);
       } else if (sceneId) {
-        console.log("Fetching parameters for scene:", sceneId);
+        console.log('Fetching parameters for scene:', sceneId);
         const response = await apiClient.getPhysicsParametersForScene(sceneId);
         setPhysicsParameters(response.data);
       } else {
-        console.log("No IDs provided, using default parameters");
+        console.log('No IDs provided, using default parameters');
         setPhysicsParameters([]);
       }
     };
@@ -45,73 +45,69 @@ const PhysicsParametersManager = ({ sceneId }) => {
   // Handle adding new physics parameters
   const handleAddParameters = () => {
     setSelectedParams(null);
-    setModalMode("create");
+    setModalMode('create');
     modalRedux.open(MODAL_TYPES.PHYSICS_PARAMETERS, {
       sceneId,
-      mode: "create",
+      mode: 'create',
       onSuccess: handleModalSuccess,
-      onClose: handleModalClose
+      onClose: handleModalClose,
     });
   };
 
   // Handle viewing physics parameters
   const handleViewParameters = (params) => {
     setSelectedParams(params);
-    setModalMode("view");
+    setModalMode('view');
     modalRedux.open(MODAL_TYPES.PHYSICS_PARAMETERS, {
       sceneId,
       paramsId: params.id,
       initialData: params,
-      mode: "view",
+      mode: 'view',
       onSuccess: handleModalSuccess,
-      onClose: handleModalClose
+      onClose: handleModalClose,
     });
   };
 
   // Handle editing physics parameters
   const handleEditParameters = (params) => {
     setSelectedParams(params);
-    setModalMode("edit");
+    setModalMode('edit');
     modalRedux.open(MODAL_TYPES.PHYSICS_PARAMETERS, {
       sceneId,
       paramsId: params.id,
       initialData: params,
-      mode: "edit",
+      mode: 'edit',
       onSuccess: handleModalSuccess,
-      onClose: handleModalClose
+      onClose: handleModalClose,
     });
   };
 
   // Handle deleting physics parameters
   const handleDeleteParameters = (params) => {
     setSelectedParams(params);
-    setModalMode("delete");
+    setModalMode('delete');
     modalRedux.open(MODAL_TYPES.PHYSICS_PARAMETERS, {
       sceneId,
       paramsId: params.id,
       initialData: params,
-      mode: "delete",
+      mode: 'delete',
       onSuccess: handleModalSuccess,
-      onClose: handleModalClose
+      onClose: handleModalClose,
     });
   };
 
   // Handle modal success (create, edit, delete)
   const handleModalSuccess = (data, mode) => {
-    if (mode === "create") {
+    if (mode === 'create') {
       // Add new parameters to the list
       setPhysicsParameters((prev) => [...prev, data]);
       setSelectedParamsId(data.id);
-    } else if (mode === "edit") {
+    } else if (mode === 'edit') {
       // Update existing parameters in the list
-      setPhysicsParameters((prev) =>
-        prev.map((item) => (item.id === data.id ? data : item))
-      );
-    } else if (mode === "delete") {
+      setPhysicsParameters((prev) => prev.map((item) => (item.id === data.id ? data : item)));
+    } else if (mode === 'delete') {
       // Remove parameters from the list
-      setPhysicsParameters((prev) =>
-        prev.filter((item) => item.id !== data.id)
-      );
+      setPhysicsParameters((prev) => prev.filter((item) => item.id !== data.id));
 
       // Update selected parameters if the deleted one was selected
       if (selectedParamsId === data.id) {
@@ -131,9 +127,7 @@ const PhysicsParametersManager = ({ sceneId }) => {
   const handleApplyParameters = async (params) => {
     try {
       await apiClient.post(
-        `${endpoints.scenes.detail(sceneId)}/physics_parameters/${
-          params.id
-        }/apply`
+        `${endpoints.scenes.detail(sceneId)}/physics_parameters/${params.id}/apply`
       );
       // Update UI to indicate parameters are applied
       setPhysicsParameters((prev) =>
@@ -143,7 +137,7 @@ const PhysicsParametersManager = ({ sceneId }) => {
         }))
       );
     } catch (error) {
-      console.error("Error applying physics parameters:", error);
+      console.error('Error applying physics parameters:', error);
     }
   };
 
@@ -184,22 +178,20 @@ const PhysicsParametersManager = ({ sceneId }) => {
           <div
             key={params.id}
             className={`physics-parameters-item ${
-              selectedParamsId === params.id ? "selected" : ""
-            } ${params.is_active ? "active" : ""}`}
+              selectedParamsId === params.id ? 'selected' : ''
+            } ${params.is_active ? 'active' : ''}`}
             onClick={() => setSelectedParamsId(params.id)}
           >
             <div className="physics-parameters-item-content">
               <h3>
-                {params.name || "Unnamed Parameters"}
-                {params.is_active && (
-                  <span className="active-badge">Active</span>
-                )}
+                {params.name || 'Unnamed Parameters'}
+                {params.is_active && <span className="active-badge">Active</span>}
               </h3>
               {params.description && <p>{params.description}</p>}
               <div className="physics-parameters-item-details">
                 <span>
-                  Gravity: ({params.gravity_x.toFixed(2)},{" "}
-                  {params.gravity_y.toFixed(2)}, {params.gravity_z.toFixed(2)})
+                  Gravity: ({params.gravity_x.toFixed(2)}, {params.gravity_y.toFixed(2)},{' '}
+                  {params.gravity_z.toFixed(2)})
                 </span>
                 <span>Time Scale: {params.time_scale.toFixed(2)}x</span>
               </div>
@@ -262,7 +254,7 @@ const PhysicsParametersManager = ({ sceneId }) => {
     return (
       <div className="physics-parameters-details">
         <h2 className="physics-parameters-details-title">
-          {params.name || "Unnamed Parameters"}
+          {params.name || 'Unnamed Parameters'}
           {params.is_active && <span className="active-badge">Active</span>}
         </h2>
 
@@ -276,21 +268,15 @@ const PhysicsParametersManager = ({ sceneId }) => {
             <div className="property-grid">
               <div className="property-item">
                 <span className="property-label">X-axis:</span>
-                <span className="property-value">
-                  {params.gravity_x.toFixed(2)}
-                </span>
+                <span className="property-value">{params.gravity_x.toFixed(2)}</span>
               </div>
               <div className="property-item">
                 <span className="property-label">Y-axis:</span>
-                <span className="property-value">
-                  {params.gravity_y.toFixed(2)}
-                </span>
+                <span className="property-value">{params.gravity_y.toFixed(2)}</span>
               </div>
               <div className="property-item">
                 <span className="property-label">Z-axis:</span>
-                <span className="property-value">
-                  {params.gravity_z.toFixed(2)}
-                </span>
+                <span className="property-value">{params.gravity_z.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -300,15 +286,11 @@ const PhysicsParametersManager = ({ sceneId }) => {
             <div className="property-grid">
               <div className="property-item">
                 <span className="property-label">Time Scale:</span>
-                <span className="property-value">
-                  {params.time_scale.toFixed(2)}x
-                </span>
+                <span className="property-value">{params.time_scale.toFixed(2)}x</span>
               </div>
               <div className="property-item">
                 <span className="property-label">Solver Iterations:</span>
-                <span className="property-value">
-                  {params.solver_iterations}
-                </span>
+                <span className="property-value">{params.solver_iterations}</span>
               </div>
             </div>
           </div>
@@ -318,41 +300,27 @@ const PhysicsParametersManager = ({ sceneId }) => {
             <div className="property-grid">
               <div className="property-item">
                 <span className="property-label">Air Resistance:</span>
-                <span className="property-value">
-                  {params.air_resistance.toFixed(2)}
-                </span>
+                <span className="property-value">{params.air_resistance.toFixed(2)}</span>
               </div>
               <div className="property-item">
                 <span className="property-label">Bounce Factor:</span>
-                <span className="property-value">
-                  {params.bounce_factor.toFixed(2)}
-                </span>
+                <span className="property-value">{params.bounce_factor.toFixed(2)}</span>
               </div>
               <div className="property-item">
                 <span className="property-label">Friction:</span>
-                <span className="property-value">
-                  {params.friction.toFixed(2)}
-                </span>
+                <span className="property-value">{params.friction.toFixed(2)}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div className="physics-parameters-actions">
-          <Button
-            variant="secondary"
-            icon="edit"
-            onClick={() => handleEditParameters(params)}
-          >
+          <Button variant="secondary" icon="edit" onClick={() => handleEditParameters(params)}>
             Edit
           </Button>
 
           {!params.is_active && (
-            <Button
-              variant="primary"
-              icon="play"
-              onClick={() => handleApplyParameters(params)}
-            >
+            <Button variant="primary" icon="play" onClick={() => handleApplyParameters(params)}>
               Apply to Scene
             </Button>
           )}
@@ -373,12 +341,8 @@ const PhysicsParametersManager = ({ sceneId }) => {
       </div>
 
       <div className="physics-parameters-manager-content">
-        <div className="physics-parameters-sidebar">
-          {renderPhysicsParametersList()}
-        </div>
-        <div className="physics-parameters-main">
-          {renderSelectedParametersDetails()}
-        </div>
+        <div className="physics-parameters-sidebar">{renderPhysicsParametersList()}</div>
+        <div className="physics-parameters-main">{renderSelectedParametersDetails()}</div>
       </div>
     </div>
   );
@@ -388,5 +352,5 @@ export default PhysicsParametersManager;
 
 // Add PropTypes validation
 PhysicsParametersManager.propTypes = {
-  sceneId: PropTypes.string.isRequired
+  sceneId: PropTypes.string.isRequired,
 };

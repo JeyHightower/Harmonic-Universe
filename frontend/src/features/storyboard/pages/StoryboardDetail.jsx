@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
-import Button from "../../../components/common/Button.jsx";
-import Spinner from "../../../components/common/Spinner.jsx";
-import { fetchUniverseById } from "../../../store/thunks/universeThunks.mjs";
-import "../styles/Storyboard.css";
-import apiClient from "../../../services/api.adapter";
+import React, { useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
+import Button from '../../../components/common/Button.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
+import { fetchUniverseById } from '../../../store/thunks/universeThunks.mjs';
+import '../styles/Storyboard.css';
+import apiClient from '../../../services/api.adapter';
 
 const StoryboardDetail = () => {
   const { universeId, storyboardId } = useParams();
@@ -37,10 +37,8 @@ const StoryboardDetail = () => {
 
         // Check if the API endpoints are available
         if (!apiClient.endpoints.storyboards) {
-          console.error("Storyboard endpoints not available");
-          setError(
-            "Storyboard feature is not available yet. Please check back later."
-          );
+          console.error('Storyboard endpoints not available');
+          setError('Storyboard feature is not available yet. Please check back later.');
           setLoading(false);
           return;
         }
@@ -59,15 +57,13 @@ const StoryboardDetail = () => {
 
         setError(null);
       } catch (err) {
-        console.error("Error fetching storyboard data:", err);
+        console.error('Error fetching storyboard data:', err);
 
         // Handle 404 errors (endpoint not found)
         if (err.response && err.response.status === 404) {
-          setError(
-            "Storyboard feature is not available yet. Please check back later."
-          );
+          setError('Storyboard feature is not available yet. Please check back later.');
         } else {
-          setError("Failed to load storyboard. Please try again.");
+          setError('Failed to load storyboard. Please try again.');
         }
       } finally {
         setLoading(false);
@@ -101,16 +97,12 @@ const StoryboardDetail = () => {
   return (
     <div className="storyboard-editor">
       <div className="storyboard-sidebar">
-        <h2>{storyboard?.name || "Storyboard"}</h2>
-        <p>{storyboard?.description || "No description"}</p>
+        <h2>{storyboard?.name || 'Storyboard'}</h2>
+        <p>{storyboard?.description || 'No description'}</p>
 
         <div className="sidebar-actions">
           <Button
-            onClick={() =>
-              navigate(
-                `/universes/${universeId}/storyboards/${storyboardId}/edit`
-              )
-            }
+            onClick={() => navigate(`/universes/${universeId}/storyboards/${storyboardId}/edit`)}
             variant="primary"
           >
             Edit Storyboard
@@ -132,7 +124,7 @@ const StoryboardDetail = () => {
         {selectedPoint && (
           <div className="point-details">
             <h3>{selectedPoint.title}</h3>
-            <p>{selectedPoint.content || "No content"}</p>
+            <p>{selectedPoint.content || 'No content'}</p>
           </div>
         )}
       </div>
@@ -142,15 +134,13 @@ const StoryboardDetail = () => {
         ref={canvasRef}
         style={{
           transform: `scale(${zoom})`,
-          transformOrigin: "0 0",
+          transformOrigin: '0 0',
         }}
       >
         {storyPoints.map((point) => (
           <div
             key={point.id}
-            className={`story-point ${
-              selectedPoint?.id === point.id ? "selected" : ""
-            }`}
+            className={`story-point ${selectedPoint?.id === point.id ? 'selected' : ''}`}
             style={{
               left: `${point.position_x}px`,
               top: `${point.position_y}px`,

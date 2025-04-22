@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { demoLogin } from "../../../utils/demoLogin";
-import Logger from "../../../utils/logger";
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { demoLogin } from '../../../utils/demoLogin';
+import Logger from '../../../utils/logger';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ const LoginPage = () => {
   // If already authenticated, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
-      const redirect = location.state?.from?.pathname || "/dashboard";
+      const redirect = location.state?.from?.pathname || '/dashboard';
       navigate(redirect, { replace: true });
     }
   }, [isAuthenticated, user, navigate, location]);
@@ -27,7 +27,7 @@ const LoginPage = () => {
 
   const handleDemoLogin = async () => {
     try {
-      Logger.log("auth", "LoginPage - Starting demo login process");
+      Logger.log('auth', 'LoginPage - Starting demo login process');
       setLoading(true);
       setError(null);
 
@@ -35,8 +35,8 @@ const LoginPage = () => {
 
       setLoading(false);
     } catch (error) {
-      Logger.log("auth", "LoginPage - Error during demo login:", { error: error.message });
-      setError("Failed to log in. Please try again.");
+      Logger.log('auth', 'LoginPage - Error during demo login:', { error: error.message });
+      setError('Failed to log in. Please try again.');
       setLoading(false);
     }
   };
@@ -54,10 +54,7 @@ const LoginPage = () => {
           ) : error ? (
             <>
               <p className="error-message">{error}</p>
-              <button
-                onClick={handleDemoLogin}
-                className="button button-primary"
-              >
+              <button onClick={handleDemoLogin} className="button button-primary">
                 Try Again
               </button>
             </>

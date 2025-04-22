@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -10,13 +10,10 @@ import {
   CardActions,
   Alert,
   CircularProgress,
-} from "@mui/material";
-import {
-  fetchCharacter,
-  deleteCharacter,
-} from "../../../store/thunks/characterThunks";
-import { openModal } from "../../../store/slices/modalSlice";
-import { getCharacterWithRetry } from "../../../utils/apiUtils";
+} from '@mui/material';
+import { fetchCharacter, deleteCharacter } from '../../../store/thunks/characterThunks';
+import { openModal } from '../../../store/slices/modalSlice';
+import { getCharacterWithRetry } from '../../../utils/apiUtils';
 
 const CharacterDetail = () => {
   const dispatch = useDispatch();
@@ -45,14 +42,14 @@ const CharacterDetail = () => {
               const characterData = await getCharacterWithRetry(id);
               // Update Redux state manually
               dispatch({
-                type: "characters/setCurrentCharacter",
+                type: 'characters/setCurrentCharacter',
                 payload: characterData.character || characterData,
               });
             } catch (retryError) {
               setLocalError(
-                "Failed to fetch character after multiple retries. Please try again later."
+                'Failed to fetch character after multiple retries. Please try again later.'
               );
-              console.error("Retry failed:", retryError);
+              console.error('Retry failed:', retryError);
             } finally {
               setLocalLoading(false);
             }
@@ -65,19 +62,19 @@ const CharacterDetail = () => {
   }, [dispatch, id]);
 
   const handleEdit = () => {
-    dispatch(openModal({ type: "editCharacter", props: { characterId: id } }));
+    dispatch(openModal({ type: 'editCharacter', props: { characterId: id } }));
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this character?")) {
+    if (window.confirm('Are you sure you want to delete this character?')) {
       await dispatch(deleteCharacter(id));
-      navigate("/characters");
+      navigate('/characters');
     }
   };
 
   if (loading || localLoading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
         <CircularProgress />
       </Box>
     );
@@ -92,7 +89,7 @@ const CharacterDetail = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 600, margin: "0 auto", padding: 2 }}>
+    <Box sx={{ maxWidth: 600, margin: '0 auto', padding: 2 }}>
       <Card>
         <CardContent>
           <Typography variant="h4" gutterBottom>
@@ -118,4 +115,4 @@ const CharacterDetail = () => {
   );
 };
 
-export default CharacterDetail; 
+export default CharacterDetail;

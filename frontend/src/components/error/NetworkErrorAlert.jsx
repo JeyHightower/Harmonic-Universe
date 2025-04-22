@@ -1,9 +1,9 @@
-import React from "react";
-import { useCallback, useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useModal } from "../../contexts/ModalContext";
-import { setNetworkError } from "../../store/slices/authSlice";
-import { API_CONFIG, MODAL_TYPES } from "../../utils/config";
+import React from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useModal } from '../../contexts/ModalContext';
+import { setNetworkError } from '../../store/slices/authSlice';
+import { API_CONFIG, MODAL_TYPES } from '../../utils/config';
 
 /**
  * Component that monitors for network errors and displays an alert
@@ -23,7 +23,7 @@ const NetworkErrorAlert = () => {
       // Prevent checking too frequently - at least 5 seconds between checks
       const now = Date.now();
       if (!force && now - lastCheckTime < 5000) {
-        console.debug("Skipping API check - checked too recently");
+        console.debug('Skipping API check - checked too recently');
         return;
       }
 
@@ -32,20 +32,17 @@ const NetworkErrorAlert = () => {
       setLastCheckTime(now);
 
       try {
-        console.debug("Checking API connection...");
+        console.debug('Checking API connection...');
         const controller = new AbortController();
-        const timeoutId = setTimeout(
-          () => controller.abort(),
-          API_CONFIG.HEALTH_CHECK.TIMEOUT
-        );
+        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.HEALTH_CHECK.TIMEOUT);
 
         const response = await fetch(`${API_CONFIG.HEALTH_CHECK.ENDPOINT}`, {
-          method: "GET",
+          method: 'GET',
           headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
           },
-          credentials: "include",
+          credentials: 'include',
           signal: controller.signal,
         });
 
@@ -53,19 +50,19 @@ const NetworkErrorAlert = () => {
 
         if (response.ok) {
           if (networkError) {
-            console.debug("API connection restored");
+            console.debug('API connection restored');
             dispatch(setNetworkError(false));
             setHasShownModal(false);
           }
           setRetryCount(0);
         } else {
-          console.warn("API returned error status:", response.status);
+          console.warn('API returned error status:', response.status);
           await handleConnectionError();
         }
       } catch (error) {
-        console.error("API connection check failed:", error);
-        if (error.name === "AbortError") {
-          console.warn("API connection check timed out");
+        console.error('API connection check failed:', error);
+        if (error.name === 'AbortError') {
+          console.warn('API connection check timed out');
         }
         await handleConnectionError();
       } finally {
@@ -78,9 +75,7 @@ const NetworkErrorAlert = () => {
   const handleConnectionError = async () => {
     if (retryCount < API_CONFIG.HEALTH_CHECK.RETRY_ATTEMPTS) {
       setRetryCount((prev) => prev + 1);
-      await new Promise((resolve) =>
-        setTimeout(resolve, API_CONFIG.ERROR_HANDLING.RETRY_DELAY)
-      );
+      await new Promise((resolve) => setTimeout(resolve, API_CONFIG.ERROR_HANDLING.RETRY_DELAY));
       return checkApiConnection(true);
     }
     dispatch(setNetworkError(true));
@@ -103,17 +98,13 @@ const NetworkErrorAlert = () => {
 
   // Show modal when network error is detected
   useEffect(() => {
-    if (
-      networkError &&
-      !hasShownModal &&
-      document.getElementById("portal-root")
-    ) {
+    if (networkError && !hasShownModal && document.getElementById('portal-root')) {
       const message = offlineMode
-        ? "Unable to connect to server. Application is running in offline mode with limited functionality."
-        : "Could not connect to server. Some features may be unavailable.";
+        ? 'Unable to connect to server. Application is running in offline mode with limited functionality.'
+        : 'Could not connect to server. Some features may be unavailable.';
 
       const timer = setTimeout(() => {
-        console.debug("Opening network error modal");
+        console.debug('Opening network error modal');
         openModal(MODAL_TYPES.NETWORK_ERROR, { message });
         setHasShownModal(true);
       }, API_CONFIG.ERROR_HANDLING.NETWORK_ERROR_THRESHOLD);

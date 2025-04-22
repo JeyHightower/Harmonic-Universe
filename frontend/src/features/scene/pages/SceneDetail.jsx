@@ -1,31 +1,35 @@
 import {
-    ArrowBack as ArrowBackIcon,
-    CalendarToday as CalendarIcon,
-    Delete as DeleteIcon,
-    Edit as EditIcon,
-    Info as InfoIcon,
-    Update as UpdateIcon,
+  ArrowBack as ArrowBackIcon,
+  CalendarToday as CalendarIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Info as InfoIcon,
+  Update as UpdateIcon,
 } from '@mui/icons-material';
 import {
-    Alert,
-    Box,
-    Button,
-    Chip,
-    CircularProgress,
-    Container,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Grid,
-    Paper,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  Paper,
+  Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { deleteSceneAndRefresh, fetchSceneById, updateSceneAndRefresh } from '../../../store/thunks/consolidated/scenesThunks';
+import {
+  deleteSceneAndRefresh,
+  fetchSceneById,
+  updateSceneAndRefresh,
+} from '../../../store/thunks/consolidated/scenesThunks';
 import { formatDate } from '../../../utils';
 import '../styles/SceneDetail.css';
 import SceneForm from './SceneForm';
@@ -154,10 +158,12 @@ const SceneDetail = ({ isEdit = false }) => {
       const targetUniverseId = universeId || scene?.universe_id;
 
       // Use the enhanced thunk with automatic refresh
-      await dispatch(deleteSceneAndRefresh({
-        sceneId,
-        universeId: targetUniverseId
-      })).unwrap();
+      await dispatch(
+        deleteSceneAndRefresh({
+          sceneId,
+          universeId: targetUniverseId,
+        })
+      ).unwrap();
 
       // Navigate after successful deletion
       if (targetUniverseId) {
@@ -484,13 +490,15 @@ const SceneDetail = ({ isEdit = false }) => {
                     formattedValues
                   );
 
-                  await dispatch(updateSceneAndRefresh({
-                    sceneId,
-                    sceneData: {
-                      id: sceneId,
-                      ...formattedValues
-                    }
-                  })).unwrap();
+                  await dispatch(
+                    updateSceneAndRefresh({
+                      sceneId,
+                      sceneData: {
+                        id: sceneId,
+                        ...formattedValues,
+                      },
+                    })
+                  ).unwrap();
 
                   // Success! Close the form and refresh the data
                   handleCloseEditForm();

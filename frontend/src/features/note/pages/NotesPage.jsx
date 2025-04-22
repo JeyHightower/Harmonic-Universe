@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -16,7 +16,7 @@ import {
   InputAdornment,
   Chip,
   Paper,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -25,9 +25,9 @@ import {
   Search as SearchIcon,
   ArrowBack as ArrowBackIcon,
   Label as LabelIcon,
-} from "@mui/icons-material";
-import { NoteFormModal } from "..";
-import apiClient from "../../../services/api.adapter";
+} from '@mui/icons-material';
+import { NoteFormModal } from '..';
+import apiClient from '../../../services/api.adapter';
 
 const NotesPage = () => {
   const { universeId, sceneId, characterId } = useParams();
@@ -36,11 +36,11 @@ const NotesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [parent, setParent] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [allTags, setAllTags] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState("create");
+  const [modalType, setModalType] = useState('create');
   const [selectedNoteId, setSelectedNoteId] = useState(null);
 
   useEffect(() => {
@@ -54,21 +54,21 @@ const NotesPage = () => {
           response = await apiClient.getNotesByCharacter(characterId);
           const characterResponse = await apiClient.getCharacter(characterId);
           setParent({
-            type: "character",
+            type: 'character',
             data: characterResponse.data.character,
           });
         } else if (sceneId) {
           response = await apiClient.getNotesByScene(sceneId);
           const sceneResponse = await apiClient.getScene(sceneId);
           setParent({
-            type: "scene",
+            type: 'scene',
             data: sceneResponse.data.scene,
           });
         } else if (universeId) {
           response = await apiClient.getNotesByUniverse(universeId);
           const universeResponse = await apiClient.getUniverse(universeId);
           setParent({
-            type: "universe",
+            type: 'universe',
             data: universeResponse.data.universe,
           });
         }
@@ -88,8 +88,8 @@ const NotesPage = () => {
 
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load notes. Please try again.");
+        console.error('Error fetching data:', err);
+        setError('Failed to load notes. Please try again.');
         setLoading(false);
       }
     };
@@ -98,25 +98,25 @@ const NotesPage = () => {
   }, [universeId, sceneId, characterId]);
 
   const handleCreateNote = () => {
-    setModalType("create");
+    setModalType('create');
     setSelectedNoteId(null);
     setModalOpen(true);
   };
 
   const handleEditNote = (noteId) => {
-    setModalType("edit");
+    setModalType('edit');
     setSelectedNoteId(noteId);
     setModalOpen(true);
   };
 
   const handleViewNote = (noteId) => {
-    setModalType("view");
+    setModalType('view');
     setSelectedNoteId(noteId);
     setModalOpen(true);
   };
 
   const handleDeleteNote = (noteId) => {
-    setModalType("delete");
+    setModalType('delete');
     setSelectedNoteId(noteId);
     setModalOpen(true);
   };
@@ -126,7 +126,7 @@ const NotesPage = () => {
   };
 
   const handleNoteSuccess = (updatedNote) => {
-    if (modalType === "create") {
+    if (modalType === 'create') {
       setNotes([...notes, updatedNote]);
 
       // Update all tags
@@ -135,19 +135,13 @@ const NotesPage = () => {
         updatedNote.tags.forEach((tag) => newTags.add(tag));
       }
       setAllTags(Array.from(newTags));
-    } else if (modalType === "edit") {
-      setNotes(
-        notes.map((note) => (note.id === updatedNote.id ? updatedNote : note))
-      );
+    } else if (modalType === 'edit') {
+      setNotes(notes.map((note) => (note.id === updatedNote.id ? updatedNote : note)));
 
       // Recalculate all tags
       const tagsSet = new Set();
       notes.forEach((note) => {
-        if (
-          note.id !== updatedNote.id &&
-          note.tags &&
-          Array.isArray(note.tags)
-        ) {
+        if (note.id !== updatedNote.id && note.tags && Array.isArray(note.tags)) {
           note.tags.forEach((tag) => tagsSet.add(tag));
         }
       });
@@ -155,7 +149,7 @@ const NotesPage = () => {
         updatedNote.tags.forEach((tag) => tagsSet.add(tag));
       }
       setAllTags(Array.from(tagsSet));
-    } else if (modalType === "delete") {
+    } else if (modalType === 'delete') {
       setNotes(notes.filter((note) => note.id !== selectedNoteId));
 
       // Recalculate all tags
@@ -163,11 +157,7 @@ const NotesPage = () => {
       if (deletedNote && deletedNote.tags && deletedNote.tags.length > 0) {
         const tagsSet = new Set();
         notes.forEach((note) => {
-          if (
-            note.id !== selectedNoteId &&
-            note.tags &&
-            Array.isArray(note.tags)
-          ) {
+          if (note.id !== selectedNoteId && note.tags && Array.isArray(note.tags)) {
             note.tags.forEach((tag) => tagsSet.add(tag));
           }
         });
@@ -198,7 +188,7 @@ const NotesPage = () => {
       navigate(`/universes/${universeId}`);
     } else {
       // Fallback to universes list
-      navigate("/universes");
+      navigate('/universes');
     }
   };
 
@@ -212,11 +202,11 @@ const NotesPage = () => {
 
   const filteredNotes = notes.filter((note) => {
     // Skip notes with invalid structure
-    if (!note || typeof note !== "object") return false;
+    if (!note || typeof note !== 'object') return false;
 
     // Text search - with null checks
-    const noteTitle = note.title || "";
-    const noteContent = note.content || "";
+    const noteTitle = note.title || '';
+    const noteContent = note.content || '';
 
     const matchesSearch =
       noteTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -234,31 +224,26 @@ const NotesPage = () => {
 
   const getParentTitle = () => {
     // Safe check for parent and parent.data
-    if (!parent || !parent.data) return "";
+    if (!parent || !parent.data) return '';
 
     // Safe check for parent.data.name
-    const name = parent.data.name || "Untitled";
+    const name = parent.data.name || 'Untitled';
 
     switch (parent.type) {
-      case "universe":
+      case 'universe':
         return `for Universe: ${name}`;
-      case "scene":
+      case 'scene':
         return `for Scene: ${name}`;
-      case "character":
+      case 'character':
         return `for Character: ${name}`;
       default:
-        return "";
+        return '';
     }
   };
 
   return (
     <Container maxWidth="lg" className="notes-page">
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={4}
-      >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Box display="flex" alignItems="center">
           <IconButton onClick={handleBack} sx={{ mr: 1 }}>
             <ArrowBackIcon />
@@ -294,16 +279,10 @@ const NotesPage = () => {
         />
 
         {allTags.length > 0 && (
-          <Paper
-            elevation={0}
-            sx={{ p: 2, mt: 2, backgroundColor: "rgba(0,0,0,0.03)" }}
-          >
+          <Paper elevation={0} sx={{ p: 2, mt: 2, backgroundColor: 'rgba(0,0,0,0.03)' }}>
             <Box display="flex" alignItems="center" flexWrap="wrap" gap={1}>
               <Typography variant="subtitle2" sx={{ mr: 1 }}>
-                <LabelIcon
-                  fontSize="small"
-                  sx={{ verticalAlign: "middle", mr: 0.5 }}
-                />
+                <LabelIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
                 Filter by tags:
               </Typography>
               {allTags.map((tag) => (
@@ -311,7 +290,7 @@ const NotesPage = () => {
                   key={tag}
                   label={tag}
                   clickable
-                  color={selectedTags.includes(tag) ? "primary" : "default"}
+                  color={selectedTags.includes(tag) ? 'primary' : 'default'}
                   onClick={() => handleTagSelect(tag)}
                   size="small"
                 />
@@ -350,52 +329,34 @@ const NotesPage = () => {
             <Grid item xs={12} sm={6} md={4} key={note.id}>
               <Card elevation={3} className="note-card">
                 <CardContent>
-                  <Typography
-                    variant="h6"
-                    component="h2"
-                    className="note-card-title"
-                  >
-                    {note.title || "Untitled Note"}
+                  <Typography variant="h6" component="h2" className="note-card-title">
+                    {note.title || 'Untitled Note'}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    className="note-card-content"
-                  >
+                  <Typography variant="body2" color="textSecondary" className="note-card-content">
                     {note.content && note.content.length > 150
                       ? `${note.content.substring(0, 150)}...`
-                      : note.content || "No content"}
+                      : note.content || 'No content'}
                   </Typography>
 
-                  {note.tags &&
-                    Array.isArray(note.tags) &&
-                    note.tags.length > 0 && (
-                      <Box mt={2} className="note-card-tags">
-                        {note.tags.map((tag) => (
-                          <Chip
-                            key={tag}
-                            label={tag || ""}
-                            size="small"
-                            className="note-tag"
-                            onClick={() => handleTagSelect(tag)}
-                          />
-                        ))}
-                      </Box>
-                    )}
+                  {note.tags && Array.isArray(note.tags) && note.tags.length > 0 && (
+                    <Box mt={2} className="note-card-tags">
+                      {note.tags.map((tag) => (
+                        <Chip
+                          key={tag}
+                          label={tag || ''}
+                          size="small"
+                          className="note-tag"
+                          onClick={() => handleTagSelect(tag)}
+                        />
+                      ))}
+                    </Box>
+                  )}
                 </CardContent>
                 <CardActions className="note-card-actions">
-                  <IconButton
-                    onClick={() => handleViewNote(note.id)}
-                    size="small"
-                    title="View"
-                  >
+                  <IconButton onClick={() => handleViewNote(note.id)} size="small" title="View">
                     <ViewIcon />
                   </IconButton>
-                  <IconButton
-                    onClick={() => handleEditNote(note.id)}
-                    size="small"
-                    title="Edit"
-                  >
+                  <IconButton onClick={() => handleEditNote(note.id)} size="small" title="Edit">
                     <EditIcon />
                   </IconButton>
                   <IconButton
@@ -417,9 +378,7 @@ const NotesPage = () => {
         isOpen={modalOpen}
         onClose={handleModalClose}
         noteId={selectedNoteId}
-        universeId={
-          universeId ? Number(universeId) : parent?.data?.universe_id || null
-        }
+        universeId={universeId ? Number(universeId) : parent?.data?.universe_id || null}
         sceneId={sceneId ? Number(sceneId) : null}
         characterId={characterId ? Number(characterId) : null}
         type={modalType}

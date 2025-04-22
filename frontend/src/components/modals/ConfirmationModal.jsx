@@ -1,14 +1,14 @@
-import React from "react";
-import PropTypes from "prop-types";
-import { useSelector } from "react-redux";
-import { ModalSystem } from "./index.mjs";
-import { selectIsModalOpen } from "../../store/slices/modalSlice";
+import React from 'react';
+import PropTypes from 'prop-types';
+import { useSelector } from 'react-redux';
+import { ModalSystem } from './index.mjs';
+import { selectIsModalOpen } from '../../store/slices/modalSlice';
 
 const ConfirmationModal = ({
   title,
   message,
-  confirmText = "Yes",
-  cancelText = "No",
+  confirmText = 'Yes',
+  cancelText = 'No',
   confirmId,
   cancelId,
   onClose,
@@ -17,9 +17,9 @@ const ConfirmationModal = ({
   const isOpen = useSelector(selectIsModalOpen);
 
   const handleConfirm = () => {
-    console.log("Confirmation modal confirmed:", confirmId);
+    console.log('Confirmation modal confirmed:', confirmId);
     if (confirmId) {
-      const event = new CustomEvent("modal-confirm", {
+      const event = new CustomEvent('modal-confirm', {
         detail: { action: confirmId },
       });
       document.dispatchEvent(event);
@@ -28,9 +28,9 @@ const ConfirmationModal = ({
   };
 
   const handleCancel = () => {
-    console.log("Confirmation modal cancelled:", cancelId);
+    console.log('Confirmation modal cancelled:', cancelId);
     if (cancelId) {
-      const event = new CustomEvent("modal-cancel", {
+      const event = new CustomEvent('modal-cancel', {
         detail: { action: cancelId },
       });
       document.dispatchEvent(event);
@@ -39,26 +39,14 @@ const ConfirmationModal = ({
   };
 
   return (
-    <ModalSystem
-      isOpen={isOpen}
-      type="confirm"
-      title={title}
-      onClose={onClose}
-      {...props}
-    >
+    <ModalSystem isOpen={isOpen} type="confirm" title={title} onClose={onClose} {...props}>
       <div className="modal-content">
         <p>{message}</p>
         <div className="modal-actions">
-          <button
-            onClick={handleCancel}
-            className="modal-button modal-button-secondary"
-          >
+          <button onClick={handleCancel} className="modal-button modal-button-secondary">
             {cancelText}
           </button>
-          <button
-            onClick={handleConfirm}
-            className="modal-button modal-button-primary"
-          >
+          <button onClick={handleConfirm} className="modal-button modal-button-primary">
             {confirmText}
           </button>
         </div>

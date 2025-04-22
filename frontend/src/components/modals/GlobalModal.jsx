@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
-import PropTypes from "prop-types";
-import { useSelector } from "react-redux";
-import { useModal } from "../../contexts/ModalContext";
-import { selectModalProps } from "../../store/slices/modalSlice";
-import { getModalComponent } from "../../utils/modalRegistry";
-import { ensurePortalRoot } from "../../utils/portalUtils";
+import React, { useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useSelector } from 'react-redux';
+import { useModal } from '../../contexts/ModalContext';
+import { selectModalProps } from '../../store/slices/modalSlice';
+import { getModalComponent } from '../../utils/modalRegistry';
+import { ensurePortalRoot } from '../../utils/portalUtils';
 
 const GlobalModal = () => {
   const modalProps = useSelector(selectModalProps);
@@ -12,7 +12,7 @@ const GlobalModal = () => {
 
   // Add console log to debug modal state
   useEffect(() => {
-    console.debug("Modal state changed:", {
+    console.debug('Modal state changed:', {
       hasProps: !!modalProps,
     });
   }, [modalProps]);

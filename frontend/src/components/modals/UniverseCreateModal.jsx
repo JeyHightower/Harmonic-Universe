@@ -1,16 +1,16 @@
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
-import { createUniverse } from "../../store/thunks/universeThunks";
-import Modal from "../common/Modal";
-import Input from "../common/Input";
-import Button from "../common/Button";
-import "./UniverseCreateModal.css";
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { createUniverse } from '../../store/thunks/universeThunks';
+import Modal from '../common/Modal';
+import Input from '../common/Input';
+import Button from '../common/Button';
+import './UniverseCreateModal.css';
 
 const UniverseCreateModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
+    name: '',
+    description: '',
     is_public: false,
   });
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,7 @@ const UniverseCreateModal = ({ isOpen, onClose }) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -33,7 +33,7 @@ const UniverseCreateModal = ({ isOpen, onClose }) => {
       await dispatch(createUniverse(formData)).unwrap();
       onClose();
     } catch (err) {
-      setError(err.message || "Failed to create universe");
+      setError(err.message || 'Failed to create universe');
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ const UniverseCreateModal = ({ isOpen, onClose }) => {
             Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={loading}>
-            {loading ? "Creating..." : "Create Universe"}
+            {loading ? 'Creating...' : 'Create Universe'}
           </Button>
         </div>
       </form>

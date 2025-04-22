@@ -43,26 +43,25 @@ const Slider = ({
   }, [value]);
 
   // Format the displayed value
-  const formatValue = val => {
-    const formatted =
-      typeof decimalPlaces === 'number' ? val.toFixed(decimalPlaces) : val;
+  const formatValue = (val) => {
+    const formatted = typeof decimalPlaces === 'number' ? val.toFixed(decimalPlaces) : val;
     return `${valuePrefix}${formatted}${valueSuffix}`;
   };
 
   // Calculate percentage for slider position
-  const getPercentage = val => {
+  const getPercentage = (val) => {
     return ((val - min) / (max - min)) * 100;
   };
 
   // Handle slider input change
-  const handleChange = e => {
+  const handleChange = (e) => {
     const newValue = parseFloat(e.target.value);
     setLocalValue(newValue);
     onChange(newValue);
   };
 
   // Handle direct input in the number field
-  const handleNumberInput = e => {
+  const handleNumberInput = (e) => {
     const newValue = parseFloat(e.target.value);
     if (!isNaN(newValue) && newValue >= min && newValue <= max) {
       setLocalValue(newValue);
@@ -71,7 +70,7 @@ const Slider = ({
   };
 
   // Handle mouse down on the slider track for custom interaction
-  const handleMouseDown = e => {
+  const handleMouseDown = (e) => {
     if (disabled) return;
     setIsDragging(true);
     updateValueFromMousePosition(e);
@@ -82,7 +81,7 @@ const Slider = ({
   };
 
   // Handle mouse move during drag
-  const handleMouseMove = e => {
+  const handleMouseMove = (e) => {
     if (isDragging) {
       updateValueFromMousePosition(e);
     }
@@ -96,7 +95,7 @@ const Slider = ({
   };
 
   // Update value based on mouse position
-  const updateValueFromMousePosition = e => {
+  const updateValueFromMousePosition = (e) => {
     if (!sliderRef.current) return;
 
     const rect = sliderRef.current.getBoundingClientRect();
@@ -112,24 +111,10 @@ const Slider = ({
   };
 
   return (
-    <div
-      className={`slider-container ${className || ''} ${
-        disabled ? 'disabled' : ''
-      }`}
-    >
-      <div
-        className="slider-track"
-        ref={sliderRef}
-        onMouseDown={handleMouseDown}
-      >
-        <div
-          className="slider-fill"
-          style={{ width: `${getPercentage(localValue)}%` }}
-        />
-        <div
-          className="slider-thumb"
-          style={{ left: `${getPercentage(localValue)}%` }}
-        />
+    <div className={`slider-container ${className || ''} ${disabled ? 'disabled' : ''}`}>
+      <div className="slider-track" ref={sliderRef} onMouseDown={handleMouseDown}>
+        <div className="slider-fill" style={{ width: `${getPercentage(localValue)}%` }} />
+        <div className="slider-thumb" style={{ left: `${getPercentage(localValue)}%` }} />
       </div>
 
       <div className="slider-controls">
@@ -158,9 +143,7 @@ const Slider = ({
               disabled={disabled}
               className="slider-value-input"
             />
-            <span className="slider-value-display">
-              {formatValue(localValue)}
-            </span>
+            <span className="slider-value-display">{formatValue(localValue)}</span>
           </div>
         )}
       </div>

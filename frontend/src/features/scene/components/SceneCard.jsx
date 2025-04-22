@@ -1,9 +1,9 @@
-import PropTypes from "prop-types";
-import { useNavigate } from "react-router-dom";
-import "../styles/SceneCard.css";
+import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
+import '../styles/SceneCard.css';
 // Import a local default image to avoid server requests
-import defaultSceneImage from "../../../assets/images/default-scene.svg";
-import { formatDate } from "../../../utils";
+import defaultSceneImage from '../../../assets/images/default-scene.svg';
+import { formatDate } from '../../../utils';
 
 /**
  * SceneCard component displays a card representation of a scene
@@ -13,11 +13,11 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
   const navigate = useNavigate();
 
   // Use the local image first, fall back to the remote one only if necessary
-  const defaultImage = defaultSceneImage || "/images/default-scene.svg";
+  const defaultImage = defaultSceneImage || '/images/default-scene.svg';
 
   // Safety check for scene object - return placeholder if scene is invalid
   if (!scene || !scene.id) {
-    console.error("SceneCard - Invalid scene object:", scene);
+    console.error('SceneCard - Invalid scene object:', scene);
     return (
       <div className="scene-card-container scene-card-error">
         <div className="scene-card-content">
@@ -42,9 +42,7 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
 
     // Make sure we have a valid universe_id
     if (!scene.universe_id) {
-      console.error(
-        "SceneCard - Cannot navigate to scene view: missing universe_id"
-      );
+      console.error('SceneCard - Cannot navigate to scene view: missing universe_id');
       return;
     }
 
@@ -59,7 +57,7 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
 
     // Check if we have a custom edit handler
     if (onEdit) {
-      console.log("SceneCard - Using provided onEdit handler");
+      console.log('SceneCard - Using provided onEdit handler');
       onEdit(scene);
       return;
     }
@@ -96,9 +94,7 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
 
   // Check if scene is marked as deleted and handle appropriately
   if (scene.is_deleted === true) {
-    console.log(
-      `SceneCard - Scene ${scene.id} is marked as deleted, not rendering`
-    );
+    console.log(`SceneCard - Scene ${scene.id} is marked as deleted, not rendering`);
     return null;
   }
 
@@ -108,37 +104,29 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
         <div className="scene-card-image">
           <img
             src={scene.image_url || defaultImage}
-            alt={scene.title || scene.name || "Scene"}
+            alt={scene.title || scene.name || 'Scene'}
             onError={(e) => {
-              console.log("Image failed to load, using default image");
+              console.log('Image failed to load, using default image');
               // Use a local fallback instead of remote one if possible
               e.target.onerror = null; // Prevent infinite error loop
               e.target.src = defaultImage;
             }}
           />
-          {scene.scene_type && (
-            <div className="scene-type-badge">{scene.scene_type}</div>
-          )}
+          {scene.scene_type && <div className="scene-type-badge">{scene.scene_type}</div>}
         </div>
         <div className="scene-card-content">
-          <h3 className="scene-card-title">
-            {scene.title || scene.name || "Untitled Scene"}
-          </h3>
+          <h3 className="scene-card-title">{scene.title || scene.name || 'Untitled Scene'}</h3>
           <p className="scene-card-description">
             {scene.description
               ? scene.description.length > 100
                 ? `${scene.description.substring(0, 100)}...`
                 : scene.description
-              : "No description provided"}
+              : 'No description provided'}
           </p>
           <div className="scene-card-meta">
-            <span className="scene-card-date">
-              Created: {formatDate(scene.created_at)}
-            </span>
+            <span className="scene-card-date">Created: {formatDate(scene.created_at)}</span>
             {scene.updated_at && (
-              <span className="scene-card-date">
-                Updated: {formatDate(scene.updated_at)}
-              </span>
+              <span className="scene-card-date">Updated: {formatDate(scene.updated_at)}</span>
             )}
             {scene.order !== undefined && (
               <span className="scene-card-order">Order: {scene.order}</span>
@@ -147,29 +135,14 @@ const SceneCard = ({ scene, onEdit, onDelete, onView, active = false, _isOwner =
         </div>
       </div>
       <div className="scene-card-actions">
-        <button
-          className="btn-view"
-          onClick={handleView}
-          title="View Scene"
-          type="button"
-        >
+        <button className="btn-view" onClick={handleView} title="View Scene" type="button">
           View
         </button>
-        <button
-          className="btn-edit"
-          onClick={handleEdit}
-          title="Edit Scene"
-          type="button"
-        >
+        <button className="btn-edit" onClick={handleEdit} title="Edit Scene" type="button">
           Edit
         </button>
         {onDelete && (
-          <button
-            className="btn-delete"
-            onClick={handleDelete}
-            title="Delete Scene"
-            type="button"
-          >
+          <button className="btn-delete" onClick={handleDelete} title="Delete Scene" type="button">
             Delete
           </button>
         )}
@@ -189,8 +162,7 @@ SceneCard.propTypes = {
     order: PropTypes.number,
     created_at: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     updated_at: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    universe_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-      .isRequired,
+    universe_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     is_deleted: PropTypes.bool,
   }).isRequired,
   onEdit: PropTypes.func,
