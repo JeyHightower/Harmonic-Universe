@@ -1,4 +1,3 @@
-import { Modal } from 'antd';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -87,14 +86,24 @@ const UniverseDetail = () => {
   };
 
   const handleCreateSceneClick = () => {
-    console.log('UniverseDetail - handleCreateSceneClick called');
-    console.log('UniverseDetail - Setting isCreateSceneModalOpen to true');
-    setIsCreateSceneModalOpen(true);
-    console.log('UniverseDetail - isCreateSceneModalOpen set to true:', isCreateSceneModalOpen);
+    console.log('UniverseDetail - BUTTON CLICKED - handleCreateSceneClick called');
 
-    // Force a re-render by triggering a state update on a dummy state
-    const dummyState = {};
-    setDummyState(dummyState);
+    // Set a flag to force the modal to open
+    setIsCreateSceneModalOpen(true);
+
+    // Better logging to check state
+    console.log('UniverseDetail - State before update:', { isCreateSceneModalOpen });
+
+    // Force a re-render with the dummy state update
+    setDummyState({ timestamp: Date.now() });
+
+    // Add a timeout to check the state after the update
+    setTimeout(() => {
+      console.log('UniverseDetail - State after update (timeout):', {
+        isCreateSceneModalOpen: isCreateSceneModalOpen,
+        dummyState: dummyState
+      });
+    }, 100);
   };
 
   const handleCreateSceneSuccess = (newScene) => {
@@ -375,12 +384,18 @@ const UniverseDetail = () => {
         />
       )}
 
-      {/* Scene Create Modal - Always render for testing */}
+      {/* Scene Create Modal */}
       <SceneModal
-        isOpen={true}
-        open={true}
-        onClose={() => setIsCreateSceneModalOpen(false)}
-        onSuccess={handleCreateSceneSuccess}
+        isOpen={isCreateSceneModalOpen}
+        open={isCreateSceneModalOpen}
+        onClose={() => {
+          console.log('UniverseDetail - SceneModal onClose called, closing modal');
+          setIsCreateSceneModalOpen(false);
+        }}
+        onSuccess={(newScene) => {
+          console.log('UniverseDetail - SceneModal onSuccess called with:', newScene);
+          handleCreateSceneSuccess(newScene);
+        }}
         universeId={id}
         mode="create"
         modalType="create"
@@ -407,16 +422,6 @@ const UniverseDetail = () => {
           mode="view"
         />
       )}
-
-      {/* Debug test modal - direct Ant Design modal */}
-      <Modal
-        title="Test Modal"
-        open={true}
-        onCancel={() => console.log('Test modal cancel clicked')}
-      >
-        <p>This is a test modal to check if Ant Design modals are working.</p>
-        <p>If you can see this, then SceneModal should also work!</p>
-      </Modal>
     </div>
   );
 };

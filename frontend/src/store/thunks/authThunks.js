@@ -1,15 +1,15 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import apiClient from "../../services/api.js";
 import {
-  handleOfflineAuthentication,
-  shouldUseFallback,
+    handleOfflineAuthentication,
+    shouldUseFallback,
 } from "../../utils/authFallback";
 import { AUTH_CONFIG } from "../../utils/config.js";
 import {
-  loginFailure,
-  loginStart,
-  loginSuccess,
-  updateUser,
+    loginFailure,
+    loginStart,
+    loginSuccess,
+    updateUser,
 } from "../slices/authSlice.js";
 
 const handleError = (error) => {
@@ -338,8 +338,18 @@ export const logout = createAsyncThunk(
       // Clear auth state
       dispatch(loginFailure({ message: "Logged out successfully" }));
 
-      // Navigate to home page
-      window.location.href = "/";
+      // Log out is complete - navigate to homepage
+      // Simulate a click on the root path to navigate cleanly to home
+      const homeLink = document.createElement('a');
+      homeLink.href = '/';
+      homeLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/';
+      });
+
+      // Create a click event and dispatch it on the link
+      const clickEvent = new Event('click');
+      homeLink.dispatchEvent(clickEvent);
 
       return { message: "Logged out successfully" };
     } catch (error) {

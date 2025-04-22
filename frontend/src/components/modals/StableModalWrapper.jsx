@@ -1,29 +1,68 @@
 import { Modal } from "antd";
 import PropTypes from "prop-types";
-import { useEffect, useRef } from "react";
-import { log } from "../../utils/logger.mjs";
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ensurePortalRoot } from "../../utils/portalUtils.mjs";
 import "./Modal.css";
 
-// This component ensures that modal instances remain stable
-// and don't re-render unnecessarily
-const StableModalWrapper = ({ title, children, onClose, width = 520, open = true, style }) => {
-  // Add additional debug logging for component initialization
-  console.log("StableModalWrapper - Component initialized with props:", {
-    title,
+/**
+ * A wrapper around Ant Design's Modal component that ensures stability
+ * and prevents unnecessary re-renders.
+ */
+const StableModalWrapper = ({
+  open,
+  onClose,
+  title,
+  width = 520,
+  style = {},
+  footer = undefined,
+  children
+}) => {
+  const [isVisible, setIsVisible] = useState(open);
+
+  // Initialize with debugging
+  console.log('StableModalWrapper - COMPONENT INITIALIZED', {
+    componentName: 'StableModalWrapper',
     open,
-    width,
-    hasChildren: !!children,
-    hasCloseHandler: !!onClose
+    isVisible
   });
 
-  const modalRef = useRef(null);
-  const instanceId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);
-
-  // Ensure portal exists and is ready
+  // Create the portal root when the component mounts
   useEffect(() => {
     ensurePortalRoot();
   }, []);
+
+  // Debug effect for open prop changes
+  useEffect(() => {
+    console.log('StableModalWrapper - open prop changed:', {
+      previousIsVisible: isVisible,
+      newOpen: open
+    });
+    setIsVisible(open);
+  }, [open]);
+
+  // Debug effect for visibility state changes
+  useEffect(() => {
+    console.log('StableModalWrapper - isVisible state changed:', { isVisible });
+  }, [isVisible]);
+
+  const handleClose = () => {
+    console.log('StableModalWrapper - handleClose called');
+    setIsVisible(false);
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  // Create a stable reference to the content
+  const stableContent = useMemo(() => children, [children]);
+
+  // Combine default and passed styles
+  const combinedStyles = useMemo(() => ({
+    ...style,
+  }), [style]);
+
+  const modalRef = useRef(null);
+  const instanceId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);
 
   // Add debug logging
   useEffect(() => {
@@ -54,34 +93,6 @@ const StableModalWrapper = ({ title, children, onClose, width = 520, open = true
   }, [title, open, width]);
 
   // Safe close handler that won't trigger for content clicks
-  const handleClose = (e) => {
-    // Check if this is a direct call from Ant Design's onCancel
-    // If it has a target, ensure this came from clicking the actual backdrop
-    // and not from inside the modal content
-    if (e && e.target) {
-      // Get the modal content element
-      const modalContent = document.querySelector(`.stable-modal-${instanceId.current} .ant-modal-content`);
-
-      // Check if the click target is inside the modal content
-      if (modalContent && (modalContent === e.target || modalContent.contains(e.target))) {
-        console.log("StableModalWrapper - Ignoring close event from inside modal content");
-        e.stopPropagation();
-        return; // Don't close if clicked inside the modal
-      }
-
-      // For safety, we still stop propagation
-      e.stopPropagation();
-    }
-
-    log("modal", "Modal closed", { title });
-    console.log("StableModalWrapper - Modal closing", { title });
-
-    if (onClose) {
-      onClose();
-    }
-  };
-
-  // Handle clicks specifically to prevent event bubbling issues
   const handleModalClick = (e) => {
     // Always stop propagation to prevent underlying modals from receiving events
     e.stopPropagation();
@@ -94,7 +105,23 @@ const StableModalWrapper = ({ title, children, onClose, width = 520, open = true
   };
 
   // Log right before rendering
-  console.log("StableModalWrapper - About to render Modal with open=", open);
+  console.log("StableModalWrapper - About to render Modal with open=", open, "title=", title);
+  console.log("StableModalWrapper - Close handlers enabled: keyboard=true, maskClosable=true");
+
+  // Create standard footer with cancel button
+  const createFooter = () => {
+    return (
+      <div className="modal-footer">
+        <button
+          className="modal-cancel-btn"
+          onClick={handleClose}
+          aria-label="Cancel"
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  };
 
   const combinedStyle = {
     display: 'block',
@@ -106,21 +133,21 @@ const StableModalWrapper = ({ title, children, onClose, width = 520, open = true
   return (
     <Modal
       title={title}
-      open={open}
+      open={isVisible}
       onCancel={handleClose}
-      footer={null}
+      footer={footer === null ? null : footer || createFooter()}
       width={width}
       destroyOnClose={true}
-      maskClosable={true} // Keep this true, but our handleClose will filter which clicks actually close
+      maskClosable={true} // Explicitly enable backdrop clicks
       className={`stable-modal stable-modal-${instanceId.current}`}
       style={combinedStyle}
       zIndex={1050} // Consistent z-index with other modals
       forceRender={true}
-      ref={modalRef}
       onClick={handleModalClick}
       wrapClassName="stable-modal-wrap"
-      keyboard={true}
+      keyboard={true} // Explicitly enable ESC key
       centered={true}
+      closeIcon={true} // Ensure close icon is visible
       getContainer={() => document.getElementById('portal-root') || document.body}
       modalRender={(node) => (
         <div
@@ -141,7 +168,7 @@ const StableModalWrapper = ({ title, children, onClose, width = 520, open = true
           zIndex: 1051 // Higher than the backdrop
         }}
       >
-        {children}
+        {stableContent}
       </div>
     </Modal>
   );
@@ -154,6 +181,7 @@ StableModalWrapper.propTypes = {
   width: PropTypes.number,
   open: PropTypes.bool,
   style: PropTypes.object,
+  footer: PropTypes.node,
 };
 
 export default StableModalWrapper;

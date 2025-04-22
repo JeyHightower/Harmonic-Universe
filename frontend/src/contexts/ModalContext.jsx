@@ -22,6 +22,9 @@ import {
 import modalRegistry from '../utils/modalRegistry';
 import { cleanupAllPortals, createPortalContainer, ensurePortalRoot, removePortalContainer } from '../utils/portalUtils';
 
+// Create a registry to track registered modals
+const registeredModals = {};
+
 // Create the context
 const ModalContext = createContext();
 
@@ -292,7 +295,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          pointerEvents: 'auto'
+          pointerEvents: 'none'
         }}
       >
         <StableModalWrapper
@@ -320,8 +323,11 @@ const ModalRenderer = ({ type, props, onClose }) => {
                 ...getModalAnimationStyles(props.animation || MODAL_CONFIG.ANIMATIONS.FADE),
                 ...getModalPositionStyles(props.position || MODAL_CONFIG.POSITIONS.CENTER),
                 ...props.style,
-                pointerEvents: 'auto'
+                pointerEvents: 'auto',
+                position: 'relative',
+                zIndex: 1055
               }}
+              className="modal-interactive"
             />
           </div>
         </StableModalWrapper>
@@ -365,6 +371,32 @@ export const ModalProvider = ({ children }) => {
   useEffect(() => {
     ensurePortalRoot();
   }, []);
+
+  // Check if this modal needs to be registered automatically
+  if (modalType) {
+    // First check to see if this modal type is already registered
+    if (Object.prototype.hasOwnProperty.call(registeredModals, modalType)) {
+      // Already registered, we can skip
+      console.log(`ModalProvider: Modal type '${modalType}' already registered`);
+    } else {
+      // Need to register this modal
+      console.log(`ModalProvider: Auto-registering modal type '${modalType}'`);
+
+      // Load the component using modalRegistry
+      modalRegistry.getModalComponent(modalType)
+        .then(component => {
+          if (component) {
+            registeredModals[modalType] = component;
+            console.log(`ModalProvider: Successfully registered component for type '${modalType}'`);
+          } else {
+            console.error(`ModalProvider: Failed to load component for modal type '${modalType}'`);
+          }
+        })
+        .catch(error => {
+          console.error(`ModalProvider: Error registering modal type '${modalType}':`, error);
+        });
+    }
+  }
 
   return (
     <ModalContext.Provider value={value}>

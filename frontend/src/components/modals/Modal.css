@@ -167,7 +167,7 @@
   right: 0;
   bottom: 0;
   z-index: 1050;
-  pointer-events: none; /* Let backdrop handle clicks */
+  pointer-events: auto; /* Changed from 'none' to allow clicks to pass through */
 }
 
 /* Modal containers should capture clicks */
@@ -333,4 +333,22 @@ form, form *,
   pointer-events: auto !important;
   position: relative !important;
   z-index: 1060 !important;
+}
+
+/* Interactive modal elements */
+.modal-interactive,
+.modal-interactive * {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1060; /* Ensure this is higher than other modal elements */
+}
+
+.modal-interactive input,
+.modal-interactive select,
+.modal-interactive textarea,
+.modal-interactive button,
+.modal-interactive a,
+.modal-interactive label {
+  pointer-events: auto !important;
+  cursor: pointer;
 }

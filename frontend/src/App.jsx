@@ -3,8 +3,7 @@ import { Provider, useDispatch, useSelector } from "react-redux";
 import { useRoutes } from "react-router-dom";
 import { PersistGate } from "redux-persist/integration/react";
 import { ErrorBoundary, NetworkErrorHandler } from "./components";
-import { MODAL_TYPES } from "./constants/modalTypes.mjs";
-import { ModalProvider, useModal } from "./contexts/ModalContext";
+import { ModalProvider } from "./contexts/ModalContext";
 import routes from "./routes/index.jsx";
 import { authService } from "./services/auth.service.mjs";
 import store, { persistor } from "./store";
@@ -15,6 +14,8 @@ import { fixModalZIndex, resetModalSystem } from "./utils/modalUtils.mjs";
 import { cleanupAllPortals, ensurePortalRoot } from "./utils/portalUtils.mjs";
 // Import modal debugging utilities in development
 import { setupModalDebugging } from "./utils/modalDebug.mjs";
+// Import the essential fixes only
+import { applyEssentialFixes } from './utils/interactionFixes.mjs';
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (
@@ -32,40 +33,6 @@ const ErrorFallback = () => (
   </div>
 );
 
-// Test Modal Button component to verify modal fix works
-const TestModalButton = () => {
-  const { open } = useModal();
-
-  const handleOpenTestModal = () => {
-    console.log('Opening test modal...');
-    open(MODAL_TYPES.TEST_MODAL, {
-      title: 'Test Modal',
-      width: 600
-    });
-  };
-
-  return (
-    <button
-      onClick={handleOpenTestModal}
-      style={{
-        position: 'fixed',
-        bottom: '70px',
-        right: '10px',
-        zIndex: 999,
-        padding: '10px 15px',
-        background: '#1890ff',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-      }}
-    >
-      Test Modal
-    </button>
-  );
-};
-
 // Modal system initialization - ensures the modal system is in a clean state
 const initModalSystem = () => {
   console.log("Initializing modal system");
@@ -75,6 +42,15 @@ const initModalSystem = () => {
   ensurePortalRoot();
   // Fix any z-index issues
   fixModalZIndex();
+  // Apply only essential fixes
+  setTimeout(() => {
+    // Wait a bit to ensure DOM is ready
+    document.body.style.pointerEvents = 'auto';
+    const portalRoot = document.getElementById('portal-root');
+    if (portalRoot) {
+      portalRoot.style.pointerEvents = 'auto';
+    }
+  }, 300);
 
   // Add a listener for modal system cleanup on page unload
   window.addEventListener('beforeunload', () => {
@@ -90,7 +66,11 @@ const initModalSystem = () => {
   window.__modalSystem = {
     resetModalSystem,
     fixModalZIndex,
-    cleanupAllPortals
+    cleanupAllPortals,
+    fixInteractions: () => {
+      applyEssentialFixes();
+      return true;
+    }
   };
 };
 
@@ -130,6 +110,18 @@ const AppContent = () => {
   useEffect(() => {
     // Reset any lingering modal state
     resetModalSystem();
+
+    // Apply only essential fixes directly
+    document.body.style.pointerEvents = 'auto';
+
+    // Apply essential interaction fixes
+    setTimeout(() => {
+      applyEssentialFixes();
+    }, 300);
+
+    return () => {
+      // Cleanup
+    };
   }, []);
 
   // Check auth state on component mount
@@ -191,11 +183,10 @@ const AppContent = () => {
     );
   }
 
-  // Render the routes using useRoutes
+  // Render the routes using useRoutes - without the test buttons
   return (
     <>
       {element}
-      <TestModalButton />
     </>
   );
 };

@@ -75,6 +75,7 @@ const ModalSystem = forwardRef(
       const modalPortal = document.createElement('div');
       modalPortal.classList.add('modal-portal');
       modalPortal.setAttribute('data-modal-id', modalId.current);
+      modalPortal.style.pointerEvents = 'auto'; // Ensure portal has pointer events
       portalElementRef.current = modalPortal;
 
       if (isOpen) {
@@ -133,6 +134,7 @@ const ModalSystem = forwardRef(
         if (onClose && typeof onClose === 'function') {
           onClose();
         }
+        setIsClosing(false); // Reset closing state to ensure clean state for next open
       }, ANIMATION_DURATION);
     }, [isClosing, onClose]);
 
@@ -154,8 +156,8 @@ const ModalSystem = forwardRef(
         // Only process if we're clicking directly on the backdrop
         if (e.target === e.currentTarget && !preventBackdropClick && closeOnBackdrop) {
           // Prevent event from bubbling
-          e.preventDefault();
           e.stopPropagation();
+          e.preventDefault();
           handleClose();
         }
       },
@@ -167,6 +169,19 @@ const ModalSystem = forwardRef(
       // Always stop propagation from content to prevent it bubbling to backdrop
       e.stopPropagation();
     }, []);
+
+    // Handle global event listeners for drag functionality
+    useEffect(() => {
+      if (draggable && isOpen) {
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+        };
+      }
+    }, [draggable, isOpen, handleMouseMove, handleMouseUp]);
 
     // Handle modal open/close state
     useEffect(() => {
@@ -240,7 +255,21 @@ const ModalSystem = forwardRef(
           window.scrollTo(0, scrollY);
         }
       }
-    }, [isOpen, initialFocusRef, dataModalType, dataModalId]);
+    }, [isOpen, initialFocusRef, dataModalType, dataModalId, portalRoot]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+      return () => {
+        if (modalStackCount > 0) {
+          modalStackCount--;
+        }
+
+        // Return focus to previous element when modal is closed
+        if (previousFocus.current) {
+          previousFocus.current.focus();
+        }
+      };
+    }, []);
 
     if (!isOpen) return null;
 
@@ -262,6 +291,7 @@ const ModalSystem = forwardRef(
           className="modal-backdrop"
           onClick={handleBackdropClick}
           data-testid="modal-backdrop"
+          style={{ pointerEvents: 'auto' }}
         />
         <div
           className={`modal-content modal-${size} modal-${type} modal-${position} ${
@@ -273,9 +303,10 @@ const ModalSystem = forwardRef(
             transform: draggable
               ? `translate(${dragPosition.x}px, ${dragPosition.y}px)`
               : undefined,
+            pointerEvents: 'auto'
           }}
         >
-          <div className="modal-header" onMouseDown={draggable ? handleMouseDown : undefined} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header" onMouseDown={draggable ? handleMouseDown : undefined} onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
             <h2 id={titleId} className="modal-title">
               {title}
             </h2>
@@ -289,15 +320,16 @@ const ModalSystem = forwardRef(
                   handleClose();
                 }}
                 data-testid="modal-close-button"
+                style={{ pointerEvents: 'auto' }}
               >
                 &times;
               </button>
             )}
           </div>
-          <div id={contentId} className="modal-body" onClick={(e) => e.stopPropagation()}>
+          <div id={contentId} className="modal-body" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
             {children}
           </div>
-          {footerContent && <div className="modal-footer" onClick={(e) => e.stopPropagation()}>{footerContent}</div>}
+          {footerContent && <div className="modal-footer" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>{footerContent}</div>}
         </div>
       </div>
     );

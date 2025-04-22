@@ -19,7 +19,7 @@ export const ensurePortalRoot = () => {
     portalRoot.style.right = "0";
     portalRoot.style.bottom = "0";
     portalRoot.style.zIndex = "1050"; // Standardized z-index to match modals
-    portalRoot.style.pointerEvents = "none";
+    portalRoot.style.pointerEvents = "auto";
 
     document.body.appendChild(portalRoot);
     console.log("Portal root created and appended to body");
@@ -33,7 +33,7 @@ export const ensurePortalRoot = () => {
     portalRoot.style.right = "0";
     portalRoot.style.bottom = "0";
     portalRoot.style.zIndex = "1050"; // Standardized z-index to match modals
-    portalRoot.style.pointerEvents = "none";
+    portalRoot.style.pointerEvents = "auto";
   }
 
   return portalRoot;

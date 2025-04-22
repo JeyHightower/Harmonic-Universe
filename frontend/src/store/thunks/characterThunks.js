@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../services/api';
 import { requestWithRetry } from '../../utils/apiUtils';
-import { IS_PRODUCTION, AUTH_CONFIG } from '../../utils/config';
+import { AUTH_CONFIG, IS_PRODUCTION } from '../../utils/config';
 
 // Storage key for character cache
 const CHARACTER_CACHE_KEY = 'harmonic_universe_character_cache';
@@ -119,6 +119,11 @@ export const fetchCharacters = createAsyncThunk(
 export const fetchCharactersByUniverse = createAsyncThunk(
   'characters/fetchCharactersByUniverse',
   async (universeId, { rejectWithValue }) => {
+    // Ensure universeId is a number - define this early so it's available in all blocks
+    const parsedUniverseId = typeof universeId === 'string'
+      ? parseInt(universeId, 10)
+      : universeId;
+
     try {
       // Check cache first in all environments
       const cachedCharacters = getCharactersFromCache(universeId);
@@ -141,11 +146,6 @@ export const fetchCharactersByUniverse = createAsyncThunk(
         }
         return rejectWithValue(`Invalid universe ID: ${universeId}`);
       }
-
-      // Ensure universeId is a number
-      const parsedUniverseId = typeof universeId === 'string'
-        ? parseInt(universeId, 10)
-        : universeId;
 
       if (isNaN(parsedUniverseId) || parsedUniverseId <= 0) {
         console.error(`Redux: Invalid parsed universe ID: ${parsedUniverseId}`);
@@ -630,4 +630,4 @@ export const deleteCharacter = createAsyncThunk(
       return rejectWithValue(handleError(error));
     }
   }
-); 
+);

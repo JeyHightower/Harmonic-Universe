@@ -372,3 +372,28 @@ body.modal-open {
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
+
+/* ===== Form Inputs in Modals ===== */
+.modal-body input,
+.modal-body select,
+.modal-body textarea,
+.modal-body button,
+.modal-content input,
+.modal-content select,
+.modal-content textarea,
+.modal-content button,
+.modal-inner input,
+.modal-inner select,
+.modal-inner textarea,
+.modal-inner button {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+/* Ensure form labels are clickable */
+.modal-body label,
+.modal-content label,
+.modal-inner label {
+  pointer-events: auto !important;
+  cursor: pointer;
+}

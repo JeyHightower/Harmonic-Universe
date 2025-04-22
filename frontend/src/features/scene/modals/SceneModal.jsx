@@ -1,6 +1,8 @@
+import { Form } from 'antd';
 import PropTypes from 'prop-types';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import Spinner from '../../../components/common/Spinner';
 import StableModalWrapper from '../../../components/modals/StableModalWrapper';
 import '../../../styles/SceneFormModal.css';
 import SceneViewer from '../components/SceneViewer';
@@ -13,19 +15,22 @@ import SceneDeleteConfirmation from './SceneDeleteConfirmation';
  * A unified modal for handling all scene operations: create, edit, view, and delete
  * Replaces the consolidated SceneModalComponent with a more modular approach
  */
-const SceneModal = ({
-  // Props from consolidated component
-  open,
-  isOpen, // Alternate prop for backward compatibility
-  onClose,
-  onSuccess,
-  universeId,
-  sceneId,
-  initialData = null,
-  // Support both modalType and mode props for backward compatibility
-  modalType = 'create',
-  mode = null,
-}) => {
+const SceneModal = React.forwardRef((
+  {
+    // Props from consolidated component
+    open = false,
+    isOpen = false,
+    onClose,
+    onSuccess,
+    universeId,
+    sceneId,
+    initialData = null,
+    // Support both modalType and mode props for backward compatibility
+    modalType = 'scene',
+    mode = 'create',
+  },
+  ref
+) => {
   // Enhanced debug logging on component init
   console.log('SceneModal - COMPONENT INITIALIZED', {
     componentName: 'SceneModal',
@@ -37,7 +42,11 @@ const SceneModal = ({
   });
 
   // For backward compatibility with both open and isOpen props
-  const isModalOpen = open || isOpen || false;
+  const isModalOpen = useMemo(() => {
+    const result = open || isOpen || false;
+    console.log('SceneModal - isModalOpen calculated:', result);
+    return result;
+  }, [open, isOpen]);
 
   // Enhanced debugging
   console.log('SceneModal - Component initialized with props:', {
@@ -59,6 +68,7 @@ const SceneModal = ({
   const [error, setError] = useState(null);
   const [isContentMounted, setIsContentMounted] = useState(false);
   const dispatch = useDispatch();
+  const [form] = Form.useForm();
 
   // Add effect to log when modal should be visible
   useEffect(() => {
@@ -73,18 +83,13 @@ const SceneModal = ({
 
   // Memoize modal title to prevent re-renders
   const modalTitle = useMemo(() => {
-    switch (actualMode) {
-      case 'create':
-        return 'Create New Scene';
-      case 'edit':
-        return 'Edit Scene';
-      case 'view':
-        return 'Scene Details';
-      case 'delete':
-        return 'Delete Scene';
-      default:
-        return 'Scene';
-    }
+    const titles = {
+      create: 'Create New Scene',
+      edit: 'Edit Scene',
+      view: 'View Scene',
+      delete: 'Delete Scene',
+    };
+    return titles[actualMode] || 'Scene';
   }, [actualMode]);
 
   // Ensure sceneId is properly formatted (string or number, not an object)
@@ -106,6 +111,29 @@ const SceneModal = ({
     console.error('Invalid sceneId provided to SceneModal:', sceneId);
     return null;
   }, [sceneId]);
+
+  // Fetch scene data when editing, viewing, or deleting an existing scene
+  useEffect(() => {
+    if (isModalOpen && sceneId && ['edit', 'view', 'delete'].includes(actualMode)) {
+      console.log('SceneModal - Fetching scene data for:', sceneId);
+      setLoading(true);
+
+      const fetchSceneData = async () => {
+        try {
+          const { fetchSceneById } = await import('../../../store/thunks/consolidated/scenesThunks');
+          const result = await dispatch(fetchSceneById(sceneId)).unwrap();
+          setLoading(false);
+          console.log('SceneModal - Scene data fetched successfully');
+        } catch (error) {
+          console.error('SceneModal - Error fetching scene data:', error);
+          setLoading(false);
+          setError(error.message || 'Failed to load scene data');
+        }
+      };
+
+      fetchSceneData();
+    }
+  }, [dispatch, isModalOpen, sceneId, actualMode]);
 
   // Handle form submission (create/edit)
   const handleSubmit = useCallback(async (formData) => {
@@ -317,7 +345,7 @@ const SceneModal = ({
     if (loading) {
       return (
         <div className="scene-modal-loading">
-          <div className="spinner" />
+          <Spinner />
           <p>Loading scene data...</p>
         </div>
       );
@@ -336,6 +364,7 @@ const SceneModal = ({
       case 'create':
         return (
           <SceneForm
+            form={form}
             universeId={universeId}
             onSubmit={handleSubmit}
             onCancel={onClose}
@@ -344,6 +373,7 @@ const SceneModal = ({
       case 'edit':
         return (
           <SceneForm
+            form={form}
             universeId={universeId}
             sceneId={formattedSceneId}
             initialData={scene || initialData}
@@ -402,7 +432,7 @@ const SceneModal = ({
       default:
         return <p>Invalid mode: {actualMode}</p>;
     }
-  }, [actualMode, scene, initialData, loading, error, isContentMounted, formattedSceneId, universeId, onClose, handleSubmit, handleDelete]);
+  }, [actualMode, scene, initialData, loading, error, isContentMounted, formattedSceneId, universeId, onClose, handleSubmit, handleDelete, form]);
 
   // Add debug log before rendering
   console.log('SceneModal - About to render with:', {
@@ -413,23 +443,127 @@ const SceneModal = ({
     mode: actualMode
   });
 
+  // Main modal rendering
+  const modalContent = (() => {
+    if (!isContentMounted) {
+      return null;
+    }
+
+    if (loading) {
+      return (
+        <div className="scene-modal-loading">
+          <Spinner />
+          <p>Loading scene data...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="scene-modal-error">
+          <p className="error-message">{error}</p>
+          <button onClick={() => setError(null)}>Try Again</button>
+        </div>
+      );
+    }
+
+    switch (actualMode) {
+      case 'create':
+        return (
+          <SceneForm
+            form={form}
+            universeId={universeId}
+            onSubmit={handleSubmit}
+            onCancel={onClose}
+          />
+        );
+      case 'edit':
+        return (
+          <SceneForm
+            form={form}
+            universeId={universeId}
+            sceneId={formattedSceneId}
+            initialData={scene || initialData}
+            onSubmit={handleSubmit}
+            onCancel={onClose}
+          />
+        );
+      case 'view': {
+        const sceneData = scene || initialData;
+        if (!sceneData) {
+          return (
+            <div className="scene-modal-error">
+              <p className="error-message">Scene data not found. Please try again.</p>
+              <button onClick={onClose}>Close</button>
+            </div>
+          );
+        }
+
+        const viewerData = sceneData.scene ? sceneData.scene : sceneData;
+        if (!viewerData.id) {
+          return (
+            <div className="scene-modal-error">
+              <p className="error-message">Invalid scene data. Missing scene ID.</p>
+              <button onClick={onClose}>Close</button>
+            </div>
+          );
+        }
+
+        return <SceneViewer scene={viewerData} onClose={onClose} />;
+      }
+      case 'delete': {
+        if (!scene && !initialData) {
+          const fallbackScene = {
+            id: formattedSceneId,
+            name: 'Scene',
+            universe_id: universeId
+          };
+          return (
+            <SceneDeleteConfirmation
+              scene={fallbackScene}
+              onDelete={handleDelete}
+              onCancel={onClose}
+              isLoading={loading}
+            />
+          );
+        }
+        return (
+          <SceneDeleteConfirmation
+            scene={scene || initialData}
+            onDelete={handleDelete}
+            onCancel={onClose}
+            isLoading={loading}
+          />
+        );
+      }
+      default:
+        return <p>Invalid mode: {actualMode}</p>;
+    }
+  })();
+
+  // Final modal component (using StableModalWrapper with explicit open prop)
   return (
     <StableModalWrapper
       title={modalTitle}
+      open={isModalOpen}
       onClose={onClose}
       width={800}
-      open={isModalOpen}
+      style={{
+        display: isModalOpen ? 'block' : 'none',
+        visibility: isModalOpen ? 'visible' : 'hidden'
+      }}
+      footer={null}
     >
       <div className="scene-form-container scene-modal-content" style={{
         padding: '24px',
         maxHeight: 'calc(80vh - 130px)',
         overflow: 'auto'
       }}>
-        {renderContent()}
+        {modalContent}
       </div>
     </StableModalWrapper>
   );
-};
+});
 
 SceneModal.propTypes = {
   // Support both open and isOpen props
@@ -444,5 +578,7 @@ SceneModal.propTypes = {
   modalType: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
   mode: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
 };
+
+SceneModal.displayName = 'SceneModal';
 
 export default SceneModal;

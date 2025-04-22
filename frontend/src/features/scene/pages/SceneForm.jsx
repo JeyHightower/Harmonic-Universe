@@ -453,7 +453,7 @@ const SceneForm = ({
                 className="scene-form-card content-card"
                 title={<Title level={4}>Scene Details</Title>}
                 style={formStyles.contentCard}
-                variant={true ? 'outlined' : 'default'}
+                variant={'outlined'}
               >
                 <Form.Item
                   name="name"
@@ -518,7 +518,7 @@ const SceneForm = ({
                 className="properties-card"
                 title={<Title level={4}>Properties</Title>}
                 style={formStyles.detailsCard}
-                variant={true ? 'outlined' : 'default'}
+                variant={'outlined'}
               >
                 <Form.Item
                   name="location"

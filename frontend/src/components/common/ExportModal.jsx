@@ -1,50 +1,57 @@
-import React, { useState } from "react";
-import { Modal, Form, Select, Button, message } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
+import { Button, Form, message, Modal, Select } from "antd";
+import { useState } from "react";
 
 const ExportModal = ({ visible, onClose, data, type = "json" }) => {
   const [format, setFormat] = useState(type);
   const [loading, setLoading] = useState(false);
 
+  const generateExportFile = () => {
+    let exportData;
+    let mimeType;
+    let fileName;
+
+    switch (type) {
+      case 'json':
+        mimeType = 'application/json';
+        fileName = `export-${Date.now()}.json`;
+        exportData = JSON.stringify(data, null, 2);
+        break;
+      case 'csv':
+        mimeType = 'text/csv';
+        fileName = `export-${Date.now()}.csv`;
+        // Create header row from first item's keys
+        const headers = Object.keys(data[0]).join(',');
+        // Create data rows
+        const rows = data.map(item => Object.values(item).join(',')).join('\n');
+        exportData = `${headers}\n${rows}`;
+        break;
+      default:
+        mimeType = 'application/json';
+        fileName = `export-${Date.now()}.json`;
+        exportData = JSON.stringify(data, null, 2);
+    }
+
+    // Create blob and download
+    const blob = new window.Blob([exportData], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+  };
+
   const handleExport = async () => {
     try {
       setLoading(true);
 
-      // Convert data to selected format
-      let exportData;
-      let mimeType;
-      let fileExtension;
-
-      switch (format) {
-        case "json":
-          exportData = JSON.stringify(data, null, 2);
-          mimeType = "application/json";
-          fileExtension = "json";
-          break;
-        case "csv":
-          // Convert data to CSV format
-          const headers = Object.keys(data[0] || {}).join(",");
-          const rows = data
-            .map((item) => Object.values(item).join(","))
-            .join("\n");
-          exportData = `${headers}\n${rows}`;
-          mimeType = "text/csv";
-          fileExtension = "csv";
-          break;
-        default:
-          throw new Error("Unsupported export format");
-      }
-
-      // Create blob and download
-      const blob = new Blob([exportData], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `export.${fileExtension}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      generateExportFile();
 
       message.success("Export successful");
       onClose();
