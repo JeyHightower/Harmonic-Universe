@@ -53,53 +53,80 @@ export const fixZindexIssues = () => {
 };
 
 /**
- * Repairs event propagation issues by ensuring events don't bubble unexpectedly
+ * Removes any lingering modal or overlay styles that might be blocking interaction
  */
-export const fixEventPropagation = () => {
-  // Fix click handling on modal content
-  const modalContents = document.querySelectorAll('.modal-content, .ant-modal-content');
-  modalContents.forEach(content => {
-    // Replace with a clone to remove existing event listeners that might be problematic
-    const clone = content.cloneNode(true);
+export const cleanupBlockingStyles = () => {
+  // Remove any modal-open class from body
+  document.body.classList.remove('modal-open');
 
-    // Add a new clean click handler that stops propagation
-    clone.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
+  // Reset any body styles that might block interactions
+  document.body.style.position = '';
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
 
-    // Replace the element
-    if (content.parentNode) {
-      content.parentNode.replaceChild(clone, content);
+  // Ensure body has pointer events
+  document.body.style.pointerEvents = 'auto';
+
+  // Check for any stray backdrops or overlays
+  const overlays = document.querySelectorAll('.modal-backdrop, .ant-modal-mask');
+  overlays.forEach(overlay => {
+    if (overlay.parentNode) {
+      overlay.parentNode.removeChild(overlay);
     }
   });
 };
 
 /**
- * Creates shadow DOM isolation for modal elements to prevent them
- * from being affected by external styles and event handlers
+ * Fix issues with dashboard buttons and navigation elements
+ * IMPORTANT: Uses CSS properties only, doesn't manipulate DOM structure
  */
-export const isolateModals = () => {
-  const portalRoot = document.getElementById('portal-root');
-  if (!portalRoot) return;
+export const fixDashboardButtons = () => {
+  // Fix dashboard navigation buttons
+  const dashboardButtons = document.querySelectorAll('.dashboard-actions button');
+  let dashboardFixed = 0;
 
-  // Create a new shadow root for isolation if it doesn't exist
-  if (!portalRoot.shadowRoot) {
-    const shadow = portalRoot.attachShadow({ mode: 'open' });
+  dashboardButtons.forEach(button => {
+    // Ensure pointer events work
+    button.style.pointerEvents = 'auto';
+    // Make sure buttons are properly stacked
+    button.style.position = 'relative';
+    button.style.zIndex = '2';
+    dashboardFixed++;
+  });
 
-    // Move all portal children into shadow DOM
-    while (portalRoot.firstChild) {
-      shadow.appendChild(portalRoot.firstChild);
-    }
+  // Fix universe card interactions
+  const universeCards = document.querySelectorAll('.universe-card');
+  let cardsFixed = 0;
 
-    console.log('Created shadow DOM isolation for modals');
-  }
+  universeCards.forEach(card => {
+    // Ensure card and its buttons have pointer events
+    card.style.pointerEvents = 'auto';
+
+    // Fix all buttons within the card
+    const cardButtons = card.querySelectorAll('button');
+    cardButtons.forEach(button => {
+      button.style.pointerEvents = 'auto';
+      // Ensure z-index is appropriate
+      button.style.position = 'relative';
+      button.style.zIndex = '1';
+    });
+
+    cardsFixed++;
+  });
+
+  console.log(`Fixed ${dashboardFixed} dashboard buttons and ${cardsFixed} universe cards`);
 };
 
 /**
- * Apply all fixes at once - the nuclear option for severe issues
+ * Apply all fixes at once - using only CSS modifications and safe methods
  */
 export const applyAllInteractionFixes = () => {
-  console.log('Applying comprehensive interaction fixes...');
+  console.log('Applying safe interaction fixes...');
+
+  // Cleanup blocking styles first
+  cleanupBlockingStyles();
 
   // Fix pointer events
   fixPointerEvents();
@@ -107,13 +134,13 @@ export const applyAllInteractionFixes = () => {
   // Fix z-index issues
   fixZindexIssues();
 
-  // Fix event propagation
-  fixEventPropagation();
+  // Fix dashboard specific issues
+  fixDashboardButtons();
 
   // Force global event handling to be enabled
   document.body.style.pointerEvents = 'auto';
 
-  console.log('All interaction fixes applied');
+  console.log('Safe interaction fixes applied');
 
   return true;
 };
@@ -152,23 +179,26 @@ export const detectInteractionIssues = () => {
  * Can be called on component mount or from a debug button
  */
 export const setupAutoFix = () => {
-  // Check for issues every 3 seconds
+  // Check for issues every 5 seconds - less frequently to avoid interference
   const intervalId = setInterval(() => {
     if (detectInteractionIssues()) {
       console.log('Interaction issues detected, applying fixes automatically');
       applyAllInteractionFixes();
     }
-  }, 3000);
+  }, 5000);
 
   // Return cleanup function
   return () => clearInterval(intervalId);
 };
 
 /**
- * Apply essential fixes only
+ * Apply essential fixes only - safe version that won't break React
  */
 export const applyEssentialFixes = () => {
   console.log('Applying essential interaction fixes...');
+
+  // Clean up any blocking styles
+  cleanupBlockingStyles();
 
   // Fix pointer events
   fixPointerEvents();
@@ -179,6 +209,9 @@ export const applyEssentialFixes = () => {
       el.style.pointerEvents = 'auto';
     });
 
+  // Fix dashboard specific issues with CSS only
+  fixDashboardButtons();
+
   console.log('Essential interaction fixes applied');
   return true;
 };
@@ -187,8 +220,8 @@ export const applyEssentialFixes = () => {
 export default {
   fixPointerEvents,
   fixZindexIssues,
-  fixEventPropagation,
-  isolateModals,
+  cleanupBlockingStyles,
+  fixDashboardButtons,
   applyAllInteractionFixes,
   detectInteractionIssues,
   setupAutoFix,

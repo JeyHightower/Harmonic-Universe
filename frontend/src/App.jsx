@@ -14,8 +14,8 @@ import { fixModalZIndex, resetModalSystem } from './utils/modalUtils.mjs';
 import { cleanupAllPortals, ensurePortalRoot } from './utils/portalUtils.mjs';
 // Import modal debugging utilities in development
 import { setupModalDebugging } from './utils/modalDebug.mjs';
-// Import the essential fixes only
-import { applyEssentialFixes } from './utils/interactionFixes.mjs';
+// Import the safer interaction fixes
+import { applyEssentialFixes, setupAutoFix } from './utils/interactionFixes.mjs';
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (
@@ -42,15 +42,17 @@ const initModalSystem = () => {
   ensurePortalRoot();
   // Fix any z-index issues
   fixModalZIndex();
-  // Apply only essential fixes
+
+  // Only apply basic fixes to document.body
+  document.body.style.pointerEvents = 'auto';
+
+  // Ensure the portal root has pointer events
   setTimeout(() => {
-    // Wait a bit to ensure DOM is ready
-    document.body.style.pointerEvents = 'auto';
     const portalRoot = document.getElementById('portal-root');
     if (portalRoot) {
       portalRoot.style.pointerEvents = 'auto';
     }
-  }, 300);
+  }, 500);
 
   // Add a listener for modal system cleanup on page unload
   window.addEventListener('beforeunload', () => {
@@ -104,22 +106,26 @@ const AppContent = () => {
   // Use React Router's useRoutes hook to render routes directly
   const element = useRoutes(routes);
 
-  // Make sure modals are cleaned up when component mounts
+  // Apply interaction fixes after React has fully initialized
   useEffect(() => {
     // Reset any lingering modal state
     resetModalSystem();
 
-    // Apply only essential fixes directly
-    document.body.style.pointerEvents = 'auto';
-
-    // Apply essential interaction fixes
-    setTimeout(() => {
+    // Wait for React to fully initialize before applying fixes
+    const timeoutId = setTimeout(() => {
+      // Apply safe fixes that won't break React's event system
       applyEssentialFixes();
-    }, 300);
 
-    return () => {
-      // Cleanup
-    };
+      // Set up auto-fix to periodically check and fix issues
+      const cleanupAutoFix = setupAutoFix();
+
+      return () => {
+        clearTimeout(timeoutId);
+        cleanupAutoFix();
+      };
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Check auth state on component mount
@@ -252,6 +258,24 @@ const DebugPanel = () => {
         }}
       >
         Clear All & Reload
+      </button>
+      <button
+        onClick={() => {
+          applyEssentialFixes();
+        }}
+        style={{
+          marginTop: '8px',
+          padding: '4px 8px',
+          background: '#5cb85c',
+          border: 'none',
+          borderRadius: '3px',
+          color: 'white',
+          cursor: 'pointer',
+          display: 'block',
+          width: '100%'
+        }}
+      >
+        Fix Interactions
       </button>
     </div>
   );

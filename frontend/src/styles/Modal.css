@@ -16,11 +16,12 @@
   z-index: 1050;
   opacity: 1;
   transition: opacity 0.3s ease;
-  pointer-events: auto;
+  pointer-events: auto !important;
 }
 
 .modal-overlay.closing {
   opacity: 0;
+  pointer-events: auto !important;
 }
 
 .modal-backdrop {
@@ -29,13 +30,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  pointer-events: auto;
+  pointer-events: auto !important;
 }
 
 .modal-wrapper {
   position: relative;
   z-index: calc(var(--z-index-modal, 1000) + 1);
-  pointer-events: auto;
+  pointer-events: auto !important;
   max-width: 90vw;
   max-height: 90vh;
   display: flex;
@@ -44,7 +45,7 @@
 
 .modal-container {
   overflow-y: auto;
-  pointer-events: auto;
+  pointer-events: auto !important;
   display: flex;
   flex-direction: column;
   max-height: 90vh;
@@ -57,7 +58,7 @@
   box-shadow: var(--shadow-lg, 0 10px 15px rgba(0, 0, 0, 0.1));
   overflow: hidden;
   animation: modalZoomIn 300ms ease-in-out;
-  pointer-events: auto;
+  pointer-events: auto !important;
   min-width: 300px;
 }
 
@@ -72,7 +73,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  pointer-events: auto;
+  pointer-events: auto !important;
 }
 
 .modal-title {
@@ -80,6 +81,7 @@
   font-size: var(--font-size-lg, 1.25rem);
   font-weight: 600;
   color: var(--text-primary, #1a1a2e);
+  pointer-events: auto !important;
 }
 
 .modal-close-button {
@@ -90,7 +92,8 @@
   color: var(--text-secondary, #666);
   padding: 0.5rem;
   line-height: 1;
-  pointer-events: auto;
+  pointer-events: auto !important;
+  z-index: 10;
 }
 
 .modal-close-button:hover {
@@ -105,8 +108,8 @@
 .modal-body {
   padding: var(--spacing-md, 1rem);
   overflow-y: auto;
-  pointer-events: auto;
-  max-height: 75vh; /* Limit height to ensure scrolling works */
+  pointer-events: auto !important;
+  max-height: 75vh;
 }
 
 .modal-body.centered {
@@ -122,10 +125,11 @@
   padding: 8px 0;
   overflow-y: auto;
   max-height: 75vh;
+  pointer-events: auto !important;
 }
 
 .modal-body .scene-form-container {
-  max-height: 100%; /* Let the modal-body handle the scrolling */
+  max-height: 100%;
 }
 
 /* ===== Modal Footer ===== */
@@ -135,7 +139,7 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-sm, 0.5rem);
-  pointer-events: auto;
+  pointer-events: auto !important;
 }
 
 /* ===== Modal Sizes ===== */
@@ -182,12 +186,23 @@
   justify-content: flex-end;
   gap: var(--spacing-sm, 0.5rem);
   margin-top: var(--spacing-md, 1rem);
+  pointer-events: auto !important;
+}
+
+/* Make sure all modal buttons are clickable */
+.modal-actions button,
+.modal-footer button,
+.modal button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 2;
 }
 
 /* ===== Modal Content Types ===== */
 /* Alert Modal */
 .alert-modal-content {
   padding: var(--spacing-lg, 1.5rem);
+  pointer-events: auto !important;
 }
 
 .alert-modal-content p {
@@ -201,6 +216,7 @@
 /* Confirm Modal */
 .confirm-modal-content {
   padding: var(--spacing-lg, 1.5rem);
+  pointer-events: auto !important;
 }
 
 .confirm-modal-content p {
@@ -216,6 +232,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md, 1rem);
+  pointer-events: auto !important;
 }
 
 /* ===== Draggable Modal ===== */
@@ -248,32 +265,37 @@
   .modal-large {
     width: 95%;
   }
-
-  .modal-actions,
-  .confirm-modal-content .modal-actions,
-  .form-modal-content .modal-actions {
-    flex-direction: column-reverse;
-  }
-
-  .modal-actions button {
-    width: 100%;
-  }
 }
 
-/* Modal Positions */
+/* Ensure modal actions have pointer events */
+.modal-actions {
+  pointer-events: auto !important;
+}
+
+/* Ensure all buttons in modals are clickable */
+.modal-actions button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 2;
+}
+
+/* Ensuring modal positioning works correctly */
 .modal-center {
-  margin: auto;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-top {
-  margin-top: 2rem;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .modal-bottom {
-  margin-bottom: 2rem;
+  align-items: flex-end;
+  justify-content: center;
 }
 
-/* Modal Animations */
+/* Additional animations - ensure they don't interfere with pointer events */
 @keyframes modalFadeIn {
   from {
     opacity: 0;
@@ -294,106 +316,139 @@
 
 @keyframes modalSlideIn {
   from {
-    transform: translateY(-100%);
+    opacity: 0;
+    transform: translateY(-20px);
   }
   to {
+    opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes modalSlideOut {
   from {
+    opacity: 1;
     transform: translateY(0);
   }
   to {
-    transform: translateY(-100%);
+    opacity: 0;
+    transform: translateY(-20px);
   }
 }
 
 @keyframes spin {
-  to {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
     transform: rotate(360deg);
   }
 }
 
-/* Accessibility */
+/* Ensure ARIA roles don't interfere with pointer events */
 .modal-content[role='dialog'] {
-  outline: none;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1051;
 }
 
-/* Prevent Body Scroll */
+/* Body styles for when modal is open - don't block interactions */
 body.modal-open {
   overflow: hidden;
+  padding-right: var(--scrollbar-width, 0);
+  pointer-events: auto !important;
 }
 
-/* Dark Mode Support */
+/* Dark mode adjustments - maintain pointer events */
 @media (prefers-color-scheme: dark) {
   .modal-overlay {
     background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
   }
 
   .modal-content {
-    background-color: #1a1a2e;
-    color: #f1f5f9;
+    background-color: var(--surface-dark, var(--bg-primary-dark, #1f2937));
+    box-shadow: var(--shadow-lg-dark, 0 10px 25px rgba(0, 0, 0, 0.3));
   }
 
   .modal-header {
-    border-bottom-color: #2d3748;
+    border-bottom-color: var(--border-color-dark, #374151);
   }
 
   .modal-footer {
-    border-top-color: #2d3748;
+    border-top-color: var(--border-color-dark, #374151);
   }
 
   .modal-title {
-    color: #f1f5f9;
+    color: var(--text-primary-dark, #f3f4f6);
   }
 
   .modal-close-button {
-    color: #a0aec0;
+    color: var(--text-secondary-dark, #9ca3af);
+  }
+
+  .modal-close-button:hover {
+    color: var(--text-primary-dark, #f3f4f6);
   }
 }
 
-/* Loading State */
+/* Loading indicator - ensure interaction is possible with loading content */
 .modal-loading {
-  position: relative;
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary-color, #3498db);
+  animation: spin 1s ease-in-out infinite;
 }
 
 .modal-loading::after {
-  content: '';
+  content: "";
+  display: block;
   width: 40px;
   height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #4361ee;
+  border: 4px solid transparent;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-top-color: rgba(52, 152, 219, 0.2);
+  animation: spin 2s linear infinite;
+  position: absolute;
+  top: -4px;
+  left: -4px;
 }
 
-/* ===== Form Inputs in Modals ===== */
+/* Ensure form elements in modals are interactive */
 .modal-body input,
-.modal-body select,
 .modal-body textarea,
+.modal-body select,
 .modal-body button,
-.modal-content input,
-.modal-content select,
-.modal-content textarea,
-.modal-content button,
-.modal-inner input,
-.modal-inner select,
-.modal-inner textarea,
-.modal-inner button {
+.modal-body a {
   pointer-events: auto !important;
-  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
-/* Ensure form labels are clickable */
+/* Make sure labels are clickable for checkboxes and radios */
 .modal-body label,
-.modal-content label,
-.modal-inner label {
+.modal-body .form-label,
+.modal-body .checkbox-label,
+.modal-body .radio-label {
   pointer-events: auto !important;
-  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+/* Add a specific class for dashboards and other interactive components */
+.interactive-component {
+  pointer-events: auto !important;
+}
+
+/* Dashboard-specific overrides */
+.dashboard-container button,
+.dashboard-actions button,
+.universe-card-button,
+.universe-card-actions button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 5;
 }
