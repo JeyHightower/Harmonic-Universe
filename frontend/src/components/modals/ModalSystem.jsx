@@ -3,6 +3,7 @@ import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'r
 import { createPortal } from 'react-dom';
 import '../../styles/Modal.css';
 import { MODAL_CONFIG } from '../../utils/config';
+import { ensurePortalRoot } from '../../utils/portalUtils';
 
 // Define window globals to fix ESLint errors
 const { requestAnimationFrame, clearTimeout } = window;
@@ -68,15 +69,25 @@ const ModalSystem = forwardRef(
 
     // Create portal element once during component initialization
     useEffect(() => {
+      // Use the shared portalUtils to ensure consistent portal root
+      ensurePortalRoot();
+
       const modalPortal = document.createElement('div');
       modalPortal.classList.add('modal-portal');
+      modalPortal.setAttribute('data-modal-id', modalId.current);
       portalElementRef.current = modalPortal;
+
+      if (isOpen) {
+        // Only append to DOM when modal is open
+        portalRoot.appendChild(modalPortal);
+      }
+
       return () => {
         if (portalElementRef.current?.parentElement) {
           portalElementRef.current.parentElement.removeChild(portalElementRef.current);
         }
       };
-    }, []);
+    }, [isOpen, portalRoot]);
 
     const combinedRef = ref || modalRef;
 
@@ -150,6 +161,12 @@ const ModalSystem = forwardRef(
       },
       [preventBackdropClick, closeOnBackdrop, handleClose]
     );
+
+    // Handle content click to prevent it from propagating to backdrop
+    const handleContentClick = useCallback((e) => {
+      // Always stop propagation from content to prevent it bubbling to backdrop
+      e.stopPropagation();
+    }, []);
 
     // Handle modal open/close state
     useEffect(() => {
@@ -236,7 +253,7 @@ const ModalSystem = forwardRef(
         aria-labelledby={titleId}
         aria-describedby={ariaDescribedBy || contentId}
         className={`modal-overlay ${isClosing ? 'closing' : ''}`}
-        style={{ zIndex: 1000 + stackLevel }}
+        style={{ zIndex: 1050 + stackLevel }}
         tabIndex="-1"
         data-testid="modal"
         data-mounted-at={Date.now().toString()}
@@ -251,13 +268,14 @@ const ModalSystem = forwardRef(
             animation !== MODAL_CONFIG.ANIMATIONS.NONE ? `modal-animation-${animation}` : ''
           } ${isClosing ? 'closing' : ''} ${isDragging ? 'dragging' : ''} ${className || ''}`}
           ref={contentRef}
+          onClick={handleContentClick}
           style={{
             transform: draggable
               ? `translate(${dragPosition.x}px, ${dragPosition.y}px)`
               : undefined,
           }}
         >
-          <div className="modal-header" onMouseDown={draggable ? handleMouseDown : undefined}>
+          <div className="modal-header" onMouseDown={draggable ? handleMouseDown : undefined} onClick={(e) => e.stopPropagation()}>
             <h2 id={titleId} className="modal-title">
               {title}
             </h2>
@@ -266,17 +284,20 @@ const ModalSystem = forwardRef(
                 type="button"
                 className="modal-close"
                 aria-label="Close"
-                onClick={handleClose}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClose();
+                }}
                 data-testid="modal-close-button"
               >
                 &times;
               </button>
             )}
           </div>
-          <div id={contentId} className="modal-body">
+          <div id={contentId} className="modal-body" onClick={(e) => e.stopPropagation()}>
             {children}
           </div>
-          {footerContent && <div className="modal-footer">{footerContent}</div>}
+          {footerContent && <div className="modal-footer" onClick={(e) => e.stopPropagation()}>{footerContent}</div>}
         </div>
       </div>
     );

@@ -114,10 +114,39 @@ const LoginModal = ({ onClose }) => {
     };
   }, []);
 
+  // Prevent propagation of click events to stop modal from closing when clicked
+  const handleContentClick = (e) => {
+    // Ensure the click event doesn't bubble up
+    e.stopPropagation();
+  };
+
+  // Handle the Dialog click to prevent immediate closure
+  const handleDialogClick = (e) => {
+    // Only stop propagation if clicking on the Dialog content
+    if (e.target.closest('.MuiDialog-paper')) {
+      e.stopPropagation();
+    }
+  };
+
   return (
-    <Dialog open={true} onClose={forceClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={true}
+      onClose={forceClose}
+      maxWidth="sm"
+      fullWidth
+      onClick={handleDialogClick}
+      style={{ pointerEvents: 'auto' }}
+      BackdropProps={{
+        onClick: (e) => {
+          // Only close when clicking the backdrop directly
+          if (e.target === e.currentTarget) {
+            forceClose();
+          }
+        }
+      }}
+    >
       <DialogTitle>Login</DialogTitle>
-      <DialogContent>
+      <DialogContent onClick={handleContentClick}>
         <Form form={form} onFinish={handleSubmit} layout="vertical" className="auth-form">
           <Form.Item
             label="Email"
@@ -152,7 +181,7 @@ const LoginModal = ({ onClose }) => {
           </Form.Item>
         </Form>
       </DialogContent>
-      <DialogActions>
+      <DialogActions onClick={handleContentClick}>
         <Button onClick={forceClose} disabled={loading} variant="secondary">
           Cancel
         </Button>

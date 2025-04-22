@@ -1,20 +1,22 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter as Router } from "react-router-dom";
 import { Provider } from "react-redux";
+import { BrowserRouter as Router } from "react-router-dom";
 import { PersistGate } from "redux-persist/integration/react";
-import store, { persistor } from "./store";
 import App from "./App.jsx";
+import store, { persistor } from "./store";
 // CSS imports in correct order to prevent conflicts
-import "./styles/reset.css"; // First: Reset browser defaults
-import "./styles/variables.css"; // Second: Define CSS variables
-import "./styles/theme.css"; // Third: Define theme variables
-import "./styles/global.css"; // Fourth: Global styles
-import "./styles/common.css"; // Fifth: Common component styles
-import "./styles/buttons.css"; // Sixth: Button styles
-import "./styles/index.css"; // Seventh: Additional global styles
+import 'antd/dist/reset.css'; // Import Ant Design styles first
 import "./styles/App.css"; // Last: App-specific styles
-import { ensurePortalRoot, AUTH_CONFIG } from "./utils";
+import "./styles/buttons.css"; // Sixth: Button styles
+import "./styles/common.css"; // Fifth: Common component styles
+import "./styles/global.css"; // Fourth: Global styles
+import "./styles/index.css"; // Seventh: Additional global styles
+import "./styles/reset.css"; // First: Reset browser defaults
+import "./styles/theme.css"; // Third: Define theme variables
+import "./styles/variables.css"; // Second: Define CSS variables
+import { AUTH_CONFIG, ensurePortalRoot } from "./utils";
+import { setupModalDebugging } from "./utils/modalDebug.mjs";
 
 // Setup global error handling
 const handleGlobalError = (error, info) => {
@@ -41,18 +43,22 @@ const isDevelopment = import.meta.env.DEV;
 // Basic environment configuration
 if (isDevelopment) {
   console.info('Running in development mode');
+
+  // Initialize modal debugging tools in development
+  setupModalDebugging();
+  console.info('Modal debugging tools available at window.__modalDebug');
 } else if (isProduction) {
   // In production, silence console logs but keep errors
   const originalConsoleLog = console.log;
   const originalConsoleInfo = console.info;
-  
+
   // Silence non-critical logs in production
   console.log = (...args) => {
     if (localStorage.getItem('debug') === 'true') {
       originalConsoleLog(...args);
     }
   };
-  
+
   console.info = (...args) => {
     if (localStorage.getItem('debug') === 'true') {
       originalConsoleInfo(...args);

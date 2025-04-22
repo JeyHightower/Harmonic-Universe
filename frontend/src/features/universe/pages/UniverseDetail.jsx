@@ -1,12 +1,13 @@
+import { Modal } from 'antd';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { UniverseDeleteModal, UniverseModal } from '../';
 import Button from '../../../components/common/Button';
 import {
-  createSceneAndRefresh,
-  deleteSceneAndRefresh,
-  fetchScenesForUniverse,
+    createSceneAndRefresh,
+    deleteSceneAndRefresh,
+    fetchScenesForUniverse,
 } from '../../../store/thunks/consolidated/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { SceneCard, SceneModal } from '../../scene/index.mjs';
@@ -34,6 +35,9 @@ const UniverseDetail = () => {
   // Add state for scene viewing
   const [isViewSceneModalOpen, setIsViewSceneModalOpen] = useState(false);
   const [sceneToView, setSceneToView] = useState(null);
+
+  // Add state for triggering a re-render
+  const [dummyState, setDummyState] = useState({});
 
   // Fetch universe data when component mounts or id changes
   useEffect(() => {
@@ -83,10 +87,18 @@ const UniverseDetail = () => {
   };
 
   const handleCreateSceneClick = () => {
+    console.log('UniverseDetail - handleCreateSceneClick called');
+    console.log('UniverseDetail - Setting isCreateSceneModalOpen to true');
     setIsCreateSceneModalOpen(true);
+    console.log('UniverseDetail - isCreateSceneModalOpen set to true:', isCreateSceneModalOpen);
+
+    // Force a re-render by triggering a state update on a dummy state
+    const dummyState = {};
+    setDummyState(dummyState);
   };
 
   const handleCreateSceneSuccess = (newScene) => {
+    console.log('UniverseDetail - handleCreateSceneSuccess called with:', newScene);
     setIsCreateSceneModalOpen(false);
     // Dispatch action to create scene using Redux with auto-refresh
     dispatch(createSceneAndRefresh({
@@ -363,16 +375,16 @@ const UniverseDetail = () => {
         />
       )}
 
-      {/* Modals for scene operations */}
-      {isCreateSceneModalOpen && (
-        <SceneModal
-          isOpen={isCreateSceneModalOpen}
-          onClose={() => setIsCreateSceneModalOpen(false)}
-          onSuccess={handleCreateSceneSuccess}
-          universeId={id}
-          mode="create"
-        />
-      )}
+      {/* Scene Create Modal - Always render for testing */}
+      <SceneModal
+        isOpen={true}
+        open={true}
+        onClose={() => setIsCreateSceneModalOpen(false)}
+        onSuccess={handleCreateSceneSuccess}
+        universeId={id}
+        mode="create"
+        modalType="create"
+      />
 
       {isEditSceneModalOpen && sceneToEdit && (
         <SceneModal
@@ -395,6 +407,16 @@ const UniverseDetail = () => {
           mode="view"
         />
       )}
+
+      {/* Debug test modal - direct Ant Design modal */}
+      <Modal
+        title="Test Modal"
+        open={true}
+        onCancel={() => console.log('Test modal cancel clicked')}
+      >
+        <p>This is a test modal to check if Ant Design modals are working.</p>
+        <p>If you can see this, then SceneModal should also work!</p>
+      </Modal>
     </div>
   );
 };

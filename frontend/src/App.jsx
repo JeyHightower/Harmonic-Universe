@@ -1,16 +1,20 @@
-import React, { useState, useEffect, Suspense, useTransition, lazy } from "react";
-import { Routes, Route, Navigate, useRoutes } from "react-router-dom";
-import { Provider } from "react-redux";
+import React, { lazy, Suspense, useEffect, useState, useTransition } from "react";
+import { Provider, useDispatch, useSelector } from "react-redux";
+import { useRoutes } from "react-router-dom";
 import { PersistGate } from "redux-persist/integration/react";
-import { useSelector, useDispatch } from "react-redux";
-import store, { persistor } from "./store";
-import { Navigation, ErrorBoundary, NetworkErrorHandler } from "./components";
-import { ModalProvider } from "./contexts/ModalContext";
+import { ErrorBoundary, NetworkErrorHandler } from "./components";
+import { MODAL_TYPES } from "./constants/modalTypes.mjs";
+import { ModalProvider, useModal } from "./contexts/ModalContext";
 import routes from "./routes/index.jsx";
-import { checkAuthState, logout } from "./store/slices/authSlice";
 import { authService } from "./services/auth.service.mjs";
-import { AUTH_CONFIG } from "./utils";
+import store, { persistor } from "./store";
+import { checkAuthState, logout } from "./store/slices/authSlice";
 import "./styles"; // Import all styles
+import { AUTH_CONFIG } from "./utils";
+import { fixModalZIndex, resetModalSystem } from "./utils/modalUtils.mjs";
+import { cleanupAllPortals, ensurePortalRoot } from "./utils/portalUtils.mjs";
+// Import modal debugging utilities in development
+import { setupModalDebugging } from "./utils/modalDebug.mjs";
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (
@@ -27,6 +31,71 @@ const ErrorFallback = () => (
     <p>We&apos;re having trouble loading the application. Please try again later.</p>
   </div>
 );
+
+// Test Modal Button component to verify modal fix works
+const TestModalButton = () => {
+  const { open } = useModal();
+
+  const handleOpenTestModal = () => {
+    console.log('Opening test modal...');
+    open(MODAL_TYPES.TEST_MODAL, {
+      title: 'Test Modal',
+      width: 600
+    });
+  };
+
+  return (
+    <button
+      onClick={handleOpenTestModal}
+      style={{
+        position: 'fixed',
+        bottom: '70px',
+        right: '10px',
+        zIndex: 999,
+        padding: '10px 15px',
+        background: '#1890ff',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+      }}
+    >
+      Test Modal
+    </button>
+  );
+};
+
+// Modal system initialization - ensures the modal system is in a clean state
+const initModalSystem = () => {
+  console.log("Initializing modal system");
+  // Clean up any lingering modals from previous sessions
+  cleanupAllPortals();
+  // Make sure portal root exists
+  ensurePortalRoot();
+  // Fix any z-index issues
+  fixModalZIndex();
+
+  // Add a listener for modal system cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    resetModalSystem();
+  });
+
+  // Setup debug utilities in development
+  if (process.env.NODE_ENV !== 'production') {
+    setupModalDebugging();
+  }
+
+  // Expose modal utils for debugging in console
+  window.__modalSystem = {
+    resetModalSystem,
+    fixModalZIndex,
+    cleanupAllPortals
+  };
+};
+
+// Initialize modal system on app load
+initModalSystem();
 
 // A component to handle the root path with query parameters
 const RootPathHandler = () => {
@@ -57,19 +126,25 @@ const AppContent = () => {
   // Use React Router's useRoutes hook to render routes directly
   const element = useRoutes(routes);
 
+  // Make sure modals are cleaned up when component mounts
+  useEffect(() => {
+    // Reset any lingering modal state
+    resetModalSystem();
+  }, []);
+
   // Check auth state on component mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         // Only check auth if we have a token
         const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-        
+
         if (!token) {
           // If no token, nothing to check
           setAuthChecked(true);
           return;
         }
-        
+
         // Check for token validation failure flag
         const tokenFailed = localStorage.getItem("token_verification_failed");
         if (tokenFailed === "true") {
@@ -79,12 +154,12 @@ const AppContent = () => {
           setAuthChecked(true);
           return;
         }
-        
+
         // Check auth state with a state transition to avoid blocking UI
         startTransition(() => {
           dispatch(checkAuthState());
         });
-        
+
         // Mark as checked regardless of success/failure
         setAuthChecked(true);
       } catch (e) {
@@ -117,7 +192,12 @@ const AppContent = () => {
   }
 
   // Render the routes using useRoutes
-  return element;
+  return (
+    <>
+      {element}
+      <TestModalButton />
+    </>
+  );
 };
 
 // Inside App.jsx, add a debugging panel component for CORS issues
@@ -126,14 +206,14 @@ const DebugPanel = () => {
   const [useProxy, setUseProxy] = useState(
     localStorage.getItem('use_proxy_for_auth') === 'true'
   );
-  
+
   const toggleProxy = () => {
     const newValue = !useProxy;
     setUseProxy(newValue);
     localStorage.setItem('use_proxy_for_auth', String(newValue));
     console.log(`CORS proxy for auth ${newValue ? 'enabled' : 'disabled'}`);
   };
-  
+
   // Secret key combo to show/hide debug panel: Shift+Alt+D
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -141,13 +221,13 @@ const DebugPanel = () => {
         setVisible(prev => !prev);
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-  
+
   if (!visible) return null;
-  
+
   return (
     <div style={{
       position: 'fixed',
@@ -163,15 +243,15 @@ const DebugPanel = () => {
       <h4 style={{ margin: '0 0 8px 0' }}>Debug Tools</h4>
       <div>
         <label>
-          <input 
-            type="checkbox" 
-            checked={useProxy} 
-            onChange={toggleProxy} 
+          <input
+            type="checkbox"
+            checked={useProxy}
+            onChange={toggleProxy}
           />
           Use CORS proxy for auth
         </label>
       </div>
-      <button 
+      <button
         onClick={() => {
           localStorage.clear();
           window.location.reload();
@@ -209,7 +289,7 @@ function App() {
           </PersistGate>
         </Provider>
       </NetworkErrorHandler>
-      
+
       {/* Add DebugPanel at the end */}
       <DebugPanel />
     </ErrorBoundary>

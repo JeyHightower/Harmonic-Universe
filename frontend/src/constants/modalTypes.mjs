@@ -19,12 +19,12 @@ export const MODAL_TYPES = {
 
   // Character modals
   CHARACTER_FORM: "CHARACTER_FORM",
-  
+
   // Physics modals
   PHYSICS_OBJECT: "PHYSICS_OBJECT",
   PHYSICS_PARAMETERS: "PHYSICS_PARAMETERS",
   PHYSICS_CONSTRAINT: "PHYSICS_CONSTRAINT",
-  
+
   // Music modals
   MUSIC_CREATE: "music-create",
   MUSIC_VIEW: "music-view",
@@ -32,6 +32,9 @@ export const MODAL_TYPES = {
   MUSIC_DELETE: "music-delete",
   MUSIC_GENERATE: "audio-generate", // Legacy name for backward compatibility
   MUSIC_DETAILS: "audio-details",   // Legacy name for backward compatibility
+
+  // Test modal for debugging
+  TEST_MODAL: "TEST_MODAL",
 };
 
 /**
@@ -58,6 +61,7 @@ export const getModalDisplayName = (type) => {
     [MODAL_TYPES.MUSIC_DELETE]: "Delete Music",
     [MODAL_TYPES.MUSIC_GENERATE]: "Generate Music",
     [MODAL_TYPES.MUSIC_DETAILS]: "Music Details",
+    [MODAL_TYPES.TEST_MODAL]: "Test Modal",
   };
 
   return displayNames[type] || type;
@@ -87,6 +91,7 @@ export const getModalIcon = (type) => {
     [MODAL_TYPES.MUSIC_DELETE]: "delete",
     [MODAL_TYPES.MUSIC_GENERATE]: "music-note-plus",
     [MODAL_TYPES.MUSIC_DETAILS]: "music-note",
+    [MODAL_TYPES.TEST_MODAL]: "test",
   };
 
   return icons[type] || "question-circle";
@@ -116,6 +121,7 @@ export const getModalDescription = (type) => {
     [MODAL_TYPES.MUSIC_DELETE]: "Delete music from your universe",
     [MODAL_TYPES.MUSIC_GENERATE]: "Generate new music using AI",
     [MODAL_TYPES.MUSIC_DETAILS]: "View detailed information about music",
+    [MODAL_TYPES.TEST_MODAL]: "Test modal for debugging modal interactions",
   };
 
   return descriptions[type] || "";

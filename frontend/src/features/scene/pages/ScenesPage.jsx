@@ -1,37 +1,37 @@
 import {
-  Add as AddIcon,
-  ArrowBack as ArrowBackIcon,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  Search as SearchIcon,
-  Visibility as ViewIcon,
+    Add as AddIcon,
+    ArrowBack as ArrowBackIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    Search as SearchIcon,
+    Visibility as ViewIcon,
 } from '@mui/icons-material';
 import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardActions,
-  CardContent,
-  CircularProgress,
-  Container,
-  Grid,
-  IconButton,
-  InputAdornment,
-  TextField,
-  Typography,
+    Alert,
+    Box,
+    Button,
+    Card,
+    CardActions,
+    CardContent,
+    CircularProgress,
+    Container,
+    Grid,
+    IconButton,
+    InputAdornment,
+    TextField,
+    Typography,
 } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { SceneModal } from '..';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { safeId } from '../../../services/endpoints.mjs';
 import {
-  deleteSceneAndRefresh,
-  fetchScenes,
+    deleteSceneAndRefresh,
+    fetchScenes,
 } from '../../../store/thunks/consolidated/scenesThunks';
+import SceneModal from '../modals/SceneModal';
 
 // Create a wrapper component that handles redirection logic
 const ScenesPageWrapper = () => {
@@ -526,10 +526,34 @@ const ScenesPageContent = ({ universeId }) => {
   }, [dispatch, navigate, safeUniverseId, scenes.length, isUniverseExists]);
 
   const handleCreateScene = () => {
-    console.log('ScenesPage - Opening create scene modal with universeId:', safeUniverseId);
+    // Add comprehensive debugging
+    console.log('ScenesPage - handleCreateScene called');
+    console.log('ScenesPage - Current state before opening modal:', {
+      safeUniverseId,
+      modalType: 'create',
+      selectedSceneId: null,
+      currentModalOpen: modalOpen
+    });
+
+    // Set modal properties for creation
     setModalType('create');
     setSelectedSceneId(null);
+
+    // Log before setting modalOpen
+    console.log('ScenesPage - About to set modalOpen to true');
+
+    // Set modal to open
     setModalOpen(true);
+
+    // Log after setting modalOpen
+    console.log('ScenesPage - modalOpen set to true, modal should appear now');
+
+    // Check if the modal component will actually render based on conditions
+    console.log('ScenesPage - Modal will render if all these are true:', {
+      modalOpenState: true,
+      safeUniverseIdExists: !!safeUniverseId,
+      safeUniverseIdValue: safeUniverseId
+    });
   };
 
   const handleEditScene = (sceneId) => {
@@ -819,6 +843,13 @@ const ScenesPageContent = ({ universeId }) => {
 
         {renderScenesList()}
       </Box>
+
+      {/* Debug logging for modal conditions */}
+      {console.log('ScenesPage - Modal render condition check:', {
+        modalOpen,
+        safeUniverseId,
+        shouldRenderModal: !!(modalOpen && safeUniverseId)
+      })}
 
       {/* Scene Modal */}
       {modalOpen && safeUniverseId && (

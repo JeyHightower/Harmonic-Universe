@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-index-modal, 1000);
+  z-index: 1050;
   opacity: 1;
   transition: opacity 0.3s ease;
   pointer-events: auto;

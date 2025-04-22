@@ -117,10 +117,21 @@ const SignupModal = ({ onClose }) => {
     };
   }, []);
 
+  // Prevent propagation of click events to stop modal from closing when clicked
+  const handleContentClick = (e) => {
+    e.stopPropagation();
+  };
+
   return (
-    <Dialog open={true} onClose={forceClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={true}
+      onClose={forceClose}
+      maxWidth="sm"
+      fullWidth
+      onClick={handleContentClick}
+    >
       <DialogTitle>Sign Up</DialogTitle>
-      <DialogContent>
+      <DialogContent onClick={handleContentClick}>
         <Form form={form} onFinish={handleSubmit} layout="vertical" className="auth-form">
           <Form.Item
             label="Username"
@@ -199,7 +210,7 @@ const SignupModal = ({ onClose }) => {
           </Form.Item>
         </Form>
       </DialogContent>
-      <DialogActions>
+      <DialogActions onClick={handleContentClick}>
         <Button onClick={forceClose} disabled={loading} variant="secondary">
           Cancel
         </Button>

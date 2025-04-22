@@ -4,13 +4,26 @@ import { MODAL_TYPES } from '../constants/modalTypes';
 // Import components statically instead of dynamically
 import ConfirmationModal from '../components/modals/ConfirmationModal';
 import { AlertModal, FormModal } from '../components/modals/index.mjs';
+import TestModal from '../components/modals/TestModal';
 import LoginModal from '../features/auth/modals/LoginModal';
 import SignupModal from '../features/auth/modals/SignupModal';
 import { PhysicsConstraintModal, PhysicsParametersModal } from '../features/physics';
+import { SceneModal } from '../features/scene';
+import UniverseModal from '../features/universe/modals/UniverseModal';
 import { MODAL_CONFIG } from './config';
 
 // Create modal registry
 const modalRegistry = new Map();
+
+// Define which modals have their own built-in modal wrappers
+const builtInModalTypes = [
+  'UNIVERSE_CREATE',
+  'universe-create',
+  'LOGIN',
+  'SIGNUP',
+  'PHYSICS_PARAMETERS',
+  'PHYSICS_CONSTRAINT',
+];
 
 // Component lookup function
 export const getModalComponent = async (type) => {
@@ -36,6 +49,7 @@ export const getModalComponent = async (type) => {
     'PHYSICS_OBJECT',
     'PHYSICS_PARAMETERS',
     'PHYSICS_CONSTRAINT',
+    'TEST_MODAL',
   ];
 
   if (!validTypes.includes(type)) {
@@ -45,6 +59,8 @@ export const getModalComponent = async (type) => {
 
   try {
     let component;
+    let hasBuiltInModal = builtInModalTypes.includes(type);
+
     switch (type) {
       case 'ALERT':
       case MODAL_TYPES.ALERT:
@@ -61,106 +77,159 @@ export const getModalComponent = async (type) => {
       case 'LOGIN':
       case MODAL_TYPES.LOGIN:
         component = LoginModal;
+        hasBuiltInModal = true;
         break;
       case 'SIGNUP':
       case MODAL_TYPES.SIGNUP:
         component = SignupModal;
+        hasBuiltInModal = true;
         break;
       case 'universe-create':
       case MODAL_TYPES.UNIVERSE_CREATE:
         console.log('Loading UniverseModal');
-        try {
-          // Fall back to FormModal if import fails
-          component = FormModal;
-        } catch (e) {
-          console.warn('Fallback to default UniverseModal', e);
-          component = FormModal;
-        }
+        component = UniverseModal;
+        hasBuiltInModal = true;
+        break;
+      case 'TEST_MODAL':
+        console.log('Loading TestModal');
+        component = TestModal;
         break;
       case 'SCENE_FORM':
         console.log('Loading SceneModal');
-        // Fall back to FormModal
-        component = FormModal;
+        // Use the imported SceneModal component
+        component = SceneModal;
         break;
       case 'CHARACTER_FORM':
         console.log('Loading CharacterModal');
-        // Fall back to FormModal
-        component = FormModal;
+        try {
+          const CharacterModule = await import('../features/character/modals/CharacterModal.jsx');
+          component = CharacterModule.default;
+        } catch (e) {
+          console.warn('Fallback to FormModal for CharacterModal', e);
+          component = FormModal;
+        }
         break;
       case 'PHYSICS_OBJECT':
         console.log('Loading PhysicsObjectModal');
-        // Fall back to FormModal
-        component = FormModal;
+        try {
+          const PhysicsObjectModule = await import('../features/physics/modals/PhysicsObjectModal.jsx');
+          component = PhysicsObjectModule.default;
+        } catch (e) {
+          console.warn('Fallback to FormModal for PhysicsObjectModal', e);
+          component = FormModal;
+        }
         break;
       case 'PHYSICS_PARAMETERS':
       case MODAL_TYPES.PHYSICS_PARAMETERS:
         console.log('Loading PhysicsParametersModal');
         component = PhysicsParametersModal;
+        hasBuiltInModal = true;
         break;
       case 'PHYSICS_CONSTRAINT':
       case 'physics-constraint':
         console.log('Loading PhysicsConstraintModal');
         component = PhysicsConstraintModal;
+        hasBuiltInModal = true;
         break;
       case 'audio-generate':
         console.log('Loading AudioGenerationModalFinal component');
-        // Fall back to FormModal
-        component = FormModal;
+        try {
+          const AudioGenerateModule = await import('../features/music/modals/AudioGenerationModal.jsx');
+          component = AudioGenerateModule.default;
+        } catch (e) {
+          console.warn('Fallback to FormModal for AudioGenerationModal', e);
+          component = FormModal;
+        }
         break;
       case 'audio-details':
         console.log('Loading AudioDetailsModalFinal component');
-        // Fall back to FormModal
-        component = FormModal;
+        try {
+          const AudioDetailsModule = await import('../features/music/modals/AudioDetailsModal.jsx');
+          component = AudioDetailsModule.default;
+        } catch (e) {
+          console.warn('Fallback to FormModal for AudioDetailsModal', e);
+          component = FormModal;
+        }
         break;
       case 'music-create':
-        console.log('Loading MusicModalComponent with generate mode');
-        // Fall back to FormModal
-        component = FormModal;
-        // Set default props for this modal type
-        component.defaultProps = {
-          ...component.defaultProps,
-          mode: 'generate',
-        };
-        break;
       case 'music-view':
-        console.log('Loading MusicModalComponent with view mode');
-        // Fall back to FormModal
-        component = FormModal;
-        // Set default props for this modal type
-        component.defaultProps = {
-          ...component.defaultProps,
-          mode: 'view',
-        };
-        break;
       case 'music-edit':
-        console.log('Loading MusicModalComponent with edit mode');
-        // Fall back to FormModal
-        component = FormModal;
-        // Set default props for this modal type
-        component.defaultProps = {
-          ...component.defaultProps,
-          mode: 'edit',
-        };
-        break;
       case 'music-delete':
-        console.log('Loading MusicModalComponent with delete mode');
-        // Fall back to FormModal
-        component = FormModal;
-        // Set default props for this modal type
-        component.defaultProps = {
-          ...component.defaultProps,
-          mode: 'delete',
-        };
+        console.log(`Loading MusicModalComponent with ${type} mode`);
+        try {
+          const MusicModalModule = await import('../features/music/modals/MusicModal.jsx');
+          component = MusicModalModule.default;
+          // Set default props for this modal type
+          const mode = type.replace('music-', '');
+          component.defaultProps = {
+            ...component.defaultProps,
+            mode,
+            title: getModalDisplayName(type)
+          };
+        } catch (e) {
+          console.warn(`Fallback to FormModal for MusicModal (${type})`, e);
+          component = FormModal;
+        }
         break;
       default:
         console.error(`No modal component found for type: ${type}`);
         return null;
     }
+
+    // Set a flag on the component to indicate if it has a built-in modal
+    if (component) {
+      component.__hasBuiltInModal = hasBuiltInModal;
+    }
+
     return component;
   } catch (error) {
     console.error(`Error loading modal component: ${error}`);
     return null;
   }
+};
+
+/**
+ * Get the display name for a modal type
+ * @param {string} type - The modal type
+ * @returns {string} The display name
+ */
+export const getModalDisplayName = (type) => {
+  const displayNames = {
+    [MODAL_TYPES.ALERT]: "Alert",
+    [MODAL_TYPES.CONFIRMATION]: "Confirmation",
+    [MODAL_TYPES.FORM]: "Form",
+    [MODAL_TYPES.LOGIN]: "Login",
+    [MODAL_TYPES.SIGNUP]: "Sign Up",
+    [MODAL_TYPES.UNIVERSE_CREATE]: "Create Universe",
+    "universe-create": "Create Universe",
+    [MODAL_TYPES.SCENE_FORM]: "Scene",
+    "SCENE_FORM": "Scene",
+    [MODAL_TYPES.CHARACTER_FORM]: "Character",
+    "CHARACTER_FORM": "Character",
+    [MODAL_TYPES.PHYSICS_OBJECT]: "Physics Object",
+    "PHYSICS_OBJECT": "Physics Object",
+    [MODAL_TYPES.PHYSICS_PARAMETERS]: "Physics Parameters",
+    "PHYSICS_PARAMETERS": "Physics Parameters",
+    [MODAL_TYPES.PHYSICS_CONSTRAINT]: "Physics Constraint",
+    "PHYSICS_CONSTRAINT": "Physics Constraint",
+    "physics-constraint": "Physics Constraint",
+    [MODAL_TYPES.MUSIC_CREATE]: "Create Music",
+    "music-create": "Create Music",
+    [MODAL_TYPES.MUSIC_VIEW]: "View Music",
+    "music-view": "View Music",
+    [MODAL_TYPES.MUSIC_EDIT]: "Edit Music",
+    "music-edit": "Edit Music",
+    [MODAL_TYPES.MUSIC_DELETE]: "Delete Music",
+    "music-delete": "Delete Music",
+    [MODAL_TYPES.MUSIC_GENERATE]: "Generate Music",
+    "audio-generate": "Generate Audio",
+    [MODAL_TYPES.MUSIC_DETAILS]: "Music Details",
+    "audio-details": "Audio Details",
+    [MODAL_TYPES.TEST_MODAL]: "Test Modal",
+    "TEST_MODAL": "Test Modal",
+  };
+
+  return displayNames[type] || type;
 };
 
 /**
@@ -194,6 +263,7 @@ export const getDefaultModalProps = (type) => {
     closeOnBackdrop: true,
     preventBodyScroll: true,
     showCloseButton: true,
+    title: getModalDisplayName(type),
   };
 };
 
@@ -201,9 +271,10 @@ export const getDefaultModalProps = (type) => {
  * Register a new modal component
  * @param {string} type - The modal type
  * @param {React.Component} component - The modal component
+ * @param {boolean} hasBuiltInModal - Whether the component has its own modal implementation
  * @returns {boolean} Whether registration was successful
  */
-export const registerModalComponent = (type, component) => {
+export const registerModalComponent = (type, component, hasBuiltInModal = false) => {
   if (!type || !component) {
     console.error('Modal type and component are required');
     return false;
@@ -218,6 +289,9 @@ export const registerModalComponent = (type, component) => {
     console.warn(`Modal type ${type} is already registered`);
     return false;
   }
+
+  // Set the flag on the component
+  component.__hasBuiltInModal = hasBuiltInModal;
 
   modalRegistry.set(type, component);
   return true;
@@ -293,12 +367,14 @@ export const registerModalTypes = async (type, props) => {
   }
 };
 
-export default {
+// Create an object with all the functions to export
+const modalRegistryExports = {
   getModalComponent,
   isValidModalType,
   getDefaultModalProps,
   registerModalComponent,
   unregisterModalComponent,
-  getRegisteredModalTypes,
-  registerModalTypes,
+  getModalDisplayName,
 };
+
+export default modalRegistryExports;

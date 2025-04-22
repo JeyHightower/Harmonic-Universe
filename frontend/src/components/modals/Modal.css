@@ -1,49 +1,336 @@
-.stable-modal {
-  .ant-modal-content {
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
+/* Modal.css - Styling for the Modal component */
 
-  .ant-modal-header {
-    border-radius: 8px 8px 0 0;
-    padding: 16px 24px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  .ant-modal-title {
-    font-size: 18px;
-    font-weight: 500;
-    color: rgba(0, 0, 0, 0.85);
-  }
-
-  .ant-modal-close {
-    top: 16px;
-    right: 16px;
-  }
-
-  .ant-modal-body {
-    padding: 0;
-  }
-
-  .ant-modal-mask {
-    background-color: rgba(0, 0, 0, 0.45);
-  }
+/* Ensure Ant Design modals are properly visible */
+.ant-modal,
+.stable-modal .ant-modal {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1050 !important;
+  pointer-events: auto !important;
 }
 
+.ant-modal-root {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1050;
+  pointer-events: auto !important;
+}
+
+.ant-modal-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1050;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.45);
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.ant-modal-wrap {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1050;
+  overflow: auto;
+  outline: 0;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Force modal to center of screen */
+.ant-modal-centered .ant-modal {
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+/* Specific styling for our stable modal */
+.stable-modal .ant-modal-content {
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1051; /* Ensure content is above backdrop */
+}
+
+.stable-modal .ant-modal-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  pointer-events: auto !important;
+}
+
+.stable-modal .ant-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.stable-modal .ant-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1060;
+  pointer-events: auto !important;
+}
+
+.stable-modal .ant-modal-body {
+  padding: 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+  pointer-events: auto !important;
+}
+
+/* Ensure ALL elements inside modals are clickable */
+.stable-modal button,
+.stable-modal input,
+.stable-modal select,
+.stable-modal textarea,
+.stable-modal a,
+.stable-modal label,
+.stable-modal div,
+.stable-modal span {
+  pointer-events: auto !important;
+}
+
+/* Fix for nested form elements */
+.stable-modal form,
+.stable-modal form * {
+  pointer-events: auto !important;
+}
+
+/* Fix for modal content wrapper to handle events properly */
+.modal-content-wrapper {
+  pointer-events: auto !important;
+}
+
+.modal-content-wrapper * {
+  pointer-events: auto !important;
+}
+
+/* Scene modal specific styling */
+.scene-form-container.scene-modal-content {
+  padding: 24px;
+  max-height: calc(80vh - 130px);
+  overflow: auto;
+  pointer-events: auto !important;
+}
+
+/* Ensure modals in universe detail page are visible */
+.universe-detail-container .ant-modal-root,
+.universe-detail-container .ant-modal-wrap,
+.universe-detail-container .ant-modal {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure forms inside modals are properly interactive */
+.ant-modal form,
+.stable-modal form {
+  pointer-events: auto !important;
+}
+
+/* Ensure form inputs are clickable */
+.ant-modal input,
+.ant-modal select,
+.ant-modal textarea,
+.ant-modal button,
+.ant-modal a,
+.stable-modal input,
+.stable-modal select,
+.stable-modal textarea,
+.stable-modal button,
+.stable-modal a {
+  pointer-events: auto !important;
+}
+
+/* Ensure proper stacking context */
+#portal-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1050;
+  pointer-events: none; /* Let backdrop handle clicks */
+}
+
+/* Modal containers should capture clicks */
+#portal-root > * {
+  pointer-events: auto;
+}
+
+/* But elements inside portals should also get clicks */
+#portal-root .modal-content * {
+  pointer-events: auto !important;
+}
+
+/* Modal debug - remove these in production */
+.modal-debug {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  border-radius: 4px;
+  z-index: 9999;
+  font-size: 12px;
+}
+
+/* Make sure dialog content is clickable in MUI dialogs */
+.MuiDialog-container {
+  pointer-events: auto !important;
+}
+
+.MuiDialog-paper {
+  pointer-events: auto !important;
+}
+
+.MuiDialogContent-root {
+  pointer-events: auto !important;
+}
+
+.MuiDialogActions-root {
+  pointer-events: auto !important;
+}
+
+/* Fix for immediate closing issue */
+.modal-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 1050 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  pointer-events: auto !important;
+}
+
+.modal-inner-content {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10; /* Ensure it's above the container */
+}
+
+/* All content inside modal should be clickable */
+.modal-inner-content * {
+  pointer-events: auto !important;
+}
+
+/* Prevent container clicks from closing modal */
+.stable-modal-wrap {
+  pointer-events: auto !important;
+}
+
+/* Mobile-specific fixes */
 @media (max-width: 480px) {
   .stable-modal {
     max-width: 100% !important;
     margin: 0;
     top: 0;
     padding-bottom: 0;
-
-    .ant-modal-content {
-      border-radius: 0;
-      min-height: 100vh;
-    }
-
-    .ant-modal-header {
-      border-radius: 0;
-    }
   }
+
+  .stable-modal .ant-modal-content {
+    border-radius: 0;
+  }
+}
+
+/* Fix for login modal specifically */
+.auth-form {
+  pointer-events: auto !important;
+}
+
+.auth-form input,
+.auth-form button {
+  pointer-events: auto !important;
+}
+
+/* Ensure modal content is above backdrop */
+.modal-content {
+  position: relative;
+  z-index: 1051 !important;
+  pointer-events: auto !important;
+}
+
+/* ===== CRITICAL FIX FOR MODAL CLICK ISSUES ===== */
+/* These rules help prevent modals from closing when clicked */
+
+/* Force all modals to have proper stacking context */
+.ant-modal,
+.modal-container {
+  isolation: isolate !important;
+}
+
+/* Make sure clicks on modal content don't propagate to backdrop */
+.ant-modal-content,
+.stable-modal .ant-modal-content,
+.modal-content {
+  position: relative !important;
+  z-index: 1060 !important; /* Higher than backdrop */
+  pointer-events: auto !important;
+  isolation: isolate !important; /* Create stacking context */
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* Fix clicks inside any content */
+.ant-modal-body *,
+.modal-content *,
+.modal-inner-content * {
+  pointer-events: auto !important;
+  position: relative; /* Ensure proper stacking */
+  z-index: 1; /* Ensure it's in the right stacking context */
+}
+
+/* Ensure forms are interactive */
+form, form *,
+.form-control, .form-control *,
+.input-group, .input-group * {
+  pointer-events: auto !important;
+}
+
+/* Fix for any click handlers */
+.ant-modal-close,
+.modal-close-button {
+  z-index: 1070 !important; /* Higher than content */
+  pointer-events: auto !important;
+  position: relative !important;
+}
+
+/* Make sure the content wrapper doesn't pass clicks to backdrop */
+.modal-content-wrapper {
+  isolation: isolate !important;
+  transform: translateZ(0);
+  position: relative !important;
+  z-index: 1060 !important;
+}
+
+/* Global fix for any modal */
+.modal,
+.modal-dialog,
+.modal-content,
+.modal-body,
+.dialog,
+.popup {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 1060 !important;
 }

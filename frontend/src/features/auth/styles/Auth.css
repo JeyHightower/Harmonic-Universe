@@ -3,6 +3,7 @@
   width: 100%;
   max-width: 400px;
   margin: 0 auto;
+  pointer-events: auto !important;
 }
 
 .auth-form h2 {
@@ -73,6 +74,7 @@
 
 .form-group {
   margin-bottom: 1.5rem;
+  pointer-events: auto !important;
 }
 
 .form-group label {
@@ -81,6 +83,7 @@
   font-weight: 500;
   color: #4a5568;
   margin-bottom: 0.5rem;
+  pointer-events: auto !important;
 }
 
 .form-group input {
@@ -91,6 +94,7 @@
   border-radius: 0.5rem;
   transition: all 0.2s;
   background-color: #fff;
+  pointer-events: auto !important;
 }
 
 .form-group input:focus {
@@ -128,6 +132,7 @@
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
+  pointer-events: auto !important;
 }
 
 .link-button:hover {
@@ -188,6 +193,7 @@
   border-radius: 8px !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
   overflow: hidden !important;
+  pointer-events: auto !important;
 }
 
 .MuiDialogTitle-root {
@@ -196,26 +202,31 @@
   border-bottom: 1px solid #e2e8f0 !important;
   font-size: 1.25rem !important;
   font-weight: 600 !important;
+  pointer-events: auto !important;
 }
 
 .MuiDialogContent-root {
   padding: 0 1.5rem !important;
+  pointer-events: auto !important;
 }
 
 .MuiDialogActions-root {
   padding: 1.25rem 1.5rem !important;
   border-top: 1px solid #e2e8f0 !important;
+  pointer-events: auto !important;
 }
 
 /* Form elements styling */
 .auth-form .ant-form-item {
   margin-bottom: 1.25rem;
+  pointer-events: auto !important;
 }
 
 .auth-form .ant-form-item-label > label {
   font-weight: 600;
   color: #333;
   font-size: 0.9rem;
+  pointer-events: auto !important;
 }
 
 .auth-form .ant-input,
@@ -230,6 +241,7 @@
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
+  pointer-events: auto !important;
 }
 
 .auth-form .ant-input:focus,
@@ -245,21 +257,55 @@
   padding: 0;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
+  pointer-events: auto !important;
 }
 
-.auth-form .ant-input-affix-wrapper .ant-input {
-  border: none;
+/* Fix for modal closing on click */
+.MuiDialog-container {
+  pointer-events: auto !important;
 }
 
-.auth-form .ant-form-item-explain-error {
-  color: #e53e3e;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
+.MuiBackdrop-root {
+  pointer-events: auto !important;
 }
 
-/* Button styling */
+.MuiDialog-scrollPaper {
+  pointer-events: auto !important;
+}
+
+/* Ensure buttons in auth forms work */
+.auth-form button,
 .auth-button {
-  min-width: 90px;
+  pointer-events: auto !important;
+}
+
+/* Make sure form items don't get click events intercepted */
+.auth-form .ant-form-item-control-input {
+  pointer-events: auto !important;
+}
+
+.auth-form .ant-form-item-control-input-content {
+  pointer-events: auto !important;
+}
+
+/* Fix for dialog inner elements */
+[role="dialog"] {
+  pointer-events: auto !important;
+}
+
+[role="dialog"] * {
+  pointer-events: auto !important;
+}
+
+/* Override any global styles that might be interfering */
+.modal-inner-content .auth-form,
+.MuiDialogContent-root .auth-form {
+  pointer-events: auto !important;
+}
+
+/* Ensure form buttons are clickable */
+.MuiDialogActions-root button {
+  pointer-events: auto !important;
 }
 
 /* Dark mode support */

@@ -1,7 +1,8 @@
-import { Dialog, DialogContent, DialogTitle } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import StableModalWrapper from '../../../components/modals/StableModalWrapper';
+import '../../../styles/SceneFormModal.css';
 import SceneViewer from '../components/SceneViewer';
 import SceneForm from '../pages/SceneForm';
 import SceneDeleteConfirmation from './SceneDeleteConfirmation';
@@ -25,8 +26,30 @@ const SceneModal = ({
   modalType = 'create',
   mode = null,
 }) => {
+  // Enhanced debug logging on component init
+  console.log('SceneModal - COMPONENT INITIALIZED', {
+    componentName: 'SceneModal',
+    open,
+    isOpen,
+    universeId,
+    mode,
+    modalType
+  });
+
   // For backward compatibility with both open and isOpen props
   const isModalOpen = open || isOpen || false;
+
+  // Enhanced debugging
+  console.log('SceneModal - Component initialized with props:', {
+    open,
+    isOpen,
+    isModalOpen,
+    universeId,
+    sceneId,
+    modalType,
+    mode,
+    initialData: initialData ? 'Has initial data' : 'No initial data'
+  });
 
   // Support both modalType and mode props for backward compatibility
   const actualMode = mode || modalType;
@@ -36,6 +59,17 @@ const SceneModal = ({
   const [error, setError] = useState(null);
   const [isContentMounted, setIsContentMounted] = useState(false);
   const dispatch = useDispatch();
+
+  // Add effect to log when modal should be visible
+  useEffect(() => {
+    console.log('SceneModal - isModalOpen changed:', { isModalOpen });
+
+    if (isModalOpen) {
+      console.log('SceneModal - Modal should be visible now');
+      // Force a layout calculation by reading a property that causes reflow
+      document.body.offsetHeight;
+    }
+  }, [isModalOpen]);
 
   // Memoize modal title to prevent re-renders
   const modalTitle = useMemo(() => {
@@ -370,65 +404,30 @@ const SceneModal = ({
     }
   }, [actualMode, scene, initialData, loading, error, isContentMounted, formattedSceneId, universeId, onClose, handleSubmit, handleDelete]);
 
+  // Add debug log before rendering
+  console.log('SceneModal - About to render with:', {
+    isModalOpen,
+    modalTitle,
+    contentMounted: isContentMounted,
+    hasError: !!error,
+    mode: actualMode
+  });
+
   return (
-    <Dialog
-      open={isModalOpen}
+    <StableModalWrapper
+      title={modalTitle}
       onClose={onClose}
-      aria-labelledby="scene-modal-title"
-      aria-describedby="scene-modal-description"
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          height: '80vh',
-          maxHeight: '90vh',
-          width: '100%',
-          maxWidth: '800px',
-          overflow: 'hidden',
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden',
-          WebkitFontSmoothing: 'subpixel-antialiased',
-          display: 'flex',
-          flexDirection: 'column',
-        }
-      }}
-      TransitionProps={{
-        timeout: 0,
-      }}
-      BackdropProps={{
-        sx: {
-          transition: 'none',
-        }
-      }}
-      sx={{
-        '& .MuiDialog-container': {
-          transition: 'none',
-        }
-      }}
+      width={800}
+      open={isModalOpen}
     >
-      <DialogTitle id="scene-modal-title" sx={{
-        padding: '16px 24px',
-        borderBottom: '1px solid #f0f0f0',
-        backgroundColor: '#fafafa'
+      <div className="scene-form-container scene-modal-content" style={{
+        padding: '24px',
+        maxHeight: 'calc(80vh - 130px)',
+        overflow: 'auto'
       }}>
-        {modalTitle}
-      </DialogTitle>
-      <DialogContent sx={{
-        flex: 1,
-        padding: 0,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        <div className="scene-modal" style={{
-          height: '100%',
-          overflow: 'auto',
-          padding: '24px'
-        }}>
-          {renderContent()}
-        </div>
-      </DialogContent>
-    </Dialog>
+        {renderContent()}
+      </div>
+    </StableModalWrapper>
   );
 };
 

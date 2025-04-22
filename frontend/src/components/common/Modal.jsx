@@ -1,7 +1,6 @@
-import React from "react";
 import PropTypes from "prop-types";
-import { ModalSystem } from "../modals";
 import { MODAL_CONFIG } from "../../utils/config";
+import { ModalSystem } from "../modals";
 
 /**
  * Modal component that provides backward compatibility with the original Modal API
@@ -23,11 +22,51 @@ const Modal = ({
   title,
   style = {},
 }) => {
+  // Enhanced close handler to ensure proper event handling
+  const handleClose = (e) => {
+    // Only close if clicking on backdrop or explicit close button
+    if (e && e.target) {
+      const isModalContent = e.target.closest('.modal-content');
+      const isModalBackdrop = e.target.closest('.modal-backdrop') === e.target;
+
+      // If clicking inside modal content (not backdrop), don't close
+      if (isModalContent && !isModalBackdrop) {
+        console.log("Modal: Content click, not closing");
+        if (e.stopPropagation) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+        return; // Don't close
+      }
+    }
+
+    // Ensure event propagation is stopped
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    if (onClose && typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
+  // Custom content click handler to prevent bubbling
+  const contentClickHandler = (e) => {
+    e.stopPropagation();
+  };
+
+  const enhancedChildren = (
+    <div onClick={contentClickHandler} style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+      {children}
+    </div>
+  );
+
   // Map the old props to the new ModalSystem props
   return (
     <ModalSystem
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={title}
       type={type}
       size={size}
@@ -38,9 +77,14 @@ const Modal = ({
       closeOnBackdrop={closeOnBackdrop}
       preventBodyScroll={preventBodyScroll}
       showCloseButton={showCloseButton}
-      style={style}
+      preventBackdropClick={false}
+      style={{
+        zIndex: 1050,
+        pointerEvents: 'auto',
+        ...style
+      }}
     >
-      {children}
+      {enhancedChildren}
     </ModalSystem>
   );
 };
