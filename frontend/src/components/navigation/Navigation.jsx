@@ -1,65 +1,77 @@
-import React, { useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { useModal } from '../../contexts/ModalContext';
-import { MODAL_TYPES } from '../../constants/modalTypes';
-import { logout } from '../../store/thunks/authThunks';
-import { authService } from '../../services/auth.service.mjs';
+import { useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
 import logoSvg from '../../assets/logo.svg';
+import { MODAL_TYPES } from '../../constants/modalTypes';
+import { useModal } from '../../contexts/ModalContext';
+import { authService } from '../../services/auth.service.mjs';
+import { logout } from '../../store/thunks/authThunks';
 import './Navigation.css';
 
 function Navigation() {
   const { open } = useModal();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const handleLoginClick = useCallback(() => {
-    try {
-      console.log('[Navigation] Opening login modal');
-      open(MODAL_TYPES.LOGIN, {
-        title: 'Login',
-        size: 'medium',
-        position: 'center',
-        animation: 'fade',
-        closeOnEscape: true,
-        closeOnBackdrop: true,
-        preventBodyScroll: true,
-        showCloseButton: true,
-      });
-    } catch (error) {
-      console.error('[Navigation] Error opening login modal:', error);
-    }
+  const handleLoginClick = useCallback((e) => {
+    e.preventDefault();
+    console.log('[Navigation] Opening login modal');
+    open(MODAL_TYPES.LOGIN, {
+      title: 'Login',
+      size: 'medium',
+      position: 'center',
+      animation: 'fade',
+      closeOnEscape: true,
+      closeOnBackdrop: true,
+      preventBodyScroll: true,
+      showCloseButton: true,
+    });
   }, [open]);
 
-  const handleSignupClick = useCallback(() => {
-    try {
-      console.log('[Navigation] Opening signup modal');
-      open(MODAL_TYPES.SIGNUP, {
-        title: 'Sign Up',
-        size: 'medium',
-        position: 'center',
-        animation: 'fade',
-        closeOnEscape: true,
-        closeOnBackdrop: true,
-        preventBodyScroll: true,
-        showCloseButton: true,
-      });
-    } catch (error) {
-      console.error('[Navigation] Error opening signup modal:', error);
-    }
+  const handleSignupClick = useCallback((e) => {
+    e.preventDefault();
+    console.log('[Navigation] Opening signup modal');
+    open(MODAL_TYPES.SIGNUP, {
+      title: 'Sign Up',
+      size: 'medium',
+      position: 'center',
+      animation: 'fade',
+      closeOnEscape: true,
+      closeOnBackdrop: true,
+      preventBodyScroll: true,
+      showCloseButton: true,
+    });
   }, [open]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback((e) => {
+    e.preventDefault();
     console.log('[Navigation] Logging out user');
-    // Use the centralized auth service for consistent logout
     authService.clearAuthData();
     dispatch(logout());
-  }, [dispatch]);
+    navigate('/');
+  }, [dispatch, navigate]);
+
+  const handleDashboardClick = useCallback((e) => {
+    e.preventDefault();
+    console.log('[Navigation] Navigating to dashboard');
+    navigate('/dashboard');
+  }, [navigate]);
+
+  const handleLogoClick = (e) => {
+    e.preventDefault(); // Prevent default link behavior
+    console.log('[Navigation] Navigating to home');
+    navigate('/'); // Navigate programmatically
+  };
 
   return (
-    <nav className="navigation">
+    <nav className="navigation" role="navigation" aria-label="Main Navigation">
       <div className="navigation-left">
-        <Link to="/" className="logo-link">
+        <Link
+          to="/"
+          className="logo-link"
+          onClick={handleLogoClick} // Call the defined function here
+        >
           <img
             src={logoSvg}
             alt="Harmonic Universe Logo"
@@ -71,22 +83,42 @@ function Navigation() {
       <div className="navigation-right">
         {!isAuthenticated ? (
           <>
-            <button onClick={handleLoginClick} className="nav-button">
+            <button
+              type="button"
+              onClick={handleLoginClick}
+              className="nav-button"
+              style={{ pointerEvents: 'auto' }}
+            >
               Login
             </button>
-            <button onClick={handleSignupClick} className="nav-button">
+            <button
+              type="button"
+              onClick={handleSignupClick}
+              className="nav-button"
+              style={{ pointerEvents: 'auto' }}
+            >
               Sign Up
             </button>
           </>
         ) : (
           <>
             <span className="welcome-message">
-              Hello, {user?.username || user?.firstName || 'User'}
+              Hello, {user?.username || user?.firstName || 'User '}
             </span>
-            <Link to="/dashboard" className="nav-button">
+            <button
+              type="button"
+              onClick={handleDashboardClick}
+              className="nav-button"
+              style={{ pointerEvents: 'auto' }}
+            >
               Dashboard
-            </Link>
-            <button onClick={handleLogout} className="nav-button">
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="nav-button"
+              style={{ pointerEvents: 'auto' }}
+            >
               Logout
             </button>
           </>

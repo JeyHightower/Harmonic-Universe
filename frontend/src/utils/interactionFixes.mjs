@@ -92,7 +92,7 @@ export const fixDashboardButtons = () => {
     button.style.pointerEvents = 'auto';
     // Make sure buttons are properly stacked
     button.style.position = 'relative';
-    button.style.zIndex = '2';
+    button.style.zIndex = '20';
     dashboardFixed++;
   });
 
@@ -100,21 +100,35 @@ export const fixDashboardButtons = () => {
   const universeCards = document.querySelectorAll('.universe-card');
   let cardsFixed = 0;
 
-  universeCards.forEach(card => {
+  universeCards.forEach((card, index) => {
     // Ensure card and its buttons have pointer events
     card.style.pointerEvents = 'auto';
+
+    // Set higher z-index for cards, especially for the first row
+    // First row cards get higher z-index than cards below
+    const isFirstRow = index < 4; // Assuming typical 4 cards per row
+    card.style.position = 'relative';
+    card.style.zIndex = isFirstRow ? '15' : '10';
 
     // Fix all buttons within the card
     const cardButtons = card.querySelectorAll('button');
     cardButtons.forEach(button => {
       button.style.pointerEvents = 'auto';
-      // Ensure z-index is appropriate
+      // Ensure z-index is appropriate - higher than the card
       button.style.position = 'relative';
-      button.style.zIndex = '1';
+      button.style.zIndex = isFirstRow ? '25' : '15';
     });
 
     cardsFixed++;
   });
+
+  // Ensure the universes grid container has proper z-index and pointer events
+  const universesGrid = document.querySelector('.universes-grid');
+  if (universesGrid) {
+    universesGrid.style.pointerEvents = 'auto';
+    universesGrid.style.position = 'relative';
+    universesGrid.style.zIndex = '5';
+  }
 
   console.log(`Fixed ${dashboardFixed} dashboard buttons and ${cardsFixed} universe cards`);
 };

@@ -54,6 +54,13 @@ const initModalSystem = () => {
     }
   }, 500);
 
+  // Apply essential fixes immediately and then again after a short delay
+  // to ensure better interaction from app startup
+  applyEssentialFixes();
+  setTimeout(() => {
+    applyEssentialFixes();
+  }, 1000);
+
   // Add a listener for modal system cleanup on page unload
   window.addEventListener('beforeunload', () => {
     resetModalSystem();

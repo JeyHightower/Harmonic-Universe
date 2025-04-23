@@ -36,5 +36,41 @@ export const fixInteractionStyles = () => {
     button.style.zIndex = '25';
   });
 
+  // Fix navigation elements
+  const navButtons = document.querySelectorAll('.nav-button');
+  navButtons.forEach(button => {
+    button.style.pointerEvents = 'auto';
+    button.style.cursor = 'pointer';
+    button.style.position = 'relative';
+    button.style.zIndex = '1002';
+  });
+
+  // Fix all anchor tags
+  const anchors = document.querySelectorAll('a');
+  anchors.forEach(anchor => {
+    anchor.style.pointerEvents = 'auto';
+    anchor.style.cursor = 'pointer';
+    anchor.style.position = 'relative';
+    anchor.style.zIndex = '1002';
+  });
+
+  // Ensure navigation has proper z-index
+  const navigation = document.querySelector('.navigation');
+  if (navigation) {
+    navigation.style.zIndex = '1000';
+    navigation.style.pointerEvents = 'auto';
+  }
+
   return true;
 };
+
+// Apply the fixes when the module loads
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    // Apply immediate fixes
+    fixInteractionStyles();
+
+    // Also apply after a short delay to catch dynamic elements
+    setTimeout(fixInteractionStyles, 500);
+  });
+}

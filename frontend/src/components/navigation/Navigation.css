@@ -8,23 +8,31 @@
   position: sticky;
   top: 0;
   z-index: 1000;
+  pointer-events: auto !important;
 }
 
 .navigation-left {
   display: flex;
   align-items: center;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1001;
 }
 
 .logo-link {
   display: flex;
   align-items: center;
   text-decoration: none;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1002;
 }
 
 .navigation-logo {
   height: 40px;
   width: auto;
   transition: transform 0.3s ease;
+  pointer-events: auto !important;
 }
 
 .navigation-logo:hover {
@@ -35,6 +43,9 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1001;
 }
 
 .welcome-message {
@@ -43,21 +54,34 @@
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   background-color: rgba(99, 102, 241, 0.1);
+  pointer-events: auto !important;
 }
 
 .nav-button {
   padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
-  cursor: pointer;
+  cursor: pointer !important;
   font-weight: 500;
   transition: all 0.2s ease;
   text-decoration: none;
   color: #333;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1002;
+  display: inline-block;
 }
 
 .nav-button:hover {
   background-color: #f5f5f5;
+}
+
+/* Force clickable state for nav buttons */
+.nav-button,
+a.nav-button,
+button.nav-button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 .menu-toggle {
@@ -67,12 +91,16 @@
   cursor: pointer;
   padding: 0.5rem;
   color: #333;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1003;
 }
 
 .navigation-menu {
   display: flex;
   align-items: center;
   gap: 1rem;
+  pointer-events: auto !important;
 }
 
 .navigation-link {
@@ -85,6 +113,9 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1002;
 }
 
 .navigation-link:hover {
@@ -95,6 +126,30 @@
 .navigation-link svg {
   width: 20px;
   height: 20px;
+  pointer-events: auto !important;
+}
+
+/* Make sure all clickable elements work */
+.navigation *,
+.navigation-left *,
+.navigation-right * {
+  pointer-events: auto !important;
+}
+
+/* Fix for Link component specific issue */
+a[href] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 1002;
+}
+
+/* Fix for button clicks */
+button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 1002;
 }
 
 /* Responsive styles */
@@ -132,6 +187,7 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     flex-direction: column;
     align-items: stretch;
+    z-index: 1005;
   }
 
   .navigation-menu.open {
