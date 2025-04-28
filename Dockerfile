@@ -1,72 +1,57 @@
-# Use multi-stage build for smaller final image
-FROM node:18-alpine as frontend-build
+# syntax=docker/dockerfile:1
 
-# Set working directory for frontend build
-WORKDIR /app/frontend
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Dockerfile reference guide at
+# https://docs.docker.com/go/dockerfile-reference/
 
-# Copy frontend package files and install dependencies
-COPY frontend/package*.json ./
-RUN npm ci
+# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
 
-# Copy frontend source code
-COPY frontend/ ./
+ARG PYTHON_VERSION=3.11
+FROM python:${PYTHON_VERSION}-slim as base
 
-# Build frontend
-RUN npm run build
+# Prevents Python from writing pyc files.
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# Python base image
-FROM python:3.11-slim
+# Keeps Python from buffering stdout and stderr to avoid situations where
+# the application crashes without emitting any logs due to buffering.
+ENV PYTHONUNBUFFERED=1
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    FLASK_APP=app.py \
-    FLASK_ENV=production \
-    FLASK_DEBUG=0 \
-    DEPLOYMENT_PLATFORM=render
-
-# Create and set working directory
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     gcc \
-    postgresql-client \
-    curl \
-    && apt-get clean \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements and install dependencies
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Create a non-privileged user that the app will run under.
+# See https://docs.docker.com/go/dockerfile-user-best-practices/
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    appuser
 
-# Copy backend code
-COPY backend/ ./
+# Download dependencies as a separate step to take advantage of Docker's caching.
+# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
+# Leverage a bind mount to requirements.txt to avoid having to copy them into
+# into this layer.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=bind,source=backend/requirements.txt,target=requirements.txt \
+    python -m pip install -r requirements.txt
 
-# Create static folder if it doesn't exist
-RUN mkdir -p ./static
-
-# Copy frontend build from the frontend-build stage
-COPY --from=frontend-build /app/frontend/dist ./static
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Create non-root user for security
-RUN useradd -m appuser
-RUN chown -R appuser:appuser /app
+# Switch to the non-privileged user to run the application.
 USER appuser
 
-# Expose the application port
-EXPOSE 8000
+# Copy the source code into the container.
+COPY . .
 
-# Add health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health || exit 1
+# Expose the port that the application listens on.
+EXPOSE 5001
 
-# Set entrypoint
-ENTRYPOINT ["docker-entrypoint.sh"]
-
-# Set the default command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app", "--workers", "3", "--timeout", "120"] 
+# Run the application.
+CMD python backend/run.py
