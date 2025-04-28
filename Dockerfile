@@ -6,8 +6,11 @@
 
 # Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
 
+# Set the Python version as a build argument
 ARG PYTHON_VERSION=3.11
-FROM python:${PYTHON_VERSION}-slim as base
+
+# Use the Python slim image as the base image
+FROM python:${PYTHON_VERSION}-slim AS base
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -16,6 +19,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
+# Set the working directory
 WORKDIR /app
 
 # Install system dependencies
@@ -39,7 +43,7 @@ RUN adduser \
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
-# into this layer.
+# this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=backend/requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
@@ -54,4 +58,8 @@ COPY . .
 EXPOSE 5001
 
 # Run the application.
-CMD python backend/run.py
+CMD ["python", "backend/run.py"]
+
+# Nginx setup (if needed)
+FROM nginx AS nginx_setup
+RUN echo "<h1>Hello world from Docker!</h1>" > /usr/share/nginx/html/index.html
