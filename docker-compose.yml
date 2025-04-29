@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -39,6 +37,7 @@ services:
       - DEBUG_MODE=True
       - ANALYTICS=False
       - PERFORMANCE_MONITORING=False
+      - COMPOSE_BAKE=True
     volumes:
       - ./backend:/app/backend
       - ./backend/static:/app/backend/static
