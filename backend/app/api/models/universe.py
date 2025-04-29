@@ -22,15 +22,30 @@ class Universe(BaseModel):
     theme: Mapped[Optional[str]] = mapped_column(db.String(100), nullable=True)
 
     # Relationships
-    scenes: Mapped[List[Scene]] = relationship('Scene', lazy=True, cascade='all, delete-orphan')
+    scenes: Mapped[List[Scene]] = relationship('Scene', back_populates='universe', lazy=True, cascade='all, delete-orphan')
     notes: Mapped[List[Note]] = relationship('Note', backref='universe', lazy=True, cascade='all, delete-orphan')
-    characters: Mapped[List[Character]] = relationship('Character', backref='universe', lazy=True, cascade='all, delete-orphan')
+    characters: Mapped[List[Character]] = relationship('Character', back_populates='universe', lazy=True, cascade='all, delete-orphan')
     physics_objects: Mapped[List[PhysicsObject]] = relationship('PhysicsObject', backref='universe', lazy=True, cascade='all, delete-orphan')
     physics_2d: Mapped[List[Physics2D]] = relationship('Physics2D', backref='universe', lazy=True, cascade='all, delete-orphan')
     physics_3d: Mapped[List[Physics3D]] = relationship('Physics3D', backref='universe', lazy=True, cascade='all, delete-orphan')
     audio_samples: Mapped[List[AudioSample]] = relationship('AudioSample', backref='universe', lazy=True, cascade='all, delete-orphan')
     music_pieces: Mapped[List[MusicPiece]] = relationship('MusicPiece', backref='universe', lazy=True, cascade='all, delete-orphan')
-    sound_profile: Mapped[Optional[SoundProfile]] = relationship('SoundProfile', foreign_keys=[sound_profile_id], backref=db.backref('parent_universe', uselist=False), uselist=False, lazy=True)
+    sound_profile: Mapped[Optional[SoundProfile]] = relationship(
+        'SoundProfile',
+        foreign_keys=[sound_profile_id],
+        back_populates='child_universe',
+        overlaps="parent_universe,owned_sound_profile",
+        uselist=False,
+        lazy=True
+    )
+    owned_sound_profile: Mapped[Optional[SoundProfile]] = relationship(
+        'SoundProfile',
+        foreign_keys='SoundProfile.universe_id',
+        back_populates='parent_universe',
+        overlaps="child_universe,sound_profile",
+        uselist=False,
+        lazy=True
+    )
 
     def __init__(self, name: str, user_id: int, description: Optional[str] = None, sound_profile_id: Optional[int] = None, is_public: bool = False, genre: Optional[str] = None, theme: Optional[str] = None) -> None:
         super().__init__()

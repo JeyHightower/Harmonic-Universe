@@ -2,6 +2,12 @@ from datetime import datetime
 from sqlalchemy.sql import func
 from .base import BaseModel
 from ...extensions import db
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from typing import List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .scene import Scene
+    from .universe import Universe
 
 # Association table for character-scene many-to-many relationship
 character_scenes = db.Table(
@@ -14,12 +20,13 @@ character_scenes = db.Table(
 class Character(BaseModel):
     __tablename__ = 'characters'
 
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(db.String(100), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(db.Text)
+    universe_id: Mapped[int] = mapped_column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
 
     # Relationships
-    scenes = db.relationship('Scene', secondary=character_scenes, lazy=True)
+    scenes: Mapped[List["Scene"]] = relationship('Scene', secondary=character_scenes, back_populates='characters', lazy=True)
+    universe: Mapped["Universe"] = relationship('Universe', back_populates='characters')
 
     def __init__(self, name, universe_id, description=None):
         super().__init__()  # Added to properly initialize BaseModel
@@ -49,4 +56,4 @@ class Character(BaseModel):
         }
 
     def __repr__(self):
-        return f'<Character {self.name}>' 
+        return f'<Character {self.name}>'
