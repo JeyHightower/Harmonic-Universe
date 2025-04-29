@@ -22,6 +22,7 @@ import {
   Typography,
 } from '@mui/material';
 import { createSelector } from '@reduxjs/toolkit';
+import PropTypes from 'prop-types';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -616,177 +617,53 @@ const ScenesPageContent = ({ universeId }) => {
     navigate(`/universes/${safeUniverseId}`);
   };
 
-  // Handlers for filter and sort changes
-  const handleTypeFilterChange = (newTypeFilter) => {
-    setTypeFilter(newTypeFilter);
-  };
+  // Move the useMemo hook to the component level
+  const filteredAndSortedScenes = useMemo(() => {
+    if (!scenesFromStore || !safeUniverseId) return [];
 
-  const handleStatusFilterChange = (newStatusFilter) => {
-    setStatusFilter(newStatusFilter);
-  };
-
-  const handleSortByChange = (newSortBy) => {
-    setSortBy(newSortBy);
-  };
-
-  const handleSortDirectionChange = (newSortDirection) => {
-    setSortDirection(newSortDirection);
-  };
-
-  // Handle scene modal success
-  const handleModalSuccess = (result) => {
-    console.log('ScenesPage - Scene modal success:', result);
-
-    // Refresh scenes for this universe
-    if (safeUniverseId) {
-      console.log('ScenesPage - Refreshing scenes for universe:', safeUniverseId);
-      dispatch(fetchScenes(safeUniverseId));
-    }
-  };
+    return scenesFromStore
+      .filter((scene) => scene.universe_id === safeUniverseId)
+      .sort((a, b) => {
+        if (sortBy === 'name') {
+          return sortDirection === 'asc'
+            ? a.name.localeCompare(b.name)
+            : b.name.localeCompare(a.name);
+        }
+        return sortDirection === 'asc'
+          ? new Date(a.created_at) - new Date(b.created_at)
+          : new Date(b.created_at) - new Date(a.created_at);
+      });
+  }, [scenesFromStore, safeUniverseId, sortBy, sortDirection]);
 
   // Render UI
   const renderScenesList = () => {
-    if (loading) {
+    if (!filteredAndSortedScenes.length) {
       return (
-        <Box display="flex" justifyContent="center" my={6}>
-          <CircularProgress />
-          <Typography variant="body1" sx={{ ml: 2 }}>
-            Loading scenes...
-          </Typography>
+        <Box display="flex" justifyContent="center" my={4}>
+          <Typography variant="body1">No scenes found for this universe.</Typography>
         </Box>
       );
     }
-
-    if (error) {
-      return (
-        <Alert severity="error" sx={{ my: 3 }}>
-          {error}
-        </Alert>
-      );
-    }
-
-    if (scenes.length === 0) {
-      return (
-        <Box textAlign="center" my={4}>
-          <Typography variant="h6" color="textSecondary" gutterBottom>
-            No scenes found
-          </Typography>
-          <Typography variant="body1" color="textSecondary" paragraph>
-            Create your first scene to get started
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleCreateScene}
-          >
-            Create Scene
-          </Button>
-        </Box>
-      );
-    }
-
-    // Create a properly memoized selector for filtering and sorting scenes
-    const selectFilteredScenes = useMemo(() => {
-      return createSelector(
-        [
-          () => scenes,
-          () => searchTerm,
-          () => typeFilter,
-          () => statusFilter,
-          () => sortBy,
-          () => sortDirection,
-        ],
-        (scenes, searchTerm, typeFilter, statusFilter, sortBy, sortDirection) => {
-          return scenes
-            .filter((scene) => {
-              // Filter by search term
-              const matchesSearch =
-                searchTerm === '' ||
-                scene.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                scene.description?.toLowerCase().includes(searchTerm.toLowerCase());
-
-              // Filter by type
-              const matchesType =
-                typeFilter === 'all' || (scene.scene_type && scene.scene_type === typeFilter);
-
-              // Filter by status
-              const matchesStatus =
-                statusFilter === 'all' || (scene.status && scene.status === statusFilter);
-
-              return matchesSearch && matchesType && matchesStatus;
-            })
-            .sort((a, b) => {
-              // Sort by selected field
-              let valueA, valueB;
-
-              switch (sortBy) {
-                case 'name':
-                  valueA = a.name || '';
-                  valueB = b.name || '';
-                  break;
-                case 'created':
-                  valueA = a.created_at || '';
-                  valueB = b.created_at || '';
-                  break;
-                case 'updated':
-                  valueA = a.updated_at || '';
-                  valueB = b.updated_at || '';
-                  break;
-                default:
-                  valueA = a.name || '';
-                  valueB = b.name || '';
-              }
-
-              // Apply sort direction
-              if (sortDirection === 'asc') {
-                return valueA.localeCompare(valueB);
-              } else {
-                return valueB.localeCompare(valueA);
-              }
-            });
-        }
-      );
-    }, [scenes, searchTerm, typeFilter, statusFilter, sortBy, sortDirection]);
-
-    // Use the memoized selector to get the filtered scenes
-    const filteredScenes = selectFilteredScenes();
 
     return (
       <Grid container spacing={3}>
-        {filteredScenes.map((scene) => (
+        {filteredAndSortedScenes.map((scene) => (
           <Grid item xs={12} sm={6} md={4} key={scene.id}>
             <Card>
               <CardContent>
-                <Typography variant="h6" component="div">
-                  {scene.name}
+                <Typography variant="h6">{scene.name}</Typography>
+                <Typography variant="body2" color="textSecondary">
+                  {scene.description}
                 </Typography>
-                {scene.description && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    {scene.description}
-                  </Typography>
-                )}
               </CardContent>
               <CardActions>
-                <IconButton
-                  aria-label="view"
-                  color="primary"
-                  onClick={() => handleViewScene(scene.id)}
-                >
+                <IconButton onClick={() => handleViewScene(scene.id)}>
                   <ViewIcon />
                 </IconButton>
-                <IconButton
-                  aria-label="edit"
-                  color="secondary"
-                  onClick={() => handleEditScene(scene.id)}
-                >
+                <IconButton onClick={() => handleEditScene(scene.id)}>
                   <EditIcon />
                 </IconButton>
-                <IconButton
-                  aria-label="delete"
-                  color="error"
-                  onClick={() => handleDeleteScene(scene.id)}
-                >
+                <IconButton onClick={() => handleDeleteScene(scene.id)}>
                   <DeleteIcon />
                 </IconButton>
               </CardActions>
@@ -864,6 +741,11 @@ const ScenesPageContent = ({ universeId }) => {
       )}
     </Container>
   );
+};
+
+// Add prop-types validation
+ScenesPageContent.propTypes = {
+  universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
 export default ScenesPageWrapper;

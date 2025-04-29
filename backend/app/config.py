@@ -5,7 +5,7 @@ class Config:
     # Basic Flask config
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    PORT = int(os.environ.get('PORT', 5001))
+    PORT = int(os.environ.get('PORT', 5002))
 
     # Database config - PostgreSQL only
     database_url = os.environ.get('DATABASE_URL')

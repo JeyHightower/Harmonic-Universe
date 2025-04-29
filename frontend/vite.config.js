@@ -67,5 +67,13 @@ export default defineConfig({
     hmr: {
       timeout: 10000,
     },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+    },
   },
 });

@@ -4,50 +4,56 @@
  */
 
 // Check if import.meta is available (browser environment) or not (Node environment)
-const isNodeEnv = typeof window === 'undefined' && typeof global !== 'undefined' && global.process !== undefined;
+const isNodeEnv =
+  typeof window === 'undefined' && typeof global !== 'undefined' && global.process !== undefined;
 
 // Export environment
-export const ENV = isNodeEnv ? 
-  (global.process.env.NODE_ENV || "development") : 
-  (import.meta.env.MODE || "development");
+export const ENV = isNodeEnv
+  ? global.process.env.NODE_ENV || 'development'
+  : import.meta.env.MODE || 'development';
 
 // Export whether we're in production
-export const IS_PRODUCTION = isNodeEnv ?
-  global.process.env.NODE_ENV === 'production' :
-  (import.meta.env.PROD ||
+export const IS_PRODUCTION = isNodeEnv
+  ? global.process.env.NODE_ENV === 'production'
+  : import.meta.env.PROD ||
     (typeof window !== 'undefined' &&
       !window.location.hostname.includes('localhost') &&
-      !window.location.hostname.includes('127.0.0.1')));
+      !window.location.hostname.includes('127.0.0.1'));
 
 // Export whether we're in development
 export const IS_DEVELOPMENT = !IS_PRODUCTION;
 
 // Export whether we're in test
-export const IS_TEST = ENV === "test";
+export const IS_TEST = ENV === 'test';
 
 // Export the base URL
-export const BASE_URL = isNodeEnv ? "/" : (import.meta.env.BASE_URL || "/");
+export const BASE_URL = isNodeEnv ? '/' : import.meta.env.BASE_URL || '/';
 
 // Export the public URL
-export const PUBLIC_URL = isNodeEnv ? "/" : (import.meta.env.PUBLIC_URL || "/");
+export const PUBLIC_URL = isNodeEnv ? '/' : import.meta.env.PUBLIC_URL || '/';
 
 // Export the API URL
 export const API_URL = IS_PRODUCTION
   ? '' // Empty string in production to avoid double /api prefix
-  : (isNodeEnv ? "http://localhost:5001/api" : (import.meta.env.VITE_API_URL || "http://localhost:5001/api"));
+  : isNodeEnv
+    ? 'http://localhost:5002/api'
+    : import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
 
 // Export the CDN URL
-export const CDN_URL = isNodeEnv ? "" : (import.meta.env.VITE_CDN_URL || "");
+export const CDN_URL = isNodeEnv ? '' : import.meta.env.VITE_CDN_URL || '';
 
 // Export the version
-export const VERSION = isNodeEnv ? global.process.env.VERSION || "1.0.0" : (import.meta.env.VITE_APP_VERSION || "1.0.0");
+export const VERSION = isNodeEnv
+  ? global.process.env.VERSION || '1.0.0'
+  : import.meta.env.VITE_APP_VERSION || '1.0.0';
 
 // Export the build time
-export const BUILD_TIME = isNodeEnv ? new Date().toISOString() :
-  (import.meta.env.VITE_BUILD_TIME || new Date().toISOString());
+export const BUILD_TIME = isNodeEnv
+  ? new Date().toISOString()
+  : import.meta.env.VITE_BUILD_TIME || new Date().toISOString();
 
 // Export the git hash
-export const GIT_HASH = isNodeEnv ? "" : (import.meta.env.VITE_GIT_HASH || "");
+export const GIT_HASH = isNodeEnv ? '' : import.meta.env.VITE_GIT_HASH || '';
 
 // Export the environment variables
 export const ENV_VARS = {
@@ -90,10 +96,10 @@ const validateEnvVar = (key, defaultValue = undefined, validator = null) => {
 };
 
 // Parse boolean environment variable
-const parseBool = (value) => value === "true";
+const parseBool = (value) => value === 'true';
 
 // Parse array environment variable
-const parseArray = (value) => value.split(",").map((item) => item.trim());
+const parseArray = (value) => value.split(',').map((item) => item.trim());
 
 // Parse integer environment variable
 const parseInt = (value, defaultValue = undefined) => {
@@ -104,25 +110,25 @@ const parseInt = (value, defaultValue = undefined) => {
 // Demo mode settings
 export const FORCE_DEMO_MODE = isNodeEnv
   ? false
-  : parseBool(validateEnvVar("VITE_FEATURE_DEMO_MODE", "false"));
+  : parseBool(validateEnvVar('VITE_FEATURE_DEMO_MODE', 'false'));
 
 // Authentication configuration
 export const AUTH_CONFIG = {
-  TOKEN_KEY: "token",
-  USER_KEY: "user",
-  REFRESH_TOKEN_KEY: "refreshToken",
+  TOKEN_KEY: 'token',
+  USER_KEY: 'user',
+  REFRESH_TOKEN_KEY: 'refreshToken',
   TOKEN_EXPIRY: 3600, // 1 hour
   REFRESH_TOKEN_EXPIRY: 604800, // 7 days
-  COOKIE_DOMAIN: IS_PRODUCTION ? ".harmonic-universe.com" : "localhost",
+  COOKIE_DOMAIN: IS_PRODUCTION ? '.harmonic-universe.com' : 'localhost',
   COOKIE_SECURE: IS_PRODUCTION,
-  COOKIE_SAMESITE: "strict",
+  COOKIE_SAMESITE: 'strict',
   ENDPOINTS: {
-    LOGIN: IS_PRODUCTION ? "/api/auth/login" : "/api/auth/login",
-    SIGNUP: IS_PRODUCTION ? "/api/auth/signup" : "/api/auth/signup",
-    LOGOUT: IS_PRODUCTION ? "/api/auth/logout" : "/api/auth/logout",
-    REFRESH: IS_PRODUCTION ? "/api/auth/refresh" : "/api/auth/refresh",
-    DEMO: IS_PRODUCTION ? "/api/auth/demo-login" : "/api/auth/demo-login",
-    VALIDATE: IS_PRODUCTION ? "/api/auth/validate" : "/api/auth/validate",
+    LOGIN: IS_PRODUCTION ? '/api/auth/login' : '/api/auth/login',
+    SIGNUP: IS_PRODUCTION ? '/api/auth/signup' : '/api/auth/signup',
+    LOGOUT: IS_PRODUCTION ? '/api/auth/logout' : '/api/auth/logout',
+    REFRESH: IS_PRODUCTION ? '/api/auth/refresh' : '/api/auth/refresh',
+    DEMO: IS_PRODUCTION ? '/api/auth/demo-login' : '/api/auth/demo-login',
+    VALIDATE: IS_PRODUCTION ? '/api/auth/validate' : '/api/auth/validate',
   },
 };
 
@@ -131,21 +137,23 @@ export const API_CONFIG = {
   // Base URL should be relative in production to avoid CORS issues
   BASE_URL: IS_PRODUCTION
     ? '' // Empty string in production to avoid double /api prefix
-    : (isNodeEnv ? "http://localhost:5001" : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001")), // Don't include /api in BASE_URL
+    : isNodeEnv
+      ? 'http://localhost:5002'
+      : import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002', // Don't include /api in BASE_URL
   // API prefix should always be /api, used for both local and production
   API_PREFIX: '/api',
   TIMEOUT: 30000,
   HEADERS: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
-  MOCK_ENABLED: IS_PRODUCTION || (isNodeEnv ? false : (import.meta.env.VITE_MOCK_API === 'true')),
+  MOCK_ENABLED: IS_PRODUCTION || (isNodeEnv ? false : import.meta.env.VITE_MOCK_API === 'true'),
   THROTTLE_ENABLED: true,
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
   // Health check endpoint configuration
   HEALTH_CHECK: {
-    ENDPOINT: IS_PRODUCTION ? '/api/health' : 'http://localhost:5001/api/health',
+    ENDPOINT: IS_PRODUCTION ? '/api/health' : 'http://localhost:5002/api/health',
     TIMEOUT: 5000,
     RETRY_ATTEMPTS: 3,
     INTERVAL: 60000,
@@ -159,10 +167,10 @@ export const API_CONFIG = {
     DOMAIN: IS_PRODUCTION ? '.onrender.com' : 'localhost',
     SECURE: true,
     SAMESITE: 'none',
-    MAX_AGE: 24 * 60 * 60 * 1000 // 24 hours
+    MAX_AGE: 24 * 60 * 60 * 1000, // 24 hours
   },
   // Always include credentials in requests
-  WITH_CREDENTIALS: true
+  WITH_CREDENTIALS: true,
 };
 
 // First, create simplified versions of our config for Node.js environment
@@ -183,13 +191,13 @@ const getNodeSecurityConfig = () => ({
     REQUIRE_SYMBOLS: true,
   },
   JWT: {
-    STORAGE_KEY: "token",
-    REFRESH_KEY: "refreshToken",
+    STORAGE_KEY: 'token',
+    REFRESH_KEY: 'refreshToken',
     EXPIRY_BUFFER: 300, // 5 minutes
   },
   CSRF: {
     ENABLED: true,
-    HEADER_NAME: "X-CSRF-Token",
+    HEADER_NAME: 'X-CSRF-Token',
   },
 });
 
@@ -218,77 +226,57 @@ const getNodeSessionConfig = () => ({
 export const SECURITY_CONFIG = isNodeEnv
   ? getNodeSecurityConfig()
   : {
-    ENABLE_HTTPS: parseBool(validateEnvVar("VITE_ENABLE_HTTPS", "false")),
-    RATE_LIMIT: {
-      ENABLED: parseBool(validateEnvVar("VITE_RATE_LIMIT_ENABLED", "true")),
-      MAX_REQUESTS: parseInt(
-        validateEnvVar("VITE_RATE_LIMIT_MAX_REQUESTS", "100")
-      ),
-      WINDOW_MS: parseInt(validateEnvVar("VITE_RATE_LIMIT_WINDOW_MS", "60000")), // 1 minute
-    },
-    PASSWORD: {
-      MIN_LENGTH: parseInt(validateEnvVar("VITE_PASSWORD_MIN_LENGTH", "8")),
-      MAX_LENGTH: parseInt(validateEnvVar("VITE_PASSWORD_MAX_LENGTH", "128")),
-      REQUIRE_UPPERCASE: parseBool(
-        validateEnvVar("VITE_PASSWORD_REQUIRE_UPPERCASE", "true")
-      ),
-      REQUIRE_LOWERCASE: parseBool(
-        validateEnvVar("VITE_PASSWORD_REQUIRE_LOWERCASE", "true")
-      ),
-      REQUIRE_NUMBERS: parseBool(
-        validateEnvVar("VITE_PASSWORD_REQUIRE_NUMBERS", "true")
-      ),
-      REQUIRE_SYMBOLS: parseBool(
-        validateEnvVar("VITE_PASSWORD_REQUIRE_SYMBOLS", "true")
-      ),
-    },
-    JWT: {
-      STORAGE_KEY: validateEnvVar("VITE_JWT_STORAGE_KEY", "token"),
-      REFRESH_KEY: validateEnvVar("VITE_JWT_REFRESH_KEY", "refreshToken"),
-      EXPIRY_BUFFER: parseInt(validateEnvVar("VITE_JWT_EXPIRY_BUFFER", "300")), // 5 minutes
-    },
-    CSRF: {
-      ENABLED: parseBool(validateEnvVar("VITE_CSRF_ENABLED", "true")),
-      HEADER_NAME: validateEnvVar("VITE_CSRF_HEADER_NAME", "X-CSRF-Token"),
-    },
-  };
+      ENABLE_HTTPS: parseBool(validateEnvVar('VITE_ENABLE_HTTPS', 'false')),
+      RATE_LIMIT: {
+        ENABLED: parseBool(validateEnvVar('VITE_RATE_LIMIT_ENABLED', 'true')),
+        MAX_REQUESTS: parseInt(validateEnvVar('VITE_RATE_LIMIT_MAX_REQUESTS', '100')),
+        WINDOW_MS: parseInt(validateEnvVar('VITE_RATE_LIMIT_WINDOW_MS', '60000')), // 1 minute
+      },
+      PASSWORD: {
+        MIN_LENGTH: parseInt(validateEnvVar('VITE_PASSWORD_MIN_LENGTH', '8')),
+        MAX_LENGTH: parseInt(validateEnvVar('VITE_PASSWORD_MAX_LENGTH', '128')),
+        REQUIRE_UPPERCASE: parseBool(validateEnvVar('VITE_PASSWORD_REQUIRE_UPPERCASE', 'true')),
+        REQUIRE_LOWERCASE: parseBool(validateEnvVar('VITE_PASSWORD_REQUIRE_LOWERCASE', 'true')),
+        REQUIRE_NUMBERS: parseBool(validateEnvVar('VITE_PASSWORD_REQUIRE_NUMBERS', 'true')),
+        REQUIRE_SYMBOLS: parseBool(validateEnvVar('VITE_PASSWORD_REQUIRE_SYMBOLS', 'true')),
+      },
+      JWT: {
+        STORAGE_KEY: validateEnvVar('VITE_JWT_STORAGE_KEY', 'token'),
+        REFRESH_KEY: validateEnvVar('VITE_JWT_REFRESH_KEY', 'refreshToken'),
+        EXPIRY_BUFFER: parseInt(validateEnvVar('VITE_JWT_EXPIRY_BUFFER', '300')), // 5 minutes
+      },
+      CSRF: {
+        ENABLED: parseBool(validateEnvVar('VITE_CSRF_ENABLED', 'true')),
+        HEADER_NAME: validateEnvVar('VITE_CSRF_HEADER_NAME', 'X-CSRF-Token'),
+      },
+    };
 
 // Feature flags
 export const FEATURES = isNodeEnv
   ? getNodeFeaturesConfig()
   : {
-    ENABLE_MFA: parseBool(validateEnvVar("VITE_ENABLE_MFA", "false")),
-    ENABLE_PASSWORD_RESET: parseBool(
-      validateEnvVar("VITE_ENABLE_PASSWORD_RESET", "true")
-    ),
-    ENABLE_ACCOUNT_LOCKOUT: parseBool(
-      validateEnvVar("VITE_ENABLE_ACCOUNT_LOCKOUT", "true")
-    ),
-    ENABLE_DEBUG_LOGGING: parseBool(
-      validateEnvVar("VITE_ENABLE_DEBUG_LOGGING", "false")
-    ),
-    MOCK_AUTH_IN_DEV: parseBool(validateEnvVar("VITE_MOCK_AUTH_IN_DEV", "false")),
-    DEMO_MODE: parseBool(validateEnvVar("VITE_FEATURE_DEMO_MODE", "false")),
-    OFFLINE_MODE: parseBool(validateEnvVar("VITE_FEATURE_OFFLINE_MODE", "true")),
-    DEBUG_MODE: parseBool(validateEnvVar("VITE_FEATURE_DEBUG_MODE", "false")),
-    ANALYTICS: parseBool(validateEnvVar("VITE_FEATURE_ANALYTICS", "false")),
-    PERFORMANCE_MONITORING: parseBool(
-      validateEnvVar("VITE_FEATURE_PERFORMANCE_MONITORING", "true")
-    ),
-  };
+      ENABLE_MFA: parseBool(validateEnvVar('VITE_ENABLE_MFA', 'false')),
+      ENABLE_PASSWORD_RESET: parseBool(validateEnvVar('VITE_ENABLE_PASSWORD_RESET', 'true')),
+      ENABLE_ACCOUNT_LOCKOUT: parseBool(validateEnvVar('VITE_ENABLE_ACCOUNT_LOCKOUT', 'true')),
+      ENABLE_DEBUG_LOGGING: parseBool(validateEnvVar('VITE_ENABLE_DEBUG_LOGGING', 'false')),
+      MOCK_AUTH_IN_DEV: parseBool(validateEnvVar('VITE_MOCK_AUTH_IN_DEV', 'false')),
+      DEMO_MODE: parseBool(validateEnvVar('VITE_FEATURE_DEMO_MODE', 'false')),
+      OFFLINE_MODE: parseBool(validateEnvVar('VITE_FEATURE_OFFLINE_MODE', 'true')),
+      DEBUG_MODE: parseBool(validateEnvVar('VITE_FEATURE_DEBUG_MODE', 'false')),
+      ANALYTICS: parseBool(validateEnvVar('VITE_FEATURE_ANALYTICS', 'false')),
+      PERFORMANCE_MONITORING: parseBool(
+        validateEnvVar('VITE_FEATURE_PERFORMANCE_MONITORING', 'true')
+      ),
+    };
 
 // Session configuration
 export const SESSION_CONFIG = isNodeEnv
   ? getNodeSessionConfig()
   : {
-    TIMEOUT: parseInt(validateEnvVar("VITE_SESSION_TIMEOUT", "3600000")),
-    ENABLE_KEEPALIVE: parseBool(
-      validateEnvVar("VITE_ENABLE_SESSION_KEEPALIVE", "true")
-    ),
-    RENEW_THRESHOLD: parseInt(
-      validateEnvVar("VITE_SESSION_RENEW_THRESHOLD", "300000")
-    ),
-  };
+      TIMEOUT: parseInt(validateEnvVar('VITE_SESSION_TIMEOUT', '3600000')),
+      ENABLE_KEEPALIVE: parseBool(validateEnvVar('VITE_ENABLE_SESSION_KEEPALIVE', 'true')),
+      RENEW_THRESHOLD: parseInt(validateEnvVar('VITE_SESSION_RENEW_THRESHOLD', '300000')),
+    };
 
 /**
  * Configuration for monitoring and error tracking
@@ -307,31 +295,31 @@ export const MONITORING_CONFIG = {
   MAX_ERRORS_PER_MINUTE: 100,
   ERROR_WINDOW: 60000,
   MONITORING_SERVICE: {},
-  IGNORED_ERRORS: ["NetworkError", "TimeoutError", "ValidationError"],
+  IGNORED_ERRORS: ['NetworkError', 'TimeoutError', 'ValidationError'],
   CUSTOM_HANDLERS: {},
 };
 
 // Theme configuration
 export const THEME_CONFIG = {
   LIGHT: {
-    primary: "#4a90e2",
-    secondary: "#f39c12",
-    background: "#ffffff",
-    text: "#333333",
-    error: "#e74c3c",
-    success: "#2ecc71",
-    warning: "#f1c40f",
-    info: "#3498db",
+    primary: '#4a90e2',
+    secondary: '#f39c12',
+    background: '#ffffff',
+    text: '#333333',
+    error: '#e74c3c',
+    success: '#2ecc71',
+    warning: '#f1c40f',
+    info: '#3498db',
   },
   DARK: {
-    primary: "#3498db",
-    secondary: "#e67e22",
-    background: "#1a1a1a",
-    text: "#ffffff",
-    error: "#c0392b",
-    success: "#27ae60",
-    warning: "#d35400",
-    info: "#2980b9",
+    primary: '#3498db',
+    secondary: '#e67e22',
+    background: '#1a1a1a',
+    text: '#ffffff',
+    error: '#c0392b',
+    success: '#27ae60',
+    warning: '#d35400',
+    info: '#2980b9',
   },
 };
 
@@ -370,143 +358,141 @@ export default {
 };
 
 export const ROUTES = {
-  HOME: "/",
-  LOGIN: "/login",
-  SIGNUP: "/signup",
-  DASHBOARD: "/dashboard",
-  UNIVERSE: "/universe/:id",
-  SCENE: "/scene/:id",
-  SETTINGS: "/settings",
-  PROFILE: "/profile",
+  HOME: '/',
+  LOGIN: '/login',
+  SIGNUP: '/signup',
+  DASHBOARD: '/dashboard',
+  UNIVERSE: '/universe/:id',
+  SCENE: '/scene/:id',
+  SETTINGS: '/settings',
+  PROFILE: '/profile',
 };
 
 // Modal configuration
 export const MODAL_CONFIG = {
   TYPES: {
-    DEFAULT: "default",
-    ALERT: "alert",
-    CONFIRMATION: "confirmation",
-    FORM: "form",
-    INFO: "info",
-    ERROR: "error",
-    SUCCESS: "success",
-    WARNING: "warning",
+    DEFAULT: 'default',
+    ALERT: 'alert',
+    CONFIRMATION: 'confirmation',
+    FORM: 'form',
+    INFO: 'info',
+    ERROR: 'error',
+    SUCCESS: 'success',
+    WARNING: 'warning',
   },
   SIZES: {
-    SMALL: "400px",
-    MEDIUM: "600px",
-    LARGE: "800px",
-    XLARGE: "1000px",
+    SMALL: '400px',
+    MEDIUM: '600px',
+    LARGE: '800px',
+    XLARGE: '1000px',
   },
   POSITIONS: {
-    CENTER: "center",
-    TOP: "top",
-    BOTTOM: "bottom",
-    LEFT: "left",
-    RIGHT: "right",
+    CENTER: 'center',
+    TOP: 'top',
+    BOTTOM: 'bottom',
+    LEFT: 'left',
+    RIGHT: 'right',
   },
   ANIMATIONS: {
     FADE: {
       duration: 200,
-      timing: "ease-in-out",
+      timing: 'ease-in-out',
     },
     SLIDE: {
       duration: 300,
-      timing: "ease-in-out",
+      timing: 'ease-in-out',
     },
     SCALE: {
       duration: 200,
-      timing: "ease-in-out",
+      timing: 'ease-in-out',
     },
   },
   DEFAULT_SETTINGS: {
-    size: "MEDIUM",
-    position: "CENTER",
-    animation: "FADE",
+    size: 'MEDIUM',
+    position: 'CENTER',
+    animation: 'FADE',
     draggable: true,
     closeOnBackdrop: true,
     closeOnEscape: true,
   },
   STYLES: {
     backdrop: {
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      backdropFilter: "blur(4px)",
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backdropFilter: 'blur(4px)',
     },
     modal: {
-      backgroundColor: "#ffffff",
-      borderRadius: "8px",
-      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-      padding: "24px",
+      backgroundColor: '#ffffff',
+      borderRadius: '8px',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      padding: '24px',
     },
     header: {
-      marginBottom: "16px",
-      paddingBottom: "16px",
-      borderBottom: "1px solid #e0e0e0",
+      marginBottom: '16px',
+      paddingBottom: '16px',
+      borderBottom: '1px solid #e0e0e0',
     },
     content: {
-      marginBottom: "24px",
+      marginBottom: '24px',
     },
     footer: {
-      display: "flex",
-      justifyContent: "flex-end",
-      gap: "8px",
-      paddingTop: "16px",
-      borderTop: "1px solid #e0e0e0",
+      display: 'flex',
+      justifyContent: 'flex-end',
+      gap: '8px',
+      paddingTop: '16px',
+      borderTop: '1px solid #e0e0e0',
     },
     button: {
-      padding: "8px 16px",
-      borderRadius: "4px",
-      border: "none",
-      cursor: "pointer",
-      transition: "background-color 0.2s",
+      padding: '8px 16px',
+      borderRadius: '4px',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s',
     },
     primaryButton: {
-      backgroundColor: "#1976d2",
-      color: "#ffffff",
+      backgroundColor: '#1976d2',
+      color: '#ffffff',
     },
     secondaryButton: {
-      backgroundColor: "#e0e0e0",
-      color: "#000000",
+      backgroundColor: '#e0e0e0',
+      color: '#000000',
     },
   },
   RESPONSIVE: {
     breakpoints: {
-      mobile: "320px",
-      tablet: "768px",
-      desktop: "1024px",
+      mobile: '320px',
+      tablet: '768px',
+      desktop: '1024px',
     },
     sizes: {
       mobile: {
-        SMALL: "90vw",
-        MEDIUM: "95vw",
-        LARGE: "98vw",
-        XLARGE: "100vw",
+        SMALL: '90vw',
+        MEDIUM: '95vw',
+        LARGE: '98vw',
+        XLARGE: '100vw',
       },
       tablet: {
-        SMALL: "400px",
-        MEDIUM: "600px",
-        LARGE: "800px",
-        XLARGE: "90vw",
+        SMALL: '400px',
+        MEDIUM: '600px',
+        LARGE: '800px',
+        XLARGE: '90vw',
       },
       desktop: {
-        SMALL: "400px",
-        MEDIUM: "600px",
-        LARGE: "800px",
-        XLARGE: "1000px",
+        SMALL: '400px',
+        MEDIUM: '600px',
+        LARGE: '800px',
+        XLARGE: '1000px',
       },
     },
   },
 };
 
 // Modal style utility functions
-export const getModalSizeStyles = (
-  size = MODAL_CONFIG.DEFAULT_SETTINGS.size
-) => {
+export const getModalSizeStyles = (size = MODAL_CONFIG.DEFAULT_SETTINGS.size) => {
   return {
     width: MODAL_CONFIG.SIZES[size] || MODAL_CONFIG.SIZES.MEDIUM,
-    maxWidth: "90vw",
-    maxHeight: "90vh",
-    overflow: "auto",
+    maxWidth: '90vw',
+    maxHeight: '90vh',
+    overflow: 'auto',
   };
 };
 
@@ -517,17 +503,17 @@ export const getModalTypeStyles = (type) => {
   };
 
   switch (type) {
-    case "ALERT":
+    case 'ALERT':
       return {
         ...baseStyles,
         ...MODAL_CONFIG.STYLES.alert,
       };
-    case "CONFIRMATION":
+    case 'CONFIRMATION':
       return {
         ...baseStyles,
         ...MODAL_CONFIG.STYLES.confirmation,
       };
-    case "FORM":
+    case 'FORM':
       return {
         ...baseStyles,
         ...MODAL_CONFIG.STYLES.form,
@@ -537,63 +523,58 @@ export const getModalTypeStyles = (type) => {
   }
 };
 
-export const getModalAnimationStyles = (
-  animation = MODAL_CONFIG.DEFAULT_SETTINGS.animation
-) => {
-  const { duration, timing } =
-    MODAL_CONFIG.ANIMATIONS[animation] || MODAL_CONFIG.ANIMATIONS.FADE;
+export const getModalAnimationStyles = (animation = MODAL_CONFIG.DEFAULT_SETTINGS.animation) => {
+  const { duration, timing } = MODAL_CONFIG.ANIMATIONS[animation] || MODAL_CONFIG.ANIMATIONS.FADE;
 
   return {
     transition: `all ${duration}ms ${timing}`,
     opacity: 1,
-    transform: "translateY(0)",
+    transform: 'translateY(0)',
   };
 };
 
-export const getModalPositionStyles = (
-  position = MODAL_CONFIG.DEFAULT_SETTINGS.position
-) => {
+export const getModalPositionStyles = (position = MODAL_CONFIG.DEFAULT_SETTINGS.position) => {
   switch (position) {
-    case "TOP":
+    case 'TOP':
       return {
-        top: "20px",
-        left: "50%",
-        transform: "translateX(-50%)",
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
       };
-    case "BOTTOM":
+    case 'BOTTOM':
       return {
-        bottom: "20px",
-        left: "50%",
-        transform: "translateX(-50%)",
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
       };
-    case "LEFT":
+    case 'LEFT':
       return {
-        top: "50%",
-        left: "20px",
-        transform: "translateY(-50%)",
+        top: '50%',
+        left: '20px',
+        transform: 'translateY(-50%)',
       };
-    case "RIGHT":
+    case 'RIGHT':
       return {
-        top: "50%",
-        right: "20px",
-        transform: "translateY(-50%)",
+        top: '50%',
+        right: '20px',
+        transform: 'translateY(-50%)',
       };
     default:
       return {
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
       };
   }
 };
 
 export const ERROR_MESSAGES = {
-  NETWORK_ERROR: "Network error occurred. Please check your connection.",
-  SERVER_ERROR: "Server error occurred. Please try again later.",
-  UNAUTHORIZED: "You are not authorized to perform this action.",
-  NOT_FOUND: "The requested resource was not found.",
-  VALIDATION_ERROR: "Please check your input and try again.",
-  UNKNOWN_ERROR: "An unknown error occurred. Please try again.",
+  NETWORK_ERROR: 'Network error occurred. Please check your connection.',
+  SERVER_ERROR: 'Server error occurred. Please try again later.',
+  UNAUTHORIZED: 'You are not authorized to perform this action.',
+  NOT_FOUND: 'The requested resource was not found.',
+  VALIDATION_ERROR: 'Please check your input and try again.',
+  UNKNOWN_ERROR: 'An unknown error occurred. Please try again.',
 };
 
 /**
@@ -618,7 +599,9 @@ export const APP_CONFIG = {
   API: {
     BASE_URL: IS_PRODUCTION
       ? '/api' // Use relative URL in production
-      : (isNodeEnv ? "http://localhost:5001/api" : (import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api")),
+      : isNodeEnv
+        ? 'http://localhost:5002/api'
+        : import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api',
     TIMEOUT: 30000,
   },
   FEATURES: {

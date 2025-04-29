@@ -188,7 +188,7 @@ export const demoLogin = createAsyncThunk(
         dispatch(loginSuccess(authData));
 
         // Dispatch a storage event to notify other components
-        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('storage'));
 
         console.log('Thunk - Demo login successful');
         return authData;
@@ -337,7 +337,7 @@ export const logout = createAsyncThunk('auth/logout', async (_, { dispatch, reje
     });
 
     // Create a click event and dispatch it on the link
-    const clickEvent = new Event('click');
+    const clickEvent = new MouseEvent('click');
     homeLink.dispatchEvent(clickEvent);
 
     return { message: 'Logged out successfully' };

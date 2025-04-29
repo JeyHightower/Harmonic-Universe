@@ -1,12 +1,100 @@
+import PropTypes from 'prop-types';
 import React from 'react';
-import { ModalSystem } from '../modals';
 import { MODAL_CONFIG } from '../../utils/config';
-import AlertModal from '../modals/AlertModal';
-import ConfirmationModal from '../modals/ConfirmationModal';
-import FormModal from '../modals/FormModal';
 import LoginModal from '../auth/LoginModal';
 import SignupModal from '../auth/SignupModal';
 import HarmonyParametersModal from '../harmony/HarmonyParametersModal';
+import { ModalSystem } from '../modals';
+
+// Network Error Modal Content Component
+const NetworkErrorModalContent = ({ message, onClose }) => {
+  return (
+    <div className="network-error-modal">
+      <p>{message || 'A network error occurred. Please check your connection and try again.'}</p>
+      <button onClick={onClose}>Close</button>
+    </div>
+  );
+};
+
+NetworkErrorModalContent.propTypes = {
+  message: PropTypes.string,
+  onClose: PropTypes.func.isRequired,
+};
+
+// Modal Components with PropTypes
+const NetworkErrorModal = ({ onClose, message }) => (
+  <ModalSystem
+    isOpen={true}
+    onClose={onClose}
+    title="Connection Error"
+    size={MODAL_CONFIG.SIZES.SMALL}
+    type={MODAL_CONFIG.TYPES.ALERT}
+    showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
+    data-modal-type="network-error"
+  >
+    <NetworkErrorModalContent message={message} onClose={onClose} />
+  </ModalSystem>
+);
+
+NetworkErrorModal.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  message: PropTypes.string,
+};
+
+const LoginModalWrapper = (props) => (
+  <ModalSystem
+    isOpen={true}
+    onClose={props.onClose}
+    title="Login"
+    size={MODAL_CONFIG.SIZES.SMALL}
+    type={MODAL_CONFIG.TYPES.FORM}
+    showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
+    data-modal-type="login"
+  >
+    <LoginModal {...props} />
+  </ModalSystem>
+);
+
+LoginModalWrapper.propTypes = {
+  onClose: PropTypes.func.isRequired,
+};
+
+const SignupModalWrapper = (props) => (
+  <ModalSystem
+    isOpen={true}
+    onClose={props.onClose}
+    title="Sign Up"
+    size={MODAL_CONFIG.SIZES.SMALL}
+    type={MODAL_CONFIG.TYPES.FORM}
+    showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
+    data-modal-type="signup"
+  >
+    <SignupModal {...props} />
+  </ModalSystem>
+);
+
+SignupModalWrapper.propTypes = {
+  onClose: PropTypes.func.isRequired,
+};
+
+const HarmonyParametersModalWrapper = (props) => (
+  <ModalSystem
+    isOpen={true}
+    onClose={props.onClose}
+    title={props.initialData ? 'Edit Harmony Parameter' : 'Create Harmony Parameter'}
+    size={MODAL_CONFIG.SIZES.MEDIUM}
+    type={MODAL_CONFIG.TYPES.FORM}
+    showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
+    data-modal-type="harmony-parameters"
+  >
+    <HarmonyParametersModal {...props} onClose={props.onClose} />
+  </ModalSystem>
+);
+
+HarmonyParametersModalWrapper.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  initialData: PropTypes.object,
+};
 
 /**
  * Helper function to get the modal component by type
@@ -19,94 +107,45 @@ export const getModalComponent = (modalType) => {
     console.warn(`Invalid modal type: ${modalType}`);
   }
 
-  // Import modal components based on type
+  // Return modal components based on type
   switch (modalType) {
     case 'NETWORK_ERROR':
-      return (props) => {
-        return (
-          <ModalSystem
-            isOpen={true}
-            onClose={props.onClose}
-            title="Connection Error"
-            size={MODAL_CONFIG.SIZES.SMALL}
-            type={MODAL_CONFIG.TYPES.ALERT}
-            showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
-            data-modal-type="network-error"
-          >
-            <NetworkErrorModalContent message={props.message} onClose={props.onClose} />
-          </ModalSystem>
-        );
-      };
-
+      return NetworkErrorModal;
     case 'LOGIN':
-      return (props) => {
-        return (
-          <ModalSystem
-            isOpen={true}
-            onClose={props.onClose}
-            title="Login"
-            size={MODAL_CONFIG.SIZES.SMALL}
-            type={MODAL_CONFIG.TYPES.FORM}
-            showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
-            data-modal-type="login"
-          >
-            <LoginModal {...props} />
-          </ModalSystem>
-        );
-      };
-
+      return LoginModalWrapper;
     case 'SIGNUP':
-      return (props) => {
-        return (
-          <ModalSystem
-            isOpen={true}
-            onClose={props.onClose}
-            title="Sign Up"
-            size={MODAL_CONFIG.SIZES.SMALL}
-            type={MODAL_CONFIG.TYPES.FORM}
-            showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
-            data-modal-type="signup"
-          >
-            <SignupModal {...props} />
-          </ModalSystem>
-        );
-      };
-
+      return SignupModalWrapper;
     case 'HARMONY_PARAMETERS':
-      return (props) => {
-        return (
-          <ModalSystem
-            isOpen={true}
-            onClose={props.onClose}
-            title={props.initialData ? 'Edit Harmony Parameter' : 'Create Harmony Parameter'}
-            size={MODAL_CONFIG.SIZES.MEDIUM}
-            type={MODAL_CONFIG.TYPES.FORM}
-            showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
-            data-modal-type="harmony-parameters"
-          >
-            <HarmonyParametersModal {...props} onClose={props.onClose} />
-          </ModalSystem>
-        );
-      };
-
+      return HarmonyParametersModalWrapper;
     default:
       console.warn(`No specific modal handler for type: ${modalType}, using default wrapper`);
-      return (props) => (
-        <ModalSystem
-          isOpen={true}
-          onClose={props.onClose}
-          title={props.title || 'Modal'}
-          size={props.size || MODAL_CONFIG.SIZES.MEDIUM}
-          type={props.type || MODAL_CONFIG.TYPES.DEFAULT}
-          showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
-          data-modal-type={modalType.toLowerCase()}
-        >
-          <div className="default-modal-content">
-            {props.children || <p>Modal content not provided</p>}
-          </div>
-        </ModalSystem>
-      );
+      return DefaultModalWrapper;
   }
+};
+
+const DefaultModalWrapper = (props) => (
+  <ModalSystem
+    isOpen={true}
+    onClose={props.onClose}
+    title={props.title || 'Modal'}
+    size={props.size || MODAL_CONFIG.SIZES.MEDIUM}
+    type={props.type || MODAL_CONFIG.TYPES.DEFAULT}
+    showCloseButton={MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape}
+    data-modal-type={props.modalType?.toLowerCase()}
+  >
+    <div className="default-modal-content">
+      {props.children || <p>Modal content not provided</p>}
+    </div>
+  </ModalSystem>
+);
+
+DefaultModalWrapper.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  title: PropTypes.string,
+  size: PropTypes.string,
+  type: PropTypes.string,
+  modalType: PropTypes.string,
+  children: PropTypes.node,
 };
 
 /**
