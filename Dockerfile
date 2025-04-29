@@ -20,7 +20,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /app/backend
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -40,25 +40,27 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# this layer.
+# Copy requirements first to leverage Docker cache
+COPY backend/requirements.txt .
+
+# Install Python dependencies
 RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=backend/requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
+
+# Copy the source code
+COPY backend/ .
+
+# Copy .env file
+COPY .env /app/backend/.env
 
 # Switch to the non-privileged user to run the application.
 USER appuser
-
-# Copy the source code into the container.
-COPY . .
 
 # Expose the port that the application listens on.
 EXPOSE 5001
 
 # Run the application.
-CMD ["python", "backend/run.py"]
+CMD ["python", "run.py"]
 
 # Nginx setup (if needed)
 FROM nginx AS nginx_setup
