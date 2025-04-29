@@ -95,6 +95,8 @@ coverage.xml
 # IDE and Editor files
 .idea/
 .vscode/
+.qodo/
+.cursor/
 *.swp
 *.swo
 *~
