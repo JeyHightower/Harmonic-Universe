@@ -109,16 +109,18 @@
 /* Fix for nested form elements */
 .stable-modal form,
 .stable-modal form * {
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 /* Fix for modal content wrapper to handle events properly */
 .modal-content-wrapper {
-  pointer-events: auto !important;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
 }
 
 .modal-content-wrapper * {
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 /* Scene modal specific styling */
@@ -126,23 +128,23 @@
   padding: 24px;
   max-height: calc(80vh - 130px);
   overflow: auto;
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 /* Ensure modals in universe detail page are visible */
 .universe-detail-container .ant-modal-root,
 .universe-detail-container .ant-modal-wrap,
 .universe-detail-container .ant-modal {
-  visibility: visible !important;
-  opacity: 1 !important;
-  display: block !important;
-  pointer-events: auto !important;
+  visibility: visible;
+  opacity: 1;
+  display: block;
+  pointer-events: auto;
 }
 
 /* Ensure forms inside modals are properly interactive */
 .ant-modal form,
 .stable-modal form {
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 /* Ensure form inputs are clickable */
@@ -156,7 +158,7 @@
 .stable-modal textarea,
 .stable-modal button,
 .stable-modal a {
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 /* Ensure proper stacking context */
@@ -167,17 +169,20 @@
   right: 0;
   bottom: 0;
   z-index: 1050;
-  pointer-events: auto; /* Changed from 'none' to allow clicks to pass through */
+  pointer-events: none; /* Changed from 'auto' to allow clicks to pass through */
+  isolation: isolate; /* Create a new stacking context */
 }
 
 /* Modal containers should capture clicks */
 #portal-root > * {
   pointer-events: auto;
+  position: relative;
+  z-index: 1;
 }
 
 /* But elements inside portals should also get clicks */
 #portal-root .modal-content * {
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 /* Modal debug - remove these in production */

@@ -119,7 +119,7 @@ def setup_static_folder(app):
 def setup_cors(app):
     """Configure CORS for the application using Flask-CORS."""
     # Get CORS configuration from app config
-    resources = app.config.get('CORS_RESOURCES', {r"/api/*": {"origins": "*"}})
+    resources = app.config.get('CORS_RESOURCES', {r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}})
     supports_credentials = app.config.get('CORS_SUPPORTS_CREDENTIALS', True)
     methods = app.config.get('CORS_METHODS', ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"])
     allow_headers = app.config.get('CORS_HEADERS', ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"])

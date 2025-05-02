@@ -50,16 +50,12 @@ const initModalSystem = () => {
   setTimeout(() => {
     const portalRoot = document.getElementById('portal-root');
     if (portalRoot) {
-      portalRoot.style.pointerEvents = 'auto';
+      portalRoot.style.pointerEvents = 'none'; // Changed to none to allow clicks to pass through
     }
   }, 500);
 
-  // Apply essential fixes immediately and then again after a short delay
-  // to ensure better interaction from app startup
+  // Apply essential fixes immediately
   applyEssentialFixes();
-  setTimeout(() => {
-    applyEssentialFixes();
-  }, 1000);
 
   // Add a listener for modal system cleanup on page unload
   window.addEventListener('beforeunload', () => {

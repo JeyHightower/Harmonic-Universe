@@ -132,6 +132,31 @@ export const fixModalIssues = () => {
     }
   });
 
+  // Ensure landing page elements are not affected
+  const homeContainer = document.querySelector('.home-container');
+  if (homeContainer) {
+    homeContainer.style.pointerEvents = 'auto';
+    homeContainer.style.zIndex = '1';
+
+    const homeContent = homeContainer.querySelector('.home-content');
+    if (homeContent) {
+      homeContent.style.pointerEvents = 'auto';
+      homeContent.style.zIndex = '2';
+    }
+
+    const homeActions = homeContainer.querySelector('.home-actions');
+    if (homeActions) {
+      homeActions.style.pointerEvents = 'auto';
+      homeActions.style.zIndex = '3';
+    }
+
+    const buttons = homeContainer.querySelectorAll('button, a');
+    buttons.forEach(button => {
+      button.style.pointerEvents = 'auto';
+      button.style.zIndex = '4';
+    });
+  }
+
   console.log('Applied emergency fixes to modal elements');
 };
 

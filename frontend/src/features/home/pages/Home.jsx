@@ -1,16 +1,15 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  checkAuthState,
-  loginFailure,
-  loginStart,
-  loginSuccess,
-} from '../../../store/slices/authSlice';
-import { demoLogin } from '../../../utils/demoLogin';
-import { AUTH_CONFIG, IS_DEVELOPMENT } from '../../../utils/config';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button';
+import {
+    checkAuthState,
+    demoLogin,
+    loginFailure,
+    loginStart
+} from '../../../store/slices/authSlice';
 import '../../../styles/Home.css';
+import { AUTH_CONFIG } from '../../../utils/config';
 
 // Destructure window.setTimeout to fix linter error
 const { setTimeout } = window;
@@ -42,10 +41,15 @@ function Home() {
       console.debug('[Home] Starting demo login process');
       dispatch(loginStart());
 
-      await demoLogin(dispatch);
+      // Use the demoLogin thunk instead of the utility
+      const result = await dispatch(demoLogin()).unwrap();
 
-      console.debug('[Home] Demo login successful');
-      navigate('/dashboard', { replace: true });
+      if (result) {
+        console.debug('[Home] Demo login successful');
+        navigate('/dashboard', { replace: true });
+      } else {
+        throw new Error('Demo login failed');
+      }
     } catch (error) {
       console.error('[Home] Demo login process failed:', error);
       dispatch(loginFailure('Could not log in as demo user'));

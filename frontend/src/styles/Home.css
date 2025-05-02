@@ -5,12 +5,18 @@
   align-items: center;
   padding: 2rem;
   background-color: #f5f5f5;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto !important;
 }
 
 .home-content {
   max-width: 800px;
   text-align: center;
   margin-bottom: 3rem;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto !important;
 }
 
 .auth-buttons {
@@ -64,6 +70,17 @@
   justify-content: center;
   gap: 1rem;
   margin-bottom: 3rem;
+  position: relative;
+  z-index: 3;
+  pointer-events: auto !important;
+}
+
+.home-actions button,
+.home-actions a {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 4;
 }
 
 .home-actions .ant-btn {
@@ -79,6 +96,9 @@
   width: 100%;
   max-width: 1200px;
   margin-top: 2rem;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto !important;
 }
 
 .feature-card {
@@ -87,6 +107,10 @@
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 .feature-card:hover {

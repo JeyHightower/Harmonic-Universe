@@ -60,6 +60,33 @@
         position: relative;
       }
 
+      /* Ensure landing page elements are not affected by modal styles */
+      .home-container {
+        position: relative;
+        z-index: 1;
+        pointer-events: auto;
+      }
+
+      .home-content {
+        position: relative;
+        z-index: 2;
+        pointer-events: auto;
+      }
+
+      .home-actions {
+        position: relative;
+        z-index: 3;
+        pointer-events: auto;
+      }
+
+      .home-actions button,
+      .home-actions a {
+        position: relative;
+        z-index: 4;
+        pointer-events: auto;
+        cursor: pointer;
+      }
+
       /* Debug panel styles */
       #debug-panel {
         position: fixed;

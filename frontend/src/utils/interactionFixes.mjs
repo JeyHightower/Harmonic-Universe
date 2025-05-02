@@ -20,11 +20,31 @@ export const fixPointerEvents = (rootElement = document.body) => {
 
   allElements.forEach(el => {
     const computedStyle = window.getComputedStyle(el);
-    if (computedStyle.pointerEvents === 'none') {
+    const isLandingPage = el.closest('.home-container') !== null;
+
+    // Only fix elements that need it
+    if (computedStyle.pointerEvents === 'none' ||
+        (isLandingPage && computedStyle.pointerEvents === 'auto')) {
       el.style.pointerEvents = 'auto';
       fixedCount++;
     }
   });
+
+  // Special handling for landing page elements
+  const landingPageElements = rootElement.querySelectorAll('.home-container button, .home-container a, .home-container .feature-card');
+  landingPageElements.forEach(el => {
+    el.style.pointerEvents = 'auto';
+    el.style.cursor = 'pointer';
+    el.style.position = 'relative';
+    el.style.zIndex = '4';
+    fixedCount++;
+  });
+
+  // Ensure portal root doesn't block clicks
+  const portalRoot = document.getElementById('portal-root');
+  if (portalRoot) {
+    portalRoot.style.pointerEvents = 'none';
+  }
 
   console.log(`Fixed pointer events for ${fixedCount} elements`);
 };
@@ -33,6 +53,24 @@ export const fixPointerEvents = (rootElement = document.body) => {
  * Fixes z-index stacking issues that can prevent proper interaction
  */
 export const fixZindexIssues = () => {
+  // Fix landing page z-index issues
+  const homeContainer = document.querySelector('.home-container');
+  if (homeContainer) {
+    homeContainer.style.zIndex = '1';
+    const homeContent = homeContainer.querySelector('.home-content');
+    if (homeContent) {
+      homeContent.style.zIndex = '2';
+    }
+    const homeActions = homeContainer.querySelector('.home-actions');
+    if (homeActions) {
+      homeActions.style.zIndex = '3';
+    }
+    const buttons = homeContainer.querySelectorAll('button, a');
+    buttons.forEach(button => {
+      button.style.zIndex = '4';
+    });
+  }
+
   // Fix modal z-index issues
   const modalOverlays = document.querySelectorAll('.modal-overlay, .ant-modal-root');
   modalOverlays.forEach((el, index) => {

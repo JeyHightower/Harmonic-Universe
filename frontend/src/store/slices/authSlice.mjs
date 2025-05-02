@@ -1,8 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { log, AUTH_CONFIG, FORCE_DEMO_MODE, IS_PRODUCTION, ROUTES, isHardRefresh } from "../../utils";
-import { login, register } from "../thunks/authThunks"; // Import login and register thunks
 import { authService } from "../../services/auth.service.mjs"; // Import the auth service directly
 import { demoUserService } from "../../services/demo-user.service.mjs"; // Import demo user service
+import { AUTH_CONFIG, FORCE_DEMO_MODE, IS_PRODUCTION, ROUTES, log } from "../../utils";
+import { login, register } from "../thunks/authThunks"; // Import login and register thunks
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {
@@ -42,7 +42,7 @@ const createDemoUser = () => {
 // Helper to setup demo mode when needed
 const setupDemoMode = () => {
   console.debug("Setting up demo mode");
-  
+
   // Use the demoUserService to set up the demo session properly
   const demoData = demoUserService.setupDemoSession();
   return demoData;
@@ -54,18 +54,34 @@ export const demoLogin = createAsyncThunk(
   async (_, { dispatch }) => {
     try {
       console.log("Starting demo login process");
-      
-      // Use the demo service to handle demo login
-      const demoResponse = await demoUserService.performDemoLogin();
-      
-      if (!demoResponse.success) {
-        throw new Error(demoResponse.error || "Demo login failed");
+
+      // Call the backend demo login endpoint
+      const response = await fetch('http://localhost:5001/api/auth/demo-login/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Demo login failed');
       }
-      
+
+      const data = await response.json();
+
+      // Store token and user data
+      if (data.token) {
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.token);
+      }
+      if (data.user) {
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(data.user));
+      }
+
       // Update state with demo user and token
-      dispatch(loginSuccess(demoResponse.data));
-      
-      return demoResponse.data;
+      dispatch(loginSuccess(data));
+
+      return data;
     } catch (error) {
       console.error("Demo login failed:", error);
       dispatch(loginFailure(error.message));
@@ -87,7 +103,7 @@ export const handleAuthTokens = createAsyncThunk(
       } else if (tokens.access_token) {
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, tokens.access_token);
       }
-      
+
       // Store user in localStorage if provided
       if (tokens.user) {
         localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(tokens.user));
@@ -113,18 +129,18 @@ export const checkAuthState = createAsyncThunk(
   async (_, { dispatch, getState }) => {
     try {
       console.debug("Checking auth state");
-      
+
       // Check if auth state is already loaded
       const { auth } = getState();
       if (auth.isAuthenticated && auth.user) {
         console.debug("Already authenticated with user:", auth.user.email);
         return auth.user;
       }
-      
+
       // Get token and user data from localStorage
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       let userData = null;
-      
+
       try {
         const userString = localStorage.getItem(AUTH_CONFIG.USER_KEY);
         if (userString) {
@@ -133,21 +149,21 @@ export const checkAuthState = createAsyncThunk(
       } catch (err) {
         console.error("Error parsing user data from localStorage:", err);
       }
-      
+
       // If no token, handle as not authenticated
       if (!token) {
         console.debug("No token found, not authenticated");
         dispatch(logout());
         return null;
       }
-      
-      console.debug("Found token and userData:", { 
-        hasToken: !!token, 
+
+      console.debug("Found token and userData:", {
+        hasToken: !!token,
         hasUserData: !!userData,
         tokenLength: token?.length || 0,
         isDemoToken: token?.includes('demo')
       });
-      
+
       // Check if token verification previously failed
       const tokenVerificationFailed = localStorage.getItem("token_verification_failed");
       if (tokenVerificationFailed === "true") {
@@ -155,22 +171,22 @@ export const checkAuthState = createAsyncThunk(
         dispatch(logout());
         return null;
       }
-      
+
       // Demo mode handling
       const isDemoToken = token.includes('demo');
-      
+
       if (isDemoToken && userData) {
         console.log("Demo token detected, handling demo session");
-        // For demo tokens, don't try to validate with the server 
+        // For demo tokens, don't try to validate with the server
         // Just ensure we have valid demo data
         userData = userData || createDemoUser();
-        
+
         // Update localStorage with fresh demo token if needed
         if (!token.startsWith('demo-')) {
           const newToken = `demo-token-${Date.now()}`;
           localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
         }
-        
+
         dispatch(loginSuccess({ user: userData, token }));
         return userData;
       }

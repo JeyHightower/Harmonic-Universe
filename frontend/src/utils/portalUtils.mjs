@@ -19,7 +19,8 @@ export const ensurePortalRoot = () => {
     portalRoot.style.right = "0";
     portalRoot.style.bottom = "0";
     portalRoot.style.zIndex = "1050"; // Standardized z-index to match modals
-    portalRoot.style.pointerEvents = "auto";
+    portalRoot.style.pointerEvents = "none"; // Changed to none to allow clicks to pass through
+    portalRoot.style.isolation = "isolate"; // Create a new stacking context
 
     document.body.appendChild(portalRoot);
     console.log("Portal root created and appended to body");
@@ -33,7 +34,8 @@ export const ensurePortalRoot = () => {
     portalRoot.style.right = "0";
     portalRoot.style.bottom = "0";
     portalRoot.style.zIndex = "1050"; // Standardized z-index to match modals
-    portalRoot.style.pointerEvents = "auto";
+    portalRoot.style.pointerEvents = "none"; // Changed to none to allow clicks to pass through
+    portalRoot.style.isolation = "isolate"; // Create a new stacking context
   }
 
   return portalRoot;
