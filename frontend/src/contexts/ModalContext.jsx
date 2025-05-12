@@ -211,15 +211,21 @@ const ModalRenderer = ({ type, props, onClose }) => {
     // Check if the click is directly on the container (backdrop)
     // We consider a click on the container only if:
     // 1. The click target is exactly the container element
-    // 2. The click is not within any .modal-content or .ant-modal-content elements
+    // 2. The click is not within any .modal-content, .ant-modal-content, or input elements
     const isDirectContainerClick = target === e.currentTarget;
-    const isWithinContent = !!target.closest('.modal-content, .ant-modal-content');
+    const isWithinContent = !!target.closest(
+      '.modal-content, .ant-modal-content, input, textarea, select, button, label'
+    );
+    const isInputElement =
+      target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
 
     console.log('Container click:', {
       isDirectContainerClick,
       isWithinContent,
+      isInputElement,
       targetClass: target.className,
       currentTargetClass: e.currentTarget.className,
+      targetTag: target.tagName,
     });
 
     // If it's a backdrop click (direct container click and not within content)
@@ -227,6 +233,10 @@ const ModalRenderer = ({ type, props, onClose }) => {
       console.log('Backdrop click detected, calling handleClose');
       // When clicked on backdrop, call handleClose to decide what to do
       handleClose(e);
+    } else if (isInputElement) {
+      // If clicking on an input element, just prevent propagation
+      console.log('Input element click detected, preventing propagation');
+      e.stopPropagation();
     } else {
       // Otherwise, just prevent propagation
       console.log('Content click detected, just stopping propagation');
@@ -237,13 +247,24 @@ const ModalRenderer = ({ type, props, onClose }) => {
   // Specific content click handler to ensure the modal doesn't close
   const handleContentClick = (e) => {
     // Log the click for debugging
-    console.log('Content click:', { targetClass: e.target.className });
+    console.log('Content click:', {
+      targetClass: e.target.className,
+      targetTag: e.target.tagName,
+      isInteractive: e.target.closest(
+        'input, textarea, select, button, [role="button"], [tabindex]'
+      ),
+    });
 
     // Always stop propagation for content clicks
     e.stopPropagation();
 
     // Prevent this click from triggering any backdrop close handlers
     e.nativeEvent.stopImmediatePropagation();
+
+    // If the click is on an interactive element, ensure it gets focus
+    if (e.target.closest('input, textarea, select, button, [role="button"], [tabindex]')) {
+      e.target.focus();
+    }
   };
 
   if (hasBuiltInModal) {
@@ -263,6 +284,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
           justifyContent: 'center',
           alignItems: 'center',
           pointerEvents: 'auto',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
         }}
       >
         <div
@@ -272,6 +294,12 @@ const ModalRenderer = ({ type, props, onClose }) => {
             pointerEvents: 'auto',
             zIndex: 1051,
             position: 'relative',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '20px',
+            maxWidth: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
           }}
         >
           <ModalComponent
@@ -303,42 +331,59 @@ const ModalRenderer = ({ type, props, onClose }) => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
         }}
       >
-        <StableModalWrapper
-          title={title}
-          open={true}
-          onClose={handleClose}
-          width={modalProps.width || 600}
-          style={{ pointerEvents: 'auto' }}
+        <div
+          className="modal-content"
+          onClick={handleContentClick}
+          style={{
+            pointerEvents: 'auto',
+            zIndex: 1051,
+            position: 'relative',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '20px',
+            maxWidth: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+          }}
         >
-          <div
-            onClick={handleContentClick}
-            className="modal-content"
-            style={{
-              pointerEvents: 'auto',
-              position: 'relative',
-              zIndex: 1051,
-            }}
+          <StableModalWrapper
+            title={title}
+            open={true}
+            onClose={handleClose}
+            width={modalProps.width || 600}
+            style={{ pointerEvents: 'auto' }}
           >
-            <ModalComponent
-              {...modalProps}
-              onClose={handleClose}
+            <div
+              onClick={handleContentClick}
+              className="modal-content"
               style={{
-                ...getModalSizeStyles(props.size || MODAL_CONFIG.SIZES.MEDIUM),
-                ...getModalTypeStyles(type),
-                ...getModalAnimationStyles(props.animation || MODAL_CONFIG.ANIMATIONS.FADE),
-                ...getModalPositionStyles(props.position || MODAL_CONFIG.POSITIONS.CENTER),
-                ...props.style,
                 pointerEvents: 'auto',
                 position: 'relative',
                 zIndex: 1055,
               }}
-              className="modal-interactive"
-            />
-          </div>
-        </StableModalWrapper>
+            >
+              <ModalComponent
+                {...modalProps}
+                onClose={handleClose}
+                style={{
+                  ...getModalSizeStyles(props.size || MODAL_CONFIG.SIZES.MEDIUM),
+                  ...getModalTypeStyles(type),
+                  ...getModalAnimationStyles(props.animation || MODAL_CONFIG.ANIMATIONS.FADE),
+                  ...getModalPositionStyles(props.position || MODAL_CONFIG.POSITIONS.CENTER),
+                  ...props.style,
+                  pointerEvents: 'auto',
+                  position: 'relative',
+                  zIndex: 1055,
+                }}
+                className="modal-interactive"
+              />
+            </div>
+          </StableModalWrapper>
+        </div>
       </div>
     );
   }

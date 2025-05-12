@@ -1,6 +1,7 @@
 import sys
 import os
 from pathlib import Path
+import time
 
 def setup_environment():
     """Setup the environment for both local and Docker builds"""
@@ -20,6 +21,27 @@ def setup_environment():
             load_dotenv(str(env_path))
             break
 
+def wait_for_db(max_retries=5, retry_interval=5):
+    """Wait for database to be ready"""
+    from sqlalchemy import create_engine
+    from sqlalchemy.exc import OperationalError
+
+    db_url = os.getenv('DATABASE_URL', 'postgresql://harmonic_user:harmonic_password@db:5432/harmonic_universe')
+
+    for attempt in range(max_retries):
+        try:
+            engine = create_engine(db_url)
+            engine.connect()
+            print("Database connection successful!")
+            return True
+        except OperationalError as e:
+            if attempt < max_retries - 1:
+                print(f"Database not ready. Retrying in {retry_interval} seconds... (Attempt {attempt + 1}/{max_retries})")
+                time.sleep(retry_interval)
+            else:
+                print(f"Could not connect to database after {max_retries} attempts")
+                raise e
+
 from app import create_app
 from app.extensions import db
 from app.api.models.user import User
@@ -29,6 +51,10 @@ def create_demo_data():
     """Create demo user and universe in any environment"""
     try:
         setup_environment()
+
+        # Wait for database to be ready
+        wait_for_db()
+
         app = create_app()
 
         with app.app_context():

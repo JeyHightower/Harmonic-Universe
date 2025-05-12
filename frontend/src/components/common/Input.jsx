@@ -8,6 +8,8 @@ function Input({
   value,
   onChange,
   onBlur,
+  onFocus,
+  onClick,
   error,
   placeholder,
   disabled = false,
@@ -40,6 +42,14 @@ function Input({
           aria-invalid={hasError}
           aria-describedby={hasError ? `${inputId}-error` : undefined}
           rows={rows}
+          onFocus={(e) => {
+            e.stopPropagation();
+            if (onFocus) onFocus(e);
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onClick) onClick(e);
+          }}
         />
       ) : (
         <input
@@ -55,6 +65,14 @@ function Input({
           className={`input-field ${hasError ? 'input-error' : ''}`}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${inputId}-error` : undefined}
+          onFocus={(e) => {
+            e.stopPropagation();
+            if (onFocus) onFocus(e);
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onClick) onClick(e);
+          }}
         />
       )}
       {hasError && (
@@ -73,6 +91,8 @@ Input.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.bool]).isRequired,
   onChange: PropTypes.func.isRequired,
   onBlur: PropTypes.func,
+  onFocus: PropTypes.func,
+  onClick: PropTypes.func,
   error: PropTypes.string,
   placeholder: PropTypes.string,
   disabled: PropTypes.bool,

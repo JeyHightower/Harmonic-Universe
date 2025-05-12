@@ -1,12 +1,10 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
+import { Suspense, useEffect, useState, useTransition } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Suspense, useTransition, useState, useEffect } from 'react';
-import { AUTH_CONFIG, ROUTES } from '../../utils';
-import { useDispatch } from 'react-redux';
 import { demoLogin } from '../../store/slices/authSlice.mjs';
+import { AUTH_CONFIG, ROUTES } from '../../utils';
 
-function ProtectedRoute({ children }) {
+const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
   const location = useLocation();
   const [isPending, startTransition] = useTransition();
@@ -48,7 +46,7 @@ function ProtectedRoute({ children }) {
         setContent(children);
       });
     }
-  }, [loading, isAuthenticated, children]);
+  }, [loading, isAuthenticated, children, startTransition]);
 
   // If still loading, show loading state
   if (loading) {
@@ -58,7 +56,7 @@ function ProtectedRoute({ children }) {
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    console.debug('User is not authenticated, redirecting to login');
+    console.debug('User  is not authenticated, redirecting to login');
 
     // Try to log more debug info
     try {
@@ -79,12 +77,12 @@ function ProtectedRoute({ children }) {
   }
 
   // If authenticated, render children with Suspense boundary to handle lazy loading
-  console.debug('User is authenticated, rendering protected content');
+  console.debug('User  is authenticated, rendering protected content');
   return (
     <Suspense fallback={<div>Loading content...</div>}>
       {isPending ? <div>Loading content...</div> : content}
     </Suspense>
   );
-}
+};
 
 export default ProtectedRoute;

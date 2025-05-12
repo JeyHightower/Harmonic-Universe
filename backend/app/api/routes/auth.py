@@ -158,7 +158,12 @@ def demo_login():
                     username='demo',
                     email='demo@example.com'
                 )
-                demo_user.set_password('demo123')
+                # Use a password that meets validation requirements
+                demo_user.set_password('Demo123!@#')
+
+                # Validate the user before adding to database
+                demo_user.validate()
+
                 db.session.add(demo_user)
                 db.session.commit()
                 current_app.logger.info('Demo user created successfully')
@@ -168,7 +173,8 @@ def demo_login():
                 current_app.logger.exception('Full traceback:')
                 return jsonify({
                     'message': 'Failed to create demo user',
-                    'error': str(e)
+                    'error': str(e),
+                    'details': 'Database error occurred while creating demo user'
                 }), 500
 
         try:
@@ -188,7 +194,8 @@ def demo_login():
             current_app.logger.exception('Full traceback:')
             return jsonify({
                 'message': 'Failed to generate access token',
-                'error': str(e)
+                'error': str(e),
+                'details': 'JWT token generation failed'
             }), 500
 
     except Exception as e:
@@ -197,7 +204,8 @@ def demo_login():
         current_app.logger.exception('Full traceback:')
         return jsonify({
             'message': 'An error occurred during demo login',
-            'error': str(e)
+            'error': str(e),
+            'details': 'Unexpected error in demo login process'
         }), 500
 
 @auth_bp.route('/validate', methods=['GET'])

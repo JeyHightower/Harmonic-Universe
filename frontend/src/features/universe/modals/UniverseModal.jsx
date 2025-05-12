@@ -185,7 +185,12 @@ const UniverseModal = ({
     >
       <DialogTitle>{getModalTitle()}</DialogTitle>
       <DialogContent>
-        <form onSubmit={handleSubmit} className="universe-form universe-form-compact">
+        <form
+          onSubmit={handleSubmit}
+          className="universe-form universe-form-compact"
+          onClick={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        >
           <Input
             label="Universe Name"
             name="name"

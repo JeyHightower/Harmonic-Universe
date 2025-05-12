@@ -8,10 +8,7 @@ class Config:
     PORT = int(os.environ.get('PORT', 5002))
 
     # Database config - PostgreSQL only
-    database_url = os.environ.get('DATABASE_URL')
-
-    if not database_url:
-        raise ValueError("DATABASE_URL environment variable must be set for PostgreSQL connection")
+    database_url = os.environ.get('DATABASE_URL') or 'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
 
     # Handle PostgreSQL URL from render.com (starts with postgres://) vs SQLAlchemy (requires postgresql://)
     if database_url.startswith('postgres://'):
