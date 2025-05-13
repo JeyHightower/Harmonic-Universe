@@ -2,32 +2,37 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install pnpm globally and clear npm cache
-RUN npm install -g pnpm && \
-    npm cache clean --force
+# Install pnpm globally
+RUN npm install -g pnpm
 
-# Create .npmrc file to handle peer dependencies
+# Set up pnpm global bin directory
+ENV PNPM_HOME=/usr/local/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN mkdir -p $PNPM_HOME
+
+# Create .npmrc file
 RUN echo "strict-peer-dependencies=false" > .npmrc
 
-# Copy package files
-COPY package.json ./
+# Copy root and frontend package files
+COPY package.json pnpm-lock.yaml ./
+COPY frontend/package.json ./frontend/package.json
 
-# Install dependencies with force flag
-RUN pnpm install --force
+# Install dependencies including vite
+RUN pnpm install --filter frontend...
+
+# Alternatively, install vite via npm globally since we already have npm
+RUN npm install -g vite
+
+# Add this to your frontend Dockerfile before running the app
+RUN npm install --save-dev @vitejs/plugin-react
 
 # Copy the rest of the application code
 COPY . .
 
-# Install dependencies again after copying all files
-RUN pnpm install --force
+# Build the application
+RUN pnpm run build
 
-# Clear npm cache again
-RUN npm cache clean --force
-
-# Set Node.js path to Homebrew installation
-ENV PATH="/opt/homebrew/bin:${PATH}"
-
-# Expose the port that the application listens on
+# Expose the port
 EXPOSE 5173
 
 # Start the development server

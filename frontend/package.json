@@ -67,9 +67,5 @@
     "url": "git+https://github.com/JeyHightower/Harmonic-Universe.git"
   },
   "author": "",
-  "license": "MIT",
-  "resolutions": {
-    "react-router-dom": "^6.18.0",
-    "react-router": "^6.18.0"
-  }
+  "license": "MIT"
 }

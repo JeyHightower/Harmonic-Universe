@@ -59,7 +59,7 @@ class Config:
         print(f"DEBUG - JWT_REFRESH_SECRET_KEY: '{JWT_REFRESH_SECRET_KEY[:5]}...'")
 
     # CORS Configuration
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000,http://127.0.0.1:3000').split(',')
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
     CORS_HEADERS = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"]
     CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type", "Authorization"]
@@ -140,17 +140,8 @@ class DevelopmentConfig(Config):
     }
 
     # Override CORS settings for development
-    CORS_ORIGINS = [
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://localhost:5174',
-        'http://127.0.0.1:5174',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000'
-    ]
+    CORS_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
     CORS_SUPPORTS_CREDENTIALS = True
-    # When credentials are supported, must use specific origins instead of wildcard
-    CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
 
     # More permissive rate limiting for development
     RATELIMIT_DEFAULT = "1000 per day, 100 per hour"
