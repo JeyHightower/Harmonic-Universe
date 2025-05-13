@@ -28,7 +28,7 @@ def upgrade():
     # Try different methods to get inspector
     try:
         # Try direct connection first
-        inspector = Inspector.from_engine(conn)
+        inspector = Inspector.from_engine(conn.engine)
         tables = inspector.get_table_names()
         logger.info(f"Tables found with method 1: {tables}")
     except Exception as e:

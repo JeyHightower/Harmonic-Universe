@@ -186,7 +186,7 @@ class MusicalTheme(BaseModel):
     __tablename__ = 'musical_themes'
     name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
-    music_piece_id = db.Column(db.Integer, db.ForeignKey('music _pieces.id', ondelete='CASCADE'), nullable=False, index=True)
+    music_piece_id = db.Column(db.Integer, db.ForeignKey('music_pieces.id', ondelete='CASCADE'), nullable=False, index=True)
     character_id = db.Column(db.Integer, db.ForeignKey('characters.id', ondelete='CASCADE'), index=True)
     scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
@@ -231,7 +231,7 @@ class Music(BaseModel):
     audio_url = db.Column(db.String(255))
 
     # Relationships
-    user = db.relationship('User ', backref=db.backref('music_items', lazy=True))
+    user = db.relationship('User', backref=db.backref('music_items', lazy=True))
     universe = db.relationship('Universe', backref=db.backref('music_items', lazy=True))
     scene = db.relationship('Scene', backref=db.backref('music_items', lazy=True))
 

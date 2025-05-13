@@ -14,9 +14,18 @@ wait_for_db() {
 # Wait for database to be ready
 wait_for_db
 
-# Apply database migrations
-echo "Applying database migrations..."
-flask db upgrade
+# Create tables directly with models
+echo "Creating database tables..."
+python -c "
+from app import create_app
+from app.extensions import db
+from app.api.models import *
+
+app = create_app()
+with app.app_context():
+    db.create_all()
+    print('All database tables created successfully')
+"
 
 # Create demo data
 echo "Creating demo data..."
