@@ -89,7 +89,7 @@ class AudioSample(BaseModel):
             raise ValueError("File path is required")
         if not self.user_id:
             raise ValueError("User  ID is required")
-        if self .duration is not None and self.duration <= 0:
+        if self.duration is not None and self.duration <= 0:
             raise ValueError("Duration must be positive")
         if self.sample_rate is not None and self.sample_rate <= 0:
             raise ValueError("Sample rate must be positive")
@@ -186,7 +186,7 @@ class MusicalTheme(BaseModel):
     __tablename__ = 'musical_themes'
     name = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text)
-    music_piece_id = db.Column(db.Integer, db.ForeignKey('music_pieces.id', ondelete='CASCADE'), nullable=False, index=True)
+    music_piece_id = db.Column(db.Integer, db.ForeignKey('music _pieces.id', ondelete='CASCADE'), nullable=False, index=True)
     character_id = db.Column(db.Integer, db.ForeignKey('characters.id', ondelete='CASCADE'), index=True)
     scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
     universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), index=True)
@@ -210,6 +210,58 @@ class MusicalTheme(BaseModel):
             'scene_id': self.scene_id,
             'universe_id': self.universe_id,
             'motif': self.motif,
+            'created_at': str(self.created_at) if self.created_at else None,
+            'updated_at': str(self.updated_at) if self.updated_at else None,
+            'is_deleted': self.is_deleted
+        }
+
+class Music(BaseModel):
+    __tablename__ = 'music'
+    name = db.Column(db.String(100), nullable=False, index=True)
+    description = db.Column(db.Text)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    universe_id = db.Column(db.Integer, db.ForeignKey('universes.id', ondelete='CASCADE'), nullable=False, index=True)
+    scene_id = db.Column(db.Integer, db.ForeignKey('scenes.id', ondelete='CASCADE'), index=True)
+    music_data = db.Column(db.JSON, nullable=False)
+    algorithm = db.Column(db.String(50))
+    tempo = db.Column(db.Integer)
+    key = db.Column(db.String(10))
+    scale = db.Column(db.String(20))
+    parameters = db.Column(db.JSON)
+    audio_url = db.Column(db.String(255))
+
+    # Relationships
+    user = db.relationship('User ', backref=db.backref('music_items', lazy=True))
+    universe = db.relationship('Universe', backref=db.backref('music_items', lazy=True))
+    scene = db.relationship('Scene', backref=db.backref('music_items', lazy=True))
+
+    def validate(self):
+        """Validate music data."""
+        if not self.name:
+            raise ValueError("Name is required")
+        if not self.user_id:
+            raise ValueError("User  ID is required")
+        if not self.universe_id:
+            raise ValueError("Universe ID is required")
+        if not self.music_data:
+            raise ValueError("Music data is required")
+
+    def to_dict(self):
+        """Convert music to dictionary."""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'user_id': self.user_id,
+            'universe_id': self.universe_id,
+            'scene_id': self.scene_id,
+            'music_data': self.music_data,
+            'algorithm': self.algorithm,
+            'tempo': self.tempo,
+            'key': self.key,
+            'scale': self.scale,
+            'parameters': self.parameters,
+            'audio_url': self.audio_url,
             'created_at': str(self.created_at) if self.created_at else None,
             'updated_at': str(self.updated_at) if self.updated_at else None,
             'is_deleted': self.is_deleted
