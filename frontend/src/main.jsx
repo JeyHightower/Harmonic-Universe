@@ -18,7 +18,11 @@ import './styles/theme.css'; // Third: Define theme variables
 import './styles/variables.css'; // Second: Define CSS variables
 import { AUTH_CONFIG, ensurePortalRoot } from './utils';
 import { setupModalDebugging } from './utils/modalDebug.mjs';
-import { applyInteractionFixes, fixModalFormElements } from './utils/portalUtils';
+import {
+  applyInteractionFixes,
+  fixModalFormElements,
+  forceModalInteractivity,
+} from './utils/portalUtils';
 
 // Setup global error handling
 window.onerror = function (msg, url, lineNo, columnNo, error) {
@@ -173,9 +177,15 @@ if (document.readyState === 'loading') {
 // This ensures that even dynamically created modals get the fixes
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Applying global interaction fixes for modals');
-  // Initial application
+
+  // Initial application of fixes
   applyInteractionFixes();
   fixModalFormElements();
+
+  // Apply the emergency fix for good measure
+  setTimeout(() => {
+    forceModalInteractivity();
+  }, 1000);
 
   // Re-apply fixes every time a modal is opened
   const observer = new MutationObserver((mutations) => {
@@ -198,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
           setTimeout(() => {
             applyInteractionFixes();
             fixModalFormElements();
+            forceModalInteractivity(); // Apply emergency fix
           }, 50);
         }
       }
@@ -206,4 +217,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Start observing the document with the configured parameters
   observer.observe(document.body, { childList: true, subtree: true });
+
+  // Add click event listener to help debug modal interaction issues
+  document.addEventListener(
+    'click',
+    (e) => {
+      // Check if the click is inside a modal
+      const modal = e.target.closest('.modal-content, .modal-overlay, [role="dialog"]');
+      if (modal) {
+        console.log(`Click detected in modal on element:`, e.target.tagName, e.target);
+
+        // Check if click is on form element
+        const isFormElement =
+          e.target.tagName === 'INPUT' ||
+          e.target.tagName === 'TEXTAREA' ||
+          e.target.tagName === 'SELECT' ||
+          e.target.tagName === 'BUTTON';
+
+        if (isFormElement) {
+          console.log(`Form element clicked:`, e.target.tagName, e.target);
+
+          // Force element to be interactive
+          e.target.style.pointerEvents = 'auto';
+          e.target.style.zIndex = '100000';
+
+          // If it's an input, focus it
+          if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+            setTimeout(() => e.target.focus(), 0);
+          }
+        }
+      }
+    },
+    true
+  );
+
+  // Add a keyboard shortcut for the emergency fix (Ctrl+Shift+F)
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+      console.log('Emergency modal fix triggered via keyboard shortcut');
+      forceModalInteractivity();
+      e.preventDefault();
+    }
+  });
+
+  // Expose emergency fix to console
+  window.__fixModals = forceModalInteractivity;
+  console.log('Modal emergency fix available at window.__fixModals()');
 });

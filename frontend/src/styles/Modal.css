@@ -1,3 +1,85 @@
+/* EMERGENCY FIX - Add these styles at the top to ensure they take precedence */
+/* These styles will forcibly make modals and form elements interactive */
+
+.modal-overlay,
+[role='dialog'],
+.ant-modal-root,
+.ant-modal,
+.modal-content,
+.modal-body,
+.modal-footer,
+.modal-backdrop {
+  pointer-events: auto !important;
+}
+
+.modal-content {
+  z-index: 9999 !important;
+  position: relative !important;
+}
+
+/* Form elements inside modals need special treatment */
+.modal-content input,
+.modal-content textarea,
+.modal-content select,
+.modal-content button,
+.modal-body input,
+.modal-body textarea,
+.modal-body select,
+.modal-body button,
+.modal-footer button,
+input,
+textarea,
+select,
+button,
+[role='button'],
+.form-control,
+.btn,
+.button,
+.ant-input,
+.ant-select,
+.ant-btn {
+  pointer-events: auto !important;
+  z-index: 10000 !important;
+  position: relative !important;
+  touch-action: auto !important;
+  cursor: auto !important;
+}
+
+/* Special styling for buttons to ensure they're clickable */
+button,
+[role='button'],
+.btn,
+.button,
+input[type='button'],
+input[type='submit'],
+input[type='reset'] {
+  cursor: pointer !important;
+}
+
+/* Special styling for text inputs */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='search'],
+input[type='number'],
+textarea {
+  cursor: text !important;
+}
+
+/* Aggressive fix for logout and action buttons */
+.logout-button,
+.login-button,
+.signup-button,
+.auth-button,
+[data-action='logout'] {
+  pointer-events: auto !important;
+  z-index: 100000 !important;
+  position: relative !important;
+  cursor: pointer !important;
+}
+
+/* End of emergency fixes */
+
 /* Consolidated Modal Styles
    This file replaces all other modal-related CSS to avoid conflicts */
 
@@ -210,7 +292,12 @@
 button.logout-button,
 button.login-button,
 button.signup-button,
-button.auth-button {
+button.auth-button,
+.logout-button,
+.login-button,
+.signup-button,
+.auth-button,
+[data-action='logout'] {
   pointer-events: auto !important;
   position: relative;
   z-index: 5 !important;
@@ -346,6 +433,28 @@ input[type='submit'] {
   cursor: pointer !important;
   position: relative;
   z-index: 5 !important;
+}
+
+/* Portal root adjustments for better event handling */
+#portal-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1050;
+  pointer-events: none; /* Allow clicks to pass through to modal content */
+}
+
+#portal-root > .portal-container,
+#portal-root > .modal-portal {
+  pointer-events: auto; /* Direct children should capture events */
+}
+
+/* Special class for interactive components inside modals */
+.modal-interactive {
+  pointer-events: auto !important;
+  touch-action: auto !important;
 }
 
 /* ===== Modal Animations ===== */

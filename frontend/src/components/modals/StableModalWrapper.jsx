@@ -110,6 +110,24 @@ const StableModalWrapper = ({
     e.stopPropagation();
   };
 
+  // Enhanced interaction handler for form fields
+  const handleFormFieldInteraction = (e) => {
+    e.stopPropagation();
+
+    if (
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'TEXTAREA' ||
+      e.target.tagName === 'SELECT'
+    ) {
+      // Ensure focus works
+      setTimeout(() => {
+        if (document.activeElement !== e.target) {
+          e.target.focus();
+        }
+      }, 0);
+    }
+  };
+
   // Log right before rendering
   console.log('StableModalWrapper - About to render Modal with open=', open, 'title=', title);
   console.log('StableModalWrapper - Close handlers enabled: keyboard=true, maskClosable=true');
@@ -139,17 +157,17 @@ const StableModalWrapper = ({
       onCancel={handleClose}
       footer={footer === null ? null : footer || createFooter()}
       width={width}
-      destroyOnClose={true}
-      maskClosable={true} // Explicitly enable backdrop clicks
+      destroyOnHidden={true}
+      maskClosable={true}
       className={`stable-modal stable-modal-${instanceId.current}`}
       style={combinedStyle}
-      zIndex={1050} // Consistent z-index with other modals
+      zIndex={1050}
       forceRender={true}
       onClick={handleModalClick}
       wrapClassName="stable-modal-wrap"
-      keyboard={true} // Explicitly enable ESC key
+      keyboard={true}
       centered={true}
-      closeIcon={true} // Ensure close icon is visible
+      closeIcon={true}
       getContainer={() => document.getElementById('portal-root') || document.body}
       modalRender={(node) => (
         <div
@@ -164,10 +182,12 @@ const StableModalWrapper = ({
       <div
         className="modal-inner-content"
         onClick={handleModalClick}
+        onMouseDown={handleFormFieldInteraction}
+        onTouchStart={handleFormFieldInteraction}
         style={{
           pointerEvents: 'auto',
-          position: 'relative', // Ensure proper stacking context
-          zIndex: 1051, // Higher than the backdrop
+          position: 'relative',
+          zIndex: 1051,
         }}
       >
         {stableContent}

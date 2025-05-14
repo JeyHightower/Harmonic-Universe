@@ -3,12 +3,7 @@ import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'r
 import { createPortal } from 'react-dom';
 import '../../styles/Modal.css';
 import { MODAL_CONFIG } from '../../utils/config';
-import {
-  applyInteractionFixes,
-  createSpecializedHandlers,
-  ensurePortalRoot,
-  fixModalFormElements,
-} from '../../utils/portalUtils';
+import { applyModalFixes, ensurePortalRoot } from '../../utils/portalUtils';
 
 // Animation duration in ms
 const ANIMATION_DURATION = MODAL_CONFIG.ANIMATIONS.FADE.duration;
@@ -301,43 +296,16 @@ const ModalSystem = forwardRef(
         // Use a small delay to ensure the DOM is fully rendered
         const fixTimer = setTimeout(() => {
           if (modalRef.current) {
-            // Apply our specialized fixes for form elements
-            fixModalFormElements(modalRef.current);
-            createSpecializedHandlers(modalRef.current);
-            applyInteractionFixes();
+            // Apply our comprehensive modal fixes
+            applyModalFixes();
 
-            // Extra handling for form elements
-            const formElements = modalRef.current.querySelectorAll(
-              'input, textarea, select, button'
-            );
-            formElements.forEach((el) => {
-              el.style.pointerEvents = 'auto';
-              el.style.zIndex = '5';
-
-              // Add direct click handlers to buttons
-              if (el.tagName === 'BUTTON' || el.type === 'submit' || el.type === 'button') {
-                el.addEventListener(
-                  'click',
-                  (e) => {
-                    e.stopPropagation();
-                    // Still allow default click behavior
-                  },
-                  true
-                );
+            // Apply a second round of fixes after a slightly longer delay
+            // This helps with late-binding frameworks like Ant Design
+            setTimeout(() => {
+              if (modalRef.current) {
+                applyModalFixes();
               }
-
-              // Add direct mousedown handlers to inputs
-              if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
-                el.addEventListener(
-                  'mousedown',
-                  (e) => {
-                    e.stopPropagation();
-                    setTimeout(() => el.focus(), 0);
-                  },
-                  true
-                );
-              }
-            });
+            }, 300);
           }
         }, 50);
 
