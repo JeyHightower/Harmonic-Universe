@@ -1,13 +1,13 @@
 /* Modal.css - Styling for the Modal component */
 
-/* Ensure Ant Design modals are properly visible */
+/* Core Modal Styles */
 .ant-modal,
 .stable-modal .ant-modal {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  z-index: 1050 !important;
-  pointer-events: auto !important;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  z-index: 1050;
+  pointer-events: auto;
 }
 
 .ant-modal-root {
@@ -17,7 +17,7 @@
   bottom: 0;
   left: 0;
   z-index: 1050;
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 .ant-modal-mask {
@@ -29,9 +29,9 @@
   z-index: 1050;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.45);
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .ant-modal-wrap {
@@ -43,26 +43,26 @@
   z-index: 1050;
   overflow: auto;
   outline: 0;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
-/* Force modal to center of screen */
+/* Modal positioning */
 .ant-modal-centered .ant-modal {
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-/* Specific styling for our stable modal */
+/* Stable modal styling */
 .stable-modal .ant-modal-content {
   border-radius: 8px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
   position: relative;
   z-index: 1051; /* Ensure content is above backdrop */
 }
@@ -70,7 +70,7 @@
 .stable-modal .ant-modal-header {
   padding: 16px 24px;
   border-bottom: 1px solid #f0f0f0;
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 .stable-modal .ant-modal-title {
@@ -84,43 +84,35 @@
   top: 16px;
   right: 16px;
   z-index: 1060;
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
 .stable-modal .ant-modal-body {
   padding: 24px;
   max-height: 80vh;
   overflow-y: auto;
-  pointer-events: auto !important;
+  pointer-events: auto;
 }
 
-/* Ensure ALL elements inside modals are clickable */
-.stable-modal button,
+/* Interactive elements inside modals */
 .stable-modal input,
 .stable-modal select,
 .stable-modal textarea,
 .stable-modal a,
 .stable-modal label,
 .stable-modal div,
-.stable-modal span {
-  pointer-events: auto !important;
-}
-
-/* Fix for nested form elements */
+.stable-modal span,
+.stable-modal button,
 .stable-modal form,
 .stable-modal form * {
   pointer-events: auto;
 }
 
-/* Fix for modal content wrapper to handle events properly */
+/* Special handling for interactive content */
 .modal-content-wrapper {
   pointer-events: auto;
   position: relative;
   z-index: 2;
-}
-
-.modal-content-wrapper * {
-  pointer-events: auto;
 }
 
 /* Scene modal specific styling */
@@ -131,7 +123,7 @@
   pointer-events: auto;
 }
 
-/* Ensure modals in universe detail page are visible */
+/* Universe detail page modals */
 .universe-detail-container .ant-modal-root,
 .universe-detail-container .ant-modal-wrap,
 .universe-detail-container .ant-modal {
@@ -141,27 +133,7 @@
   pointer-events: auto;
 }
 
-/* Ensure forms inside modals are properly interactive */
-.ant-modal form,
-.stable-modal form {
-  pointer-events: auto;
-}
-
-/* Ensure form inputs are clickable */
-.ant-modal input,
-.ant-modal select,
-.ant-modal textarea,
-.ant-modal button,
-.ant-modal a,
-.stable-modal input,
-.stable-modal select,
-.stable-modal textarea,
-.stable-modal button,
-.stable-modal a {
-  pointer-events: auto;
-}
-
-/* Ensure proper stacking context */
+/* Portal root styling */
 #portal-root {
   position: fixed;
   top: 0;
@@ -169,20 +141,73 @@
   right: 0;
   bottom: 0;
   z-index: 1050;
-  pointer-events: none; /* Changed from 'auto' to allow clicks to pass through */
+  pointer-events: auto;
   isolation: isolate; /* Create a new stacking context */
 }
 
-/* Modal containers should capture clicks */
+/* Ensure stacking context and event handling */
 #portal-root > * {
   pointer-events: auto;
   position: relative;
   z-index: 1;
 }
 
-/* But elements inside portals should also get clicks */
-#portal-root .modal-content * {
-  pointer-events: auto;
+/* Animation classes for modal transitions */
+.modal-animation-fade {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-animation-fade.closing {
+  animation: fadeOut 0.3s ease-in-out;
+}
+
+.modal-animation-slide {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+.modal-animation-slide.closing {
+  animation: slideOut 0.3s ease-in-out;
+}
+
+/* Keyframes for animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
 }
 
 /* Modal debug - remove these in production */

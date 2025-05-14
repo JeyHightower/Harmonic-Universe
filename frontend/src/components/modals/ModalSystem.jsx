@@ -5,15 +5,50 @@ import '../../styles/Modal.css';
 import { MODAL_CONFIG } from '../../utils/config';
 import { ensurePortalRoot } from '../../utils/portalUtils';
 
-// Define window globals to fix ESLint errors
-const { requestAnimationFrame, clearTimeout } = window;
-
 // Animation duration in ms
 const ANIMATION_DURATION = MODAL_CONFIG.ANIMATIONS.FADE.duration;
 
-// Shared modal stack counter to handle multiple modals
-let modalStackCount = 0;
-let scrollY = 0;
+// Shared modal stack management with a more robust approach
+const modalStack = {
+  count: 0,
+  scrollPosition: 0,
+  increment() {
+    this.count += 1;
+    return this.count;
+  },
+  decrement() {
+    if (this.count > 0) {
+      this.count -= 1;
+    }
+    return this.count;
+  },
+  saveScrollPosition() {
+    this.scrollPosition = window.scrollY;
+  },
+  restoreScrollPosition() {
+    window.scrollTo(0, this.scrollPosition);
+  },
+  lockBodyScroll() {
+    if (this.count === 1) {
+      this.saveScrollPosition();
+      document.body.classList.add('modal-open');
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${this.scrollPosition}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+    }
+  },
+  unlockBodyScroll() {
+    if (this.count === 0) {
+      document.body.classList.remove('modal-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      this.restoreScrollPosition();
+    }
+  },
+};
 
 /**
  * Generate a unique ID with an optional prefix
@@ -49,8 +84,6 @@ const ModalSystem = forwardRef(
     },
     ref
   ) => {
-    console.log(`ModalSystem - Component called with isOpen=${isOpen}, title=${title}`);
-
     const modalRef = useRef(null);
     const contentRef = useRef(null);
     const previousFocus = useRef(null);
@@ -60,11 +93,11 @@ const ModalSystem = forwardRef(
     const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const portalRoot = document.getElementById('portal-root') || document.body;
-    const modalId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);
-    const titleId = `${modalId.current}-title`;
-    const contentId = `${modalId.current}-content`;
+    const modalId = useGenerateId('modal');
+    const titleId = `${modalId}-title`;
+    const contentId = `${modalId}-content`;
     const mountedRef = useRef(false);
-    const openedAtRef = useRef(Date.now());
+    const closeTimeoutRef = useRef(null);
     const portalElementRef = useRef(null);
 
     // Create portal element once during component initialization
@@ -74,8 +107,8 @@ const ModalSystem = forwardRef(
 
       const modalPortal = document.createElement('div');
       modalPortal.classList.add('modal-portal');
-      modalPortal.setAttribute('data-modal-id', modalId.current);
-      modalPortal.style.pointerEvents = 'auto'; // Ensure portal has pointer events
+      modalPortal.setAttribute('data-modal-id', modalId);
+      modalPortal.style.pointerEvents = 'auto';
       portalElementRef.current = modalPortal;
 
       if (isOpen) {
@@ -88,7 +121,7 @@ const ModalSystem = forwardRef(
           portalElementRef.current.parentElement.removeChild(portalElementRef.current);
         }
       };
-    }, [isOpen, portalRoot]);
+    }, [isOpen, portalRoot, modalId]);
 
     const combinedRef = ref || modalRef;
 
@@ -104,7 +137,6 @@ const ModalSystem = forwardRef(
             y: e.clientY - modalRect.top - dragPosition.y,
           });
         }
-        e.preventDefault();
       },
       [draggable, dragPosition]
     );
@@ -129,8 +161,13 @@ const ModalSystem = forwardRef(
       if (isClosing) return;
       setIsClosing(true);
 
+      // Clear any existing timeout to prevent memory leaks
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+
       // Set a timeout to match animation duration
-      setTimeout(() => {
+      closeTimeoutRef.current = setTimeout(() => {
         if (onClose && typeof onClose === 'function') {
           onClose();
         }
@@ -155,9 +192,6 @@ const ModalSystem = forwardRef(
       (e) => {
         // Only process if we're clicking directly on the backdrop
         if (e.target === e.currentTarget && !preventBackdropClick && closeOnBackdrop) {
-          // Prevent event from bubbling
-          e.stopPropagation();
-          e.preventDefault();
           handleClose();
         }
       },
@@ -166,7 +200,7 @@ const ModalSystem = forwardRef(
 
     // Handle content click to prevent it from propagating to backdrop
     const handleContentClick = useCallback((e) => {
-      // Always stop propagation from content to prevent it bubbling to backdrop
+      // Prevent event from bubbling to parent elements like backdrop
       e.stopPropagation();
     }, []);
 
@@ -181,49 +215,37 @@ const ModalSystem = forwardRef(
           document.removeEventListener('mouseup', handleMouseUp);
         };
       }
+      return undefined;
     }, [draggable, isOpen, handleMouseMove, handleMouseUp]);
 
-    // Handle modal open/close state
+    // Handle modal open/close state and body scroll locking
     useEffect(() => {
-      console.log(`ModalSystem - useEffect triggered with isOpen=${isOpen}, title=${title}`);
-
       if (isOpen) {
-        console.log(`ModalSystem - Opening modal: ${title}`);
-        console.log(`ModalSystem - Portal root:`, portalRoot);
-        console.log(`ModalSystem - Portal element:`, portalElementRef.current);
-
         mountedRef.current = true;
-        openedAtRef.current = Date.now();
-        modalRef.current?.setAttribute('data-opened-at', openedAtRef.current.toString());
-        modalRef.current?.setAttribute('data-prevent-close', 'false');
 
-        if (dataModalType) {
-          modalRef.current?.setAttribute('data-modal-type', dataModalType);
-        }
-
-        if (dataModalId) {
-          modalRef.current?.setAttribute('data-modal-id', dataModalId);
-        }
-
-        const protectionTimeout = setTimeout(() => {
-          if (modalRef.current) {
-            modalRef.current.setAttribute('data-prevent-close', 'false');
+        // Set data attributes for easier debugging and testing
+        if (modalRef.current) {
+          if (dataModalType) {
+            modalRef.current.setAttribute('data-modal-type', dataModalType);
           }
-        }, 500);
-
-        previousFocus.current = document.activeElement;
-        modalStackCount++;
-        setStackLevel(modalStackCount);
-
-        if (modalStackCount === 1) {
-          scrollY = window.scrollY;
-          document.body.classList.add('modal-open');
-          document.body.style.position = 'fixed';
-          document.body.style.top = `-${scrollY}px`;
-          document.body.style.width = '100%';
-          document.body.style.overflow = 'hidden';
+          if (dataModalId) {
+            modalRef.current.setAttribute('data-modal-id', dataModalId);
+          }
         }
 
+        // Save the current active element to restore focus later
+        previousFocus.current = document.activeElement;
+
+        // Update modal stack and set stack level for z-index
+        const level = modalStack.increment();
+        setStackLevel(level);
+
+        // Lock body scroll if this is the first modal
+        if (preventBodyScroll) {
+          modalStack.lockBodyScroll();
+        }
+
+        // Focus the first focusable element
         requestAnimationFrame(() => {
           if (initialFocusRef?.current) {
             initialFocusRef.current.focus();
@@ -238,45 +260,55 @@ const ModalSystem = forwardRef(
             }
           }
         });
-
-        return () => {
-          clearTimeout(protectionTimeout);
-        };
       } else {
+        // Reset state when closed
         setIsClosing(false);
         mountedRef.current = false;
-        modalStackCount--;
-        if (modalStackCount === 0) {
-          document.body.classList.remove('modal-open');
-          document.body.style.position = '';
-          document.body.style.top = '';
-          document.body.style.width = '';
-          document.body.style.overflow = '';
-          window.scrollTo(0, scrollY);
+
+        // Update modal stack and unlock body if needed
+        modalStack.decrement();
+        if (preventBodyScroll) {
+          modalStack.unlockBodyScroll();
         }
       }
-    }, [isOpen, initialFocusRef, dataModalType, dataModalId, portalRoot]);
+
+      // Cleanup on unmount or when isOpen changes
+      return () => {
+        if (closeTimeoutRef.current) {
+          clearTimeout(closeTimeoutRef.current);
+        }
+      };
+    }, [isOpen, preventBodyScroll, initialFocusRef, dataModalType, dataModalId]);
 
     // Cleanup on unmount
     useEffect(() => {
       return () => {
-        if (modalStackCount > 0) {
-          modalStackCount--;
+        // Ensure body scroll is unlocked if component unmounts while open
+        if (isOpen && mountedRef.current) {
+          modalStack.decrement();
+          if (preventBodyScroll) {
+            modalStack.unlockBodyScroll();
+          }
         }
 
-        // Return focus to previous element when modal is closed
+        // Return focus to previous element
         if (previousFocus.current) {
           previousFocus.current.focus();
         }
+
+        // Clear any pending timeouts
+        if (closeTimeoutRef.current) {
+          clearTimeout(closeTimeoutRef.current);
+        }
       };
-    }, []);
+    }, [isOpen, preventBodyScroll]);
 
     if (!isOpen) return null;
 
     const modalContent = (
       <div
         ref={combinedRef}
-        id={modalId.current}
+        id={modalId}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -285,13 +317,11 @@ const ModalSystem = forwardRef(
         style={{ zIndex: 1050 + stackLevel }}
         tabIndex="-1"
         data-testid="modal"
-        data-mounted-at={Date.now().toString()}
       >
         <div
           className="modal-backdrop"
           onClick={handleBackdropClick}
           data-testid="modal-backdrop"
-          style={{ pointerEvents: 'auto' }}
         />
         <div
           className={`modal-content modal-${size} modal-${type} modal-${position} ${
@@ -303,14 +333,12 @@ const ModalSystem = forwardRef(
             transform: draggable
               ? `translate(${dragPosition.x}px, ${dragPosition.y}px)`
               : undefined,
-            pointerEvents: 'auto',
           }}
         >
           <div
             className="modal-header"
             onMouseDown={draggable ? handleMouseDown : undefined}
             onClick={(e) => e.stopPropagation()}
-            style={{ pointerEvents: 'auto' }}
           >
             <h2 id={titleId} className="modal-title">
               {title}
@@ -325,26 +353,16 @@ const ModalSystem = forwardRef(
                   handleClose();
                 }}
                 data-testid="modal-close-button"
-                style={{ pointerEvents: 'auto' }}
               >
                 &times;
               </button>
             )}
           </div>
-          <div
-            id={contentId}
-            className="modal-body"
-            onClick={(e) => e.stopPropagation()}
-            style={{ pointerEvents: 'auto' }}
-          >
+          <div id={contentId} className="modal-body" onClick={(e) => e.stopPropagation()}>
             {children}
           </div>
           {footerContent && (
-            <div
-              className="modal-footer"
-              onClick={(e) => e.stopPropagation()}
-              style={{ pointerEvents: 'auto' }}
-            >
+            <div className="modal-footer" onClick={(e) => e.stopPropagation()}>
               {footerContent}
             </div>
           )}
@@ -352,7 +370,8 @@ const ModalSystem = forwardRef(
       </div>
     );
 
-    return portalElementRef.current ? createPortal(modalContent, portalRoot) : null;
+    // Create portal to render modal outside component hierarchy
+    return portalElementRef.current ? createPortal(modalContent, portalElementRef.current) : null;
   }
 );
 

@@ -5,37 +5,37 @@
  * @returns {HTMLElement} The portal root element
  */
 export const ensurePortalRoot = () => {
-  let portalRoot = document.getElementById("portal-root");
+  let portalRoot = document.getElementById('portal-root');
 
   if (!portalRoot) {
-    console.log("Creating new portal root element");
-    portalRoot = document.createElement("div");
-    portalRoot.id = "portal-root";
+    console.log('Creating new portal root element');
+    portalRoot = document.createElement('div');
+    portalRoot.id = 'portal-root';
 
     // Set styles directly on the portal root for better visibility management
-    portalRoot.style.position = "fixed";
-    portalRoot.style.top = "0";
-    portalRoot.style.left = "0";
-    portalRoot.style.right = "0";
-    portalRoot.style.bottom = "0";
-    portalRoot.style.zIndex = "1050"; // Standardized z-index to match modals
-    portalRoot.style.pointerEvents = "none"; // Changed to none to allow clicks to pass through
-    portalRoot.style.isolation = "isolate"; // Create a new stacking context
+    portalRoot.style.position = 'fixed';
+    portalRoot.style.top = '0';
+    portalRoot.style.left = '0';
+    portalRoot.style.right = '0';
+    portalRoot.style.bottom = '0';
+    portalRoot.style.zIndex = '1050'; // Standardized z-index to match modals
+    portalRoot.style.pointerEvents = 'auto'; // Changed to auto to allow proper event handling
+    portalRoot.style.isolation = 'isolate'; // Create a new stacking context
 
     document.body.appendChild(portalRoot);
-    console.log("Portal root created and appended to body");
+    console.log('Portal root created and appended to body');
   } else {
-    console.log("Using existing portal root");
+    console.log('Using existing portal root');
 
     // Ensure existing portal has the correct styles
-    portalRoot.style.position = "fixed";
-    portalRoot.style.top = "0";
-    portalRoot.style.left = "0";
-    portalRoot.style.right = "0";
-    portalRoot.style.bottom = "0";
-    portalRoot.style.zIndex = "1050"; // Standardized z-index to match modals
-    portalRoot.style.pointerEvents = "none"; // Changed to none to allow clicks to pass through
-    portalRoot.style.isolation = "isolate"; // Create a new stacking context
+    portalRoot.style.position = 'fixed';
+    portalRoot.style.top = '0';
+    portalRoot.style.left = '0';
+    portalRoot.style.right = '0';
+    portalRoot.style.bottom = '0';
+    portalRoot.style.zIndex = '1050'; // Standardized z-index to match modals
+    portalRoot.style.pointerEvents = 'auto'; // Changed to auto to allow proper event handling
+    portalRoot.style.isolation = 'isolate'; // Create a new stacking context
   }
 
   return portalRoot;
@@ -63,12 +63,12 @@ export const createPortalContainer = (id) => {
   let container = document.getElementById(id);
 
   if (!container) {
-    container = document.createElement("div");
+    container = document.createElement('div');
     container.id = id;
-    container.className = "portal-container";
-    container.style.pointerEvents = "auto";
-    container.style.position = "relative"; // Ensure proper stacking context
-    container.style.zIndex = "1"; // Allow stacking within portal root
+    container.className = 'portal-container';
+    container.style.pointerEvents = 'auto';
+    container.style.position = 'relative'; // Ensure proper stacking context
+    container.style.zIndex = '1'; // Allow stacking within portal root
     portalRoot.appendChild(container);
     console.log(`Portal container ${id} created`);
   }
@@ -94,9 +94,9 @@ export const removePortalContainer = (id) => {
  * Useful for complete modal system reset
  */
 export const cleanupAllPortals = () => {
-  const portalRoot = document.getElementById("portal-root");
+  const portalRoot = document.getElementById('portal-root');
   if (portalRoot) {
-    console.log("Cleaning up all portal containers");
+    console.log('Cleaning up all portal containers');
     // Remove all children
     while (portalRoot.firstChild) {
       portalRoot.removeChild(portalRoot.firstChild);
@@ -108,5 +108,8 @@ export const cleanupAllPortals = () => {
     document.body.style.top = '';
     document.body.style.width = '';
     document.body.style.overflow = '';
+
+    // Optionally scroll back to top or previous position if needed
+    window.scrollTo(0, 0);
   }
 };
