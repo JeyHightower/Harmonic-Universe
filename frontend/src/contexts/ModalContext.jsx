@@ -197,6 +197,24 @@ const ModalRenderer = ({ type, props, onClose }) => {
     e.stopPropagation();
   };
 
+  // Add enhanced form field handling
+  const handleFormFieldInteraction = (e) => {
+    // Always stop propagation to prevent closing the modal
+    e.stopPropagation();
+
+    // For input elements, make sure they're properly focusable
+    if (
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'TEXTAREA' ||
+      e.target.tagName === 'SELECT'
+    ) {
+      // Ensure the input gets focus
+      if (document.activeElement !== e.target) {
+        e.target.focus();
+      }
+    }
+  };
+
   // Special handling for specific modal types
   const modalProps = {
     ...props,
@@ -293,6 +311,65 @@ export const ModalProvider = ({ children }) => {
         console.error(`Error registering modal type '${modalType}':`, error);
       });
   }, [modalType]);
+
+  // Add a global modal focus fix event handler
+  // This will be called after the component is mounted
+  useEffect(() => {
+    const fixFormInteractions = () => {
+      // Use direct DOM manipulation as a last resort for fixing focus issues
+      const modalInputs = document.querySelectorAll(
+        '.modal-content input, .modal-content textarea, .modal-content select, ' +
+          '.ant-modal-content input, .ant-modal-content textarea, .ant-modal-content select, ' +
+          '.MuiDialog-paper input, .MuiDialog-paper textarea, .MuiDialog-paper select'
+      );
+
+      modalInputs.forEach((input) => {
+        // Set explicit interactive styles
+        input.style.pointerEvents = 'auto';
+        input.style.cursor =
+          input.type === 'button' || input.type === 'submit' ? 'pointer' : 'text';
+        input.style.zIndex = '10';
+
+        // Create a new mousedown handler that ensures focus works
+        const mousedownHandler = (e) => {
+          e.stopPropagation();
+
+          // For buttons, don't interfere with click behavior
+          if (input.type !== 'button' && input.type !== 'submit') {
+            input.focus();
+          }
+        };
+
+        // Remove old handler to avoid duplicates
+        input.removeEventListener('mousedown', input._mousedownHandler);
+        // Store reference to new handler for cleanup
+        input._mousedownHandler = mousedownHandler;
+        // Add the handler
+        input.addEventListener('mousedown', mousedownHandler, true);
+      });
+    };
+
+    // Apply fixes once on mount and whenever modals should be visible
+    if (isOpen) {
+      // Use timeout to ensure DOM is ready
+      setTimeout(fixFormInteractions, 100);
+    }
+
+    // Clean up handlers on unmount
+    return () => {
+      const modalInputs = document.querySelectorAll(
+        '.modal-content input, .modal-content textarea, .modal-content select, ' +
+          '.ant-modal-content input, .ant-modal-content textarea, .ant-modal-content select, ' +
+          '.MuiDialog-paper input, .MuiDialog-paper textarea, .MuiDialog-paper select'
+      );
+
+      modalInputs.forEach((input) => {
+        if (input._mousedownHandler) {
+          input.removeEventListener('mousedown', input._mousedownHandler);
+        }
+      });
+    };
+  }, [isOpen]);
 
   return (
     <ModalContext.Provider value={value}>

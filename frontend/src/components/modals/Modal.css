@@ -17,7 +17,7 @@
   bottom: 0;
   left: 0;
   z-index: 1050;
-  pointer-events: auto;
+  pointer-events: none; /* Changed to none to allow clicks to pass through to content */
 }
 
 .ant-modal-mask {
@@ -31,7 +31,7 @@
   background-color: rgba(0, 0, 0, 0.45);
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
+  pointer-events: auto; /* Allow clicks on backdrop */
 }
 
 .ant-modal-wrap {
@@ -45,7 +45,7 @@
   outline: 0;
   visibility: visible;
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: auto; /* Allow clicks */
 }
 
 /* Modal positioning */
@@ -62,7 +62,7 @@
   overflow: hidden;
   visibility: visible;
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: auto !important; /* Force auto */
   position: relative;
   z-index: 1051; /* Ensure content is above backdrop */
 }
@@ -91,7 +91,7 @@
   padding: 24px;
   max-height: 80vh;
   overflow-y: auto;
-  pointer-events: auto;
+  pointer-events: auto !important; /* Force auto */
 }
 
 /* Interactive elements inside modals */
@@ -105,12 +105,14 @@
 .stable-modal button,
 .stable-modal form,
 .stable-modal form * {
-  pointer-events: auto;
+  pointer-events: auto !important; /* Force auto */
+  position: relative; /* Establish stacking context */
+  z-index: 2; /* Ensure above other elements */
 }
 
 /* Special handling for interactive content */
 .modal-content-wrapper {
-  pointer-events: auto;
+  pointer-events: auto !important;
   position: relative;
   z-index: 2;
 }
@@ -120,7 +122,7 @@
   padding: 24px;
   max-height: calc(80vh - 130px);
   overflow: auto;
-  pointer-events: auto;
+  pointer-events: auto !important; /* Force auto */
 }
 
 /* Universe detail page modals */
@@ -130,7 +132,7 @@
   visibility: visible;
   opacity: 1;
   display: block;
-  pointer-events: auto;
+  pointer-events: auto !important; /* Force auto */
 }
 
 /* Portal root styling */
@@ -141,13 +143,13 @@
   right: 0;
   bottom: 0;
   z-index: 1050;
-  pointer-events: auto;
+  pointer-events: none; /* Changed to none to let clicks pass through to content */
   isolation: isolate; /* Create a new stacking context */
 }
 
 /* Ensure stacking context and event handling */
 #portal-root > * {
-  pointer-events: auto;
+  pointer-events: auto !important; /* Force auto for direct children */
   position: relative;
   z-index: 1;
 }
@@ -223,6 +225,8 @@
   font-size: 12px;
 }
 
+/* ===== ENHANCED FIXES FOR INPUT INTERACTIONS ===== */
+
 /* Make sure dialog content is clickable in MUI dialogs */
 .MuiDialog-container {
   pointer-events: auto !important;
@@ -240,6 +244,21 @@
   pointer-events: auto !important;
 }
 
+/* Form inputs need special handling */
+.MuiDialog-paper input,
+.MuiDialog-paper textarea,
+.MuiDialog-paper select,
+.MuiDialog-paper button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 5;
+}
+
+/* Make sure the backdrop doesn't block interaction */
+.MuiBackdrop-root {
+  pointer-events: auto !important;
+}
+
 /* Fix for immediate closing issue */
 .modal-container {
   position: fixed !important;
@@ -251,7 +270,7 @@
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  pointer-events: auto !important;
+  pointer-events: none !important; /* Changed to none to avoid trapping clicks */
 }
 
 .modal-inner-content {
@@ -292,6 +311,7 @@
 .auth-form input,
 .auth-form button {
   pointer-events: auto !important;
+  z-index: 10 !important; /* Higher z-index for interactivity */
 }
 
 /* Ensure modal content is above backdrop */
@@ -319,6 +339,7 @@
   pointer-events: auto !important;
   isolation: isolate !important; /* Create stacking context */
   transform: translateZ(0); /* Force hardware acceleration */
+  touch-action: auto !important; /* Ensure touch events are processed */
 }
 
 /* Fix clicks inside any content */
@@ -327,7 +348,8 @@
 .modal-inner-content * {
   pointer-events: auto !important;
   position: relative; /* Ensure proper stacking */
-  z-index: 1; /* Ensure it's in the right stacking context */
+  z-index: 2; /* Ensure it's in the right stacking context */
+  touch-action: auto !important; /* Ensure touch events */
 }
 
 /* Ensure forms are interactive */
@@ -338,6 +360,24 @@ form *,
 .input-group,
 .input-group * {
   pointer-events: auto !important;
+  z-index: 5 !important; /* Higher z-index to ensure interaction */
+  touch-action: auto !important;
+}
+
+/* Enhanced form input fixes */
+input,
+textarea,
+select,
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-select,
+.ant-checkbox-wrapper,
+.ant-radio-wrapper {
+  pointer-events: auto !important;
+  z-index: 5 !important;
+  position: relative !important;
+  touch-action: manipulation !important;
+  cursor: text !important;
 }
 
 /* Fix for any click handlers */
@@ -384,4 +424,12 @@ form *,
 .modal-interactive label {
   pointer-events: auto !important;
   cursor: pointer;
+  z-index: 10 !important; /* Higher z-index */
+}
+
+/* Specific fix for dropdown components */
+.ant-select-dropdown,
+.ant-select-dropdown * {
+  pointer-events: auto !important;
+  z-index: 1100 !important; /* Higher than most other elements */
 }

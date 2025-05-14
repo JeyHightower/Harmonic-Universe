@@ -60,6 +60,9 @@
   animation: modalZoomIn 300ms ease-in-out;
   pointer-events: auto !important;
   min-width: 300px;
+  /* Ensure this creates a stacking context */
+  isolation: isolate;
+  z-index: 1051 !important;
 }
 
 .modal-content:focus {
@@ -74,6 +77,8 @@
   align-items: center;
   justify-content: space-between;
   pointer-events: auto !important;
+  position: relative;
+  z-index: 1;
 }
 
 .modal-title {
@@ -94,6 +99,7 @@
   line-height: 1;
   pointer-events: auto !important;
   z-index: 10;
+  position: relative;
 }
 
 .modal-close-button:hover {
@@ -110,6 +116,8 @@
   overflow-y: auto;
   pointer-events: auto !important;
   max-height: 75vh;
+  position: relative;
+  z-index: 2;
 }
 
 .modal-body.centered {
@@ -140,6 +148,8 @@
   justify-content: flex-end;
   gap: var(--spacing-sm, 0.5rem);
   pointer-events: auto !important;
+  position: relative;
+  z-index: 3;
 }
 
 /* ===== Modal Sizes ===== */
@@ -187,15 +197,25 @@
   gap: var(--spacing-sm, 0.5rem);
   margin-top: var(--spacing-md, 1rem);
   pointer-events: auto !important;
+  position: relative;
+  z-index: 3;
 }
 
 /* Make sure all modal buttons are clickable */
 .modal-actions button,
 .modal-footer button,
-.modal button {
+.modal button,
+.modal-content button,
+.modal-body button,
+button.logout-button,
+button.login-button,
+button.signup-button,
+button.auth-button {
   pointer-events: auto !important;
   position: relative;
-  z-index: 2;
+  z-index: 5 !important;
+  cursor: pointer !important;
+  touch-action: auto !important;
 }
 
 /* ===== Modal Content Types ===== */
@@ -244,6 +264,88 @@
 .modal-content.dragging {
   opacity: 0.9;
   box-shadow: var(--shadow-xl, 0 20px 25px rgba(0, 0, 0, 0.15));
+}
+
+/* Form elements inside modals */
+.modal-body input,
+.modal-body textarea,
+.modal-body select,
+.modal-content input,
+.modal-content textarea,
+.modal-content select,
+.modal-content form input,
+.modal-content form textarea,
+.modal-content form select,
+form.modal-form input,
+form.modal-form textarea,
+form.modal-form select {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 4 !important;
+  touch-action: auto !important;
+}
+
+/* Create a higher specificity rule for forms inside modals */
+.modal-content form,
+.modal-body form,
+form.modal-form {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 3;
+}
+
+/* Make buttons in forms explicitly clickable */
+form button,
+.form-control button,
+.input-group button,
+.modal form button,
+.modal-content form button,
+.modal-form button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 5 !important;
+}
+
+/* Specific targeting for auth buttons */
+.auth-button,
+.logout-button,
+.login-button,
+.signup-button,
+[data-action='logout'] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 1000 !important; /* Very high z-index to ensure it's on top */
+}
+
+/* Extra fix for form inputs to ensure they're interactive */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='search'],
+textarea,
+select {
+  pointer-events: auto !important;
+  touch-action: auto !important;
+  cursor: text !important;
+  position: relative;
+  z-index: 5 !important;
+}
+
+/* Extra fix for buttons to ensure they're interactive */
+button,
+[role='button'],
+.btn,
+.button,
+input[type='button'],
+input[type='submit'] {
+  pointer-events: auto !important;
+  touch-action: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 5 !important;
 }
 
 /* ===== Modal Animations ===== */
@@ -404,7 +506,7 @@ body.modal-open {
 }
 
 .modal-loading::after {
-  content: "";
+  content: '';
   display: block;
   width: 40px;
   height: 40px;
@@ -415,17 +517,6 @@ body.modal-open {
   position: absolute;
   top: -4px;
   left: -4px;
-}
-
-/* Ensure form elements in modals are interactive */
-.modal-body input,
-.modal-body textarea,
-.modal-body select,
-.modal-body button,
-.modal-body a {
-  pointer-events: auto !important;
-  position: relative;
-  z-index: 1;
 }
 
 /* Make sure labels are clickable for checkboxes and radios */

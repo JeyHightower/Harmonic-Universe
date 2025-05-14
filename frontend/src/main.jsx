@@ -1,12 +1,13 @@
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { PersistGate } from 'redux-persist/integration/react';
-import App from './App.jsx';
-import store, { persistor } from './store';
+import App from './App';
+import store, { persistor } from './store/store.mjs';
 // CSS imports in correct order to prevent conflicts
 import 'antd/dist/reset.css'; // Import Ant Design styles first
+import { StrictMode } from 'react';
+import { ModalProvider } from './contexts/ModalContext';
 import './styles/App.css'; // Last: App-specific styles
 import './styles/buttons.css'; // Sixth: Button styles
 import './styles/common.css'; // Fifth: Common component styles
@@ -17,26 +18,12 @@ import './styles/theme.css'; // Third: Define theme variables
 import './styles/variables.css'; // Second: Define CSS variables
 import { AUTH_CONFIG, ensurePortalRoot } from './utils';
 import { setupModalDebugging } from './utils/modalDebug.mjs';
+import { applyInteractionFixes, fixModalFormElements } from './utils/portalUtils';
 
 // Setup global error handling
-const handleGlobalError = (error, info) => {
-  console.error('Global error caught:', error);
-  console.error('Error info:', info);
-
-  // Send error to monitoring service (if implemented)
-  try {
-    // Example: errorMonitoringService.reportError(error);
-    localStorage.setItem(
-      'lastError',
-      JSON.stringify({
-        message: error.message,
-        stack: error.stack,
-        time: new Date().toISOString(),
-      })
-    );
-  } catch (e) {
-    console.error('Error reporting failure:', e);
-  }
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+  console.error('Global error:', error || msg);
+  return false;
 };
 
 // Detect environment
@@ -125,15 +112,17 @@ const renderApp = () => {
     // React 18 API
     const root = createRoot(getRootElement());
     root.render(
-      <React.StrictMode>
+      <StrictMode>
         <Provider store={store}>
           <PersistGate loading={null} persistor={persistor}>
             <Router>
-              <App />
+              <ModalProvider>
+                <App />
+              </ModalProvider>
             </Router>
           </PersistGate>
         </Provider>
-      </React.StrictMode>
+      </StrictMode>
     );
   } catch (error) {
     console.error('Error rendering with React 18 API:', error);
@@ -179,3 +168,42 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+// Apply global fixes for modals
+// This ensures that even dynamically created modals get the fixes
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Applying global interaction fixes for modals');
+  // Initial application
+  applyInteractionFixes();
+  fixModalFormElements();
+
+  // Re-apply fixes every time a modal is opened
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length > 0) {
+        // Check if any modals were added
+        const hasModals = Array.from(mutation.addedNodes).some((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            return (
+              node.classList?.contains('modal-overlay') ||
+              node.classList?.contains('modal-content') ||
+              node.querySelector('.modal-content, .modal-overlay')
+            );
+          }
+          return false;
+        });
+
+        if (hasModals) {
+          console.log('Modal detected, applying interaction fixes');
+          setTimeout(() => {
+            applyInteractionFixes();
+            fixModalFormElements();
+          }, 50);
+        }
+      }
+    });
+  });
+
+  // Start observing the document with the configured parameters
+  observer.observe(document.body, { childList: true, subtree: true });
+});

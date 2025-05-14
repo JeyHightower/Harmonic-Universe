@@ -3,7 +3,12 @@ import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'r
 import { createPortal } from 'react-dom';
 import '../../styles/Modal.css';
 import { MODAL_CONFIG } from '../../utils/config';
-import { ensurePortalRoot } from '../../utils/portalUtils';
+import {
+  applyInteractionFixes,
+  createSpecializedHandlers,
+  ensurePortalRoot,
+  fixModalFormElements,
+} from '../../utils/portalUtils';
 
 // Animation duration in ms
 const ANIMATION_DURATION = MODAL_CONFIG.ANIMATIONS.FADE.duration;
@@ -204,6 +209,37 @@ const ModalSystem = forwardRef(
       e.stopPropagation();
     }, []);
 
+    // Enhanced handler for input fields to ensure they receive focus properly
+    const handleInputInteraction = useCallback((e) => {
+      // Stop propagation to parent elements
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Prevent any default behaviors that might interfere with form interactions
+      // but don't prevent typing in inputs
+      if (
+        e.target.tagName !== 'INPUT' &&
+        e.target.tagName !== 'TEXTAREA' &&
+        e.target.tagName !== 'SELECT'
+      ) {
+        e.preventDefault();
+      }
+
+      // Explicitly set focus on clicked form elements
+      if (
+        e.target.tagName === 'INPUT' ||
+        e.target.tagName === 'TEXTAREA' ||
+        e.target.tagName === 'SELECT' ||
+        e.target.tagName === 'BUTTON'
+      ) {
+        setTimeout(() => {
+          if (document.activeElement !== e.target) {
+            e.target.focus();
+          }
+        }, 0);
+      }
+    }, []);
+
     // Handle global event listeners for drag functionality
     useEffect(() => {
       if (draggable && isOpen) {
@@ -260,6 +296,52 @@ const ModalSystem = forwardRef(
             }
           }
         });
+
+        // Apply fixes to make form elements interactive
+        // Use a small delay to ensure the DOM is fully rendered
+        const fixTimer = setTimeout(() => {
+          if (modalRef.current) {
+            // Apply our specialized fixes for form elements
+            fixModalFormElements(modalRef.current);
+            createSpecializedHandlers(modalRef.current);
+            applyInteractionFixes();
+
+            // Extra handling for form elements
+            const formElements = modalRef.current.querySelectorAll(
+              'input, textarea, select, button'
+            );
+            formElements.forEach((el) => {
+              el.style.pointerEvents = 'auto';
+              el.style.zIndex = '5';
+
+              // Add direct click handlers to buttons
+              if (el.tagName === 'BUTTON' || el.type === 'submit' || el.type === 'button') {
+                el.addEventListener(
+                  'click',
+                  (e) => {
+                    e.stopPropagation();
+                    // Still allow default click behavior
+                  },
+                  true
+                );
+              }
+
+              // Add direct mousedown handlers to inputs
+              if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+                el.addEventListener(
+                  'mousedown',
+                  (e) => {
+                    e.stopPropagation();
+                    setTimeout(() => el.focus(), 0);
+                  },
+                  true
+                );
+              }
+            });
+          }
+        }, 50);
+
+        return () => clearTimeout(fixTimer);
       } else {
         // Reset state when closed
         setIsClosing(false);
@@ -333,6 +415,8 @@ const ModalSystem = forwardRef(
             transform: draggable
               ? `translate(${dragPosition.x}px, ${dragPosition.y}px)`
               : undefined,
+            pointerEvents: 'auto',
+            touchAction: 'auto',
           }}
         >
           <div
@@ -358,11 +442,36 @@ const ModalSystem = forwardRef(
               </button>
             )}
           </div>
-          <div id={contentId} className="modal-body" onClick={(e) => e.stopPropagation()}>
+          <div
+            id={contentId}
+            className="modal-body"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleContentClick(e);
+            }}
+            onMouseDown={handleInputInteraction}
+            onTouchStart={handleInputInteraction}
+            style={{
+              pointerEvents: 'auto',
+              touchAction: 'auto',
+            }}
+          >
             {children}
           </div>
           {footerContent && (
-            <div className="modal-footer" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="modal-footer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleContentClick(e);
+              }}
+              onMouseDown={handleInputInteraction}
+              onTouchStart={handleInputInteraction}
+              style={{
+                pointerEvents: 'auto',
+                touchAction: 'auto',
+              }}
+            >
               {footerContent}
             </div>
           )}
