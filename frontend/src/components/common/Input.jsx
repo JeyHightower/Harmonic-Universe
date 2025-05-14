@@ -20,6 +20,42 @@ function Input({
   const inputId = `input-${name}`;
   const hasError = Boolean(error);
 
+  // Add a specialized set of event handlers to ensure the input is interactive
+  // even when placed inside modals
+  const handleMouseDown = (e) => {
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    // Ensure this input gets focus
+    setTimeout(() => {
+      if (document.activeElement !== e.target) {
+        e.target.focus();
+      }
+    }, 0);
+  };
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+
+    // Ensure this input gets focus
+    if (document.activeElement !== e.target) {
+      e.target.focus();
+    }
+  };
+
+  // Add the event handlers to the input element
+  const inputProps = {
+    ...props,
+    onMouseDown: handleMouseDown,
+    onClick: handleClick,
+    style: {
+      pointerEvents: 'auto',
+      cursor: props.type === 'text' ? 'text' : 'pointer',
+      position: 'relative',
+      zIndex: '10000',
+    },
+  };
+
   return (
     <div className={`input-wrapper ${className}`}>
       {label && (
@@ -50,6 +86,7 @@ function Input({
             e.stopPropagation();
             if (onClick) onClick(e);
           }}
+          onMouseDown={handleMouseDown}
         />
       ) : (
         <input
@@ -73,6 +110,7 @@ function Input({
             e.stopPropagation();
             if (onClick) onClick(e);
           }}
+          onMouseDown={handleMouseDown}
         />
       )}
       {hasError && (

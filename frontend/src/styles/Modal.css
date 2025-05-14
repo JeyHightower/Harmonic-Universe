@@ -443,12 +443,18 @@ input[type='submit'] {
   right: 0;
   bottom: 0;
   z-index: 1050;
-  pointer-events: none; /* Allow clicks to pass through to modal content */
+  pointer-events: none !important; /* Allow clicks to pass through to content */
+  isolation: isolate; /* Create a new stacking context */
+  overflow: hidden;
 }
 
+/* Direct children of portal root should capture pointer events */
+#portal-root > div,
 #portal-root > .portal-container,
 #portal-root > .modal-portal {
-  pointer-events: auto; /* Direct children should capture events */
+  pointer-events: auto !important; /* Direct children capture events */
+  position: relative;
+  z-index: 1;
 }
 
 /* Special class for interactive components inside modals */
@@ -652,3 +658,39 @@ body.modal-open {
   position: relative;
   z-index: 5;
 }
+
+/* Fixes for dialog content and actions */
+.MuiDialogContent-root,
+.MuiDialogActions-root,
+.ant-modal-body,
+.ant-modal-footer {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Make sure that input labels are clickable */
+label {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 100 !important;
+}
+
+/* Make sure that the checkbox group inside universe form is clickable */
+.checkbox-group {
+  pointer-events: auto !important;
+  z-index: 100 !important;
+  position: relative !important;
+}
+
+/* Make sure dialog close buttons are always clickable */
+.MuiDialogTitle-root .MuiIconButton-root,
+.ant-modal-close,
+.modal-close-button {
+  pointer-events: auto !important;
+  z-index: 10001 !important;
+  position: relative !important;
+  cursor: pointer !important;
+}
+
+/* Add !important to all existing pointer-events styles to ensure they override any other styles */

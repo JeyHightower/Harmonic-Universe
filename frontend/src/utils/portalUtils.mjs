@@ -854,6 +854,95 @@ export const applyModalFixes = () => {
     });
   }
 
+  // Force modal and dialog elements to have proper pointer events
+  const modalElements = document.querySelectorAll(
+    '.modal-overlay, .modal-content, .ant-modal, .ant-modal-root, .ant-modal-content, [role="dialog"], .modal-body, .modal-footer'
+  );
+  modalElements.forEach((element) => {
+    element.style.pointerEvents = 'auto';
+    element.style.zIndex = '9999';
+  });
+
+  // Fix for all modal backdrops to ensure they don't block interaction with modal content
+  const backdrops = document.querySelectorAll('.modal-backdrop, .ant-modal-mask');
+  backdrops.forEach((backdrop) => {
+    // Allow clicking backdrop for closing, but make sure it doesn't interfere with content
+    backdrop.addEventListener(
+      'click',
+      (e) => {
+        if (e.target === backdrop) {
+          // Only propagate if it's a direct click on the backdrop
+          console.log('Backdrop clicked');
+        } else {
+          // Stop propagation for clicks on content
+          e.stopPropagation();
+        }
+      },
+      true
+    );
+  });
+
+  // Super aggressive fix for form elements
+  const formElements = document.querySelectorAll(
+    '.modal-content input, .modal-content textarea, .modal-content select, .modal-content button, ' +
+      '.modal-body input, .modal-body textarea, .modal-body select, .modal-body button, ' +
+      '.ant-modal-body input, .ant-modal-body textarea, .ant-modal-body select, .ant-modal-body button, ' +
+      '.universes-grid input, .universes-grid textarea, .universes-grid select, .universes-grid button, ' +
+      'form input, form textarea, form select, form button, .universe-form input, .universe-form button, ' +
+      '.form-control, [role="button"], .btn, .button'
+  );
+
+  formElements.forEach((el) => {
+    // Make sure element is interactive
+    el.style.pointerEvents = 'auto !important';
+    el.style.position = 'relative';
+    el.style.zIndex = '10000';
+    el.style.cursor = el.tagName.toLowerCase() === 'button' ? 'pointer' : 'auto';
+
+    // Remove existing handlers to avoid duplicates
+    if (el._clickHandler) el.removeEventListener('click', el._clickHandler);
+    if (el._mousedownHandler) el.removeEventListener('mousedown', el._mousedownHandler);
+
+    // Add click handler to stop propagation
+    const clickHandler = (e) => {
+      e.stopPropagation();
+      console.log(`${el.tagName} clicked`, el);
+
+      // For inputs, focus them
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+        setTimeout(() => {
+          if (document.activeElement !== el) {
+            el.focus();
+            console.log(`Focused ${el.tagName}`, el);
+          }
+        }, 0);
+      }
+    };
+
+    // Add mousedown handler for better focus handling
+    const mousedownHandler = (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // For inputs, make sure they get focus
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) {
+        setTimeout(() => {
+          if (document.activeElement !== el) {
+            el.focus();
+          }
+        }, 0);
+      }
+    };
+
+    // Store handlers for future cleanup
+    el._clickHandler = clickHandler;
+    el._mousedownHandler = mousedownHandler;
+
+    // Add event listeners with capture phase to ensure they run first
+    el.addEventListener('click', clickHandler, true);
+    el.addEventListener('mousedown', mousedownHandler, true);
+  });
+
   // Fix for auth buttons (logout, login, signup)
   const authButtons = document.querySelectorAll(
     '.logout-button, .login-button, .signup-button, .auth-button, [data-action="logout"]'
@@ -875,6 +964,37 @@ export const applyModalFixes = () => {
     button._authClickHandler = clickHandler;
     button.addEventListener('click', clickHandler, true);
   });
+
+  // Add mutation observer to handle dynamically added elements
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length > 0) {
+        // Check if any modal elements were added
+        const hasModalElements = Array.from(mutation.addedNodes).some((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            return (
+              node.classList?.contains('modal-overlay') ||
+              node.classList?.contains('modal-content') ||
+              node.classList?.contains('ant-modal') ||
+              node.querySelector('.modal-content, .modal-overlay, .ant-modal')
+            );
+          }
+          return false;
+        });
+
+        if (hasModalElements) {
+          console.log('New modal elements detected, applying fixes');
+          setTimeout(() => {
+            fixModalFormElements();
+            applyInteractionFixes();
+          }, 50);
+        }
+      }
+    });
+  });
+
+  // Start observing the document
+  observer.observe(document.body, { childList: true, subtree: true });
 
   return true;
 };

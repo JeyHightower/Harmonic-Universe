@@ -1,10 +1,11 @@
-import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Dialog, DialogContent, DialogTitle } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import { createUniverse, updateUniverse } from '../../../store/thunks/universeThunks';
+import { applyModalFixes } from '../../../utils/portalUtils';
 import '../styles/UniverseFormModal.css';
 
 /**
@@ -34,6 +35,8 @@ const UniverseModal = ({
   const dispatch = useDispatch();
   const { loading, error: storeError } = useSelector((state) => state.universes);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef(null);
+  const nameInputRef = useRef(null);
 
   // Determine the actual mode from props
   const actualMode = mode || (isEdit ? 'edit' : 'create');
@@ -79,6 +82,24 @@ const UniverseModal = ({
     }
   }, [universe, isEditMode, isViewMode, isCreateMode]);
 
+  // Apply modal fixes when the modal is opened
+  useEffect(() => {
+    if (isModalOpen) {
+      console.log('UniverseModal opened - applying interaction fixes');
+      // Wait for the modal to be fully rendered
+      const timer = setTimeout(() => {
+        applyModalFixes();
+
+        // Focus the name input if it exists
+        if (nameInputRef.current) {
+          nameInputRef.current.focus();
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isModalOpen]);
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -102,6 +123,8 @@ const UniverseModal = ({
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    e.stopPropagation(); // Stop event propagation
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -113,8 +136,22 @@ const UniverseModal = ({
     }
   };
 
+  // Handle input focus
+  const handleInputFocus = (e) => {
+    e.stopPropagation();
+    console.log('Input focused:', e.target.name);
+  };
+
+  // Handle clicks on form elements
+  const handleFormElementClick = (e) => {
+    e.stopPropagation();
+    console.log('Form element clicked:', e.target.tagName);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+
     if (isSubmitting) return;
 
     const isValid = validateForm();
@@ -175,21 +212,30 @@ const UniverseModal = ({
     }
   };
 
+  // Handle dialog close to prevent accidental closures
+  const handleDialogClose = (e, reason) => {
+    // Only close if it's an explicit close action, not a backdrop click
+    if (reason !== 'backdropClick') {
+      onClose && onClose();
+    }
+  };
+
   return (
     <Dialog
       open={isModalOpen}
-      onClose={onClose}
+      onClose={handleDialogClose}
       maxWidth="sm"
       fullWidth
       className="universe-form-modal"
+      onClick={(e) => e.stopPropagation()}
     >
       <DialogTitle>{getModalTitle()}</DialogTitle>
-      <DialogContent>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <form
+          ref={formRef}
           onSubmit={handleSubmit}
           className="universe-form universe-form-compact"
           onClick={(e) => e.stopPropagation()}
-          onFocus={(e) => e.stopPropagation()}
         >
           <Input
             label="Universe Name"
@@ -197,10 +243,13 @@ const UniverseModal = ({
             type="text"
             value={formData.name}
             onChange={handleChange}
+            onFocus={handleInputFocus}
+            onClick={handleFormElementClick}
             error={errors.name}
             required
             className="compact-input"
             disabled={isViewMode || isSubmitting}
+            ref={nameInputRef}
           />
 
           <Input
@@ -209,6 +258,8 @@ const UniverseModal = ({
             type="textarea"
             value={formData.description}
             onChange={handleChange}
+            onFocus={handleInputFocus}
+            onClick={handleFormElementClick}
             error={errors.description}
             rows={3}
             disabled={isViewMode || isSubmitting}
@@ -220,6 +271,8 @@ const UniverseModal = ({
             type="text"
             value={formData.genre}
             onChange={handleChange}
+            onFocus={handleInputFocus}
+            onClick={handleFormElementClick}
             error={errors.genre}
             disabled={isViewMode || isSubmitting}
           />
@@ -230,17 +283,20 @@ const UniverseModal = ({
             type="text"
             value={formData.theme}
             onChange={handleChange}
+            onFocus={handleInputFocus}
+            onClick={handleFormElementClick}
             error={errors.theme}
             disabled={isViewMode || isSubmitting}
           />
 
-          <div className="checkbox-group">
-            <label>
+          <div className="checkbox-group" onClick={(e) => e.stopPropagation()}>
+            <label onClick={(e) => e.stopPropagation()}>
               <input
                 type="checkbox"
                 name="is_public"
                 checked={formData.is_public}
                 onChange={handleChange}
+                onClick={handleFormElementClick}
                 disabled={isViewMode || isSubmitting}
               />
               Make Universe Public
@@ -248,25 +304,58 @@ const UniverseModal = ({
             <small>Public universes can be viewed by other users</small>
           </div>
 
-          {errors.form && <div className="error-message">{errors.form}</div>}
+          {errors.form && (
+            <div className="form-error" role="alert">
+              {errors.form}
+            </div>
+          )}
+
+          {storeError && (
+            <div className="form-error" role="alert">
+              {typeof storeError === 'string' ? storeError : 'An error occurred. Please try again.'}
+            </div>
+          )}
+
+          {!isViewMode && (
+            <div className="form-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose && onClose();
+                }}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={isSubmitting || loading}
+                loading={isSubmitting}
+              >
+                {isEditMode ? 'Update Universe' : 'Create Universe'}
+              </Button>
+            </div>
+          )}
+
+          {isViewMode && (
+            <div className="form-actions">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose && onClose();
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          )}
         </form>
       </DialogContent>
-      <DialogActions>
-        <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
-          Cancel
-        </Button>
-        {!isViewMode && (
-          <Button
-            type="button"
-            variant="primary"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            loading={isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Universe'}
-          </Button>
-        )}
-      </DialogActions>
     </Dialog>
   );
 };

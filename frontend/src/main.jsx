@@ -20,6 +20,7 @@ import { AUTH_CONFIG, ensurePortalRoot } from './utils';
 import { setupModalDebugging } from './utils/modalDebug.mjs';
 import {
   applyInteractionFixes,
+  applyModalFixes,
   fixModalFormElements,
   forceModalInteractivity,
 } from './utils/portalUtils';
@@ -178,38 +179,57 @@ if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Applying global interaction fixes for modals');
 
-  // Initial application of fixes
-  applyInteractionFixes();
-  fixModalFormElements();
+  // Apply comprehensive modal fixes
+  applyModalFixes();
 
-  // Apply the emergency fix for good measure
-  setTimeout(() => {
-    forceModalInteractivity();
-  }, 1000);
+  // Set up a scheduled reapplication of fixes to catch any dynamically added modals
+  const applyFixesInterval = setInterval(() => {
+    // Check if there are any modals in the DOM
+    const hasModals = document.querySelector(
+      '.modal-overlay, .modal-content, .ant-modal, .ant-modal-root, [role="dialog"]'
+    );
 
-  // Re-apply fixes every time a modal is opened
+    if (hasModals) {
+      console.log('Found modals in DOM, reapplying fixes');
+      applyModalFixes();
+    }
+  }, 2000); // Check every 2 seconds
+
+  // Save the interval ID for potential cleanup
+  window.__modalFixesInterval = applyFixesInterval;
+
+  // Use MutationObserver to detect when modals are added to the DOM
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.addedNodes.length > 0) {
         // Check if any modals were added
-        const hasModals = Array.from(mutation.addedNodes).some((node) => {
+        const modalAdded = Array.from(mutation.addedNodes).some((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
             return (
               node.classList?.contains('modal-overlay') ||
               node.classList?.contains('modal-content') ||
-              node.querySelector('.modal-content, .modal-overlay')
+              node.classList?.contains('ant-modal') ||
+              node.classList?.contains('ant-modal-root') ||
+              (node.hasAttribute?.('role') && node.getAttribute('role') === 'dialog') ||
+              node.querySelector?.(
+                '.modal-content, .modal-overlay, .ant-modal, .ant-modal-root, [role="dialog"]'
+              )
             );
           }
           return false;
         });
 
-        if (hasModals) {
-          console.log('Modal detected, applying interaction fixes');
+        if (modalAdded) {
+          console.log('Modal detected via MutationObserver, applying comprehensive fixes');
+          // Apply fixes with slight delay to ensure DOM is fully updated
           setTimeout(() => {
-            applyInteractionFixes();
-            fixModalFormElements();
-            forceModalInteractivity(); // Apply emergency fix
-          }, 50);
+            applyModalFixes();
+          }, 100);
+
+          // Apply again after a longer delay for any post-render updates
+          setTimeout(() => {
+            applyModalFixes();
+          }, 500);
         }
       }
     });
@@ -218,12 +238,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start observing the document with the configured parameters
   observer.observe(document.body, { childList: true, subtree: true });
 
-  // Add click event listener to help debug modal interaction issues
+  // Add click event listener to handle modal interaction issues on the fly
   document.addEventListener(
     'click',
     (e) => {
       // Check if the click is inside a modal
-      const modal = e.target.closest('.modal-content, .modal-overlay, [role="dialog"]');
+      const modal = e.target.closest(
+        '.modal-content, .modal-overlay, [role="dialog"], .ant-modal, .ant-modal-content'
+      );
       if (modal) {
         console.log(`Click detected in modal on element:`, e.target.tagName, e.target);
 
@@ -240,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Force element to be interactive
           e.target.style.pointerEvents = 'auto';
           e.target.style.zIndex = '100000';
+          e.stopPropagation();
 
           // If it's an input, focus it
           if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
@@ -248,19 +271,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     },
-    true
+    true // Use capture phase to handle events before they bubble
   );
 
-  // Add a keyboard shortcut for the emergency fix (Ctrl+Shift+F)
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-      console.log('Emergency modal fix triggered via keyboard shortcut');
-      forceModalInteractivity();
-      e.preventDefault();
-    }
-  });
+  // Add a global emergency fix function
+  window.__fixModalsNow = () => {
+    console.log('Emergency modal fix triggered');
+    applyModalFixes();
+    setTimeout(() => forceModalInteractivity(), 100);
+  };
 
-  // Expose emergency fix to console
-  window.__fixModals = forceModalInteractivity;
-  console.log('Modal emergency fix available at window.__fixModals()');
+  // Apply a final batch of fixes after the app has fully loaded
+  setTimeout(() => {
+    console.log('Applying post-load modal fixes');
+    applyModalFixes();
+  }, 2000);
 });
+
+// Add polyfill for stopImmediatePropagation if needed
+if (!Event.prototype.stopImmediatePropagation) {
+  console.log('Adding stopImmediatePropagation polyfill');
+  Event.prototype.stopImmediatePropagation = function () {
+    this.cancelBubble = true;
+    this.stopPropagation();
+    this._immediatePropagationStopped = true;
+  };
+
+  // Add a property to check if immediate propagation was stopped
+  Object.defineProperty(Event.prototype, 'immediatePropagationStopped', {
+    get: function () {
+      return !!this._immediatePropagationStopped;
+    },
+  });
+}
+
+// Apply modal fixes immediately when the window loads
+window.addEventListener('load', () => {
+  console.log('Window loaded - applying modal fixes');
+  setTimeout(() => {
+    try {
+      applyModalFixes();
+    } catch (error) {
+      console.error('Error applying modal fixes on load:', error);
+    }
+  }, 100);
+});
+
+// Add a special handler for inputs inside modals to ensure they're always focusable
+document.addEventListener(
+  'mousedown',
+  (e) => {
+    const isInput =
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'TEXTAREA' ||
+      e.target.tagName === 'SELECT';
+
+    const isInsideModal = e.target.closest(
+      '.modal-content, .modal-overlay, [role="dialog"], .ant-modal, .ant-modal-content'
+    );
+
+    if (isInput && isInsideModal) {
+      console.log('Input clicked inside modal:', e.target);
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Force focus
+      setTimeout(() => {
+        if (document.activeElement !== e.target) {
+          e.target.focus();
+        }
+      }, 0);
+    }
+  },
+  true
+);
+
+// Export necessary functions for component usage
+export { applyInteractionFixes, applyModalFixes, fixModalFormElements };
