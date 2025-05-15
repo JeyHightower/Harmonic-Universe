@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import { Outlet } from 'react-router-dom';
 import { MODAL_TYPES } from '../../constants/modalTypes';
-import { useModalRedux } from '../../hooks/useModal';
+import { useModalState } from '../../hooks/useModalState';
 
 // Import Navigation component
 import Navigation from '../navigation/Navigation';
@@ -105,7 +105,7 @@ function Layout() {
   const location = safeUseLocation();
   const navigate = safeUseNavigate();
   const dispatch = safeUseDispatch();
-  const { openModal } = useModalRedux();
+  const { openModal } = useModalState();
 
   // Local state for component needs
   const [initialized, setInitialized] = useState(false);

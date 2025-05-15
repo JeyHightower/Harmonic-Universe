@@ -1,33 +1,24 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import { ModalSystem } from './index.mjs';
-import { MODAL_CONFIG } from '../../utils/config';
 
-const AlertModal = ({ title, message, confirmText = 'OK', onConfirm, onClose, ...props }) => {
+/**
+ * Alert modal for displaying messages
+ */
+const AlertModal = ({ message, onClose }) => {
   return (
-    <ModalSystem
-      type="alert"
-      title={title}
-      onClose={onClose}
-      size={MODAL_CONFIG.SIZES.SMALL}
-      animation={MODAL_CONFIG.ANIMATIONS.FADE}
-      {...props}
-    >
-      <div className="modal-content">
-        <p>{message}</p>
-        <div className="modal-actions">
-          <button onClick={onConfirm || onClose}>{confirmText}</button>
-        </div>
+    <div className="alert-modal">
+      <p className="alert-message">{message}</p>
+
+      <div className="alert-actions">
+        <button type="button" className="btn btn-primary" onClick={onClose}>
+          OK
+        </button>
       </div>
-    </ModalSystem>
+    </div>
   );
 };
 
 AlertModal.propTypes = {
-  title: PropTypes.string.isRequired,
   message: PropTypes.string.isRequired,
-  confirmText: PropTypes.string,
-  onConfirm: PropTypes.func,
   onClose: PropTypes.func.isRequired,
 };
 

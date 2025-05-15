@@ -1,7 +1,6 @@
-import React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useModal } from '../../contexts/ModalContext';
+import { useModalRedux } from '../../hooks/useModal';
 import { setNetworkError } from '../../store/slices/authSlice';
 import { API_CONFIG, MODAL_TYPES } from '../../utils/config';
 
@@ -12,7 +11,7 @@ import { API_CONFIG, MODAL_TYPES } from '../../utils/config';
 const NetworkErrorAlert = () => {
   const { networkError, offlineMode } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
-  const { openModal } = useModal();
+  const { openModal } = useModalRedux();
   const [hasShownModal, setHasShownModal] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const [retryCount, setRetryCount] = useState(0);

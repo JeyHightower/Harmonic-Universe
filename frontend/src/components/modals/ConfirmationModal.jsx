@@ -1,68 +1,60 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import { useSelector } from 'react-redux';
-import { ModalSystem } from './index.mjs';
-import { selectIsModalOpen } from '../../store/slices/modalSlice';
 
+/**
+ * Confirmation modal for yes/no decisions
+ */
 const ConfirmationModal = ({
-  title,
   message,
+  onConfirm,
+  onCancel,
   confirmText = 'Yes',
   cancelText = 'No',
-  confirmId,
-  cancelId,
-  onClose,
-  ...props
+  confirmVariant = 'primary',
+  cancelVariant = 'secondary',
+  dangerMode = false,
 }) => {
-  const isOpen = useSelector(selectIsModalOpen);
-
   const handleConfirm = () => {
-    console.log('Confirmation modal confirmed:', confirmId);
-    if (confirmId) {
-      const event = new CustomEvent('modal-confirm', {
-        detail: { action: confirmId },
-      });
-      document.dispatchEvent(event);
+    if (onConfirm) {
+      onConfirm();
     }
-    onClose();
   };
 
   const handleCancel = () => {
-    console.log('Confirmation modal cancelled:', cancelId);
-    if (cancelId) {
-      const event = new CustomEvent('modal-cancel', {
-        detail: { action: cancelId },
-      });
-      document.dispatchEvent(event);
+    if (onCancel) {
+      onCancel();
     }
-    onClose();
   };
 
   return (
-    <ModalSystem isOpen={isOpen} type="confirm" title={title} onClose={onClose} {...props}>
-      <div className="modal-content">
-        <p>{message}</p>
-        <div className="modal-actions">
-          <button onClick={handleCancel} className="modal-button modal-button-secondary">
-            {cancelText}
-          </button>
-          <button onClick={handleConfirm} className="modal-button modal-button-primary">
-            {confirmText}
-          </button>
-        </div>
+    <div className="confirmation-modal">
+      <p className="confirmation-message">{message}</p>
+
+      <div className="confirmation-actions">
+        <button type="button" className={`btn btn-${cancelVariant}`} onClick={handleCancel}>
+          {cancelText}
+        </button>
+
+        <button
+          type="button"
+          className={`btn btn-${confirmVariant} ${dangerMode ? 'btn-danger' : ''}`}
+          onClick={handleConfirm}
+        >
+          {confirmText}
+        </button>
       </div>
-    </ModalSystem>
+    </div>
   );
 };
 
 ConfirmationModal.propTypes = {
-  title: PropTypes.string.isRequired,
   message: PropTypes.string.isRequired,
+  onConfirm: PropTypes.func,
+  onCancel: PropTypes.func,
   confirmText: PropTypes.string,
   cancelText: PropTypes.string,
-  confirmId: PropTypes.string,
-  cancelId: PropTypes.string,
-  onClose: PropTypes.func.isRequired,
+  confirmVariant: PropTypes.string,
+  cancelVariant: PropTypes.string,
+  dangerMode: PropTypes.bool,
 };
 
 export default ConfirmationModal;

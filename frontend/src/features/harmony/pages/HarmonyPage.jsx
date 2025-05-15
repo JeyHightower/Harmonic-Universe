@@ -6,19 +6,19 @@ import {
   SoundOutlined,
 } from '@ant-design/icons';
 import { Button, Card, Col, Empty, List, Modal, Row, Slider, Spin, Tabs, message } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useModal } from '../../../contexts/ModalContext';
+import { useModalRedux } from '../../../hooks/useModal';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
-import '../styles/HarmonyPage.css';
 import { api } from '../../../utils/api';
+import '../styles/HarmonyPage.css';
 
 const HarmonyPage = () => {
   const { universeId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { openModal } = useModal();
+  const { openModal } = useModalRedux();
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('parameters');

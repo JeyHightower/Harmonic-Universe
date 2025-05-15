@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import logoSvg from '../../assets/logo.svg';
@@ -13,41 +13,77 @@ function Navigation() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const timeoutRef = useRef(null);
 
   const handleLoginClick = useCallback(
     (e) => {
       e.preventDefault();
+
+      // Prevent multiple clicks
+      if (isProcessing) return;
+
+      setIsProcessing(true);
       console.log('[Navigation] Opening login modal');
-      open(MODAL_TYPES.LOGIN, {
-        title: 'Login',
-        size: 'medium',
-        position: 'center',
-        animation: 'fade',
-        closeOnEscape: true,
-        closeOnBackdrop: true,
-        preventBodyScroll: true,
-        showCloseButton: true,
-      });
+
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Add a small delay before attempting to open modal
+      timeoutRef.current = setTimeout(() => {
+        open(MODAL_TYPES.LOGIN, {
+          title: 'Login',
+          size: 'medium',
+          position: 'center',
+          animation: 'fade',
+          closeOnEscape: true,
+          closeOnBackdrop: true,
+          preventBodyScroll: true,
+          showCloseButton: true,
+        });
+
+        // Reset processing state after a delay
+        setTimeout(() => setIsProcessing(false), 300);
+      }, 50);
     },
-    [open]
+    [open, isProcessing]
   );
 
   const handleSignupClick = useCallback(
     (e) => {
       e.preventDefault();
+
+      // Prevent multiple clicks
+      if (isProcessing) return;
+
+      setIsProcessing(true);
       console.log('[Navigation] Opening signup modal');
-      open(MODAL_TYPES.SIGNUP, {
-        title: 'Sign Up',
-        size: 'medium',
-        position: 'center',
-        animation: 'fade',
-        closeOnEscape: true,
-        closeOnBackdrop: true,
-        preventBodyScroll: true,
-        showCloseButton: true,
-      });
+
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Add a small delay before attempting to open modal
+      timeoutRef.current = setTimeout(() => {
+        open(MODAL_TYPES.SIGNUP, {
+          title: 'Sign Up',
+          size: 'medium',
+          position: 'center',
+          animation: 'fade',
+          closeOnEscape: true,
+          closeOnBackdrop: true,
+          preventBodyScroll: true,
+          showCloseButton: true,
+        });
+
+        // Reset processing state after a delay
+        setTimeout(() => setIsProcessing(false), 300);
+      }, 50);
     },
-    [open]
+    [open, isProcessing]
   );
 
   const handleLogout = useCallback(
@@ -100,6 +136,7 @@ function Navigation() {
               onClick={handleLoginClick}
               className="nav-button"
               style={{ pointerEvents: 'auto' }}
+              disabled={isProcessing}
             >
               Login
             </button>
@@ -108,6 +145,7 @@ function Navigation() {
               onClick={handleSignupClick}
               className="nav-button"
               style={{ pointerEvents: 'auto' }}
+              disabled={isProcessing}
             >
               Sign Up
             </button>

@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '../../../components/common/Button';
-import { useModal } from '../../../contexts/ModalContext';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { useModalRedux } from '../../../hooks/useModal';
 import '../styles/Universe.css';
 
 // Global state to prevent modal from unmounting
@@ -10,7 +10,7 @@ let savedUniverse = null;
 let currentOnCloseFn = null;
 
 const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
-  const { openModalByType } = useModal();
+  const { open } = useModalRedux();
   const [visible, setVisible] = useState(false);
   const onCloseRef = useRef(onClose);
   const universeRef = useRef(universe);
@@ -60,170 +60,73 @@ const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
     }
   };
 
-  // If we have saved universe data but no current universe, use the saved one
-  const displayUniverse = universe || savedUniverse;
+  // Function to open the edit modal
+  const handleEditClick = () => {
+    if (universeRef.current) {
+      console.log('Opening edit modal for universe:', universeRef.current);
+      open(MODAL_TYPES.UNIVERSE_CREATE, {
+        universe: universeRef.current,
+        mode: 'edit',
+        title: 'Edit Universe',
+        onClose: () => {
+          console.log('Edit modal closed');
+        },
+      });
+    }
+  };
 
-  // Only render when we have universe data
-  if (!displayUniverse || !modalVisible) {
-    console.log('UniverseInfoModal returning null - no displayUniverse or not visible');
+  if (!universeRef.current) {
     return null;
   }
 
-  console.log('UniverseInfoModal rendering content');
-
-  // Check if user has permission to modify this universe
-  const canModifyUniverse = displayUniverse?.user_role === 'owner';
-
-  const handleEdit = () => {
-    if (!canModifyUniverse) return;
-
-    // Close this modal and open the edit modal
-    handleModalClose();
-
-    openModalByType(MODAL_TYPES.UNIVERSE_EDIT, {
-      universeId: displayUniverse.id,
-      initialData: displayUniverse,
-    });
-  };
-
   return (
-    <div
-      className="universe-info-modal-backdrop"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 1000,
-        pointerEvents: 'auto',
-      }}
-      onClick={(e) => {
-        // Only close if the backdrop itself was clicked
-        if (e.target === e.currentTarget) {
-          handleModalClose();
-        }
-      }}
-    >
-      <div
-        className="universe-info-modal"
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '20px',
-          maxWidth: '800px',
-          width: '90%',
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          pointerEvents: 'auto',
-          zIndex: 1001,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="universe-info-section">
-          <h3>Basic Information</h3>
-          <div className="info-row">
-            <span className="info-label">Name:</span>
-            <span className="info-value">{displayUniverse.name}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Description:</span>
-            <span className="info-value">{displayUniverse.description}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Visibility:</span>
-            <span className="info-value">{displayUniverse.is_public ? 'Public' : 'Private'}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Created:</span>
-            <span className="info-value">
-              {new Date(displayUniverse.created_at).toLocaleString()}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Last Updated:</span>
-            <span className="info-value">
-              {new Date(displayUniverse.updated_at).toLocaleString()}
-            </span>
-          </div>
+    <div className="universe-info-modal">
+      <div className="universe-info-header">
+        <h2>{universeRef.current.name}</h2>
+        <div className="universe-actions">
+          <Button type="primary" onClick={handleEditClick}>
+            Edit
+          </Button>
+        </div>
+      </div>
+
+      <div className="universe-info-content">
+        <div className="info-section">
+          <h3>Description</h3>
+          <p>{universeRef.current.description || 'No description provided.'}</p>
         </div>
 
-        <div className="universe-info-section">
-          <h3>Statistics</h3>
-          <div className="info-row">
-            <span className="info-label">Physics Objects:</span>
-            <span className="info-value">{displayUniverse.physics_objects_count || 'N/A'}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Scenes:</span>
-            <span className="info-value">{displayUniverse.scenes_count || 'N/A'}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Simulations Run:</span>
-            <span className="info-value">{displayUniverse.simulations_count || 'N/A'}</span>
-          </div>
+        <div className="info-section">
+          <h3>Genre</h3>
+          <p>{universeRef.current.genre || 'Not specified'}</p>
         </div>
 
-        <div className="universe-info-section">
-          <h3>Physics Parameters</h3>
-          {displayUniverse.physics_params ? (
-            Object.entries(displayUniverse.physics_params).map(([key, value]) => (
-              <div className="info-row" key={key}>
-                <span className="info-label">
-                  {key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}:
-                </span>
-                <span className="info-value">
-                  {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                </span>
-              </div>
-            ))
-          ) : (
-            <div className="info-row">
-              <span className="info-value">No physics parameters defined</span>
-            </div>
-          )}
+        <div className="info-section">
+          <h3>Theme</h3>
+          <p>{universeRef.current.theme || 'Not specified'}</p>
         </div>
 
-        <div className="universe-info-section">
-          <h3>Harmony Parameters</h3>
-          {displayUniverse.harmony_params ? (
-            Object.entries(displayUniverse.harmony_params).map(([key, value]) => (
-              <div className="info-row" key={key}>
-                <span className="info-label">
-                  {key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}:
-                </span>
-                <span className="info-value">{String(value)}</span>
-              </div>
-            ))
-          ) : (
-            <div className="info-row">
-              <span className="info-value">No harmony parameters defined</span>
-            </div>
-          )}
+        <div className="info-section">
+          <h3>Visibility</h3>
+          <p>{universeRef.current.is_public ? 'Public' : 'Private'}</p>
         </div>
 
-        {/* Add modal footer with buttons */}
-        <div
-          className="modal-footer"
-          style={{
-            marginTop: '20px',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '10px',
-          }}
-        >
-          <Button onClick={handleModalClose}>Close</Button>
-          {canModifyUniverse && (
-            <Button onClick={handleEdit} variant="primary">
-              Edit Universe
-            </Button>
-          )}
+        <div className="info-section">
+          <h3>Created On</h3>
+          <p>
+            {new Date(universeRef.current.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
         </div>
+      </div>
+
+      <div className="universe-info-footer">
+        <Button type="secondary" onClick={handleModalClose}>
+          Close
+        </Button>
       </div>
     </div>
   );

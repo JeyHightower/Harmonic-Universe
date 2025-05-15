@@ -5,23 +5,28 @@ export const useAppDispatch = () => useDispatch();
 export const useAppSelector = useSelector;
 
 // Store configuration
-export { default, persistor } from './store';
+export * from './store';
 
 // Slices
-export { default as authReducer } from './slices/authSlice';
-export { default as characterReducer } from './slices/characterSlice';
-export { default as modalReducer } from './slices/modalSlice';
-export { default as noteReducer } from './slices/noteSlice';
-export { default as physicsObjectsReducer } from './slices/physicsObjectsSlice';
-export { default as physicsParametersReducer } from './slices/physicsParametersSlice';
-export { default as scenesReducer } from './slices/scenesSlice';
-export { default as universeReducer } from './slices/universeSlice';
+export * from './slices/authSlice';
+export * from './slices/characterSlice';
+export * from './slices/newModalSlice';
+export * from './slices/noteSlice';
+export * from './slices/scenesSlice';
+export * from './slices/universeSlice';
 
 // Actions from slices
 export {
+  clearError as clearAuthError,
+  loginFailure,
   // Auth actions
-  loginStart, loginSuccess, loginFailure, logoutSuccess, logoutFailure, 
-  updateUser, clearError as clearAuthError, setNetworkError, setOfflineMode,
+  loginStart,
+  loginSuccess,
+  logoutFailure,
+  logoutSuccess,
+  setNetworkError,
+  setOfflineMode,
+  updateUser,
 } from './slices/authSlice';
 
 // Commenting out exports that may not exist - uncomment after implementing in slice files
@@ -68,7 +73,14 @@ export {
 */
 
 // Thunks
-export * from './thunks';
+export * from './thunks/authThunks';
+export * from './thunks/characterThunks';
+export * from './thunks/noteThunks';
+export * from './thunks/sceneThunks';
+export * from './thunks/universeThunks';
 
 // Selectors
-export * from './selectors/universeSelectors'; 
+export * from './selectors/universeSelectors';
+
+// Re-export hooks for easy importing
+export { useModalState, useModalTypeState } from '../hooks/useModalState';

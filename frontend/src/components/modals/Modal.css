@@ -260,6 +260,16 @@ form select,
   outline: 1px solid rgba(255, 0, 0, 0.3);
 }
 
+/* Force render fix for stuck transitions */
+.force-render {
+  animation: none !important;
+  transition: none !important;
+  transform: translate(0, 0) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
 /* Material-UI compatibility */
 .MuiDialog-container {
   pointer-events: auto !important;

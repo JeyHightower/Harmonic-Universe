@@ -1,12 +1,15 @@
 import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ModalSystem } from './index.mjs';
 
+/**
+ * DraggableModal component that enables dragging functionality for modals
+ */
 const DraggableModal = ({ children, ...modalProps }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [modalEl, setModalEl] = useState(null);
+  const modalRef = useRef(null);
 
   // Reset position when the modal opens
   useEffect(() => {
@@ -15,24 +18,16 @@ const DraggableModal = ({ children, ...modalProps }) => {
     }
   }, [modalProps.isOpen]);
 
-  // Callback ref to get the modal element
-  const modalRefCallback = useCallback((node) => {
-    if (node !== null) {
-      // The node is the modal overlay, find the actual modal element
-      const modalElement = node.querySelector('.modal-content');
-      setModalEl(modalElement);
-    }
-  }, []);
-
   const handleMouseDown = (e) => {
     // Only allow dragging from the header
     if (!e.target.closest('.modal-header')) return;
 
     setIsDragging(true);
 
-    if (modalEl) {
-      // Calculate the offset of the mouse relative to the modal position
-      const modalRect = modalEl.getBoundingClientRect();
+    // Calculate the offset of the mouse relative to the modal position
+    const modalElement = e.target.closest('.modal');
+    if (modalElement) {
+      const modalRect = modalElement.getBoundingClientRect();
       setDragOffset({
         x: e.clientX - modalRect.left - position.x,
         y: e.clientY - modalRect.top - position.y,
@@ -43,19 +38,22 @@ const DraggableModal = ({ children, ...modalProps }) => {
     e.preventDefault();
   };
 
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isDragging) return;
 
-    // Update position based on mouse movement and initial offset
-    setPosition({
-      x: e.clientX - dragOffset.x,
-      y: e.clientY - dragOffset.y,
-    });
-  };
+      // Update position based on mouse movement and initial offset
+      setPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y,
+      });
+    },
+    [isDragging, dragOffset]
+  );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   // Add and remove event listeners
   useEffect(() => {
@@ -71,9 +69,9 @@ const DraggableModal = ({ children, ...modalProps }) => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // Wrapper for the modal children that applies the dragging behavior
+  // Wrapper for modal content to apply drag styles
   const draggableContent = (
     <div
       className="draggable-container"
@@ -88,7 +86,7 @@ const DraggableModal = ({ children, ...modalProps }) => {
     <ModalSystem
       {...modalProps}
       className={`draggable-modal ${modalProps.className || ''} ${isDragging ? 'dragging' : ''}`}
-      ref={modalRefCallback}
+      ref={modalRef}
     >
       {draggableContent}
     </ModalSystem>

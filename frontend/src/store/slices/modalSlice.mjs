@@ -6,6 +6,7 @@ const initialState = {
   type: null,
   props: {},
   isTransitioning: false,
+  lastUpdateTime: null,
   queue: [], // Queue for handling multiple modals
   history: [], // Track modal history for debugging
   error: null, // Track errors in modal operations
@@ -46,11 +47,13 @@ const modalSlice = createSlice({
   reducers: {
     openModal: (state, action) => {
       const { type, props = {} } = action.payload;
+      const currentTime = Date.now();
 
-      // Don't open if already transitioning
-      if (state.isTransitioning) {
-        // Queue the modal instead
-        state.queue.push({ type, props });
+      // If already transitioning or open, queue the request instead of showing a warning
+      if (state.isTransitioning || (state.isOpen && state.type)) {
+        console.log(`Modal system busy, queueing modal: ${type}`);
+        // Queue the modal instead of trying to open immediately
+        state.queue.push({ type, props, timestamp: currentTime });
         return;
       }
 
@@ -59,7 +62,7 @@ const modalSlice = createSlice({
         state.history.push({
           type: state.type,
           props: { ...state.props },
-          timestamp: Date.now(),
+          timestamp: currentTime,
         });
       }
 
@@ -69,6 +72,7 @@ const modalSlice = createSlice({
       // Set the new modal
       state.isOpen = true;
       state.type = type;
+      state.lastUpdateTime = currentTime;
       state.props = {
         size: props.size || MODAL_CONFIG.SIZES.MEDIUM,
         position: props.position || MODAL_CONFIG.POSITIONS.CENTER,
@@ -90,6 +94,7 @@ const modalSlice = createSlice({
     closeModal: (state) => {
       if (!state.isTransitioning) {
         state.isTransitioning = true;
+        state.lastUpdateTime = Date.now();
       }
     },
     closeModalComplete: (state) => {
@@ -98,30 +103,35 @@ const modalSlice = createSlice({
       state.type = null;
       state.props = {};
       state.isTransitioning = false;
+      state.lastUpdateTime = Date.now();
       state.error = null;
 
-      // If there are modals in the queue, open the next one
+      // If there are modals in the queue, mark the next one ready
       if (state.queue.length > 0) {
         const nextModal = state.queue.shift();
 
-        state.isOpen = true;
-        state.type = nextModal.type;
-        state.props = {
-          size: nextModal.props.size || MODAL_CONFIG.SIZES.MEDIUM,
-          position: nextModal.props.position || MODAL_CONFIG.POSITIONS.CENTER,
-          animation: nextModal.props.animation || MODAL_CONFIG.ANIMATIONS.FADE,
-          draggable: nextModal.props.draggable || MODAL_CONFIG.DEFAULT_SETTINGS.draggable,
-          closeOnEscape:
-            nextModal.props.closeOnEscape ?? MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape,
-          closeOnBackdrop:
-            nextModal.props.closeOnBackdrop ?? MODAL_CONFIG.DEFAULT_SETTINGS.closeOnBackdrop,
-          preventBodyScroll:
-            nextModal.props.preventBodyScroll ?? MODAL_CONFIG.DEFAULT_SETTINGS.preventBodyScroll,
-          showCloseButton:
-            nextModal.props.showCloseButton ?? MODAL_CONFIG.DEFAULT_SETTINGS.showCloseButton,
-          ...nextModal.props,
+        // Instead of immediately opening, set a processingQueue flag
+        // This will be handled by the middleware or component
+        state.processingQueue = true;
+        state.nextModal = {
+          type: nextModal.type,
+          props: {
+            size: nextModal.props.size || MODAL_CONFIG.SIZES.MEDIUM,
+            position: nextModal.props.position || MODAL_CONFIG.POSITIONS.CENTER,
+            animation: nextModal.props.animation || MODAL_CONFIG.ANIMATIONS.FADE,
+            draggable: nextModal.props.draggable || MODAL_CONFIG.DEFAULT_SETTINGS.draggable,
+            closeOnEscape:
+              nextModal.props.closeOnEscape ?? MODAL_CONFIG.DEFAULT_SETTINGS.closeOnEscape,
+            closeOnBackdrop:
+              nextModal.props.closeOnBackdrop ?? MODAL_CONFIG.DEFAULT_SETTINGS.closeOnBackdrop,
+            preventBodyScroll:
+              nextModal.props.preventBodyScroll ?? MODAL_CONFIG.DEFAULT_SETTINGS.preventBodyScroll,
+            showCloseButton:
+              nextModal.props.showCloseButton ?? MODAL_CONFIG.DEFAULT_SETTINGS.showCloseButton,
+            ...nextModal.props,
+          },
+          timestamp: Date.now(),
         };
-        state.isTransitioning = true;
       }
     },
     updateModalProps: (state, action) => {
@@ -130,11 +140,12 @@ const modalSlice = createSlice({
           ...state.props,
           ...action.payload,
         };
+        state.lastUpdateTime = Date.now();
       }
     },
     queueModal: (state, action) => {
       const { type, props = {} } = action.payload;
-      state.queue.push({ type, props });
+      state.queue.push({ type, props, timestamp: Date.now() });
     },
     clearQueue: (state) => {
       state.queue = [];
@@ -151,6 +162,7 @@ const modalSlice = createSlice({
       state.type = null;
       state.props = {};
       state.isTransitioning = false;
+      state.lastUpdateTime = Date.now();
       state.queue = [];
       state.error = null;
     },
@@ -206,6 +218,21 @@ const modalSlice = createSlice({
     clearDebugErrors: (state) => {
       state.interactionFixes.debug.errors = [];
     },
+
+    // Add new action to process the queue
+    processQueuedModal: (state) => {
+      if (state.processingQueue && state.nextModal) {
+        state.isOpen = true;
+        state.type = state.nextModal.type;
+        state.props = state.nextModal.props;
+        state.isTransitioning = true;
+        state.lastUpdateTime = Date.now();
+
+        // Clear the queue processing flags
+        state.processingQueue = false;
+        state.nextModal = null;
+      }
+    },
   },
 });
 
@@ -219,6 +246,7 @@ export const {
   clearHistory,
   setModalError,
   resetModalState,
+  processQueuedModal,
 
   // Export new interaction fixes actions
   initializeModalPortal,
@@ -233,7 +261,6 @@ export const {
 } = modalSlice.actions;
 
 // Selectors
-export const selectModalState = (state) => state.modal;
 export const selectIsModalOpen = (state) => state.modal.isOpen;
 export const selectModalType = (state) => state.modal.type;
 export const selectModalProps = (state) => state.modal.props;
@@ -243,6 +270,7 @@ export const selectModalHistory = (state) => state.modal.history;
 export const selectModalError = (state) => state.modal.error;
 
 // New selectors for interaction fixes
+export const selectModalState = (state) => state.modal;
 export const selectInteractionFixes = (state) => state.modal.interactionFixes;
 export const selectInteractionFixesApplied = (state) => state.modal.interactionFixes.applied;
 export const selectModalZIndexLevels = (state) => state.modal.interactionFixes.zIndex;

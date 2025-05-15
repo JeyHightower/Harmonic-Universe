@@ -1,9 +1,7 @@
 import React, { lazy, Suspense, useEffect, useState, useTransition } from 'react';
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { PersistGate } from 'redux-persist/integration/react';
+import { useDispatch, useSelector } from 'react-redux';
 import { ErrorBoundary, NetworkErrorHandler } from './components';
 import { authService } from './services/auth.service.mjs';
-import store, { persistor } from './store';
 import { checkAuthState, logout } from './store/slices/authSlice';
 import './styles'; // Import all styles
 import { AUTH_CONFIG } from './utils';
@@ -12,6 +10,7 @@ import { cleanupAllPortals, ensurePortalRoot } from './utils/portalUtils.mjs';
 // Import modal debugging utilities in development
 import { setupModalDebugging } from './utils/modalDebug.mjs';
 // Import the safer interaction fixes
+import { ModalManager } from './components/modals';
 import { applyEssentialFixes, setupAutoFix } from './utils/interactionFixes.mjs';
 
 // Loading component for Suspense fallback
@@ -104,7 +103,6 @@ const AppContent = () => {
   const [authChecked, setAuthChecked] = useState(false);
 
   // Import AppRoutes instead of trying to use routes directly
-  // No need for useRoutes as AppRoutes already includes the Routes component
   const AppRoutes = React.lazy(() => import('./routes/index'));
 
   // Apply interaction fixes after React has fully initialized
@@ -291,14 +289,13 @@ const App = () => {
   return (
     <ErrorBoundary>
       <NetworkErrorHandler>
-        <Provider store={store}>
-          <PersistGate loading={<LoadingPage />} persistor={persistor}>
-            <ErrorBoundary>
-              <AppContent />
-            </ErrorBoundary>
-          </PersistGate>
-        </Provider>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
       </NetworkErrorHandler>
+
+      {/* Add ModalManager for the new modal system */}
+      <ModalManager />
 
       {/* Add DebugPanel at the end */}
       <DebugPanel />

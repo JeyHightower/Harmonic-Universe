@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useModal } from '../../../contexts/ModalContext';
-import { updatePhysicsParams } from '../../../store/thunks/universeThunks';
-import { MODAL_TYPES } from '../../../constants/modalTypes';
 import Button from '../../../components/common/Button';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { useModalRedux } from '../../../hooks/useModal';
+import { updatePhysicsParams } from '../../../store/thunks/universeThunks';
 import '../styles/PhysicsPanel.css';
 
 const DEFAULT_PHYSICS_PARAMS = {
@@ -59,7 +59,7 @@ function PhysicsPanel({
   onPhysicsParamsChange,
 }) {
   const dispatch = useDispatch();
-  const { openModalByType } = useModal();
+  const { openModalByType } = useModalRedux();
   const currentUniverse = useSelector((state) => state.universe.currentUniverse);
   const [physicsParams, setPhysicsParams] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

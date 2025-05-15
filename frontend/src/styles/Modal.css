@@ -956,3 +956,320 @@ label {
 }
 
 /* Add !important to all existing pointer-events styles to ensure they override any other styles */
+
+/* Modal base styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  pointer-events: auto;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 90%;
+  position: relative;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Modal size variations */
+.modal.modal-small {
+  width: 300px;
+}
+
+.modal.modal-medium {
+  width: 500px;
+}
+
+.modal.modal-large {
+  width: 700px;
+}
+
+.modal.modal-fullscreen {
+  width: 90vw;
+  height: 90vh;
+}
+
+/* Modal parts */
+.modal-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  pointer-events: auto;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  margin: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  z-index: 1060;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-top: 1px solid #eee;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* Modal positions */
+.modal-position-center {
+  margin: 0 auto;
+}
+
+.modal-position-top {
+  align-self: flex-start;
+  margin-top: 10vh;
+}
+
+.modal-position-bottom {
+  align-self: flex-end;
+  margin-bottom: 10vh;
+}
+
+/* Modal animation variants */
+.modal-animation-fade {
+  animation: fadeIn 0.3s ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.modal-animation-fade.closing {
+  animation: fadeOut 0.3s ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.modal-animation-slide {
+  animation: slideIn 0.3s ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.modal-animation-slide.closing {
+  animation: slideOut 0.3s ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+/* State classes */
+.modal.showing {
+  opacity: 1;
+  visibility: visible;
+  display: block;
+}
+
+/* Keyframes for animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+}
+
+/* Debug visualizations */
+.modal-debug {
+  border: 2px solid red;
+}
+
+.modal-debug * {
+  outline: 1px solid rgba(255, 0, 0, 0.3);
+}
+
+/* Force render fix for stuck transitions */
+.force-render {
+  animation: none !important;
+  transition: none !important;
+  transform: translate(0, 0) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: block !important;
+}
+
+/* Portal root styling */
+#portal-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1040;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.modal-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1040;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+/* Fix form elements in modals */
+.modal input,
+.modal select,
+.modal textarea,
+.modal button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1065;
+}
+
+/* Material-UI compatibility */
+.MuiDialog-container {
+  pointer-events: auto !important;
+}
+
+.MuiDialog-paper {
+  pointer-events: auto !important;
+  z-index: 1300;
+}
+
+.MuiDialogContent-root {
+  pointer-events: auto !important;
+}
+
+.MuiDialogActions-root {
+  pointer-events: auto !important;
+}
+
+/* Ensure all form elements in MUI dialogs work */
+.MuiDialog-paper input,
+.MuiDialog-paper select,
+.MuiDialog-paper textarea,
+.MuiDialog-paper button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 2;
+}
+
+.MuiBackdrop-root {
+  pointer-events: auto;
+  z-index: 1200;
+}
+
+/* Fix for Ant Design modals */
+.ant-modal-root {
+  pointer-events: auto !important;
+}
+
+.ant-modal-mask {
+  pointer-events: auto !important;
+}
+
+.ant-modal-wrap {
+  pointer-events: auto !important;
+}
+
+.ant-modal {
+  pointer-events: auto !important;
+}
+
+.ant-modal-content {
+  pointer-events: auto !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal.modal-medium {
+    width: 90%;
+  }
+
+  .modal.modal-large {
+    width: 95%;
+  }
+}

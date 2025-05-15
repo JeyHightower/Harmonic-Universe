@@ -1,22 +1,23 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers } from 'redux';
 import {
-  persistStore,
-  persistReducer,
   FLUSH,
-  REHYDRATE,
   PAUSE,
   PERSIST,
+  persistReducer,
+  persistStore,
   PURGE,
   REGISTER,
-} from "redux-persist";
-import storage from "redux-persist/lib/storage";
-import { combineReducers } from "redux";
-import authReducer from "./slices/authSlice";
-import universeReducer from "./slices/universeSlice";
-import scenesReducer from "./slices/scenesSlice";
-import characterReducer from "./slices/characterSlice";
-import noteReducer from "./slices/noteSlice";
-import modalReducer from "./slices/modalSlice";
+  REHYDRATE,
+} from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
+import modalMiddleware from './middleware/newModalMiddleware';
+import authReducer from './slices/authSlice';
+import characterReducer from './slices/characterSlice';
+import modalReducer from './slices/newModalSlice';
+import noteReducer from './slices/noteSlice';
+import scenesReducer from './slices/scenesSlice';
+import universeReducer from './slices/universeSlice';
 
 // Create a more resilient storage reference
 const createNoopStorage = () => {
@@ -29,7 +30,7 @@ const createNoopStorage = () => {
     },
     removeItem(_key) {
       return Promise.resolve();
-    }
+    },
   };
 };
 
@@ -50,10 +51,10 @@ const handlePersistError = (err) => {
 
 // Configure persistence for auth state
 const authPersistConfig = {
-  key: "auth",
+  key: 'auth',
   storage: getStorage(),
-  whitelist: ["user", "isAuthenticated"],
-  blacklist: ["isLoading", "error", "authError"],
+  whitelist: ['user', 'isAuthenticated'],
+  blacklist: ['isLoading', 'error', 'authError'],
   writeFailHandler: handlePersistError,
   stateReconciler: (inboundState, originalState, reducedState, { debug }) => {
     // Always prioritize inbound authenticated state if it exists
@@ -62,37 +63,37 @@ const authPersistConfig = {
         ...reducedState,
         ...inboundState,
         isLoading: false, // Never persist loading state
-        error: null,      // Clear any errors on rehydration
+        error: null, // Clear any errors on rehydration
       };
     }
     return reducedState;
-  }
+  },
 };
 
 // Configure persistence for other reducers
 const universesPersistConfig = {
-  key: "universes",
+  key: 'universes',
   storage: getStorage(),
-  whitelist: ["universes", "currentUniverse"],
-  blacklist: ["loading", "error", "success"],
+  whitelist: ['universes', 'currentUniverse'],
+  blacklist: ['loading', 'error', 'success'],
   writeFailHandler: handlePersistError,
 };
 
 const scenesPersistConfig = {
-  key: "scenes",
+  key: 'scenes',
   storage: getStorage(),
-  whitelist: ["scenes", "locallyCreatedScenes", "universeScenes"],
-  blacklist: ["loading", "error", "success", "currentScene"],
+  whitelist: ['scenes', 'locallyCreatedScenes', 'universeScenes'],
+  blacklist: ['loading', 'error', 'success', 'currentScene'],
   writeFailHandler: handlePersistError,
 };
 
 // Root persist config
 const persistConfig = {
-  key: "root",
+  key: 'root',
   version: 1,
   storage: getStorage(),
   whitelist: [], // Don't persist anything at root level
-  blacklist: ["modal"], // Never persist modal state
+  blacklist: ['modal'], // Never persist modal state
   writeFailHandler: handlePersistError,
 };
 
@@ -117,7 +118,7 @@ const store = configureStore({
         ignoredActionPaths: ['payload.props.onSuccess', 'meta.arg.props.onSuccess'],
         ignoredPaths: ['modal.props.onSuccess'],
       },
-    }),
+    }).concat(modalMiddleware),
   devTools: import.meta.env.MODE !== 'production',
 });
 

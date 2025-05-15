@@ -8,36 +8,23 @@ export const ensurePortalRoot = () => {
   let portalRoot = document.getElementById('portal-root');
 
   if (!portalRoot) {
-    console.log('Creating new portal root element');
+    console.log('Creating portal root element');
     portalRoot = document.createElement('div');
     portalRoot.id = 'portal-root';
-
-    // Set styles directly on the portal root for better visibility management
-    portalRoot.style.position = 'fixed';
-    portalRoot.style.top = '0';
-    portalRoot.style.left = '0';
-    portalRoot.style.right = '0';
-    portalRoot.style.bottom = '0';
-    portalRoot.style.zIndex = '1050'; // Standardized z-index to match modals
-    // We want the root element to not capture pointer events so they go to the actual content
-    portalRoot.style.pointerEvents = 'none';
-    portalRoot.style.isolation = 'isolate'; // Create a new stacking context
-
     document.body.appendChild(portalRoot);
-    console.log('Portal root created and appended to body');
-  } else {
-    console.log('Using existing portal root');
-
-    // Ensure existing portal has the correct styles
-    portalRoot.style.position = 'fixed';
-    portalRoot.style.top = '0';
-    portalRoot.style.left = '0';
-    portalRoot.style.right = '0';
-    portalRoot.style.bottom = '0';
-    portalRoot.style.zIndex = '1050'; // Standardized z-index to match modals
-    portalRoot.style.pointerEvents = 'none'; // Important: allow clicks to pass through
-    portalRoot.style.isolation = 'isolate'; // Create a new stacking context
   }
+
+  // Apply critical styles to ensure visibility
+  portalRoot.style.position = 'fixed';
+  portalRoot.style.top = '0';
+  portalRoot.style.left = '0';
+  portalRoot.style.width = '100%';
+  portalRoot.style.height = '100%';
+  portalRoot.style.zIndex = '1040'; // Base z-index for portal container
+  portalRoot.style.pointerEvents = 'none'; // Allow clicks to pass through empty areas
+  portalRoot.style.overflow = 'hidden';
+  portalRoot.setAttribute('aria-hidden', 'false');
+  portalRoot.setAttribute('data-portal', 'true');
 
   return portalRoot;
 };
@@ -274,23 +261,24 @@ export const removePortalContainer = (id) => {
  * Useful for complete modal system reset
  */
 export const cleanupAllPortals = () => {
-  const portalRoot = document.getElementById('portal-root');
-  if (portalRoot) {
-    console.log('Cleaning up all portal containers');
-    // Remove all children
-    while (portalRoot.firstChild) {
-      portalRoot.removeChild(portalRoot.firstChild);
+  try {
+    const portalRoot = document.getElementById('portal-root');
+    if (portalRoot) {
+      // Remove all child nodes
+      while (portalRoot.firstChild) {
+        portalRoot.removeChild(portalRoot.firstChild);
+      }
+
+      // Reset portal root styling
+      portalRoot.style.pointerEvents = 'none';
+
+      console.log('Cleaned up all portals');
+      return true;
     }
-
-    // Reset body styles that might have been set by modals
-    document.body.classList.remove('modal-open');
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.body.style.overflow = '';
-
-    // Optionally scroll back to top or previous position if needed
-    window.scrollTo(0, 0);
+    return false;
+  } catch (error) {
+    console.error('Error cleaning up portals:', error);
+    return false;
   }
 };
 
@@ -665,313 +653,98 @@ export const cleanupInteractionFixes = () => {
  * Call this when other fixes aren't working
  */
 export const forceModalInteractivity = () => {
-  console.log('EMERGENCY FIX: Forcing modal interactivity');
+  const portalRoot = document.getElementById('portal-root');
+  if (!portalRoot) return false;
 
-  // Get all modal overlays
-  const modalOverlays = document.querySelectorAll(
-    '.modal-overlay, [role="dialog"], .ant-modal-root, .MuiDialog-root, .universe-form-modal'
-  );
-  if (modalOverlays.length === 0) {
-    console.log('No modal overlays found');
-    return false;
-  }
+  // Ensure the portal has proper pointer events and visibility
+  portalRoot.style.pointerEvents = 'none';
 
-  console.log(`Found ${modalOverlays.length} modal overlays`);
+  // Process all modal portals
+  const modalPortals = portalRoot.querySelectorAll('.modal-portal');
+  modalPortals.forEach((portal) => {
+    portal.style.pointerEvents = 'auto';
 
-  // Direct fix for Ant Design specific modal components
-  const antModalWrap = document.querySelectorAll('.ant-modal-wrap');
-  antModalWrap.forEach((wrap) => {
-    wrap.style.setProperty('pointer-events', 'auto', 'important');
-  });
+    // Apply interactivity fixes to modal dialogs
+    const modalDialogs = portal.querySelectorAll('[role="dialog"]');
+    modalDialogs.forEach((dialog) => {
+      dialog.style.pointerEvents = 'auto';
+      dialog.style.position = 'relative';
+      dialog.style.zIndex = '1050';
+      dialog.style.display = 'block';
+      dialog.style.visibility = 'visible';
+      dialog.style.opacity = '1';
 
-  const antModalMask = document.querySelectorAll('.ant-modal-mask');
-  antModalMask.forEach((mask) => {
-    mask.style.setProperty('pointer-events', 'auto', 'important');
-  });
-
-  const antModals = document.querySelectorAll('.ant-modal');
-  antModals.forEach((modal) => {
-    modal.style.setProperty('pointer-events', 'auto', 'important');
-  });
-
-  modalOverlays.forEach((overlay) => {
-    // Make the overlay itself have pointer events
-    overlay.style.pointerEvents = 'auto';
-
-    // Find the modal content
-    const modalContent = overlay.querySelector(
-      '.modal-content, .ant-modal-content, .MuiDialog-paper, .MuiDialogContent-root'
-    );
-    if (!modalContent) {
-      console.log('No modal content found in overlay');
-      return;
-    }
-
-    // Apply extreme z-index to ensure it's on top
-    modalContent.style.setProperty('z-index', '99999', 'important');
-    modalContent.style.setProperty('position', 'relative', 'important');
-    modalContent.style.setProperty('pointer-events', 'auto', 'important');
-
-    // Find all form elements and make them extremely interactive
-    const formElements = modalContent.querySelectorAll(
-      'input, textarea, select, button, [role="button"], a, .ant-select, .ant-input, .ant-btn'
-    );
-    console.log(`Found ${formElements.length} form elements in modal`);
-
-    formElements.forEach((el) => {
-      // Force element to be interactive with inline styles (highest priority)
-      const inlineStyles = `
-        pointer-events: auto !important;
-        touch-action: auto !important;
-        cursor: ${el.tagName.toLowerCase() === 'button' || el.type === 'button' || el.type === 'submit' ? 'pointer' : 'text'} !important;
-        position: relative !important;
-        z-index: 999999 !important;
-        user-select: auto !important;
-        -webkit-user-select: auto !important;
-      `;
-      el.setAttribute('style', inlineStyles);
-
-      // Add attributes to maximize clickability
-      el.setAttribute('tabindex', '0');
-      el.setAttribute('data-interactive', 'true');
-
-      // Add super aggressive direct event handlers
-      const directMousedownHandler = (e) => {
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-
-        // When user interacts with input, add aggressive inline styles
-        const appliedStyles = `
-          pointer-events: auto !important;
-          z-index: 999999 !important;
-          position: relative !important;
-          outline: none !important;
-        `;
-        e.target.setAttribute('style', appliedStyles);
-
-        console.log(`Mousedown on ${el.tagName} element`, el);
-
-        if (
-          el.tagName.toLowerCase() === 'input' ||
-          el.tagName.toLowerCase() === 'textarea' ||
-          el.tagName.toLowerCase() === 'select'
-        ) {
-          // Force focus after a brief delay
-          setTimeout(() => {
-            el.focus();
-            console.log(`Forced focus on ${el.tagName} element`, el);
-          }, 0);
-        }
-
-        return true;
-      };
-
-      const directClickHandler = (e) => {
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        console.log(`Click on ${el.tagName} element`, el);
-
-        if (
-          el.tagName.toLowerCase() === 'input' ||
-          el.tagName.toLowerCase() === 'textarea' ||
-          el.tagName.toLowerCase() === 'select'
-        ) {
-          // Force focus
-          el.focus();
-          console.log(`Focused ${el.tagName} element on click`, el);
-        }
-
-        return true;
-      };
-
-      // Remove any existing handlers to avoid duplicates
-      el.removeEventListener('mousedown', el._directMousedownHandler);
-      el.removeEventListener('click', el._directClickHandler);
-      el.removeEventListener('focus', el._directFocusHandler);
-      el.removeEventListener('touchstart', el._directTouchStartHandler);
-
-      // Add focus handler
-      const focusHandler = (e) => {
-        console.log(`Focus event on ${el.tagName} element`, el);
-      };
-
-      // Add touch handler
-      const touchStartHandler = (e) => {
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-
-        console.log(`Touch on ${el.tagName} element`, el);
-
-        if (
-          el.tagName.toLowerCase() === 'input' ||
-          el.tagName.toLowerCase() === 'textarea' ||
-          el.tagName.toLowerCase() === 'select'
-        ) {
-          setTimeout(() => {
-            el.focus();
-            console.log(`Focused ${el.tagName} element on touch`, el);
-          }, 0);
-        }
-
-        return true;
-      };
-
-      // Store handlers for future cleanup
-      el._directMousedownHandler = directMousedownHandler;
-      el._directClickHandler = directClickHandler;
-      el._directFocusHandler = focusHandler;
-      el._directTouchStartHandler = touchStartHandler;
-
-      // Add event listeners with capture phase to ensure they run first
-      el.addEventListener('mousedown', directMousedownHandler, true);
-      el.addEventListener('click', directClickHandler, true);
-      el.addEventListener('focus', focusHandler, true);
-      el.addEventListener('touchstart', touchStartHandler, true);
-
-      // For input fields, add additional focus handlers
-      if (
-        el.tagName.toLowerCase() === 'input' ||
-        el.tagName.toLowerCase() === 'textarea' ||
-        el.tagName.toLowerCase() === 'select'
-      ) {
-        // Make parent elements interactive too
-        let parent = el.parentElement;
-        let depth = 0;
-        while (parent && depth < 5) {
-          // Limit to 5 levels up
-          parent.style.setProperty('pointer-events', 'auto', 'important');
-          parent.style.setProperty('touch-action', 'auto', 'important');
-          depth++;
-          parent = parent.parentElement;
-        }
+      // Apply interactivity fixes to content within modals
+      const modalContent = dialog.querySelector('.modal-content-wrapper');
+      if (modalContent) {
+        modalContent.style.pointerEvents = 'auto';
+        modalContent.style.position = 'relative';
+        modalContent.style.zIndex = '2';
       }
 
-      // Add helper class for debugging
-      el.classList.add('force-interactive');
+      // Ensure form elements are interactive
+      applyElementModalFixes(dialog);
     });
-
-    // Remove any existing click shields
-    const existingShields = modalContent.querySelectorAll('.modal-click-shield');
-    existingShields.forEach((shield) => shield.remove());
-
-    // Add a transparent div over the entire modal to capture any clicks that might
-    // interfere with our form elements - but make sure it doesn't block interaction
-    const clickShield = document.createElement('div');
-    clickShield.classList.add('modal-click-shield');
-    clickShield.style.position = 'absolute';
-    clickShield.style.inset = '0';
-    clickShield.style.zIndex = '99998'; // Just below our form elements
-    clickShield.style.pointerEvents = 'none'; // Let clicks through to the content
-
-    // Add the shield to the modal content
-    modalContent.style.position = 'relative'; // Ensure positioning context
-    modalContent.appendChild(clickShield);
-
-    // Add very aggressive click handlers to the modal content
-    const modalContentClickHandler = (e) => {
-      // Only stop propagation if we're not clicking on a form element
-      const isFormElement = e.target.closest('input, textarea, select, button, [role="button"], a');
-      if (!isFormElement) {
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      } else {
-        console.log('Click on form element', e.target);
-
-        // For form elements, ensure they get focus
-        if (
-          e.target.tagName === 'INPUT' ||
-          e.target.tagName === 'TEXTAREA' ||
-          e.target.tagName === 'SELECT'
-        ) {
-          setTimeout(() => e.target.focus(), 0);
-        }
-
-        // Let the event continue
-        return true;
-      }
-    };
-
-    // Remove any existing handlers to avoid duplicates
-    modalContent.removeEventListener('click', modalContent._clickHandler);
-    modalContent._clickHandler = modalContentClickHandler;
-    modalContent.addEventListener('click', modalContentClickHandler, true);
   });
-
-  // Make extreme global changes to ensure interactivity
-  const bodyClickHandler = (e) => {
-    const isInModal = e.target.closest(
-      '.modal-overlay, [role="dialog"], .ant-modal-root, .MuiDialog-root, .universe-form-modal'
-    );
-
-    if (isInModal) {
-      // Let the click through for modal content
-      console.log('Click detected in modal:', e.target.tagName);
-
-      const isFormElement =
-        e.target.tagName === 'INPUT' ||
-        e.target.tagName === 'TEXTAREA' ||
-        e.target.tagName === 'SELECT' ||
-        e.target.tagName === 'BUTTON';
-
-      if (isFormElement) {
-        // Ensure the element gets focus
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-
-        setTimeout(() => {
-          e.target.focus();
-          console.log('Forced focus from body handler', e.target);
-        }, 0);
-      }
-    }
-  };
-
-  // Remove any existing handlers to avoid duplicates
-  document.body.removeEventListener('click', document.body._modalClickHandler);
-  document.body._modalClickHandler = bodyClickHandler;
-  document.body.addEventListener('click', bodyClickHandler, true);
-
-  // Add mousedown event listener to the document which prioritizes form inputs
-  const documentMousedownHandler = (e) => {
-    const isInModal = e.target.closest(
-      '.modal-overlay, [role="dialog"], .ant-modal-root, .MuiDialog-root, .universe-form-modal'
-    );
-
-    if (isInModal) {
-      const isFormInput =
-        e.target.tagName === 'INPUT' ||
-        e.target.tagName === 'TEXTAREA' ||
-        e.target.tagName === 'SELECT';
-
-      if (isFormInput) {
-        console.log('Document capturing form input interaction', e.target);
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-
-        // Force element to be interactive
-        e.target.style.setProperty('pointer-events', 'auto', 'important');
-        e.target.style.setProperty('z-index', '999999', 'important');
-
-        // Focus after a short delay
-        setTimeout(() => {
-          e.target.focus();
-          console.log('Focused from document handler', e.target);
-        }, 0);
-
-        return false; // Prevent default and stop propagation
-      }
-    }
-  };
-
-  document.removeEventListener('mousedown', document._documentMousedownHandler);
-  document._documentMousedownHandler = documentMousedownHandler;
-  document.addEventListener('mousedown', documentMousedownHandler, true);
-
-  // Add a global emergency fixer to the window for manual triggering
-  window.__FORCE_MODAL_FIX = forceModalInteractivity;
-  console.log('Added emergency modal fix function to window.__FORCE_MODAL_FIX');
 
   return true;
+};
+
+/**
+ * Apply necessary fixes to modal elements to ensure proper interaction
+ * Enhanced with more explicit styling to guarantee visibility
+ */
+export const applyElementModalFixes = (element) => {
+  if (!element) return false;
+
+  // Ensure the element has proper styling for visibility and interaction
+  element.style.pointerEvents = 'auto';
+  element.style.zIndex = '1050';
+  element.style.position = 'relative';
+  element.style.display = 'block';
+  element.style.visibility = 'visible';
+  element.style.opacity = '1';
+
+  // Apply fixes to all form elements to ensure they're interactive
+  const formElements = element.querySelectorAll('input, button, select, textarea, a');
+  formElements.forEach((el) => {
+    el.style.pointerEvents = 'auto';
+    el.style.position = 'relative';
+    el.style.zIndex = '2';
+  });
+
+  return true;
+};
+
+/**
+ * Force all modals to be visible - useful for debugging
+ */
+export const forceShowModals = () => {
+  const portalRoot = document.getElementById('portal-root');
+  if (!portalRoot) return false;
+
+  const modals = portalRoot.querySelectorAll('.modal');
+  console.log(`Found ${modals.length} modals to force show`);
+
+  modals.forEach((modal, index) => {
+    modal.style.display = 'block';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
+    modal.style.pointerEvents = 'auto';
+    modal.style.zIndex = `${1050 + index}`; // Stack modals if there are multiple
+    console.log(`Forced modal ${index + 1} to show`);
+
+    // Force backdrop to show if it exists
+    const backdrop = modal.closest('.modal-backdrop');
+    if (backdrop) {
+      backdrop.style.display = 'block';
+      backdrop.style.visibility = 'visible';
+      backdrop.style.opacity = '0.5';
+      backdrop.style.pointerEvents = 'auto';
+    }
+  });
+
+  return modals.length > 0;
 };
 
 // Add this function to the global window object for emergency fixes
@@ -1164,35 +937,6 @@ export const applyModalFixes = () => {
 if (typeof window !== 'undefined') {
   window.__fixAllModals = applyModalFixes;
 }
-
-/**
- * Apply modal fixes specifically for the current modal element
- * @param {HTMLElement} modalElement - The modal element to apply fixes to
- */
-export const applyElementModalFixes = (modalElement) => {
-  if (!modalElement) return;
-
-  // Make the modal interactive
-  modalElement.style.pointerEvents = 'auto';
-
-  // Find all form elements and make them interactive
-  const elements = modalElement.querySelectorAll(
-    'input, textarea, select, button, [role="button"], .btn, .button'
-  );
-  elements.forEach((el) => makeElementInteractive(el));
-
-  // Fix specific logout buttons or auth buttons
-  const authButtons = modalElement.querySelectorAll(
-    '.logout-button, .login-button, .signup-button, [data-action="logout"]'
-  );
-  authButtons.forEach((button) => {
-    button.style.pointerEvents = 'auto';
-    button.style.zIndex = '1000';
-    button.style.cursor = 'pointer';
-  });
-
-  return elements.length;
-};
 
 /**
  * Apply comprehensive modal interaction fixes across the entire application

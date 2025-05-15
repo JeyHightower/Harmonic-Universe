@@ -1,17 +1,17 @@
-import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useModal } from '../../../contexts/ModalContext';
-import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
-import { MODAL_TYPES } from '../../../constants/modalTypes';
 import Button from '../../../components/common/Button';
 import Icon from '../../../components/common/Icon';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { useModalRedux } from '../../../hooks/useModal';
+import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
 import '../styles/PhysicsObjects.css';
 import PhysicsObjectsList from './PhysicsObjectsList';
 
 const PhysicsObjectsManager = ({ sceneId }) => {
   const dispatch = useDispatch();
-  const { openModalByType } = useModal();
+  const { openModalByType } = useModalRedux();
   const { physicsObjects, loading, error } = useSelector((state) => state.physicsObjects);
 
   useEffect(() => {

@@ -1,17 +1,16 @@
-import { Spin, Tabs, Card, Empty } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Card, Empty, Spin, Tabs } from 'antd';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { useModal } from '../../../contexts/ModalContext';
-import { fetchUniverseById } from '../../../store/thunks/universeThunks.mjs';
 import Button from '../../../components/common/Button';
-import Spinner from '../../../components/common/Spinner';
+import { useModalRedux } from '../../../hooks/useModal';
+import { fetchUniverseById } from '../../../store/thunks/universeThunks.mjs';
 import '../../../styles/PhysicsPage.css';
 
 const PhysicsPage = () => {
   const { universeId } = useParams();
   const dispatch = useDispatch();
-  const { openModal } = useModal();
+  const { openModal } = useModalRedux();
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('objects');

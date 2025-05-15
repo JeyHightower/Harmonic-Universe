@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
 import { BugOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Card, Space, Switch, Tooltip } from 'antd';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { MODAL_TYPES } from '../../constants/modalTypes';
-import { useModal } from '../../contexts/ModalContext';
-import './DebugControls.css';
+import { useModalState } from '../../hooks/useModalState';
 import { AUTH_CONFIG } from '../../utils/config';
+import './DebugControls.css';
 
 // Define a fallback for process.env if it's not available in the environment
 const processEnv =
@@ -17,7 +17,7 @@ const processEnv =
  * Only shown in development or when debug mode is active
  */
 const DebugControls = () => {
-  const { openModal, closeAllModals } = useModal();
+  const { open: openModal } = useModalState();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
@@ -29,7 +29,6 @@ const DebugControls = () => {
   const testLoginModal = () => {
     try {
       addLog('Opening LOGIN modal via ModalContext');
-      closeAllModals();
       openModal(MODAL_TYPES.LOGIN);
     } catch (error) {
       addLog(`Error opening LOGIN modal: ${error.message}`);
@@ -39,7 +38,6 @@ const DebugControls = () => {
   const testRegisterModal = () => {
     try {
       addLog('Opening REGISTER modal via ModalContext');
-      closeAllModals();
       openModal(MODAL_TYPES.REGISTER);
     } catch (error) {
       addLog(`Error opening REGISTER modal: ${error.message}`);

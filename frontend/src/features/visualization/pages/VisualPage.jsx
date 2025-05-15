@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { AppstoreOutlined, PictureOutlined, PlusOutlined } from '@ant-design/icons';
 import { Card, Col, Empty, Image, Row, Spin, Tabs, Tag } from 'antd';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { useModal } from '../../../contexts/ModalContext';
+import Button from '../../../components/common/Button';
+import { useModalRedux } from '../../../hooks/useModal';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import '../../../styles/VisualPage.css';
-import Button from '../../../components/common/Button';
-import { PictureOutlined, AppstoreOutlined, PlusOutlined } from '@ant-design/icons';
 
 // Placeholder image for visualization examples
 const PLACEHOLDER_IMAGES = [
@@ -19,7 +19,7 @@ const PLACEHOLDER_IMAGES = [
 const VisualPage = () => {
   const { universeId } = useParams();
   const dispatch = useDispatch();
-  const { openModal } = useModal();
+  const { openModal } = useModalRedux();
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('gallery');
