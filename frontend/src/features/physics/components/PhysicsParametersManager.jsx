@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router-dom';
-import apiClient from '../../../services/api';
-import { endpoints } from '../../../services/endpoints';
+import { useEffect, useState } from 'react';
 import Button from '../../../components/common/Button';
 import Icon from '../../../components/common/Icon';
 import Spinner from '../../../components/common/Spinner';
-import '../styles/PhysicsParameters.css';
-import { useModalRedux } from '../../../hooks/useModal';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { useModalState } from '../../../hooks/useModalState';
+import apiClient from '../../../services/api';
+import { endpoints } from '../../../services/endpoints';
+import '../styles/PhysicsParameters.css';
 
 const PhysicsParametersManager = ({ sceneId }) => {
   const [loading, setLoading] = useState(true);
@@ -20,7 +19,7 @@ const PhysicsParametersManager = ({ sceneId }) => {
   const [reloadTrigger, setReloadTrigger] = useState(0);
 
   // Use Redux modal system
-  const modalRedux = useModalRedux();
+  const modalRedux = useModalState();
 
   // Fetch physics parameters for the scene
   useEffect(() => {

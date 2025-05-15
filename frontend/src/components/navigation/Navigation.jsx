@@ -3,13 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import logoSvg from '../../assets/logo.svg';
 import { MODAL_TYPES } from '../../constants/modalTypes';
-import { useModalRedux } from '../../hooks/useModal';
+import { useModalState } from '../../hooks/useModalState';
 import { authService } from '../../services/auth.service.mjs';
 import { logout } from '../../store/thunks/authThunks';
 import './Navigation.css';
 
 function Navigation() {
-  const { open } = useModalRedux();
+  const { open } = useModalState();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);

@@ -39,11 +39,6 @@ export {
 } from './slices/characterSlice';
 
 export {
-  // Modal actions
-  openModal as openModalAction, closeModal as closeModalAction, setModalData,
-} from './slices/modalSlice';
-
-export {
   // Note actions
   setNotes, setCurrentNote, addNote, updateNote, deleteNote, setNoteError,
 } from './slices/noteSlice';

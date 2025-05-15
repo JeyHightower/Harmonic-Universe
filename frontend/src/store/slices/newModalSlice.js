@@ -6,6 +6,34 @@ const initialState = {
   props: {},
   isTransitioning: false,
   queue: [],
+  // Add interaction fixes state for modals
+  interactionFixes: {
+    applied: false,
+    lastApplied: null,
+    pointer: {
+      enabled: true,
+      fixed: false,
+    },
+    zIndex: {
+      baseModal: 1050,
+      baseContent: 1055,
+      baseForm: 1060,
+      baseInputs: 1065,
+    },
+    eventPropagation: {
+      stopPropagation: true,
+      preventBackdropClose: false,
+    },
+    portalStatus: {
+      ready: false,
+      initialized: false,
+    },
+    debug: {
+      enabled: false,
+      elements: [],
+      errors: [],
+    },
+  },
 };
 
 const modalSlice = createSlice({
@@ -67,6 +95,29 @@ const modalSlice = createSlice({
     },
 
     resetModalState: () => initialState,
+
+    // Add new action to apply modal interaction fixes
+    applyInteractionFixes: (state, action) => {
+      state.interactionFixes.applied = true;
+      state.interactionFixes.lastApplied = Date.now();
+
+      // Apply any custom fix settings if provided
+      if (action.payload) {
+        if (action.payload.zIndex) {
+          state.interactionFixes.zIndex = {
+            ...state.interactionFixes.zIndex,
+            ...action.payload.zIndex,
+          };
+        }
+
+        if (action.payload.pointer) {
+          state.interactionFixes.pointer = {
+            ...state.interactionFixes.pointer,
+            ...action.payload.pointer,
+          };
+        }
+      }
+    },
   },
 });
 
@@ -78,6 +129,7 @@ export const {
   updateModalProps,
   clearQueue,
   resetModalState,
+  applyInteractionFixes,
 } = modalSlice.actions;
 
 // Selectors
@@ -86,5 +138,10 @@ export const selectModalType = (state) => state.modal.type;
 export const selectModalProps = (state) => state.modal.props;
 export const selectIsModalTransitioning = (state) => state.modal.isTransitioning;
 export const selectModalQueue = (state) => state.modal.queue;
+
+// Add new selectors for interaction fixes
+export const selectInteractionFixes = (state) => state.modal.interactionFixes;
+export const selectInteractionFixesApplied = (state) => state.modal.interactionFixes.applied;
+export const selectModalZIndexLevels = (state) => state.modal.interactionFixes.zIndex;
 
 export default modalSlice.reducer;

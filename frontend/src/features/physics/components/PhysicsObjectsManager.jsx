@@ -4,14 +4,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../../components/common/Button';
 import Icon from '../../../components/common/Icon';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
-import { useModalRedux } from '../../../hooks/useModal';
+import { useModalState } from '../../../hooks/useModalState';
 import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
 import '../styles/PhysicsObjects.css';
 import PhysicsObjectsList from './PhysicsObjectsList';
 
 const PhysicsObjectsManager = ({ sceneId }) => {
   const dispatch = useDispatch();
-  const { openModalByType } = useModalRedux();
+  const { open } = useModalState();
   const { physicsObjects, loading, error } = useSelector((state) => state.physicsObjects);
 
   useEffect(() => {
@@ -20,23 +20,23 @@ const PhysicsObjectsManager = ({ sceneId }) => {
     }
   }, [dispatch, sceneId]);
 
-  const handleAddObject = () => {
-    openModalByType(MODAL_TYPES.PHYSICS_OBJECT, {
+  const handleAddPhysicsObject = () => {
+    open('PHYSICS_OBJECT', {
       sceneId,
-      onSuccess: () => {
+      title: 'Add Physics Object',
+      onSave: () => {
         dispatch(fetchPhysicsObjects(sceneId));
       },
     });
   };
 
-  const handleEditObject = (objectId) => {
-    const objectToEdit = physicsObjects.find((obj) => obj.id === objectId);
-
-    openModalByType(MODAL_TYPES.PHYSICS_OBJECT, {
+  const handleEditPhysicsObject = (object) => {
+    open('PHYSICS_OBJECT', {
       sceneId,
-      objectId,
-      initialData: objectToEdit,
-      onSuccess: () => {
+      objectId: object.id,
+      initialData: object,
+      title: 'Edit Physics Object',
+      onSave: () => {
         dispatch(fetchPhysicsObjects(sceneId));
       },
     });
@@ -45,7 +45,7 @@ const PhysicsObjectsManager = ({ sceneId }) => {
   const handleViewObject = (objectId) => {
     const objectToView = physicsObjects.find((obj) => obj.id === objectId);
 
-    openModalByType(MODAL_TYPES.PHYSICS_OBJECT, {
+    open(MODAL_TYPES.PHYSICS_OBJECT, {
       sceneId,
       objectId,
       initialData: objectToView,
@@ -61,7 +61,7 @@ const PhysicsObjectsManager = ({ sceneId }) => {
       return;
     }
 
-    openModalByType(MODAL_TYPES.CONFIRM_DELETE, {
+    open(MODAL_TYPES.CONFIRM_DELETE, {
       entityType: 'physics object',
       entityId: objectId,
       entityName: objectToDelete.name,
@@ -90,7 +90,7 @@ const PhysicsObjectsManager = ({ sceneId }) => {
           >
             <Icon name="refresh" size="medium" />
           </Button>
-          <Button onClick={handleAddObject} variant="primary">
+          <Button onClick={handleAddPhysicsObject} variant="primary">
             <Icon name="add" size="small" />
             Add Object
           </Button>
@@ -103,9 +103,9 @@ const PhysicsObjectsManager = ({ sceneId }) => {
         loading={loading}
         error={error}
         onViewClick={handleViewObject}
-        onEditClick={handleEditObject}
+        onEditClick={handleEditPhysicsObject}
         onDeleteClick={handleDeleteObject}
-        onCreateClick={handleAddObject}
+        onCreateClick={handleAddPhysicsObject}
       />
     </div>
   );

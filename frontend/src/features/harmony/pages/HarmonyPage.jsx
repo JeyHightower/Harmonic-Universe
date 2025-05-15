@@ -9,7 +9,7 @@ import { Button, Card, Col, Empty, List, Modal, Row, Slider, Spin, Tabs, message
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useModalRedux } from '../../../hooks/useModal';
+import { useModalState } from '../../../hooks/useModalState';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { api } from '../../../utils/api';
 import '../styles/HarmonyPage.css';
@@ -18,7 +18,7 @@ const HarmonyPage = () => {
   const { universeId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { openModal } = useModalRedux();
+  const { open } = useModalState();
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('parameters');
@@ -69,28 +69,25 @@ const HarmonyPage = () => {
     }
   };
 
-  const handleCreateHarmonyParameter = () => {
-    // Get the first scene ID from the universe
-    if (universe && universe.scenes && universe.scenes.length > 0) {
-      const sceneId = universe.scenes[0].id;
-      openModal('harmony-parameters', {
-        universeId,
-        sceneId,
-        onClose: () => {
-          fetchHarmonyParameters(); // Refresh the list after creation
-          message.success('Harmony parameter created successfully!');
-        },
-      });
-    } else {
-      message.warning('You need to create a scene first before adding harmony parameters.');
-    }
+  const handleAddHarmonyParameter = () => {
+    open('HARMONY_PARAMETERS', {
+      universeId,
+      onSave: async (newParameter) => {
+        try {
+          await api.post(`/universes/${universeId}/harmony-parameters`, newParameter);
+          loadHarmonyParameters();
+        } catch (error) {
+          console.error('Error adding harmony parameter:', error);
+        }
+      },
+    });
   };
 
   const handleEditHarmonyParameter = (parameter) => {
     // Get the first scene ID from the universe
     if (universe && universe.scenes && universe.scenes.length > 0) {
       const sceneId = universe.scenes[0].id;
-      openModal('harmony-parameters', {
+      open('harmony-parameters', {
         universeId,
         sceneId,
         initialData: parameter,
@@ -130,7 +127,7 @@ const HarmonyPage = () => {
   };
 
   const handleGenerateMusic = () => {
-    openModal('audio-generate', { universeId });
+    open('audio-generate', { universeId });
   };
 
   const handleSettingChange = (setting, value) => {
@@ -210,7 +207,7 @@ const HarmonyPage = () => {
             children: (
               <div className="harmony-tab-content">
                 <div className="harmony-actions">
-                  <Button variant="primary" onClick={handleCreateHarmonyParameter}>
+                  <Button variant="primary" onClick={handleAddHarmonyParameter}>
                     Create Harmony Parameter
                   </Button>
                 </div>
@@ -222,7 +219,7 @@ const HarmonyPage = () => {
                         description="No harmony parameters defined yet"
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       />
-                      <Button type="primary" onClick={handleCreateHarmonyParameter}>
+                      <Button type="primary" onClick={handleAddHarmonyParameter}>
                         Create Your First Harmony Parameter
                       </Button>
                     </Card>

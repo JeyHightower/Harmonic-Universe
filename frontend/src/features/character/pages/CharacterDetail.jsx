@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
+  Alert,
   Box,
-  Typography,
   Button,
   Card,
-  CardContent,
   CardActions,
-  Alert,
+  CardContent,
   CircularProgress,
+  Typography,
 } from '@mui/material';
-import { fetchCharacter, deleteCharacter } from '../../../store/thunks/characterThunks';
-import { openModal } from '../../../store/slices/modalSlice';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
+import { openModal } from '../../../store/slices/newModalSlice';
+import { deleteCharacter, fetchCharacter } from '../../../store/thunks/characterThunks';
 import { getCharacterWithRetry } from '../../../utils/apiUtils';
 
 const CharacterDetail = () => {

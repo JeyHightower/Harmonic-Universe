@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import Button from '../../../components/common/Button';
-import { useModalRedux } from '../../../hooks/useModal';
+import { useModalState } from '../../../hooks/useModalState';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import '../../../styles/VisualPage.css';
 
@@ -19,7 +19,7 @@ const PLACEHOLDER_IMAGES = [
 const VisualPage = () => {
   const { universeId } = useParams();
   const dispatch = useDispatch();
-  const { openModal } = useModalRedux();
+  const { open } = useModalState();
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('gallery');
@@ -42,8 +42,13 @@ const VisualPage = () => {
   }, [dispatch, universeId]);
 
   const handleCreateVisualization = () => {
-    // Implementation for creating a new visualization
-    console.log('Create visualization');
+    open('VISUALIZATION_FORM', {
+      universeId: universeId,
+      onSuccess: () => {
+        // Refresh visualizations after creation
+        fetchVisualizations();
+      },
+    });
   };
 
   const handleViewVisualization = (id) => {

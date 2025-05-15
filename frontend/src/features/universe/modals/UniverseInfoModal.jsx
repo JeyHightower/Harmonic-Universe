@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Button from '../../../components/common/Button';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
-import { useModalRedux } from '../../../hooks/useModal';
+import { useModalState } from '../../../hooks/useModalState';
 import '../styles/Universe.css';
 
 // Global state to prevent modal from unmounting
@@ -10,7 +10,7 @@ let savedUniverse = null;
 let currentOnCloseFn = null;
 
 const UniverseInfoModal = ({ universe, onClose, isGlobalModal = true }) => {
-  const { open } = useModalRedux();
+  const { open } = useModalState();
   const [visible, setVisible] = useState(false);
   const onCloseRef = useRef(onClose);
   const universeRef = useRef(universe);

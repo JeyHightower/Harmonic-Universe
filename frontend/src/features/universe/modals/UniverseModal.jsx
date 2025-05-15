@@ -8,11 +8,7 @@ import {
   selectInteractionFixes,
   selectInteractionFixesApplied,
   selectModalZIndexLevels,
-} from '../../../store/slices/modalSlice';
-import {
-  applyModalInteractionFixesThunk,
-  fixSpecificModalThunk,
-} from '../../../store/thunks/modalThunks';
+} from '../../../store/slices/newModalSlice';
 import { createUniverse, updateUniverse } from '../../../store/thunks/universeThunks';
 import {
   applyModalFixes,
@@ -100,42 +96,34 @@ const UniverseModal = ({
     }
   }, [universe, isEditMode, isViewMode, isCreateMode]);
 
-  // Apply modal fixes when the modal is opened using Redux
+  // Apply modal fixes when the modal is opened
   useEffect(() => {
     if (isModalOpen) {
-      console.log('UniverseModal opened - applying interaction fixes through Redux');
+      console.log('UniverseModal opened - applying interaction fixes directly');
 
       // First ensure the portal root exists
       ensurePortalRoot();
 
-      // Apply fixes through Redux - this will update the Redux state and apply DOM fixes
-      dispatch(applyModalInteractionFixesThunk())
-        .unwrap()
-        .then((result) => {
-          console.log('Modal fixes applied through Redux:', result);
+      // Apply fixes directly to DOM
+      applyModalFixes();
+      forceModalInteractivity();
 
-          // If we have a ref to the modal element, apply specific fixes
-          if (modalRef.current) {
-            dispatch(
-              fixSpecificModalThunk({
-                modalElement: modalRef.current,
-                modalType: 'universe',
-              })
-            );
-          }
-
-          // Focus the name input if it exists
-          if (nameInputRef.current) {
-            nameInputRef.current.focus();
-          }
+      // Also dispatch Redux action to update state
+      dispatch(
+        applyInteractionFixes({
+          zIndex: {
+            baseModal: 1050,
+            baseContent: 1055,
+            baseForm: 1060,
+            baseInputs: 1065,
+          },
         })
-        .catch((error) => {
-          console.error('Error applying modal fixes:', error);
+      );
 
-          // Fall back to direct DOM manipulation if Redux approach fails
-          applyModalFixes();
-          forceModalInteractivity();
-        });
+      // Focus the name input if it exists
+      if (nameInputRef.current) {
+        nameInputRef.current.focus();
+      }
     }
   }, [isModalOpen, dispatch]);
 
@@ -143,14 +131,13 @@ const UniverseModal = ({
   useEffect(() => {
     if (isModalOpen && modalRef.current && !interactionFixesApplied) {
       console.log('Applying specific fixes to modal element');
-      dispatch(
-        fixSpecificModalThunk({
-          modalElement: modalRef.current,
-          modalType: 'universe',
-        })
-      );
+      // Apply fixes directly to the modal element
+      if (modalRef.current) {
+        modalRef.current.style.zIndex = '1050';
+        modalRef.current.style.pointerEvents = 'auto';
+      }
     }
-  }, [isModalOpen, modalRef.current, interactionFixesApplied, dispatch]);
+  }, [isModalOpen, interactionFixesApplied]);
 
   // Add debug logging for modal state
   useEffect(() => {

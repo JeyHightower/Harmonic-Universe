@@ -1,7 +1,7 @@
 /**
  * Utility functions for the modal system
  */
-import { resetModalState } from '../store/slices/modalSlice';
+import { resetModalState } from '../store/slices/newModalSlice';
 import store from '../store/store.mjs';
 
 /**

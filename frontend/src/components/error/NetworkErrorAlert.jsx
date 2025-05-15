@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useModalRedux } from '../../hooks/useModal';
+import { useModalState } from '../../hooks/useModalState';
 import { setNetworkError } from '../../store/slices/authSlice';
 import { API_CONFIG, MODAL_TYPES } from '../../utils/config';
 
@@ -11,7 +11,7 @@ import { API_CONFIG, MODAL_TYPES } from '../../utils/config';
 const NetworkErrorAlert = () => {
   const { networkError, offlineMode } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
-  const { openModal } = useModalRedux();
+  const { open } = useModalState();
   const [hasShownModal, setHasShownModal] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -95,6 +95,38 @@ const NetworkErrorAlert = () => {
     };
   }, [checkApiConnection]);
 
+  // Show network error modal with retry option
+  const showNetworkErrorModal = useCallback(() => {
+    if (!hasShownModal) {
+      open(MODAL_TYPES.ALERT, {
+        title: 'Network Error',
+        message: 'Unable to connect to the server. Please check your connection and try again.',
+        actions: [
+          {
+            label: 'Retry',
+            onClick: () => {
+              setIsCheckingConnection(true);
+              checkApiConnection()
+                .then((isOnline) => {
+                  if (isOnline) {
+                    dispatch(setNetworkError(false));
+                  }
+                })
+                .finally(() => {
+                  setIsCheckingConnection(false);
+                });
+            },
+          },
+          {
+            label: 'Dismiss',
+            onClick: () => {},
+          },
+        ],
+      });
+      setHasShownModal(true);
+    }
+  }, [dispatch, hasShownModal, open]);
+
   // Show modal when network error is detected
   useEffect(() => {
     if (networkError && !hasShownModal && document.getElementById('portal-root')) {
@@ -104,13 +136,12 @@ const NetworkErrorAlert = () => {
 
       const timer = setTimeout(() => {
         console.debug('Opening network error modal');
-        openModal(MODAL_TYPES.NETWORK_ERROR, { message });
-        setHasShownModal(true);
+        showNetworkErrorModal();
       }, API_CONFIG.ERROR_HANDLING.NETWORK_ERROR_THRESHOLD);
 
       return () => clearTimeout(timer);
     }
-  }, [networkError, offlineMode, openModal, hasShownModal]);
+  }, [networkError, offlineMode, showNetworkErrorModal]);
 
   return null;
 };

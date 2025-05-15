@@ -1,35 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box,
-  Typography,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
   Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormHelperText,
   Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { useDispatch } from 'react-redux';
 import PropTypes from 'prop-types';
-import apiClient from '../../../services/api.adapter';
-import { fetchScenes } from '../../../store/thunks/consolidated/scenesThunks';
-import { openModal } from '../../../store/slices/modalSlice';
+import { useEffect, useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
-import { getCharacterWithRetry } from '../../../utils/apiUtils';
+import { openModal } from '../../../store/slices/newModalSlice';
 import {
   createCharacter,
-  updateCharacter,
   deleteCharacter,
+  updateCharacter,
 } from '../../../store/thunks/characterThunks';
+import { fetchScenes } from '../../../store/thunks/consolidated/scenesThunks';
 import { cache } from '../../../utils';
+import { getCharacterWithRetry } from '../../../utils/apiUtils';
 
 // Cache constants for characters and scenes
 const CHARACTER_CACHE_KEY = 'character_cache';

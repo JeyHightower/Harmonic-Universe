@@ -3,14 +3,14 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import Button from '../../../components/common/Button';
-import { useModalRedux } from '../../../hooks/useModal';
+import { useModalState } from '../../../hooks/useModalState';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks.mjs';
 import '../../../styles/PhysicsPage.css';
 
 const PhysicsPage = () => {
   const { universeId } = useParams();
   const dispatch = useDispatch();
-  const { openModal } = useModalRedux();
+  const { open } = useModalState();
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('objects');
@@ -33,15 +33,15 @@ const PhysicsPage = () => {
   }, [dispatch, universeId]);
 
   const handleCreatePhysicsObject = () => {
-    openModal('physics-object', { universeId });
+    open('physics-object', { universeId });
   };
 
   const handleCreatePhysicsParameter = () => {
-    openModal('physics-parameters', { universeId });
+    open('physics-parameters', { universeId });
   };
 
   const handleCreatePhysicsConstraint = () => {
-    openModal('physics-constraint', { universeId });
+    open('physics-constraint', { universeId });
   };
 
   if (loading) {
