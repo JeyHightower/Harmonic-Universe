@@ -9,6 +9,35 @@ const initialState = {
   queue: [], // Queue for handling multiple modals
   history: [], // Track modal history for debugging
   error: null, // Track errors in modal operations
+
+  // New state for modal interaction fixes
+  interactionFixes: {
+    applied: false,
+    lastApplied: null,
+    pointer: {
+      enabled: true,
+      fixed: false,
+    },
+    zIndex: {
+      baseModal: 1050,
+      baseContent: 1055,
+      baseForm: 1060,
+      baseInputs: 1065,
+    },
+    eventPropagation: {
+      stopPropagation: true,
+      preventBackdropClose: false,
+    },
+    portalStatus: {
+      ready: false,
+      initialized: false,
+    },
+    debug: {
+      enabled: false,
+      elements: [],
+      errors: [],
+    },
+  },
 };
 
 const modalSlice = createSlice({
@@ -53,6 +82,10 @@ const modalSlice = createSlice({
         ...props,
       };
       state.isTransitioning = true;
+
+      // Reset interaction fixes status on each modal open
+      state.interactionFixes.applied = false;
+      state.interactionFixes.debug.errors = [];
     },
     closeModal: (state) => {
       if (!state.isTransitioning) {
@@ -121,6 +154,58 @@ const modalSlice = createSlice({
       state.queue = [];
       state.error = null;
     },
+
+    // New reducers for modal interaction fixes
+    initializeModalPortal: (state, action) => {
+      state.interactionFixes.portalStatus.initialized = true;
+      state.interactionFixes.portalStatus.ready = action.payload?.success || false;
+    },
+
+    applyInteractionFixes: (state, action) => {
+      const { success, elements, timestamp } = action.payload || {};
+      state.interactionFixes.applied = success || false;
+      state.interactionFixes.lastApplied = timestamp || Date.now();
+      if (elements) {
+        state.interactionFixes.debug.elements = elements;
+      }
+    },
+
+    setPointerEventsEnabled: (state, action) => {
+      state.interactionFixes.pointer.enabled = action.payload;
+    },
+
+    setPointerEventsFixed: (state, action) => {
+      state.interactionFixes.pointer.fixed = action.payload;
+    },
+
+    updateZIndexLevels: (state, action) => {
+      state.interactionFixes.zIndex = {
+        ...state.interactionFixes.zIndex,
+        ...action.payload,
+      };
+    },
+
+    setEventPropagation: (state, action) => {
+      state.interactionFixes.eventPropagation = {
+        ...state.interactionFixes.eventPropagation,
+        ...action.payload,
+      };
+    },
+
+    setDebugMode: (state, action) => {
+      state.interactionFixes.debug.enabled = action.payload;
+    },
+
+    addDebugError: (state, action) => {
+      state.interactionFixes.debug.errors.push({
+        message: action.payload,
+        timestamp: Date.now(),
+      });
+    },
+
+    clearDebugErrors: (state) => {
+      state.interactionFixes.debug.errors = [];
+    },
   },
 });
 
@@ -134,6 +219,17 @@ export const {
   clearHistory,
   setModalError,
   resetModalState,
+
+  // Export new interaction fixes actions
+  initializeModalPortal,
+  applyInteractionFixes,
+  setPointerEventsEnabled,
+  setPointerEventsFixed,
+  updateZIndexLevels,
+  setEventPropagation,
+  setDebugMode,
+  addDebugError,
+  clearDebugErrors,
 } = modalSlice.actions;
 
 // Selectors
@@ -145,5 +241,12 @@ export const selectIsModalTransitioning = (state) => state.modal.isTransitioning
 export const selectModalQueue = (state) => state.modal.queue;
 export const selectModalHistory = (state) => state.modal.history;
 export const selectModalError = (state) => state.modal.error;
+
+// New selectors for interaction fixes
+export const selectInteractionFixes = (state) => state.modal.interactionFixes;
+export const selectInteractionFixesApplied = (state) => state.modal.interactionFixes.applied;
+export const selectModalZIndexLevels = (state) => state.modal.interactionFixes.zIndex;
+export const selectModalPointerEvents = (state) => state.modal.interactionFixes.pointer;
+export const selectModalDebugState = (state) => state.modal.interactionFixes.debug;
 
 export default modalSlice.reducer;

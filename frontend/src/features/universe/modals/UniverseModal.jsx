@@ -4,8 +4,21 @@ import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
+import {
+  selectInteractionFixes,
+  selectInteractionFixesApplied,
+  selectModalZIndexLevels,
+} from '../../../store/slices/modalSlice';
+import {
+  applyModalInteractionFixesThunk,
+  fixSpecificModalThunk,
+} from '../../../store/thunks/modalThunks';
 import { createUniverse, updateUniverse } from '../../../store/thunks/universeThunks';
-import { applyModalFixes } from '../../../utils/portalUtils';
+import {
+  applyModalFixes,
+  ensurePortalRoot,
+  forceModalInteractivity,
+} from '../../../utils/portalUtils';
 import '../styles/UniverseFormModal.css';
 
 /**
@@ -34,9 +47,14 @@ const UniverseModal = ({
 }) => {
   const dispatch = useDispatch();
   const { loading, error: storeError } = useSelector((state) => state.universes);
+  const interactionFixesApplied = useSelector(selectInteractionFixesApplied);
+  const zIndexLevels = useSelector(selectModalZIndexLevels);
+  const interactionFixes = useSelector(selectInteractionFixes);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef(null);
   const nameInputRef = useRef(null);
+  const modalRef = useRef(null);
 
   // Determine the actual mode from props
   const actualMode = mode || (isEdit ? 'edit' : 'create');
@@ -82,23 +100,80 @@ const UniverseModal = ({
     }
   }, [universe, isEditMode, isViewMode, isCreateMode]);
 
-  // Apply modal fixes when the modal is opened
+  // Apply modal fixes when the modal is opened using Redux
   useEffect(() => {
     if (isModalOpen) {
-      console.log('UniverseModal opened - applying interaction fixes');
-      // Wait for the modal to be fully rendered
-      const timer = setTimeout(() => {
-        applyModalFixes();
+      console.log('UniverseModal opened - applying interaction fixes through Redux');
 
-        // Focus the name input if it exists
-        if (nameInputRef.current) {
-          nameInputRef.current.focus();
-        }
-      }, 100);
+      // First ensure the portal root exists
+      ensurePortalRoot();
 
-      return () => clearTimeout(timer);
+      // Apply fixes through Redux - this will update the Redux state and apply DOM fixes
+      dispatch(applyModalInteractionFixesThunk())
+        .unwrap()
+        .then((result) => {
+          console.log('Modal fixes applied through Redux:', result);
+
+          // If we have a ref to the modal element, apply specific fixes
+          if (modalRef.current) {
+            dispatch(
+              fixSpecificModalThunk({
+                modalElement: modalRef.current,
+                modalType: 'universe',
+              })
+            );
+          }
+
+          // Focus the name input if it exists
+          if (nameInputRef.current) {
+            nameInputRef.current.focus();
+          }
+        })
+        .catch((error) => {
+          console.error('Error applying modal fixes:', error);
+
+          // Fall back to direct DOM manipulation if Redux approach fails
+          applyModalFixes();
+          forceModalInteractivity();
+        });
     }
-  }, [isModalOpen]);
+  }, [isModalOpen, dispatch]);
+
+  // Apply additional fixes when the modal element is available
+  useEffect(() => {
+    if (isModalOpen && modalRef.current && !interactionFixesApplied) {
+      console.log('Applying specific fixes to modal element');
+      dispatch(
+        fixSpecificModalThunk({
+          modalElement: modalRef.current,
+          modalType: 'universe',
+        })
+      );
+    }
+  }, [isModalOpen, modalRef.current, interactionFixesApplied, dispatch]);
+
+  // Add debug logging for modal state
+  useEffect(() => {
+    console.log('UniverseModal state:', {
+      isModalOpen,
+      isEditMode,
+      isViewMode,
+      isCreateMode,
+      hasUniverse: !!universe,
+      formData,
+      interactionFixesApplied,
+      interactionFixesState: interactionFixes,
+    });
+  }, [
+    isModalOpen,
+    isEditMode,
+    isViewMode,
+    isCreateMode,
+    universe,
+    formData,
+    interactionFixesApplied,
+    interactionFixes,
+  ]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -220,22 +295,67 @@ const UniverseModal = ({
     }
   };
 
+  // Z-index values from Redux
+  const baseModalZIndex = zIndexLevels.baseModal || 1050;
+  const baseContentZIndex = zIndexLevels.baseContent || 1055;
+  const baseFormZIndex = zIndexLevels.baseForm || 1060;
+  const baseInputsZIndex = zIndexLevels.baseInputs || 1065;
+
   return (
     <Dialog
       open={isModalOpen}
       onClose={handleDialogClose}
       maxWidth="sm"
       fullWidth
-      className="universe-form-modal"
-      onClick={(e) => e.stopPropagation()}
+      className="universe-form-modal redux-modal-fix"
+      onClick={(e) => {
+        e.stopPropagation();
+        console.log('Dialog clicked');
+      }}
+      disableEnforceFocus
+      disableAutoFocus
+      disablePortal={false}
+      ref={modalRef}
+      container={document.getElementById('portal-root')}
+      style={{
+        position: 'relative',
+        zIndex: baseModalZIndex,
+      }}
+      data-modal-type="universe"
+      BackdropProps={{
+        style: {
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: baseModalZIndex - 5,
+        },
+        onClick: (e) => {
+          e.stopPropagation();
+          // Only close if clicking the backdrop itself
+          if (e.target === e.currentTarget) {
+            handleDialogClose(e, 'backdropClick');
+          }
+        },
+      }}
     >
-      <DialogTitle>{getModalTitle()}</DialogTitle>
-      <DialogContent onClick={(e) => e.stopPropagation()}>
+      <DialogTitle
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: 'relative', zIndex: baseContentZIndex }}
+      >
+        {getModalTitle()}
+      </DialogTitle>
+      <DialogContent
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: 'relative', zIndex: baseContentZIndex }}
+      >
         <form
           ref={formRef}
-          onSubmit={handleSubmit}
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSubmit(e);
+          }}
           className="universe-form universe-form-compact"
           onClick={(e) => e.stopPropagation()}
+          style={{ position: 'relative', zIndex: baseFormZIndex }}
         >
           <Input
             label="Universe Name"
@@ -250,6 +370,11 @@ const UniverseModal = ({
             className="compact-input"
             disabled={isViewMode || isSubmitting}
             ref={nameInputRef}
+            style={{
+              position: 'relative',
+              zIndex: baseInputsZIndex,
+              pointerEvents: 'auto',
+            }}
           />
 
           <Input
@@ -263,6 +388,11 @@ const UniverseModal = ({
             error={errors.description}
             rows={3}
             disabled={isViewMode || isSubmitting}
+            style={{
+              position: 'relative',
+              zIndex: baseInputsZIndex,
+              pointerEvents: 'auto',
+            }}
           />
 
           <Input
@@ -275,6 +405,11 @@ const UniverseModal = ({
             onClick={handleFormElementClick}
             error={errors.genre}
             disabled={isViewMode || isSubmitting}
+            style={{
+              position: 'relative',
+              zIndex: baseInputsZIndex,
+              pointerEvents: 'auto',
+            }}
           />
 
           <Input
@@ -287,17 +422,47 @@ const UniverseModal = ({
             onClick={handleFormElementClick}
             error={errors.theme}
             disabled={isViewMode || isSubmitting}
+            style={{
+              position: 'relative',
+              zIndex: baseInputsZIndex,
+              pointerEvents: 'auto',
+            }}
           />
 
-          <div className="checkbox-group" onClick={(e) => e.stopPropagation()}>
-            <label onClick={(e) => e.stopPropagation()}>
+          <div
+            className="checkbox-group"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              zIndex: baseInputsZIndex,
+            }}
+          >
+            <label
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'relative',
+                zIndex: baseInputsZIndex + 1,
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+              }}
+            >
               <input
                 type="checkbox"
                 name="is_public"
                 checked={formData.is_public}
                 onChange={handleChange}
-                onClick={handleFormElementClick}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('Checkbox clicked');
+                  handleFormElementClick(e);
+                }}
                 disabled={isViewMode || isSubmitting}
+                style={{
+                  position: 'relative',
+                  zIndex: baseInputsZIndex + 2,
+                  pointerEvents: 'auto',
+                  cursor: 'pointer',
+                }}
               />
               Make Universe Public
             </label>

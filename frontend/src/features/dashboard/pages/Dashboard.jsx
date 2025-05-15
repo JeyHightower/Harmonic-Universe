@@ -25,6 +25,10 @@ import { message } from 'antd';
 import { authService } from '../../../services/auth.service.mjs';
 import { demoUserService } from '../../../services/demo-user.service.mjs';
 import { logout, validateAndRefreshToken } from '../../../store/thunks/authThunks';
+import {
+  applyModalInteractionFixesThunk,
+  initializeModalPortalThunk,
+} from '../../../store/thunks/modalThunks';
 import { deleteUniverse, fetchUniverses } from '../../../store/thunks/universeThunks';
 import { AUTH_CONFIG } from '../../../utils/config';
 
@@ -44,6 +48,27 @@ const Dashboard = () => {
   const [sortOption, setSortOption] = useState('updated_at');
   const [filterOption, setFilterOption] = useState('all');
   const [newUniverseId, setNewUniverseId] = useState(null);
+
+  // Initialize modal portal and apply fixes on component mount
+  useEffect(() => {
+    console.log('Dashboard - Initializing modal portal');
+
+    // Initialize the modal portal
+    dispatch(initializeModalPortalThunk())
+      .unwrap()
+      .then((result) => {
+        console.log('Modal portal initialized:', result);
+
+        // Pre-apply interaction fixes to ensure they're ready when a modal is opened
+        return dispatch(applyModalInteractionFixesThunk()).unwrap();
+      })
+      .then((result) => {
+        console.log('Pre-applied modal interaction fixes:', result);
+      })
+      .catch((error) => {
+        console.error('Error initializing modal infrastructure:', error);
+      });
+  }, [dispatch]);
 
   // Track last dashboard logout attempt
   let lastDashboardLogoutAttempt = 0;
@@ -579,7 +604,13 @@ const Dashboard = () => {
         />
 
         {isDeleteModalOpen && selectedUniverse && (
-          <Dialog open={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
+          <Dialog
+            open={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            disableEnforceFocus
+            disableAutoFocus
+            style={{ zIndex: 1050 }}
+          >
             <DialogTitle>Confirm Delete</DialogTitle>
             <DialogContent>
               <Typography>
@@ -588,8 +619,21 @@ const Dashboard = () => {
               </Typography>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
-              <Button onClick={handleConfirmDelete} color="error">
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsDeleteModalOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleConfirmDelete();
+                }}
+                color="error"
+              >
                 Delete
               </Button>
             </DialogActions>

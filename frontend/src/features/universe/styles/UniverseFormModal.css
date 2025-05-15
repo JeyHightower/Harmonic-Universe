@@ -22,6 +22,7 @@
   overflow-y: auto;
   position: relative;
   z-index: 1002;
+  pointer-events: auto !important;
 }
 
 @keyframes modal-appear {
@@ -213,15 +214,33 @@
   padding: 1.25rem 1.5rem;
   background-color: #f9fafb;
   border-bottom: 1px solid #e2e8f0;
+  position: relative;
+  z-index: 1003;
+  pointer-events: auto !important;
 }
 
 .universe-form-modal .MuiDialogContent-root {
   padding: 0;
+  position: relative;
+  z-index: 1003;
+  pointer-events: auto !important;
 }
 
 .universe-form-modal .MuiDialogActions-root {
   padding: 1.25rem 1.5rem;
   border-top: 1px solid #e2e8f0;
+  position: relative;
+  z-index: 1003;
+  pointer-events: auto !important;
+}
+
+.universe-form-modal input,
+.universe-form-modal textarea,
+.universe-form-modal select,
+.universe-form-modal button {
+  position: relative;
+  z-index: 1004;
+  pointer-events: auto !important;
 }
 
 /* Responsive adjustments */
@@ -783,4 +802,86 @@
     background-color: #2d3748;
     border-color: #4a5568;
   }
+}
+
+/* Redux-powered modal fixes to override conflicting styles */
+.redux-modal-fix {
+  pointer-events: auto !important;
+  position: relative !important;
+}
+
+.redux-modal-fix * {
+  pointer-events: auto !important;
+}
+
+.redux-modal-fix .modal-content,
+.redux-modal-fix .MuiDialogContent-root,
+.redux-modal-fix .ant-modal-content {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 1055 !important;
+}
+
+.redux-modal-fix form,
+.redux-modal-fix .form {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 1060 !important;
+}
+
+.redux-modal-fix input,
+.redux-modal-fix textarea,
+.redux-modal-fix select,
+.redux-modal-fix button,
+.redux-modal-fix [role='button'],
+.redux-modal-fix a {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 1065 !important;
+}
+
+.redux-modal-fix .modal-backdrop,
+.redux-modal-fix .MuiBackdrop-root,
+.redux-modal-fix .ant-modal-mask {
+  pointer-events: auto !important;
+}
+
+/* Override any pointer-events: none with !important */
+#portal-root > * {
+  pointer-events: auto !important;
+}
+
+.universe-form-modal,
+.modal-content,
+.MuiDialog-paper,
+.ant-modal-content {
+  pointer-events: auto !important;
+}
+
+/* Fix for the specific UniverseModal components */
+.universe-form-modal.MuiDialog-paper {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}
+
+.universe-form-modal .MuiDialogContent-root {
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+}
+
+.universe-form-modal form,
+.universe-form-modal .universe-form {
+  z-index: 10001 !important;
+  pointer-events: auto !important;
+}
+
+.universe-form-modal input,
+.universe-form-modal textarea,
+.universe-form-modal select,
+.universe-form-modal button,
+.universe-form-modal [role='button'],
+.universe-form-modal .checkbox-group,
+.universe-form-modal label {
+  z-index: 10002 !important;
+  pointer-events: auto !important;
 }

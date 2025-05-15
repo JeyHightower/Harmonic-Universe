@@ -25,6 +25,7 @@ const Button = React.forwardRef(
       as: Component = 'button',
       className = '',
       onClick,
+      style = {},
       ...props
     },
     ref
@@ -43,14 +44,32 @@ const Button = React.forwardRef(
       .trim()
       .replace(/\s+/g, ' ');
 
+    // Enhanced style to ensure button is interactive in modals
+    const enhancedStyle = {
+      position: 'relative',
+      zIndex: 1000,
+      pointerEvents: 'auto',
+      cursor: disabled || loading ? 'not-allowed' : 'pointer',
+      ...style,
+    };
+
+    // Handler to stop event propagation
+    const handleClick = (e) => {
+      // Stop propagation to prevent modal close
+      e.stopPropagation();
+      // Call original handler if provided
+      onClick && onClick(e);
+    };
+
     // If it's a Link and disabled/loading, render a button instead
     if (Component === Link && (disabled || loading)) {
       return (
         <button
           className={buttonClass}
           disabled={disabled || loading}
-          onClick={onClick}
+          onClick={handleClick}
           ref={ref}
+          style={enhancedStyle}
           {...props}
         >
           {loading ? <Spinner size="small" /> : children}
@@ -62,8 +81,9 @@ const Button = React.forwardRef(
       <Component
         className={buttonClass}
         disabled={disabled || loading}
-        onClick={onClick}
+        onClick={handleClick}
         ref={ref}
+        style={enhancedStyle}
         {...props}
       >
         {loading ? <Spinner size="small" /> : children}
@@ -93,6 +113,7 @@ Button.propTypes = {
   className: PropTypes.string,
   onClick: PropTypes.func,
   children: PropTypes.node,
+  style: PropTypes.object,
 };
 
 Button.displayName = 'Button';

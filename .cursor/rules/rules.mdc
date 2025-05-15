@@ -27,7 +27,7 @@ alwaysApply: true
 
 5. **Error Handling**
    - Investigate the root cause of any error or issue before attempting to resolve it.
-   - For frontend issues, use Redux whenever possible for robust fixes.
+   - For frontend issues, always use Redux whenever possible for robust fixes.
    - For backend issues, maintain consistency with files in:
      - `harmonic-universe/backend/app/api/models/**/*`
      - `harmonic-universe/backend/app/api/routes/**/*`
