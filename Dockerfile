@@ -6,30 +6,117 @@
 
 # Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
 
-# Set the Python version as a build argument
-ARG PYTHON_VERSION=3.11
+# FRONTEND BUILD
+FROM node:18-alpine AS frontend-build
 
-# Use the Python slim image as the base image
-FROM python:${PYTHON_VERSION}-slim AS base
+WORKDIR /app
 
-# Prevents Python from writing pyc files.
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set up pnpm global bin directory
+ENV PNPM_HOME=/usr/local/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN mkdir -p $PNPM_HOME
+
+# Create .npmrc file
+RUN echo "strict-peer-dependencies=false" > .npmrc
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+COPY frontend/package.json ./frontend/package.json
+
+# Install dependencies
+RUN pnpm install --filter frontend...
+
+# Install vite and React plugin
+RUN npm install -g vite
+RUN npm install --save-dev @vitejs/plugin-react
+
+# Copy frontend files
+COPY frontend/ ./frontend/
+
+# Build the frontend application (for production)
+WORKDIR /app/frontend
+RUN pnpm run build
+
+# BACKEND BUILD
+FROM python:3.11-slim AS backend-build
+
+# Prevents Python from writing pyc files and buffering stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1
-
-# Keeps Python from buffering stdout and stderr to avoid situations where
-# the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=app.py
+ENV FLASK_ENV=development
+ENV FLASK_DEBUG=1
+ENV PYTHONPATH=/app
 
-# Set the working directory
-WORKDIR /app/backend
+# Set working directory
+WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
+# Copy backend requirements and install dependencies
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy backend code
+COPY backend/ .
+
+# Create necessary directories
+RUN mkdir -p /app/static
+
+# Make scripts executable
+RUN chmod +x scripts/*.sh && \
+    chmod +x docker-entrypoint.sh
+
+# DEVELOPMENT IMAGE
+FROM python:3.11-slim AS dev
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=app.py
+ENV FLASK_ENV=development
+ENV FLASK_DEBUG=1
+ENV PYTHONPATH=/app
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    python3-dev \
+    postgresql-client \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy the entrypoint script
+COPY backend/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Expose ports for backend and frontend
+EXPOSE 5001 5173
+
+# This is a development image that will be used with mounted volumes
+# from docker-compose, so we don't need to copy files here
+
+# Set the entrypoint for development
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# PRODUCTION IMAGE
+FROM python:3.11-slim AS prod
+
+# Create a non-privileged user
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -40,26 +127,37 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Copy requirements first to leverage Docker cache
-COPY backend/requirements.txt .
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FLASK_APP=app.py \
+    FLASK_ENV=production \
+    PYTHONPATH=/app
 
-# Install Python dependencies
-RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install -r requirements.txt
+WORKDIR /app
 
-# Copy the source code
-COPY backend/ .
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy .env file
-COPY .env /app/backend/.env
+# Copy from backend build stage
+COPY --from=backend-build /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=backend-build /app /app
 
-# Switch to the non-privileged user to run the application.
-USER appuser
+# Copy built frontend from frontend build stage (for serving static files)
+COPY --from=frontend-build /app/frontend/dist /app/static/dist
 
-# Expose the port that the application listens on.
+# Ensure proper permissions
+RUN chown -R appuser:appuser /app
+
+# Expose the backend port
 EXPOSE 5001
 
-# Run the application.
+# Switch to non-privileged user
+USER appuser
+
+# Run the production server
 CMD ["python", "run.py"]
 
 # Nginx setup (if needed)

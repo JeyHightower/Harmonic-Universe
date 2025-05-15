@@ -198,12 +198,12 @@ const StableModalWrapper = ({
 
 StableModalWrapper.propTypes = {
   title: PropTypes.string.isRequired,
-  children: PropTypes.node.isRequired,
-  onClose: PropTypes.func,
-  width: PropTypes.number,
-  open: PropTypes.bool,
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  width: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   style: PropTypes.object,
-  footer: PropTypes.node,
+  footer: PropTypes.oneOfType([PropTypes.node, PropTypes.bool]),
+  children: PropTypes.node.isRequired,
 };
 
 export default StableModalWrapper;

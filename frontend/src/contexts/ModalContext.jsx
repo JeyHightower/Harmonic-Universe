@@ -377,7 +377,11 @@ export const ModalProvider = ({ children }) => {
       {isOpen && (
         <Suspense
           fallback={
-            <StableModalWrapper title="Loading..." open={true}>
+            <StableModalWrapper
+              title="Loading..."
+              open={true}
+              onClose={() => console.log('Loading modal close requested')}
+            >
               <div>Loading modal content...</div>
             </StableModalWrapper>
           }

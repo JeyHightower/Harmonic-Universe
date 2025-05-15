@@ -120,7 +120,12 @@ const renderApp = () => {
       <StrictMode>
         <Provider store={store}>
           <PersistGate loading={null} persistor={persistor}>
-            <Router>
+            <Router
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
               <ModalProvider>
                 <App />
               </ModalProvider>

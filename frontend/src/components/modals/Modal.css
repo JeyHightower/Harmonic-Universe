@@ -117,6 +117,29 @@
   z-index: 2;
 }
 
+/* Special handling for buttons */
+button,
+.button,
+[role='button'],
+.btn,
+.logout-button,
+.login-button,
+.signup-button,
+[data-action='logout'] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 100;
+}
+
+/* Special handling for auth buttons */
+.logout-button,
+.login-button,
+.signup-button,
+[data-action='logout'] {
+  z-index: 1000 !important;
+}
+
 /* Scene modal specific styling */
 .scene-form-container.scene-modal-content {
   padding: 24px;
@@ -152,6 +175,22 @@
   pointer-events: auto !important; /* Force auto for direct children */
   position: relative;
   z-index: 1;
+}
+
+/* Form elements should always be clickable */
+input,
+textarea,
+select,
+form input,
+form textarea,
+form select,
+.ant-input,
+.ant-select,
+.ant-checkbox,
+.ant-radio {
+  pointer-events: auto !important;
+  z-index: 10;
+  position: relative;
 }
 
 /* Animation classes for modal transitions */
@@ -212,28 +251,23 @@
   }
 }
 
-/* Modal debug - remove these in production */
+/* Debug visualizations */
 .modal-debug {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px;
-  border-radius: 4px;
-  z-index: 9999;
-  font-size: 12px;
+  border: 2px solid red;
 }
 
-/* ===== ENHANCED FIXES FOR INPUT INTERACTIONS ===== */
+.modal-debug * {
+  outline: 1px solid rgba(255, 0, 0, 0.3);
+}
 
-/* Make sure dialog content is clickable in MUI dialogs */
+/* Material-UI compatibility */
 .MuiDialog-container {
   pointer-events: auto !important;
 }
 
 .MuiDialog-paper {
   pointer-events: auto !important;
+  z-index: 1300;
 }
 
 .MuiDialogContent-root {
@@ -244,192 +278,174 @@
   pointer-events: auto !important;
 }
 
-/* Form inputs need special handling */
+/* Ensure all form elements in MUI dialogs work */
 .MuiDialog-paper input,
-.MuiDialog-paper textarea,
 .MuiDialog-paper select,
+.MuiDialog-paper textarea,
 .MuiDialog-paper button {
   pointer-events: auto !important;
   position: relative;
-  z-index: 5;
+  z-index: 2;
 }
 
-/* Make sure the backdrop doesn't block interaction */
 .MuiBackdrop-root {
-  pointer-events: auto !important;
+  pointer-events: auto;
+  z-index: 1200;
 }
 
-/* Fix for immediate closing issue */
+/* General modal container */
 .modal-container {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  z-index: 1050 !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  pointer-events: none !important; /* Changed to none to avoid trapping clicks */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  pointer-events: auto;
 }
 
+/* Inner content should always be interactive */
 .modal-inner-content {
   pointer-events: auto !important;
   position: relative;
-  z-index: 10; /* Ensure it's above the container */
+  z-index: 1051;
 }
 
-/* All content inside modal should be clickable */
 .modal-inner-content * {
   pointer-events: auto !important;
 }
 
-/* Prevent container clicks from closing modal */
+/* Stable modal wrap styling */
 .stable-modal-wrap {
   pointer-events: auto !important;
 }
 
-/* Mobile-specific fixes */
+/* Mobile responsiveness */
 @media (max-width: 480px) {
   .stable-modal {
-    max-width: 100% !important;
-    margin: 0;
-    top: 0;
-    padding-bottom: 0;
+    max-width: 95vw !important;
+    width: 95vw !important;
+    margin: 0 auto;
   }
 
   .stable-modal .ant-modal-content {
-    border-radius: 0;
+    max-height: 90vh;
+    overflow-y: auto;
   }
 }
 
-/* Fix for login modal specifically */
+/* Auth form styling */
 .auth-form {
   pointer-events: auto !important;
 }
 
 .auth-form input,
-.auth-form button {
+.auth-form button,
+.auth-form select,
+.auth-form textarea {
   pointer-events: auto !important;
-  z-index: 10 !important; /* Higher z-index for interactivity */
+  z-index: 10;
 }
 
-/* Ensure modal content is above backdrop */
+/* General modal content */
 .modal-content {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 20px;
   position: relative;
-  z-index: 1051 !important;
+  z-index: 1051;
   pointer-events: auto !important;
 }
 
-/* ===== CRITICAL FIX FOR MODAL CLICK ISSUES ===== */
-/* These rules help prevent modals from closing when clicked */
-
-/* Force all modals to have proper stacking context */
+/* Ant Design overrides to ensure modals work properly */
 .ant-modal,
-.modal-container {
-  isolation: isolate !important;
+.ant-modal-wrap,
+.ant-modal-mask {
+  pointer-events: auto !important;
 }
 
-/* Make sure clicks on modal content don't propagate to backdrop */
 .ant-modal-content,
-.stable-modal .ant-modal-content,
-.modal-content {
-  position: relative !important;
-  z-index: 1060 !important; /* Higher than backdrop */
+.ant-modal-header,
+.ant-modal-body,
+.ant-modal-footer {
   pointer-events: auto !important;
-  isolation: isolate !important; /* Create stacking context */
-  transform: translateZ(0); /* Force hardware acceleration */
-  touch-action: auto !important; /* Ensure touch events are processed */
+  position: relative;
+  z-index: 1051;
 }
 
-/* Fix clicks inside any content */
+/* All elements inside modal body should be interactive */
 .ant-modal-body *,
-.modal-content *,
-.modal-inner-content * {
+.modal-body *,
+.modal-content * {
   pointer-events: auto !important;
-  position: relative; /* Ensure proper stacking */
-  z-index: 2; /* Ensure it's in the right stacking context */
-  touch-action: auto !important; /* Ensure touch events */
 }
 
-/* Ensure forms are interactive */
+/* Form elements need to be interactive */
 form,
 form *,
-.form-control,
-.form-control *,
-.input-group,
-.input-group * {
+.form,
+.form * {
   pointer-events: auto !important;
-  z-index: 5 !important; /* Higher z-index to ensure interaction */
-  touch-action: auto !important;
 }
 
-/* Enhanced form input fixes */
+/* Input controls need to be interactive */
 input,
 textarea,
 select,
-.ant-input,
-.ant-input-affix-wrapper,
-.ant-select,
-.ant-checkbox-wrapper,
-.ant-radio-wrapper {
-  pointer-events: auto !important;
-  z-index: 5 !important;
-  position: relative !important;
-  touch-action: manipulation !important;
-  cursor: text !important;
-}
-
-/* Fix for any click handlers */
-.ant-modal-close,
-.modal-close-button {
-  z-index: 1070 !important; /* Higher than content */
-  pointer-events: auto !important;
-  position: relative !important;
-}
-
-/* Make sure the content wrapper doesn't pass clicks to backdrop */
-.modal-content-wrapper {
-  isolation: isolate !important;
-  transform: translateZ(0);
-  position: relative !important;
-  z-index: 1060 !important;
-}
-
-/* Global fix for any modal */
-.modal,
-.modal-dialog,
-.modal-content,
-.modal-body,
-.dialog,
-.popup {
-  pointer-events: auto !important;
-  position: relative !important;
-  z-index: 1060 !important;
-}
-
-/* Interactive modal elements */
-.modal-interactive,
-.modal-interactive * {
+.input,
+.textarea,
+.select,
+button,
+.button,
+[role='button'] {
   pointer-events: auto !important;
   position: relative;
-  z-index: 1060; /* Ensure this is higher than other modal elements */
+  z-index: 10;
+}
+
+/* Close button styling */
+.ant-modal-close,
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1060 !important;
+  pointer-events: auto !important;
+}
+
+/* Wrapper to ensure content is interactive */
+.modal-content-wrapper {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 2;
+}
+
+/* Legacy modal support */
+.modal,
+.modal-dialog,
+.modal-content {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1050;
+}
+
+/* Interactive class to force elements to be clickable */
+.modal-interactive {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1000;
 }
 
 .modal-interactive input,
-.modal-interactive select,
 .modal-interactive textarea,
+.modal-interactive select,
 .modal-interactive button,
-.modal-interactive a,
-.modal-interactive label {
+.modal-interactive a {
   pointer-events: auto !important;
-  cursor: pointer;
-  z-index: 10 !important; /* Higher z-index */
-}
-
-/* Specific fix for dropdown components */
-.ant-select-dropdown,
-.ant-select-dropdown * {
-  pointer-events: auto !important;
-  z-index: 1100 !important; /* Higher than most other elements */
+  position: relative;
+  z-index: 1001;
 }

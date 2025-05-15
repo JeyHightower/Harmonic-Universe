@@ -17,8 +17,9 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
+      target: dev
     restart: "no"
     depends_on:
       db:
@@ -40,17 +41,20 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: Dockerfile
+      target: frontend-build
     ports:
       - '5173:5173'
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
     environment:
       - NODE_ENV=development
       - VITE_API_URL=http://localhost:5001
     depends_on:
       - backend
+    working_dir: /app/frontend
+    command: pnpm run dev
 
 volumes:
   postgres_data:

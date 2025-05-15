@@ -52,6 +52,76 @@ export const getPortalRoot = () => {
   return ensurePortalRoot();
 };
 
+// Helper function to detect form and interactive elements
+const isInteractiveElement = (element) => {
+  if (!element) return false;
+
+  const tagName = element.tagName.toLowerCase();
+  const isFormElement =
+    tagName === 'input' || tagName === 'textarea' || tagName === 'select' || tagName === 'button';
+
+  const isButton =
+    tagName === 'button' ||
+    element.getAttribute('role') === 'button' ||
+    element.classList.contains('btn') ||
+    element.classList.contains('button') ||
+    element.type === 'submit' ||
+    element.type === 'button';
+
+  const isAuthButton =
+    element.classList.contains('logout-button') ||
+    element.classList.contains('login-button') ||
+    element.classList.contains('signup-button') ||
+    element.getAttribute('data-action') === 'logout';
+
+  return (
+    isFormElement ||
+    isButton ||
+    isAuthButton ||
+    element.closest('button, [role="button"], .btn, .button')
+  );
+};
+
+// Helper function to make elements interactive
+const makeElementInteractive = (element) => {
+  if (!element) return;
+
+  element.style.pointerEvents = 'auto';
+  element.style.position = 'relative';
+  element.style.zIndex = '10';
+
+  const tagName = element.tagName.toLowerCase();
+  if (
+    tagName === 'button' ||
+    element.getAttribute('role') === 'button' ||
+    element.classList.contains('btn') ||
+    element.classList.contains('button')
+  ) {
+    element.style.cursor = 'pointer';
+    element.style.zIndex = '100';
+  }
+
+  // Special handling for auth buttons
+  if (
+    element.classList.contains('logout-button') ||
+    element.classList.contains('login-button') ||
+    element.classList.contains('signup-button') ||
+    element.getAttribute('data-action') === 'logout'
+  ) {
+    element.style.zIndex = '1000';
+    element.style.pointerEvents = 'auto !important';
+  }
+
+  // Make parent containers interactive too
+  let parent = element.parentElement;
+  let depth = 0; // Prevent infinite loops
+  while (parent && depth < 10) {
+    parent.style.pointerEvents = 'auto';
+    parent = parent.parentElement;
+    depth++;
+  }
+};
+
 /**
  * Creates a new portal container within the portal root.
  * Useful for creating separate portals for different modal types.
@@ -73,172 +143,95 @@ export const createPortalContainer = (id) => {
     container.style.zIndex = '1';
     container.setAttribute('data-portal-container', 'true');
 
-    // Add specific event listeners to ensure proper event handling
-    // Click handler for the container itself - only stop propagation for backdrop clicks
+    // Improved click handler for the container
     container.addEventListener(
       'click',
       (e) => {
-        const isBackdropClick = e.target === container;
-        const isCloseButton = e.target.closest('.modal-close, .ant-modal-close');
-        const isFormElement =
-          e.target.tagName === 'INPUT' ||
-          e.target.tagName === 'TEXTAREA' ||
-          e.target.tagName === 'SELECT' ||
-          e.target.tagName === 'BUTTON';
+        // Determine if this is an interactive element or within one
+        const interactiveElement = e.target.closest(
+          'input, textarea, select, button, [role="button"], .btn, .button, .logout-button, .login-button, .signup-button'
+        );
 
-        // Don't stop propagation for close buttons or form elements
-        if (isBackdropClick && !isCloseButton && !isFormElement) {
+        if (interactiveElement) {
+          // For interactive elements, stop propagation to prevent backdrop close
+          e.stopPropagation();
+          makeElementInteractive(interactiveElement);
+        } else if (e.target === container) {
+          // This is a backdrop click, let it propagate for backdrop close
           console.log('Backdrop click intercepted in portal container');
         } else {
-          // For all other clicks inside content, stop propagation to prevent unintended closes
+          // For all other clicks inside content, stop propagation
           e.stopPropagation();
         }
       },
       true
-    ); // Use capture phase to ensure we get events first
+    );
 
-    // Enhanced mousedown handler for form fields - crucial for interaction
+    // Enhanced mousedown handler for better focus management
     container.addEventListener(
       'mousedown',
       (e) => {
-        // Get the target element and its tag
         const target = e.target;
-        const tagName = target.tagName.toLowerCase();
-        const isFormElement =
-          tagName === 'input' ||
-          tagName === 'textarea' ||
-          tagName === 'select' ||
-          tagName === 'button' ||
-          target.getAttribute('role') === 'button' ||
-          target.classList.contains('btn') ||
-          target.classList.contains('button') ||
-          target.classList.contains('logout-button') ||
-          target.classList.contains('login-button') ||
-          target.classList.contains('signup-button') ||
-          target.getAttribute('data-action') === 'logout';
 
-        // Special handling for form elements
-        if (isFormElement) {
-          // Always stop propagation for form elements to prevent modal from closing
+        if (isInteractiveElement(target)) {
+          // Stop event propagation for interactive elements
           e.stopPropagation();
-          e.stopImmediatePropagation();
 
-          // Set timeout to focus after a slight delay - helps with input fields
+          // Force the element to be interactive
+          makeElementInteractive(target);
+
+          // Focus the element after a brief delay
           setTimeout(() => {
             if (document.activeElement !== target) {
               target.focus();
+
+              // Extra check for input fields
+              if (target.tagName.toLowerCase() === 'input') {
+                const inputType = target.type.toLowerCase();
+                if (inputType === 'text' || inputType === 'password' || inputType === 'email') {
+                  // For text inputs, move cursor to the end
+                  const val = target.value;
+                  target.value = '';
+                  target.value = val;
+                }
+              }
             }
-          }, 0);
-
-          // Force pointer events
-          target.style.pointerEvents = 'auto';
-
-          // Make button elements clickable with proper cursor
-          if (
-            tagName === 'button' ||
-            target.getAttribute('role') === 'button' ||
-            target.classList.contains('btn') ||
-            target.classList.contains('button')
-          ) {
-            target.style.cursor = 'pointer';
-          }
+          }, 10);
         }
       },
       true
-    ); // Use capture phase to ensure we handle events first
+    );
 
-    // Make sure logout buttons and action buttons work properly
+    // Improved touchstart handler for mobile support
     container.addEventListener(
-      'click',
+      'touchstart',
       (e) => {
-        const isButton =
-          e.target.tagName.toLowerCase() === 'button' ||
-          e.target.getAttribute('role') === 'button' ||
-          e.target.classList.contains('btn') ||
-          e.target.classList.contains('button') ||
-          e.target.closest('button') ||
-          e.target.closest('[role="button"]') ||
-          e.target.classList.contains('logout-button') ||
-          e.target.classList.contains('login-button') ||
-          e.target.classList.contains('signup-button') ||
-          e.target.getAttribute('data-action') === 'logout';
+        const target = e.target;
 
-        if (isButton) {
-          // Apply specific handling for buttons
-          e.stopPropagation(); // Stop propagation to prevent backdrop click
+        if (isInteractiveElement(target)) {
+          e.stopPropagation();
+          makeElementInteractive(target);
 
-          // Fix the style of the button to ensure it's clickable
-          const button =
-            isButton === true
-              ? e.target
-              : e.target.closest('button, [role="button"], .btn, .button');
-          if (button) {
-            button.style.pointerEvents = 'auto';
-            button.style.cursor = 'pointer';
-            button.style.position = 'relative';
-            button.style.zIndex = '100';
-
-            // Special handling for logout/auth buttons
-            if (
-              button.classList.contains('logout-button') ||
-              button.classList.contains('login-button') ||
-              button.classList.contains('signup-button') ||
-              button.getAttribute('data-action') === 'logout'
-            ) {
-              console.log('Auth button clicked:', button.textContent);
-              // Extra z-index for auth buttons
-              button.style.zIndex = '1000';
-            }
-          }
-
-          // Make parent containers interactive too
-          let parent = e.target.parentElement;
-          while (parent && parent !== container) {
-            parent.style.pointerEvents = 'auto';
-            parent = parent.parentElement;
+          // Focus input fields on touch
+          if (
+            target.tagName.toLowerCase() === 'input' ||
+            target.tagName.toLowerCase() === 'textarea' ||
+            target.tagName.toLowerCase() === 'select'
+          ) {
+            setTimeout(() => target.focus(), 10);
           }
         }
       },
       true
     );
 
-    // Add touchstart handlers for mobile support
+    // Enhanced focus handler
     container.addEventListener(
-      'touchstart',
+      'focusin',
       (e) => {
         const target = e.target;
-        const tagName = target.tagName.toLowerCase();
-        const isClickable =
-          tagName === 'input' ||
-          tagName === 'textarea' ||
-          tagName === 'select' ||
-          tagName === 'button' ||
-          target.getAttribute('role') === 'button' ||
-          target.classList.contains('btn') ||
-          target.classList.contains('button') ||
-          target.classList.contains('logout-button') ||
-          target.classList.contains('login-button') ||
-          target.classList.contains('signup-button') ||
-          target.getAttribute('data-action') === 'logout';
-
-        if (isClickable) {
-          e.stopPropagation();
-
-          // Add special handling for auth buttons on touch
-          if (
-            tagName === 'button' ||
-            target.getAttribute('role') === 'button' ||
-            target.classList.contains('logout-button')
-          ) {
-            target.style.pointerEvents = 'auto';
-            target.style.cursor = 'pointer';
-            target.style.zIndex = '100';
-          }
-
-          // Ensure input fields get focus
-          if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
-            setTimeout(() => target.focus(), 0);
-          }
+        if (isInteractiveElement(target)) {
+          makeElementInteractive(target);
         }
       },
       true
@@ -308,7 +301,8 @@ export const fixModalFormElements = (container = document) => {
       '.ant-modal-body input, .ant-modal-body textarea, .ant-modal-body select, .ant-modal-body button, ' +
       '.modal-content input, .modal-content textarea, .modal-content select, .modal-content button, ' +
       'form input, form textarea, form select, form button, ' +
-      '.form-control, [role="button"], .btn, .button'
+      '.form-control, [role="button"], .btn, .button, ' +
+      '.logout-button, .login-button, .signup-button, [data-action="logout"]'
   );
 
   formElements.forEach((el) => {
@@ -327,6 +321,18 @@ export const fixModalFormElements = (container = document) => {
       el.type === 'button'
     ) {
       el.style.cursor = 'pointer';
+      el.style.zIndex = '100';
+    }
+
+    // Special handling for auth buttons
+    if (
+      el.classList.contains('logout-button') ||
+      el.classList.contains('login-button') ||
+      el.classList.contains('signup-button') ||
+      el.getAttribute('data-action') === 'logout'
+    ) {
+      el.style.zIndex = '1000';
+      el.style.pointerEvents = 'auto !important';
     }
 
     // Add mousedown handler to ensure focus
@@ -334,10 +340,24 @@ export const fixModalFormElements = (container = document) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
+      // Make this element and its parents interactive
+      makeElementInteractive(e.target);
+
       // Explicitly focus after a small delay
       setTimeout(() => {
         if (document.activeElement !== e.target) {
           e.target.focus();
+
+          // Extra handling for input fields
+          if (e.target.tagName.toLowerCase() === 'input') {
+            const inputType = e.target.type.toLowerCase();
+            if (inputType === 'text' || inputType === 'password' || inputType === 'email') {
+              // For text inputs, move cursor to the end
+              const val = e.target.value;
+              e.target.value = '';
+              e.target.value = val;
+            }
+          }
         }
       }, 10);
     };
@@ -354,11 +374,15 @@ export const fixModalFormElements = (container = document) => {
       el.classList.contains('btn') ||
       el.classList.contains('button') ||
       el.type === 'submit' ||
-      el.type === 'button'
+      el.type === 'button' ||
+      el.classList.contains('logout-button') ||
+      el.classList.contains('login-button') ||
+      el.classList.contains('signup-button') ||
+      el.getAttribute('data-action') === 'logout'
     ) {
       const clickHandler = (e) => {
         e.stopPropagation();
-        // Don't prevent default to allow normal button behavior
+        makeElementInteractive(e.target);
       };
 
       el.removeEventListener('click', el._clickHandler);
@@ -1003,3 +1027,118 @@ export const applyModalFixes = () => {
 if (typeof window !== 'undefined') {
   window.__fixAllModals = applyModalFixes;
 }
+
+/**
+ * Apply modal fixes specifically for the current modal element
+ * @param {HTMLElement} modalElement - The modal element to apply fixes to
+ */
+export const applyElementModalFixes = (modalElement) => {
+  if (!modalElement) return;
+
+  // Make the modal interactive
+  modalElement.style.pointerEvents = 'auto';
+
+  // Find all form elements and make them interactive
+  const elements = modalElement.querySelectorAll(
+    'input, textarea, select, button, [role="button"], .btn, .button'
+  );
+  elements.forEach((el) => makeElementInteractive(el));
+
+  // Fix specific logout buttons or auth buttons
+  const authButtons = modalElement.querySelectorAll(
+    '.logout-button, .login-button, .signup-button, [data-action="logout"]'
+  );
+  authButtons.forEach((button) => {
+    button.style.pointerEvents = 'auto';
+    button.style.zIndex = '1000';
+    button.style.cursor = 'pointer';
+  });
+
+  return elements.length;
+};
+
+/**
+ * Apply comprehensive modal interaction fixes across the entire application
+ * This is useful as a last resort to fix interaction issues with modals
+ */
+export const applyModalInteractionFixes = () => {
+  console.log('Applying comprehensive modal interaction fixes');
+
+  // Fix the portal root
+  const portalRoot = ensurePortalRoot();
+
+  // Make sure all modals are properly set up
+  const modalContainers = document.querySelectorAll('.ant-modal, .modal, .MuiDialog-paper');
+  modalContainers.forEach((container) => {
+    container.style.pointerEvents = 'auto';
+    container.style.zIndex = '1050';
+    container.style.position = 'relative';
+
+    // Fix modal content
+    const content = container.querySelector(
+      '.ant-modal-content, .modal-content, .MuiDialogContent-root'
+    );
+    if (content) {
+      content.style.pointerEvents = 'auto';
+      content.style.zIndex = '1051';
+      content.style.position = 'relative';
+    }
+
+    // Fix modal body
+    const body = container.querySelector('.ant-modal-body, .modal-body, .MuiDialogContent-root');
+    if (body) {
+      body.style.pointerEvents = 'auto';
+      body.style.zIndex = '1052';
+      body.style.position = 'relative';
+    }
+  });
+
+  // Fix all form elements
+  const formElements = document.querySelectorAll(
+    'input, textarea, select, button, [role="button"], .btn, .button'
+  );
+  formElements.forEach((el) => {
+    el.style.pointerEvents = 'auto';
+    el.style.position = 'relative';
+    el.style.zIndex = '10';
+
+    if (
+      el.tagName.toLowerCase() === 'button' ||
+      el.getAttribute('role') === 'button' ||
+      el.classList.contains('btn') ||
+      el.classList.contains('button') ||
+      el.type === 'submit' ||
+      el.type === 'button'
+    ) {
+      el.style.cursor = 'pointer';
+      el.style.zIndex = '100';
+    }
+  });
+
+  // Fix auth buttons specifically
+  const authButtons = document.querySelectorAll(
+    '.logout-button, .login-button, .signup-button, [data-action="logout"]'
+  );
+  authButtons.forEach((button) => {
+    button.style.pointerEvents = 'auto';
+    button.style.zIndex = '1000';
+    button.style.cursor = 'pointer';
+
+    // Add a click handler to ensure the button works
+    button.addEventListener(
+      'click',
+      (e) => {
+        e.stopPropagation();
+        console.log('Auth button clicked:', button.textContent);
+      },
+      true
+    );
+  });
+
+  // Return the number of elements fixed
+  return {
+    modals: modalContainers.length,
+    formElements: formElements.length,
+    authButtons: authButtons.length,
+  };
+};

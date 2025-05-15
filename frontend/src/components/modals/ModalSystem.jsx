@@ -3,7 +3,7 @@ import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'r
 import { createPortal } from 'react-dom';
 import '../../styles/Modal.css';
 import { MODAL_CONFIG } from '../../utils/config';
-import { applyModalFixes, ensurePortalRoot } from '../../utils/portalUtils';
+import { applyElementModalFixes, ensurePortalRoot } from '../../utils/portalUtils';
 
 // Animation duration in ms
 const ANIMATION_DURATION = MODAL_CONFIG.ANIMATIONS.FADE.duration;
@@ -114,6 +114,13 @@ const ModalSystem = forwardRef(
       if (isOpen) {
         // Only append to DOM when modal is open
         portalRoot.appendChild(modalPortal);
+
+        // Apply fixes to ensure modal interaction works
+        setTimeout(() => {
+          if (modalRef.current) {
+            applyElementModalFixes(modalRef.current);
+          }
+        }, 0);
       }
 
       return () => {
@@ -198,275 +205,211 @@ const ModalSystem = forwardRef(
       [preventBackdropClick, closeOnBackdrop, handleClose]
     );
 
-    // Handle content click to prevent it from propagating to backdrop
-    const handleContentClick = useCallback((e) => {
-      // Prevent event from bubbling to parent elements like backdrop
-      e.stopPropagation();
-    }, []);
-
-    // Enhanced handler for input fields to ensure they receive focus properly
-    const handleInputInteraction = useCallback((e) => {
-      // Stop propagation to parent elements
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
-      // Prevent any default behaviors that might interfere with form interactions
-      // but don't prevent typing in inputs
-      if (
-        e.target.tagName !== 'INPUT' &&
-        e.target.tagName !== 'TEXTAREA' &&
-        e.target.tagName !== 'SELECT'
-      ) {
-        e.preventDefault();
-      }
-
-      // Explicitly set focus on clicked form elements
-      if (
-        e.target.tagName === 'INPUT' ||
-        e.target.tagName === 'TEXTAREA' ||
-        e.target.tagName === 'SELECT' ||
-        e.target.tagName === 'BUTTON'
-      ) {
-        setTimeout(() => {
-          if (document.activeElement !== e.target) {
-            e.target.focus();
-          }
-        }, 0);
-      }
-    }, []);
-
-    // Handle global event listeners for drag functionality
+    // Focus handling and body scroll locking
     useEffect(() => {
-      if (draggable && isOpen) {
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-
-        return () => {
-          document.removeEventListener('mousemove', handleMouseMove);
-          document.removeEventListener('mouseup', handleMouseUp);
-        };
-      }
-      return undefined;
-    }, [draggable, isOpen, handleMouseMove, handleMouseUp]);
-
-    // Handle modal open/close state and body scroll locking
-    useEffect(() => {
-      if (isOpen) {
-        mountedRef.current = true;
-
-        // Set data attributes for easier debugging and testing
-        if (modalRef.current) {
-          if (dataModalType) {
-            modalRef.current.setAttribute('data-modal-type', dataModalType);
-          }
-          if (dataModalId) {
-            modalRef.current.setAttribute('data-modal-id', dataModalId);
-          }
-        }
-
-        // Save the current active element to restore focus later
+      if (isOpen && !isClosing) {
+        // Save previous focus
         previousFocus.current = document.activeElement;
 
-        // Update modal stack and set stack level for z-index
+        // Track modal stack
         const level = modalStack.increment();
         setStackLevel(level);
 
-        // Lock body scroll if this is the first modal
+        // Lock body scroll
         if (preventBodyScroll) {
           modalStack.lockBodyScroll();
         }
 
-        // Focus the first focusable element
-        requestAnimationFrame(() => {
-          if (initialFocusRef?.current) {
-            initialFocusRef.current.focus();
-          } else if (modalRef.current) {
-            const firstFocusable = modalRef.current.querySelector(
-              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            if (firstFocusable) {
-              firstFocusable.focus();
-            } else {
-              modalRef.current.focus();
-            }
-          }
-        });
+        // Set focus to initial element or modal
+        if (initialFocusRef && initialFocusRef.current) {
+          initialFocusRef.current.focus();
+        } else if (contentRef.current) {
+          contentRef.current.focus();
+        }
 
-        // Apply fixes to make form elements interactive
-        // Use a small delay to ensure the DOM is fully rendered
-        const fixTimer = setTimeout(() => {
+        // Apply modal fixes after a short delay to ensure DOM is ready
+        setTimeout(() => {
           if (modalRef.current) {
-            // Apply our comprehensive modal fixes
-            applyModalFixes();
-
-            // Apply a second round of fixes after a slightly longer delay
-            // This helps with late-binding frameworks like Ant Design
-            setTimeout(() => {
-              if (modalRef.current) {
-                applyModalFixes();
-              }
-            }, 300);
+            applyElementModalFixes(modalRef.current);
           }
         }, 50);
-
-        return () => clearTimeout(fixTimer);
-      } else {
-        // Reset state when closed
-        setIsClosing(false);
-        mountedRef.current = false;
-
-        // Update modal stack and unlock body if needed
-        modalStack.decrement();
-        if (preventBodyScroll) {
-          modalStack.unlockBodyScroll();
-        }
       }
 
-      // Cleanup on unmount or when isOpen changes
       return () => {
-        if (closeTimeoutRef.current) {
-          clearTimeout(closeTimeoutRef.current);
-        }
-      };
-    }, [isOpen, preventBodyScroll, initialFocusRef, dataModalType, dataModalId]);
+        if (isOpen && !isClosing) {
+          // Decrement modal stack
+          const remainingModals = modalStack.decrement();
 
-    // Cleanup on unmount
-    useEffect(() => {
-      return () => {
-        // Ensure body scroll is unlocked if component unmounts while open
-        if (isOpen && mountedRef.current) {
-          modalStack.decrement();
-          if (preventBodyScroll) {
+          // Restore body scroll if no modals left
+          if (remainingModals === 0 && preventBodyScroll) {
             modalStack.unlockBodyScroll();
           }
-        }
 
-        // Return focus to previous element
-        if (previousFocus.current) {
-          previousFocus.current.focus();
-        }
-
-        // Clear any pending timeouts
-        if (closeTimeoutRef.current) {
-          clearTimeout(closeTimeoutRef.current);
+          // Restore previous focus
+          if (previousFocus.current) {
+            previousFocus.current.focus();
+          }
         }
       };
-    }, [isOpen, preventBodyScroll]);
+    }, [isOpen, isClosing, initialFocusRef, preventBodyScroll]);
 
-    if (!isOpen) return null;
+    // Handle form field interaction
+    const handleFormFieldInteraction = useCallback((e) => {
+      // Stop propagation to prevent backdrop click from closing modal
+      e.stopPropagation();
+
+      // Handle focus for form elements
+      const target = e.target;
+      const tagName = target.tagName.toLowerCase();
+
+      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+        // Focus the element after a short delay
+        setTimeout(() => {
+          if (document.activeElement !== target) {
+            target.focus();
+          }
+        }, 0);
+      }
+
+      // Handle buttons
+      if (
+        tagName === 'button' ||
+        target.getAttribute('role') === 'button' ||
+        target.classList.contains('btn') ||
+        target.classList.contains('button')
+      ) {
+        target.style.pointerEvents = 'auto';
+        target.style.cursor = 'pointer';
+        target.style.zIndex = '100';
+      }
+
+      // Special handling for auth buttons
+      if (
+        target.classList.contains('logout-button') ||
+        target.classList.contains('login-button') ||
+        target.classList.contains('signup-button') ||
+        target.getAttribute('data-action') === 'logout'
+      ) {
+        target.style.zIndex = '1000';
+        console.log('Auth button interaction:', target.textContent);
+      }
+    }, []);
+
+    if (!isOpen && !isClosing) {
+      return null;
+    }
+
+    // Get appropriate modal styles
+    const modalStyles = {
+      width: size,
+      transform: isDragging ? `translate(${dragPosition.x}px, ${dragPosition.y}px)` : undefined,
+    };
+
+    // Determine position class
+    const positionClass =
+      position && position !== MODAL_CONFIG.POSITIONS.CENTER ? `modal-position-${position}` : '';
+
+    // Combine class names
+    const combinedClassName = `modal modal-${type} ${className} ${positionClass} modal-animation-${animation} ${
+      isClosing ? 'closing' : ''
+    }`;
 
     const modalContent = (
       <div
-        ref={combinedRef}
-        id={modalId}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={ariaDescribedBy || contentId}
-        className={`modal-overlay ${isClosing ? 'closing' : ''}`}
-        style={{ zIndex: 1050 + stackLevel }}
-        tabIndex="-1"
-        data-testid="modal"
+        className="modal-backdrop"
+        onClick={handleBackdropClick}
+        data-modal-id={dataModalId || modalId}
+        data-modal-type={dataModalType || type}
+        style={{
+          pointerEvents: 'auto',
+          position: 'fixed',
+        }}
       >
         <div
-          className="modal-backdrop"
-          onClick={handleBackdropClick}
-          data-testid="modal-backdrop"
-        />
-        <div
-          className={`modal-content modal-${size} modal-${type} modal-${position} ${
-            animation !== MODAL_CONFIG.ANIMATIONS.NONE ? `modal-animation-${animation}` : ''
-          } ${isClosing ? 'closing' : ''} ${isDragging ? 'dragging' : ''} ${className || ''}`}
-          ref={contentRef}
-          onClick={handleContentClick}
-          style={{
-            transform: draggable
-              ? `translate(${dragPosition.x}px, ${dragPosition.y}px)`
-              : undefined,
-            pointerEvents: 'auto',
-            touchAction: 'auto',
-          }}
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={ariaDescribedBy || contentId}
+          className={combinedClassName}
+          style={modalStyles}
+          onMouseDown={handleMouseDown}
+          onClick={(e) => e.stopPropagation()} // Stop propagation to prevent backdrop clicks
+          tabIndex={-1}
+          data-testid="modal-dialog"
         >
           <div
-            className="modal-header"
-            onMouseDown={draggable ? handleMouseDown : undefined}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id={titleId} className="modal-title">
-              {title}
-            </h2>
-            {showCloseButton && (
-              <button
-                type="button"
-                className="modal-close"
-                aria-label="Close"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleClose();
-                }}
-                data-testid="modal-close-button"
-              >
-                &times;
-              </button>
-            )}
-          </div>
-          <div
-            id={contentId}
-            className="modal-body"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleContentClick(e);
-            }}
-            onMouseDown={handleInputInteraction}
-            onTouchStart={handleInputInteraction}
+            className="modal-content-wrapper"
             style={{
               pointerEvents: 'auto',
-              touchAction: 'auto',
+              position: 'relative',
+              zIndex: '2',
             }}
           >
-            {children}
-          </div>
-          {footerContent && (
+            <div className="modal-header">
+              <h2 id={titleId} className="modal-title">
+                {title}
+              </h2>
+              {showCloseButton && (
+                <button
+                  type="button"
+                  className="modal-close"
+                  aria-label="Close"
+                  onClick={handleClose}
+                  data-testid="modal-close"
+                  style={{
+                    pointerEvents: 'auto',
+                    cursor: 'pointer',
+                    zIndex: '1060',
+                  }}
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+
             <div
-              className="modal-footer"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleContentClick(e);
-              }}
-              onMouseDown={handleInputInteraction}
-              onTouchStart={handleInputInteraction}
+              ref={contentRef}
+              id={contentId}
+              className="modal-body"
+              onMouseDown={handleFormFieldInteraction}
+              onTouchStart={handleFormFieldInteraction}
               style={{
                 pointerEvents: 'auto',
-                touchAction: 'auto',
+                position: 'relative',
+                zIndex: '2',
               }}
             >
-              {footerContent}
+              {children}
             </div>
-          )}
+
+            {footerContent && <div className="modal-footer">{footerContent}</div>}
+          </div>
         </div>
       </div>
     );
 
-    // Create portal to render modal outside component hierarchy
-    return portalElementRef.current ? createPortal(modalContent, portalElementRef.current) : null;
+    return createPortal(modalContent, portalElementRef.current || portalRoot);
   }
 );
+
+ModalSystem.displayName = 'ModalSystem';
 
 ModalSystem.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   title: PropTypes.string,
-  children: PropTypes.node,
-  size: PropTypes.oneOf(Object.values(MODAL_CONFIG.SIZES)),
-  type: PropTypes.oneOf(Object.values(MODAL_CONFIG.TYPES)),
-  animation: PropTypes.oneOf(Object.values(MODAL_CONFIG.ANIMATIONS)),
-  position: PropTypes.oneOf(Object.values(MODAL_CONFIG.POSITIONS)),
+  children: PropTypes.node.isRequired,
+  size: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  type: PropTypes.string,
+  animation: PropTypes.string,
+  position: PropTypes.string,
   showCloseButton: PropTypes.bool,
   preventBackdropClick: PropTypes.bool,
   className: PropTypes.string,
   footerContent: PropTypes.node,
   ariaDescribedBy: PropTypes.string,
-  initialFocusRef: PropTypes.object,
+  initialFocusRef: PropTypes.shape({ current: PropTypes.any }),
   preventAutoClose: PropTypes.bool,
   draggable: PropTypes.bool,
   closeOnEscape: PropTypes.bool,
@@ -475,7 +418,5 @@ ModalSystem.propTypes = {
   'data-modal-id': PropTypes.string,
   'data-modal-type': PropTypes.string,
 };
-
-ModalSystem.displayName = 'ModalSystem';
 
 export default ModalSystem;
