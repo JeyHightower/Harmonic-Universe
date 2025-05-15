@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types';
 import React from 'react';
+import LoginModal from '../../features/auth/modals/LoginModal';
+import SignupModal from '../../features/auth/modals/SignupModal';
+import HarmonyParametersModal from '../../features/harmony/modals/HarmonyParametersModal.js';
 import { MODAL_CONFIG } from '../../utils/config';
-import LoginModal from '../auth/LoginModal';
-import SignupModal from '../auth/SignupModal';
-import HarmonyParametersModal from '../harmony/HarmonyParametersModal';
 import { ModalSystem } from '../modals';
 
 // Network Error Modal Content Component

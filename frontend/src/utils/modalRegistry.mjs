@@ -1,15 +1,5 @@
 import React from 'react';
 import { MODAL_TYPES } from '../constants/modalTypes';
-
-// Import components statically instead of dynamically
-import ConfirmationModal from '../components/modals/ConfirmationModal';
-import { AlertModal, FormModal } from '../components/modals/index.mjs';
-import TestModal from '../components/modals/TestModal';
-import LoginModal from '../features/auth/modals/LoginModal';
-import SignupModal from '../features/auth/modals/SignupModal';
-import { PhysicsConstraintModal, PhysicsParametersModal } from '../features/physics';
-import { SceneModal } from '../features/scene';
-import UniverseModal from '../features/universe/modals/UniverseModal';
 import { MODAL_CONFIG } from './config';
 
 // Create modal registry
@@ -24,6 +14,83 @@ const builtInModalTypes = [
   'PHYSICS_PARAMETERS',
   'PHYSICS_CONSTRAINT',
 ];
+
+// Initialize registry with statically imported components
+async function initializeRegistry() {
+  try {
+    // Import components dynamically to avoid circular dependencies
+    const { AlertModal, FormModal } = await import('../components/modals/index.mjs');
+    const ConfirmationModalModule = await import('../components/modals/ConfirmationModal');
+    const ConfirmationModal = ConfirmationModalModule.default;
+    const TestModalModule = await import('../components/modals/TestModal');
+    const TestModal = TestModalModule.default;
+    const LoginModalModule = await import('../features/auth/modals/LoginModal');
+    const LoginModal = LoginModalModule.default;
+    const SignupModalModule = await import('../features/auth/modals/SignupModal');
+    const SignupModal = SignupModalModule.default;
+    const { PhysicsConstraintModal, PhysicsParametersModal } = await import('../features/physics');
+    const { SceneModal } = await import('../features/scene');
+    const UniverseModalModule = await import('../features/universe/modals/UniverseModal');
+    const UniverseModal = UniverseModalModule.default;
+
+    // Register static components
+    modalRegistry.set('ALERT', { component: AlertModal, hasBuiltInModal: false });
+    modalRegistry.set(MODAL_TYPES.ALERT, { component: AlertModal, hasBuiltInModal: false });
+
+    modalRegistry.set('CONFIRMATION', { component: ConfirmationModal, hasBuiltInModal: false });
+    modalRegistry.set(MODAL_TYPES.CONFIRMATION, {
+      component: ConfirmationModal,
+      hasBuiltInModal: false,
+    });
+
+    modalRegistry.set('FORM', { component: FormModal, hasBuiltInModal: false });
+    modalRegistry.set(MODAL_TYPES.FORM, { component: FormModal, hasBuiltInModal: false });
+
+    modalRegistry.set('LOGIN', { component: LoginModal, hasBuiltInModal: true });
+    modalRegistry.set(MODAL_TYPES.LOGIN, { component: LoginModal, hasBuiltInModal: true });
+
+    modalRegistry.set('SIGNUP', { component: SignupModal, hasBuiltInModal: true });
+    modalRegistry.set(MODAL_TYPES.SIGNUP, { component: SignupModal, hasBuiltInModal: true });
+
+    modalRegistry.set('universe-create', { component: UniverseModal, hasBuiltInModal: true });
+    modalRegistry.set(MODAL_TYPES.UNIVERSE_CREATE, {
+      component: UniverseModal,
+      hasBuiltInModal: true,
+    });
+
+    modalRegistry.set('TEST_MODAL', { component: TestModal, hasBuiltInModal: false });
+
+    modalRegistry.set('SCENE_FORM', { component: SceneModal, hasBuiltInModal: false });
+
+    modalRegistry.set('PHYSICS_PARAMETERS', {
+      component: PhysicsParametersModal,
+      hasBuiltInModal: true,
+    });
+    modalRegistry.set(MODAL_TYPES.PHYSICS_PARAMETERS, {
+      component: PhysicsParametersModal,
+      hasBuiltInModal: true,
+    });
+
+    modalRegistry.set('PHYSICS_CONSTRAINT', {
+      component: PhysicsConstraintModal,
+      hasBuiltInModal: true,
+    });
+    modalRegistry.set('physics-constraint', {
+      component: PhysicsConstraintModal,
+      hasBuiltInModal: true,
+    });
+
+    console.log(
+      'Modal registry initialized with static components:',
+      Array.from(modalRegistry.keys()).join(', ')
+    );
+  } catch (error) {
+    console.error('Error initializing modal registry:', error);
+  }
+}
+
+// Initialize the registry when this module loads
+initializeRegistry();
 
 // Component lookup function
 export const getModalComponent = async (type) => {
@@ -58,47 +125,17 @@ export const getModalComponent = async (type) => {
   }
 
   try {
+    // First check if we have this component in the registry
+    if (modalRegistry.has(type)) {
+      console.log(`Found ${type} in registry`);
+      return modalRegistry.get(type).component;
+    }
+
+    // If not in registry, try to load it dynamically
     let component;
     let hasBuiltInModal = builtInModalTypes.includes(type);
 
     switch (type) {
-      case 'ALERT':
-      case MODAL_TYPES.ALERT:
-        component = AlertModal;
-        break;
-      case 'CONFIRMATION':
-      case MODAL_TYPES.CONFIRMATION:
-        component = ConfirmationModal;
-        break;
-      case 'FORM':
-      case MODAL_TYPES.FORM:
-        component = FormModal;
-        break;
-      case 'LOGIN':
-      case MODAL_TYPES.LOGIN:
-        component = LoginModal;
-        hasBuiltInModal = true;
-        break;
-      case 'SIGNUP':
-      case MODAL_TYPES.SIGNUP:
-        component = SignupModal;
-        hasBuiltInModal = true;
-        break;
-      case 'universe-create':
-      case MODAL_TYPES.UNIVERSE_CREATE:
-        console.log('Loading UniverseModal');
-        component = UniverseModal;
-        hasBuiltInModal = true;
-        break;
-      case 'TEST_MODAL':
-        console.log('Loading TestModal');
-        component = TestModal;
-        break;
-      case 'SCENE_FORM':
-        console.log('Loading SceneModal');
-        // Use the imported SceneModal component
-        component = SceneModal;
-        break;
       case 'CHARACTER_FORM':
         console.log('Loading CharacterModal');
         try {
@@ -120,18 +157,6 @@ export const getModalComponent = async (type) => {
           console.warn('Fallback to FormModal for PhysicsObjectModal', e);
           component = FormModal;
         }
-        break;
-      case 'PHYSICS_PARAMETERS':
-      case MODAL_TYPES.PHYSICS_PARAMETERS:
-        console.log('Loading PhysicsParametersModal');
-        component = PhysicsParametersModal;
-        hasBuiltInModal = true;
-        break;
-      case 'PHYSICS_CONSTRAINT':
-      case 'physics-constraint':
-        console.log('Loading PhysicsConstraintModal');
-        component = PhysicsConstraintModal;
-        hasBuiltInModal = true;
         break;
       case 'audio-generate':
         console.log('Loading AudioGenerationModalFinal component');
@@ -180,9 +205,10 @@ export const getModalComponent = async (type) => {
         return null;
     }
 
-    // Set a flag on the component to indicate if it has a built-in modal
+    // If we loaded a component, add it to the registry for future lookups
     if (component) {
       component.__hasBuiltInModal = hasBuiltInModal;
+      registerModalComponent(type, component, hasBuiltInModal);
     }
 
     return component;
@@ -297,8 +323,50 @@ export const registerModalComponent = (type, component, hasBuiltInModal = false)
   // Set the flag on the component
   component.__hasBuiltInModal = hasBuiltInModal;
 
-  modalRegistry.set(type, component);
+  modalRegistry.set(type, { component, hasBuiltInModal });
+  console.log(`Registered modal component for type: ${type}`);
   return true;
+};
+
+/**
+ * Helper function to register an asynchronously loaded component
+ * @param {string} type - The modal type
+ * @param {string} importPath - Path to the component for dynamic import
+ * @param {boolean} hasBuiltInModal - Whether the component has its own modal implementation
+ * @returns {Promise<boolean>} Whether registration was successful
+ */
+export const registerAsyncModalComponent = async (type, importPath, hasBuiltInModal = false) => {
+  try {
+    if (!type || !importPath) {
+      console.error('Modal type and import path are required');
+      return false;
+    }
+
+    if (!isValidModalType(type)) {
+      console.error(`Invalid modal type: ${type}`);
+      return false;
+    }
+
+    if (modalRegistry.has(type)) {
+      console.warn(`Modal type ${type} is already registered`);
+      return false;
+    }
+
+    // Dynamically import the component
+    const componentModule = await import(importPath);
+    const component = componentModule.default;
+
+    if (!component) {
+      console.error(`Failed to load component at ${importPath}`);
+      return false;
+    }
+
+    // Register the component
+    return registerModalComponent(type, component, hasBuiltInModal);
+  } catch (error) {
+    console.error(`Error registering async component for type ${type}:`, error);
+    return false;
+  }
 };
 
 /**
@@ -404,76 +472,15 @@ export const getModalComponentSync = (type) => {
   }
 
   try {
-    let component;
-    let hasBuiltInModal = builtInModalTypes.includes(type);
-
-    // Use synchronous component references whenever possible
-    switch (type) {
-      case 'ALERT':
-      case MODAL_TYPES.ALERT:
-        component = AlertModal;
-        break;
-      case 'CONFIRMATION':
-      case MODAL_TYPES.CONFIRMATION:
-        component = ConfirmationModal;
-        break;
-      case 'FORM':
-      case MODAL_TYPES.FORM:
-        component = FormModal;
-        break;
-      case 'LOGIN':
-      case MODAL_TYPES.LOGIN:
-        component = LoginModal;
-        hasBuiltInModal = true;
-        break;
-      case 'SIGNUP':
-      case MODAL_TYPES.SIGNUP:
-        component = SignupModal;
-        hasBuiltInModal = true;
-        break;
-      case 'universe-create':
-      case MODAL_TYPES.UNIVERSE_CREATE:
-        component = UniverseModal;
-        hasBuiltInModal = true;
-        break;
-      case 'TEST_MODAL':
-        component = TestModal;
-        break;
-      case 'SCENE_FORM':
-        component = SceneModal;
-        break;
-      case 'PHYSICS_PARAMETERS':
-      case MODAL_TYPES.PHYSICS_PARAMETERS:
-        component = PhysicsParametersModal;
-        hasBuiltInModal = true;
-        break;
-      case 'PHYSICS_CONSTRAINT':
-      case 'physics-constraint':
-        component = PhysicsConstraintModal;
-        hasBuiltInModal = true;
-        break;
-      // For dynamically loaded components, we'll return null and defer to
-      // the async version, which will display a loading indicator
-      case 'CHARACTER_FORM':
-      case 'PHYSICS_OBJECT':
-      case 'audio-generate':
-      case 'audio-details':
-      case 'music-create':
-      case 'music-view':
-      case 'music-edit':
-      case 'music-delete':
-        return null;
-      default:
-        console.error(`No modal component found for type: ${type}`);
-        return null;
+    // Check if this type exists in the registry
+    if (modalRegistry.has(type)) {
+      const registryEntry = modalRegistry.get(type);
+      return registryEntry.component;
     }
 
-    // Set a flag on the component to indicate if it has a built-in modal
-    if (component) {
-      component.__hasBuiltInModal = hasBuiltInModal;
-    }
-
-    return component;
+    // For dynamically loaded components, we return null
+    // and defer to the async version, which will display a loading indicator
+    return null;
   } catch (error) {
     console.error(`Error loading modal component: ${error}`);
     return null;
@@ -487,6 +494,7 @@ const modalRegistryExports = {
   isValidModalType,
   getDefaultModalProps,
   registerModalComponent,
+  registerAsyncModalComponent,
   unregisterModalComponent,
   getModalDisplayName,
 };

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import useModalState from '../../hooks/useModalState';
 import {
@@ -6,25 +6,8 @@ import {
   selectModalProps,
   selectModalType,
 } from '../../store/slices/newModalSlice';
+import { getModalComponentSync } from '../../utils/modalRegistry.mjs';
 import Modal from './Modal';
-
-// Dynamically import modal components to reduce initial bundle size
-const AlertModal = lazy(() => import('./AlertModal'));
-const ConfirmationModal = lazy(() => import('./ConfirmationModal'));
-const FormModal = lazy(() => import('./FormModal'));
-const TestModal = lazy(() => import('./TestModal'));
-const LoginModal = lazy(() => import('../../features/auth/modals/LoginModal'));
-const SignupModal = lazy(() => import('../../features/auth/modals/SignupModal'));
-
-// Map of modal types to components
-const MODAL_COMPONENTS = {
-  ALERT: AlertModal,
-  CONFIRMATION: ConfirmationModal,
-  FORM: FormModal,
-  TEST_MODAL: TestModal,
-  LOGIN: LoginModal,
-  SIGNUP: SignupModal,
-};
 
 /**
  * ModalManager component that renders the correct modal based on Redux state
@@ -35,6 +18,7 @@ const ModalManager = () => {
   const type = useSelector(selectModalType);
   const props = useSelector(selectModalProps);
   const { close } = useModalState();
+  const [ModalComponent, setModalComponent] = useState(null);
 
   // Effect for body scroll locking
   useEffect(() => {
@@ -57,17 +41,42 @@ const ModalManager = () => {
     }
   }, [isOpen]);
 
-  // Render nothing if no modal is open
-  if (!isOpen || !type) {
-    return null;
-  }
+  // Load the appropriate modal component when type changes
+  useEffect(() => {
+    if (!type) {
+      setModalComponent(null);
+      return;
+    }
 
-  // Get the appropriate modal component
-  const ModalComponent = MODAL_COMPONENTS[type];
+    // First try to get the component synchronously
+    const syncComponent = getModalComponentSync(type);
+    if (syncComponent) {
+      setModalComponent(() => syncComponent);
+      return;
+    }
 
-  // If no matching component, render nothing
-  if (!ModalComponent) {
-    console.warn(`No modal component found for type: ${type}`);
+    // If not available synchronously, load it asynchronously
+    const loadAsyncComponent = async () => {
+      try {
+        const { getModalComponent } = await import('../../utils/modalRegistry.mjs');
+        const asyncComponent = await getModalComponent(type);
+        if (asyncComponent) {
+          setModalComponent(() => asyncComponent);
+        } else {
+          console.warn(`No modal component found for type: ${type}`);
+          setModalComponent(null);
+        }
+      } catch (error) {
+        console.error(`Error loading modal component for type ${type}:`, error);
+        setModalComponent(null);
+      }
+    };
+
+    loadAsyncComponent();
+  }, [type]);
+
+  // Render nothing if no modal is open or no component is found
+  if (!isOpen || !type || !ModalComponent) {
     return null;
   }
 
