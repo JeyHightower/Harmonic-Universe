@@ -9,7 +9,7 @@ export { default as FormModal } from './FormModal';
 export { default as ModalSystem } from './ModalSystem';
 export { default as NetworkErrorModal } from './NetworkErrorModal';
 export { default as StableModalWrapper } from './StableModalWrapper';
-export { default as UniverseCreateModal } from './UniverseCreateModal';
+// UniverseCreateModal has been deprecated in favor of UniverseModal in features/universe/modals
 
 // Export modal helpers
 export * from './modalHelpers';

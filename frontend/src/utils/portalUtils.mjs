@@ -665,7 +665,7 @@ export const forceModalInteractivity = () => {
 
   // Get all modal overlays
   const modalOverlays = document.querySelectorAll(
-    '.modal-overlay, [role="dialog"], .ant-modal-root'
+    '.modal-overlay, [role="dialog"], .ant-modal-root, .MuiDialog-root, .universe-form-modal'
   );
   if (modalOverlays.length === 0) {
     console.log('No modal overlays found');
@@ -680,7 +680,7 @@ export const forceModalInteractivity = () => {
 
     // Find the modal content
     const modalContent = overlay.querySelector(
-      '.modal-content, .ant-modal-content, .MuiDialog-paper'
+      '.modal-content, .ant-modal-content, .MuiDialog-paper, .MuiDialogContent-root'
     );
     if (!modalContent) {
       console.log('No modal content found in overlay');
@@ -713,86 +713,74 @@ export const forceModalInteractivity = () => {
       `
       );
 
-      // Create a transparent overlay for the element that captures events
-      const overlay = document.createElement('div');
-      overlay.style.position = 'absolute';
-      overlay.style.inset = '0';
-      overlay.style.backgroundColor = 'transparent';
-      overlay.style.zIndex = '9999';
-      overlay.style.pointerEvents = 'none';
+      // Add super aggressive direct event handlers
+      const directMousedownHandler = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        console.log(`Mousedown on ${el.tagName} element`);
 
-      // Add helper class for debugging
-      el.classList.add('force-interactive');
+        if (
+          el.tagName.toLowerCase() === 'input' ||
+          el.tagName.toLowerCase() === 'textarea' ||
+          el.tagName.toLowerCase() === 'select'
+        ) {
+          // Force focus after a brief delay
+          setTimeout(() => {
+            el.focus();
+            console.log(`Focused ${el.tagName} element`);
+          }, 0);
+        }
+      };
 
-      // Remove and re-add all event listeners
-      const clone = el.cloneNode(true);
+      const directClickHandler = (e) => {
+        e.stopPropagation();
+        console.log(`Click on ${el.tagName} element`);
 
-      // Preserve important properties and event handlers
-      if (el.value) clone.value = el.value;
-      if (el.checked) clone.checked = el.checked;
+        if (
+          el.tagName.toLowerCase() === 'input' ||
+          el.tagName.toLowerCase() === 'textarea' ||
+          el.tagName.toLowerCase() === 'select'
+        ) {
+          // Force focus
+          el.focus();
+          console.log(`Focused ${el.tagName} element on click`);
+        }
+      };
 
-      // Special handling for form elements
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
-        clone.addEventListener(
-          'mousedown',
-          (e) => {
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            setTimeout(() => e.target.focus(), 0);
-          },
-          true
-        );
+      // Remove any existing handlers to avoid duplicates
+      el.removeEventListener('mousedown', el._directMousedownHandler);
+      el.removeEventListener('click', el._directClickHandler);
 
-        clone.addEventListener(
-          'click',
-          (e) => {
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-          },
-          true
-        );
+      // Store handlers for future cleanup
+      el._directMousedownHandler = directMousedownHandler;
+      el._directClickHandler = directClickHandler;
 
-        clone.addEventListener(
-          'focus',
-          (e) => {
-            e.stopPropagation();
-          },
-          true
-        );
+      // Add event listeners with capture phase to ensure they run first
+      el.addEventListener('mousedown', directMousedownHandler, true);
+      el.addEventListener('click', directClickHandler, true);
 
-        // For select elements, ensure the dropdown opens
-        if (el.tagName === 'SELECT') {
-          clone.addEventListener(
-            'mousedown',
-            (e) => {
-              // Trigger the native dropdown
-              e.target.click();
-            },
-            true
-          );
+      // For input fields, add additional focus handlers
+      if (
+        el.tagName.toLowerCase() === 'input' ||
+        el.tagName.toLowerCase() === 'textarea' ||
+        el.tagName.toLowerCase() === 'select'
+      ) {
+        // Make parent elements interactive too
+        let parent = el.parentElement;
+        for (let i = 0; i < 5 && parent; i++) {
+          // Limit to 5 levels up
+          parent.style.pointerEvents = 'auto';
+          parent.style.touchAction = 'auto';
+          parent = parent.parentElement;
         }
       }
 
-      // Special handling for buttons
-      if (el.tagName === 'BUTTON' || el.type === 'button' || el.type === 'submit') {
-        clone.addEventListener(
-          'click',
-          (e) => {
-            e.stopPropagation();
-            console.log('Button clicked:', e.target.textContent || e.target.value);
-          },
-          true
-        );
-      }
-
-      // Replace the original element with our enhanced clone
-      if (el.parentNode) {
-        el.parentNode.replaceChild(clone, el);
-      }
+      // Add helper class for debugging
+      el.classList.add('force-interactive');
     });
 
     // Add a transparent div over the entire modal to capture any clicks that might
-    // interfere with our form elements
+    // interfere with our form elements - but make sure it doesn't block interaction
     const clickShield = document.createElement('div');
     clickShield.classList.add('modal-click-shield');
     clickShield.style.position = 'absolute';
@@ -805,30 +793,34 @@ export const forceModalInteractivity = () => {
     modalContent.appendChild(clickShield);
 
     // Add very aggressive click handlers to the modal content
-    modalContent.addEventListener(
-      'click',
-      (e) => {
-        // Only stop propagation if we're not clicking on a form element
-        if (!e.target.closest('input, textarea, select, button, [role="button"], a')) {
-          e.stopPropagation();
-        }
-      },
-      true
-    );
+    const modalContentClickHandler = (e) => {
+      // Only stop propagation if we're not clicking on a form element
+      if (!e.target.closest('input, textarea, select, button, [role="button"], a')) {
+        e.stopPropagation();
+      }
+    };
+
+    // Remove any existing handlers to avoid duplicates
+    modalContent.removeEventListener('click', modalContent._clickHandler);
+    modalContent._clickHandler = modalContentClickHandler;
+    modalContent.addEventListener('click', modalContentClickHandler, true);
   });
 
   // Make extreme global changes to ensure interactivity
-  document.body.addEventListener(
-    'click',
-    (e) => {
-      const isInModal = e.target.closest('.modal-overlay, [role="dialog"], .ant-modal-root');
-      if (isInModal) {
-        // Let the click through for modal content
-        console.log('Click detected in modal:', e.target.tagName);
-      }
-    },
-    true
-  );
+  const bodyClickHandler = (e) => {
+    const isInModal = e.target.closest(
+      '.modal-overlay, [role="dialog"], .ant-modal-root, .MuiDialog-root, .universe-form-modal'
+    );
+    if (isInModal) {
+      // Let the click through for modal content
+      console.log('Click detected in modal:', e.target.tagName);
+    }
+  };
+
+  // Remove any existing handlers to avoid duplicates
+  document.body.removeEventListener('click', document.body._modalClickHandler);
+  document.body._modalClickHandler = bodyClickHandler;
+  document.body.addEventListener('click', bodyClickHandler, true);
 
   // Add a global emergency fixer to the window for manual triggering
   window.__FORCE_MODAL_FIX = forceModalInteractivity;
