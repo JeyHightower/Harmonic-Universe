@@ -1,7 +1,6 @@
-import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Form, Input, message } from 'antd';
 import PropTypes from 'prop-types';
-import React, { useEffect, useId, useState } from 'react';
+import React, { useId, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../../components/common/Button';
 import { login } from '../../../store/thunks/authThunks';
@@ -15,16 +14,12 @@ const LoginModal = ({ onClose }) => {
   const { error } = useSelector((state) => state.auth);
   const instanceId = useId();
 
-  // Force close function to ensure proper cleanup
-  const forceClose = () => {
-    // Reset modal state
-    document.body.classList.remove('modal-open');
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.body.style.overflow = '';
+  // Use the provided onClose function
+  const handleClose = () => {
+    // Reset form fields
+    form.resetFields();
 
-    // Call the provided onClose
+    // Call the provided onClose function from ModalManager
     onClose();
   };
 
@@ -66,7 +61,7 @@ const LoginModal = ({ onClose }) => {
 
         // Use setTimeout to ensure the success message is shown before closing
         setTimeout(() => {
-          forceClose();
+          handleClose();
 
           // Dispatch a custom event to encourage components to refresh
           window.dispatchEvent(new CustomEvent('storage'));
@@ -102,100 +97,57 @@ const LoginModal = ({ onClose }) => {
     form.resetFields();
   }, [form]);
 
-  // Add effect to handle cleanup when component unmounts
-  useEffect(() => {
-    return () => {
-      // Ensure body scroll is restored on unmount
-      document.body.classList.remove('modal-open');
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-    };
-  }, []);
-
-  // Prevent propagation of click events to stop modal from closing when clicked
-  const handleContentClick = (e) => {
-    // Ensure the click event doesn't bubble up
-    e.stopPropagation();
-  };
-
-  // Handle the Dialog click to prevent immediate closure
-  const handleDialogClick = (e) => {
-    // Only stop propagation if clicking on the Dialog content
-    if (e.target.closest('.MuiDialog-paper')) {
-      e.stopPropagation();
-    }
-  };
-
   return (
-    <Dialog
-      open={true}
-      onClose={forceClose}
-      maxWidth="sm"
-      fullWidth
-      onClick={handleDialogClick}
-      style={{ pointerEvents: 'auto' }}
-      BackdropProps={{
-        onClick: (e) => {
-          // Only close when clicking the backdrop directly
-          if (e.target === e.currentTarget) {
-            forceClose();
-          }
-        },
-      }}
-    >
-      <DialogTitle>Login</DialogTitle>
-      <DialogContent onClick={handleContentClick}>
-        <Form form={form} onFinish={handleSubmit} layout="vertical" className="auth-form">
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: 'Please input your email!' },
-              { type: 'email', message: 'Please enter a valid email!' },
-            ]}
-          >
-            <Input
-              id={`login-email-${instanceId}`}
-              placeholder="Enter your email"
-              autoComplete="email"
-              disabled={loading}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Password"
-            name="password"
-            rules={[
-              { required: true, message: 'Please input your password!' },
-              { min: 8, message: 'Password must be at least 8 characters!' },
-            ]}
-          >
-            <Input.Password
-              id={`login-password-${instanceId}`}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              disabled={loading}
-            />
-          </Form.Item>
-        </Form>
-      </DialogContent>
-      <DialogActions onClick={handleContentClick}>
-        <Button onClick={forceClose} disabled={loading} variant="secondary">
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => form.submit()}
-          loading={loading}
-          className="auth-button"
-          disabled={loading}
+    <div className="login-modal-content">
+      <Form form={form} onFinish={handleSubmit} layout="vertical" className="auth-form">
+        <Form.Item
+          label="Email"
+          name="email"
+          rules={[
+            { required: true, message: 'Please input your email!' },
+            { type: 'email', message: 'Please enter a valid email!' },
+          ]}
         >
-          Login
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Input
+            id={`login-email-${instanceId}`}
+            placeholder="Enter your email"
+            autoComplete="email"
+            disabled={loading}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Password"
+          name="password"
+          rules={[
+            { required: true, message: 'Please input your password!' },
+            { min: 8, message: 'Password must be at least 8 characters!' },
+          ]}
+        >
+          <Input.Password
+            id={`login-password-${instanceId}`}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            disabled={loading}
+          />
+        </Form.Item>
+
+        <div className="auth-form-actions">
+          <Button onClick={handleClose} disabled={loading} variant="secondary">
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => form.submit()}
+            loading={loading}
+            className="auth-button"
+            disabled={loading}
+          >
+            Login
+          </Button>
+        </div>
+      </Form>
+    </div>
   );
 };
 
