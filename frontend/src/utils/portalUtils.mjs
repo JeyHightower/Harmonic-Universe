@@ -143,19 +143,53 @@ export const createPortalContainer = (id) => {
     container.style.zIndex = '1';
     container.setAttribute('data-portal-container', 'true');
 
-    // Improved click handler for the container
+    // Improved click handler for the container with enhanced event handling
     container.addEventListener(
       'click',
       (e) => {
-        // Determine if this is an interactive element or within one
-        const interactiveElement = e.target.closest(
-          'input, textarea, select, button, [role="button"], .btn, .button, .logout-button, .login-button, .signup-button'
-        );
+        // Get the actual target element
+        const target = e.target;
 
-        if (interactiveElement) {
-          // For interactive elements, stop propagation to prevent backdrop close
+        // Check if this is a form input or interactive element
+        const isFormInput =
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT';
+
+        const isInteractiveElement =
+          target.tagName === 'BUTTON' ||
+          target.getAttribute('role') === 'button' ||
+          target.classList.contains('btn') ||
+          target.classList.contains('button') ||
+          target.classList.contains('logout-button') ||
+          target.classList.contains('login-button') ||
+          target.classList.contains('signup-button');
+
+        if (isFormInput) {
+          // For form inputs, ensure they receive focus and prevent event bubbling
           e.stopPropagation();
-          makeElementInteractive(interactiveElement);
+          e.preventDefault();
+
+          // Apply direct styling to ensure interactivity
+          target.style.pointerEvents = 'auto';
+          target.style.position = 'relative';
+          target.style.zIndex = '10000';
+
+          // Focus the input
+          target.focus();
+
+          console.log(`Form input interaction: ${target.tagName} ${target.name || target.id}`);
+          return false;
+        } else if (isInteractiveElement) {
+          // For buttons and other interactive elements
+          e.stopPropagation();
+
+          // Apply direct styling
+          target.style.pointerEvents = 'auto';
+          target.style.cursor = 'pointer';
+          target.style.zIndex = '10000';
+
+          console.log(`Interactive element clicked: ${target.tagName} ${target.textContent}`);
         } else if (e.target === container) {
           // This is a backdrop click, let it propagate for backdrop close
           console.log('Backdrop click intercepted in portal container');
@@ -164,74 +198,44 @@ export const createPortalContainer = (id) => {
           e.stopPropagation();
         }
       },
-      true
+      true // Use capturing phase
     );
 
-    // Enhanced mousedown handler for better focus management
+    // Add specific handlers for mousedown and focus events
     container.addEventListener(
       'mousedown',
       (e) => {
         const target = e.target;
-
-        if (isInteractiveElement(target)) {
-          // Stop event propagation for interactive elements
+        if (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT'
+        ) {
+          // Ensure clicks on form inputs work properly
           e.stopPropagation();
+          setTimeout(() => target.focus(), 0);
 
-          // Force the element to be interactive
-          makeElementInteractive(target);
-
-          // Focus the element after a brief delay
-          setTimeout(() => {
-            if (document.activeElement !== target) {
-              target.focus();
-
-              // Extra check for input fields
-              if (target.tagName.toLowerCase() === 'input') {
-                const inputType = target.type.toLowerCase();
-                if (inputType === 'text' || inputType === 'password' || inputType === 'email') {
-                  // For text inputs, move cursor to the end
-                  const val = target.value;
-                  target.value = '';
-                  target.value = val;
-                }
-              }
-            }
-          }, 10);
+          console.log(`Form field mousedown: ${target.tagName} ${target.name || target.id}`);
         }
       },
       true
     );
 
-    // Improved touchstart handler for mobile support
+    // Add form field focus handler
     container.addEventListener(
-      'touchstart',
+      'focus',
       (e) => {
         const target = e.target;
+        if (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT'
+        ) {
+          console.log(`Focus event on: ${target.tagName} ${target.name || target.id}`);
 
-        if (isInteractiveElement(target)) {
-          e.stopPropagation();
-          makeElementInteractive(target);
-
-          // Focus input fields on touch
-          if (
-            target.tagName.toLowerCase() === 'input' ||
-            target.tagName.toLowerCase() === 'textarea' ||
-            target.tagName.toLowerCase() === 'select'
-          ) {
-            setTimeout(() => target.focus(), 10);
-          }
-        }
-      },
-      true
-    );
-
-    // Enhanced focus handler
-    container.addEventListener(
-      'focusin',
-      (e) => {
-        const target = e.target;
-        if (isInteractiveElement(target)) {
-          makeElementInteractive(target);
+          // Ensure proper styling
+          target.style.pointerEvents = 'auto';
+          target.style.zIndex = '10000';
         }
       },
       true

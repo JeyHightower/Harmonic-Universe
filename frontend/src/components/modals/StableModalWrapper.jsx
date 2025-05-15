@@ -112,19 +112,38 @@ const StableModalWrapper = ({
 
   // Enhanced interaction handler for form fields
   const handleFormFieldInteraction = (e) => {
+    // Don't let the event bubble to prevent unwanted closing
     e.stopPropagation();
 
+    const target = e.target;
+    const tagName = target.tagName.toLowerCase();
+
+    // Handle input fields, textareas and selects
+    if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
+      // Prevent default action that might interfere with focus
+      e.preventDefault();
+
+      // Force styles to make element interactive
+      target.style.pointerEvents = 'auto';
+      target.style.zIndex = '100000';
+      target.style.position = 'relative';
+
+      // Focus the input element immediately
+      target.focus();
+
+      console.log(`Modal input interaction: ${tagName} ${target.name || target.id}`);
+    }
+
+    // Handle buttons specifically
     if (
-      e.target.tagName === 'INPUT' ||
-      e.target.tagName === 'TEXTAREA' ||
-      e.target.tagName === 'SELECT'
+      tagName === 'button' ||
+      target.getAttribute('role') === 'button' ||
+      target.classList.contains('btn') ||
+      target.classList.contains('button')
     ) {
-      // Ensure focus works
-      setTimeout(() => {
-        if (document.activeElement !== e.target) {
-          e.target.focus();
-        }
-      }, 0);
+      target.style.pointerEvents = 'auto';
+      target.style.cursor = 'pointer';
+      target.style.zIndex = '100000';
     }
   };
 

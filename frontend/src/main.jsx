@@ -351,5 +351,46 @@ document.addEventListener(
   true
 );
 
+// Add a more aggressive handler for form inputs in modals
+document.addEventListener(
+  'pointerdown',
+  (e) => {
+    // Check if this is happening inside a modal
+    const isInModal = e.target.closest(
+      '.modal-content, .ant-modal-content, .MuiDialogContent-root'
+    );
+
+    // Check if this is a form input element
+    const isFormInput =
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'TEXTAREA' ||
+      e.target.tagName === 'SELECT';
+
+    if (isInModal && isFormInput) {
+      console.log(
+        'Form input pointerdown in modal:',
+        e.target.tagName,
+        e.target.name || e.target.id
+      );
+
+      // Prevent event bubbling
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Force input to be interactive
+      e.target.style.pointerEvents = 'auto';
+      e.target.style.zIndex = '100000';
+      e.target.style.position = 'relative';
+
+      // Focus the input
+      setTimeout(() => {
+        e.target.focus();
+        console.log('Input focused:', e.target.tagName, e.target.name || e.target.id);
+      }, 0);
+    }
+  },
+  true
+);
+
 // Export necessary functions for component usage
 export { applyInteractionFixes, applyModalFixes, fixModalFormElements };

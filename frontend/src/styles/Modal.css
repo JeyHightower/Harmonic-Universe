@@ -1,3 +1,82 @@
+/* CRITICAL MODAL INPUT FIX - This must be at the very top of the file */
+/* These styles will override everything else to ensure inputs are clickable */
+
+.modal-content input,
+.modal-body input,
+.ant-modal-content input,
+.ant-modal-body input,
+.MuiDialogContent-root input,
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='search'],
+input[type='tel'],
+input[type='url'],
+textarea,
+select,
+.ant-input,
+.ant-select,
+.MuiInput-root,
+.MuiInputBase-root {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 100000 !important;
+  cursor: text !important;
+  touch-action: auto !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Fix checkbox and radio inputs */
+input[type='checkbox'],
+input[type='radio'],
+.ant-checkbox,
+.ant-radio,
+.MuiCheckbox-root,
+.MuiRadio-root {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  touch-action: auto !important;
+  z-index: 100000 !important;
+  position: relative !important;
+}
+
+/* Ensure form containers are interactive */
+form,
+.ant-form,
+.MuiForm-root,
+.modal-form,
+.form {
+  pointer-events: auto !important;
+  z-index: 10000 !important;
+  position: relative !important;
+}
+
+/* Ensure labels are clickable */
+label,
+.ant-form-item-label,
+.MuiFormLabel-root {
+  pointer-events: auto !important;
+  z-index: 100000 !important;
+  position: relative !important;
+}
+
+/* Ensure buttons are clickable */
+button,
+.ant-btn,
+.MuiButton-root,
+[role='button'],
+.btn,
+.button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  touch-action: auto !important;
+  z-index: 100000 !important;
+  position: relative !important;
+}
+
 /* EMERGENCY FIX - Add these styles at the top to ensure they take precedence */
 /* These styles will forcibly make modals and form elements interactive */
 

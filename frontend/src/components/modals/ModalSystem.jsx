@@ -255,6 +255,8 @@ const ModalSystem = forwardRef(
 
     // Handle form field interaction
     const handleFormFieldInteraction = useCallback((e) => {
+      // Prevent default behavior to ensure form fields work correctly
+      e.preventDefault();
       // Stop propagation to prevent backdrop click from closing modal
       e.stopPropagation();
 
@@ -263,12 +265,15 @@ const ModalSystem = forwardRef(
       const tagName = target.tagName.toLowerCase();
 
       if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
-        // Focus the element after a short delay
-        setTimeout(() => {
-          if (document.activeElement !== target) {
-            target.focus();
-          }
-        }, 0);
+        // Focus the element immediately and directly
+        target.focus();
+
+        // Ensure proper styling
+        target.style.pointerEvents = 'auto';
+        target.style.zIndex = '10002';
+        target.style.position = 'relative';
+
+        console.log(`Input field focused: ${target.name || target.id || target.className}`);
       }
 
       // Handle buttons
