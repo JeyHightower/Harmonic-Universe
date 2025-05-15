@@ -112,7 +112,9 @@ export const getModalComponent = async (type) => {
       case 'PHYSICS_OBJECT':
         console.log('Loading PhysicsObjectModal');
         try {
-          const PhysicsObjectModule = await import('../features/physics/modals/PhysicsObjectModal.jsx');
+          const PhysicsObjectModule = await import(
+            '../features/physics/modals/PhysicsObjectModal.jsx'
+          );
           component = PhysicsObjectModule.default;
         } catch (e) {
           console.warn('Fallback to FormModal for PhysicsObjectModal', e);
@@ -134,7 +136,9 @@ export const getModalComponent = async (type) => {
       case 'audio-generate':
         console.log('Loading AudioGenerationModalFinal component');
         try {
-          const AudioGenerateModule = await import('../features/music/modals/AudioGenerationModal.jsx');
+          const AudioGenerateModule = await import(
+            '../features/music/modals/AudioGenerationModal.jsx'
+          );
           component = AudioGenerateModule.default;
         } catch (e) {
           console.warn('Fallback to FormModal for AudioGenerationModal', e);
@@ -164,7 +168,7 @@ export const getModalComponent = async (type) => {
           component.defaultProps = {
             ...component.defaultProps,
             mode,
-            title: getModalDisplayName(type)
+            title: getModalDisplayName(type),
           };
         } catch (e) {
           console.warn(`Fallback to FormModal for MusicModal (${type})`, e);
@@ -195,38 +199,38 @@ export const getModalComponent = async (type) => {
  */
 export const getModalDisplayName = (type) => {
   const displayNames = {
-    [MODAL_TYPES.ALERT]: "Alert",
-    [MODAL_TYPES.CONFIRMATION]: "Confirmation",
-    [MODAL_TYPES.FORM]: "Form",
-    [MODAL_TYPES.LOGIN]: "Login",
-    [MODAL_TYPES.SIGNUP]: "Sign Up",
-    [MODAL_TYPES.UNIVERSE_CREATE]: "Create Universe",
-    "universe-create": "Create Universe",
-    [MODAL_TYPES.SCENE_FORM]: "Scene",
-    "SCENE_FORM": "Scene",
-    [MODAL_TYPES.CHARACTER_FORM]: "Character",
-    "CHARACTER_FORM": "Character",
-    [MODAL_TYPES.PHYSICS_OBJECT]: "Physics Object",
-    "PHYSICS_OBJECT": "Physics Object",
-    [MODAL_TYPES.PHYSICS_PARAMETERS]: "Physics Parameters",
-    "PHYSICS_PARAMETERS": "Physics Parameters",
-    [MODAL_TYPES.PHYSICS_CONSTRAINT]: "Physics Constraint",
-    "PHYSICS_CONSTRAINT": "Physics Constraint",
-    "physics-constraint": "Physics Constraint",
-    [MODAL_TYPES.MUSIC_CREATE]: "Create Music",
-    "music-create": "Create Music",
-    [MODAL_TYPES.MUSIC_VIEW]: "View Music",
-    "music-view": "View Music",
-    [MODAL_TYPES.MUSIC_EDIT]: "Edit Music",
-    "music-edit": "Edit Music",
-    [MODAL_TYPES.MUSIC_DELETE]: "Delete Music",
-    "music-delete": "Delete Music",
-    [MODAL_TYPES.MUSIC_GENERATE]: "Generate Music",
-    "audio-generate": "Generate Audio",
-    [MODAL_TYPES.MUSIC_DETAILS]: "Music Details",
-    "audio-details": "Audio Details",
-    [MODAL_TYPES.TEST_MODAL]: "Test Modal",
-    "TEST_MODAL": "Test Modal",
+    [MODAL_TYPES.ALERT]: 'Alert',
+    [MODAL_TYPES.CONFIRMATION]: 'Confirmation',
+    [MODAL_TYPES.FORM]: 'Form',
+    [MODAL_TYPES.LOGIN]: 'Login',
+    [MODAL_TYPES.SIGNUP]: 'Sign Up',
+    [MODAL_TYPES.UNIVERSE_CREATE]: 'Create Universe',
+    'universe-create': 'Create Universe',
+    [MODAL_TYPES.SCENE_FORM]: 'Scene',
+    SCENE_FORM: 'Scene',
+    [MODAL_TYPES.CHARACTER_FORM]: 'Character',
+    CHARACTER_FORM: 'Character',
+    [MODAL_TYPES.PHYSICS_OBJECT]: 'Physics Object',
+    PHYSICS_OBJECT: 'Physics Object',
+    [MODAL_TYPES.PHYSICS_PARAMETERS]: 'Physics Parameters',
+    PHYSICS_PARAMETERS: 'Physics Parameters',
+    [MODAL_TYPES.PHYSICS_CONSTRAINT]: 'Physics Constraint',
+    PHYSICS_CONSTRAINT: 'Physics Constraint',
+    'physics-constraint': 'Physics Constraint',
+    [MODAL_TYPES.MUSIC_CREATE]: 'Create Music',
+    'music-create': 'Create Music',
+    [MODAL_TYPES.MUSIC_VIEW]: 'View Music',
+    'music-view': 'View Music',
+    [MODAL_TYPES.MUSIC_EDIT]: 'Edit Music',
+    'music-edit': 'Edit Music',
+    [MODAL_TYPES.MUSIC_DELETE]: 'Delete Music',
+    'music-delete': 'Delete Music',
+    [MODAL_TYPES.MUSIC_GENERATE]: 'Generate Music',
+    'audio-generate': 'Generate Audio',
+    [MODAL_TYPES.MUSIC_DETAILS]: 'Music Details',
+    'audio-details': 'Audio Details',
+    [MODAL_TYPES.TEST_MODAL]: 'Test Modal',
+    TEST_MODAL: 'Test Modal',
   };
 
   return displayNames[type] || type;
@@ -367,9 +371,119 @@ export const registerModalTypes = async (type, props) => {
   }
 };
 
+// Component synchronous lookup function
+export const getModalComponentSync = (type) => {
+  if (!type) {
+    console.error('Modal type is required');
+    return null;
+  }
+
+  // Create a combined list of valid types
+  const validTypes = [
+    ...Object.values(MODAL_CONFIG.TYPES),
+    MODAL_TYPES.LOGIN,
+    MODAL_TYPES.SIGNUP,
+    MODAL_TYPES.UNIVERSE_CREATE,
+    'SCENE_FORM',
+    'CHARACTER_FORM',
+    'audio-generate',
+    'audio-details',
+    'music-create',
+    'music-view',
+    'music-edit',
+    'music-delete',
+    'PHYSICS_OBJECT',
+    'PHYSICS_PARAMETERS',
+    'PHYSICS_CONSTRAINT',
+    'TEST_MODAL',
+  ];
+
+  if (!validTypes.includes(type)) {
+    console.error(`Invalid modal type: ${type}`);
+    return null;
+  }
+
+  try {
+    let component;
+    let hasBuiltInModal = builtInModalTypes.includes(type);
+
+    // Use synchronous component references whenever possible
+    switch (type) {
+      case 'ALERT':
+      case MODAL_TYPES.ALERT:
+        component = AlertModal;
+        break;
+      case 'CONFIRMATION':
+      case MODAL_TYPES.CONFIRMATION:
+        component = ConfirmationModal;
+        break;
+      case 'FORM':
+      case MODAL_TYPES.FORM:
+        component = FormModal;
+        break;
+      case 'LOGIN':
+      case MODAL_TYPES.LOGIN:
+        component = LoginModal;
+        hasBuiltInModal = true;
+        break;
+      case 'SIGNUP':
+      case MODAL_TYPES.SIGNUP:
+        component = SignupModal;
+        hasBuiltInModal = true;
+        break;
+      case 'universe-create':
+      case MODAL_TYPES.UNIVERSE_CREATE:
+        component = UniverseModal;
+        hasBuiltInModal = true;
+        break;
+      case 'TEST_MODAL':
+        component = TestModal;
+        break;
+      case 'SCENE_FORM':
+        component = SceneModal;
+        break;
+      case 'PHYSICS_PARAMETERS':
+      case MODAL_TYPES.PHYSICS_PARAMETERS:
+        component = PhysicsParametersModal;
+        hasBuiltInModal = true;
+        break;
+      case 'PHYSICS_CONSTRAINT':
+      case 'physics-constraint':
+        component = PhysicsConstraintModal;
+        hasBuiltInModal = true;
+        break;
+      // For dynamically loaded components, we'll return null and defer to
+      // the async version, which will display a loading indicator
+      case 'CHARACTER_FORM':
+      case 'PHYSICS_OBJECT':
+      case 'audio-generate':
+      case 'audio-details':
+      case 'music-create':
+      case 'music-view':
+      case 'music-edit':
+      case 'music-delete':
+        return null;
+      default:
+        console.error(`No modal component found for type: ${type}`);
+        return null;
+    }
+
+    // Set a flag on the component to indicate if it has a built-in modal
+    if (component) {
+      component.__hasBuiltInModal = hasBuiltInModal;
+    }
+
+    return component;
+  } catch (error) {
+    console.error(`Error loading modal component: ${error}`);
+    return null;
+  }
+};
+
 // Create an object with all the functions to export
 const modalRegistryExports = {
   getModalComponent,
+  getModalComponentSync,
   isValidModalType,
   getDefaultModalProps,
   registerModalComponent,

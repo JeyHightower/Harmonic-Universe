@@ -1,7 +1,6 @@
-import { useCallback, useState } from "react";
-import { useContext } from 'react';
-import { ModalContext, useModal } from '../contexts/ModalContext';
-import { MODAL_TYPES } from "../constants/modalTypes";
+import { useCallback, useState } from 'react';
+import { MODAL_TYPES } from '../constants/modalTypes';
+import useModal from './useModal';
 
 /**
  * Custom hook for managing modal state and interactions
@@ -10,12 +9,7 @@ import { MODAL_TYPES } from "../constants/modalTypes";
  * @returns {Object} Modal management methods and state
  */
 const useModalManager = (modalType, options = {}) => {
-  const {
-    onSuccess,
-    onError,
-    preserveQueryParams = false,
-    additionalParams = {},
-  } = options;
+  const { onSuccess, onError, additionalParams = {} } = options;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -63,7 +57,7 @@ const useModalManager = (modalType, options = {}) => {
         closeModal();
         return result;
       } catch (err) {
-        setError(err.message || "An error occurred");
+        setError(err.message || 'An error occurred');
         if (onError) {
           onError(err);
         }

@@ -1,119 +1,42 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { useDispatch, useSelector } from "react-redux";
+import { useCallback, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
-  openModal as openModalAction,
   closeModal,
   closeModalComplete,
+  openModal as openModalAction,
   updateModalProps,
-} from "../store/slices/modalSlice";
-import { MODAL_CONFIG } from "../utils/config";
-import { isValidModalType } from "../utils/modalRegistry";
+} from '../store/slices/modalSlice';
+import { MODAL_CONFIG } from '../utils/config';
+import { isValidModalType } from '../utils/modalRegistry';
 
 // Define window globals to fix ESLint errors
 const { setTimeout, clearTimeout } = window;
 
 /**
- * Custom hook for managing modal state
- * 
- * @param {Object} options - Configuration options
- * @param {boolean} options.defaultOpen - Whether the modal is open by default
- * @param {number} options.closeDelay - Delay in ms before closing the modal (for animations)
- * @param {Function} options.onOpen - Callback when modal opens
- * @param {Function} options.onClose - Callback when modal closes
- * @returns {Object} Modal state and handlers
- */
-const useModal = (options = {}) => {
-  const {
-    defaultOpen = false,
-    closeDelay = 300,
-    onOpen,
-    onClose,
-  } = options;
-
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [isClosing, setIsClosing] = useState(false);
-  const timerRef = useRef(null);
-
-  // Clear the timer on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, []);
-
-  const openModal = useCallback(() => {
-    // Clear any existing close timer
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-
-    setIsClosing(false);
-    setIsOpen(true);
-
-    if (onOpen && typeof onOpen === 'function') {
-      onOpen();
-    }
-  }, [onOpen]);
-
-  const closeModal = useCallback(() => {
-    setIsClosing(true);
-
-    // Use setTimeout to avoid ESLint no-undef error
-    timerRef.current = setTimeout(() => {
-      setIsOpen(false);
-      setIsClosing(false);
-      
-      if (onClose && typeof onClose === 'function') {
-        onClose();
-      }
-    }, closeDelay);
-  }, [closeDelay, onClose]);
-
-  const toggleModal = useCallback(() => {
-    if (isOpen) {
-      closeModal();
-    } else {
-      openModal();
-    }
-  }, [isOpen, closeModal, openModal]);
-
-  return {
-    isOpen,
-    isClosing,
-    openModal,
-    closeModal,
-    toggleModal,
-  };
-};
-
-/**
- * Hook for managing modals
+ * Primary hook for managing modals using Redux
  * @returns {Object} Modal management functions and state
  */
-export const useModalRedux = () => {
+const useModal = () => {
   const dispatch = useDispatch();
   const modalState = useSelector((state) => state.modal);
   const closeTimeoutRef = useRef(null);
 
   const open = useCallback(
-    async (type, props = {}) => {
+    (type, props = {}) => {
       if (!isValidModalType(type)) {
         console.error(`Invalid modal type: ${type}`);
         return;
       }
 
       if (modalState.isTransitioning) {
-        console.warn("Modal transition in progress, ignoring open request");
+        console.warn('Modal transition in progress, ignoring open request');
         return;
       }
 
       try {
         dispatch(openModalAction({ type, props }));
       } catch (error) {
-        console.error("Error opening modal:", error);
+        console.error('Error opening modal:', error);
       }
     },
     [dispatch, modalState.isTransitioning]
@@ -158,8 +81,7 @@ export const useModalRedux = () => {
  * @returns {Object} Modal management functions and state
  */
 export const useModalType = (type) => {
-  const { open, close, updateProps, isOpen, props, isTransitioning } =
-    useModalRedux();
+  const { open, close, updateProps, isOpen, props, isTransitioning } = useModal();
 
   const openWithType = useCallback(
     (modalProps = {}) => {
@@ -176,6 +98,11 @@ export const useModalType = (type) => {
     props,
     isTransitioning,
   };
+};
+
+// For backward compatibility
+export const useModalRedux = () => {
+  return useModal();
 };
 
 export default useModal;
