@@ -100,6 +100,10 @@ RUN apt-get update && apt-get install -y \
 # Install pnpm
 RUN npm install -g pnpm
 
+# Copy the backend requirements and install dependencies
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 # Copy the entrypoint script
 COPY backend/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
