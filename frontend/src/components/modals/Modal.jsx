@@ -90,6 +90,11 @@ const Modal = forwardRef(
       }
     };
 
+    // Prevent click events from bubbling to parent elements
+    const handleContentClick = (e) => {
+      e.stopPropagation();
+    };
+
     if (!isOpen && !isClosing) {
       return null;
     }
@@ -125,6 +130,7 @@ const Modal = forwardRef(
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
+            onClick={handleContentClick}
           >
             <div className="modal-content-wrapper">
               <div className="modal-header">
