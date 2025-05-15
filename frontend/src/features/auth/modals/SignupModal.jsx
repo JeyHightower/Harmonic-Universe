@@ -1,4 +1,3 @@
-import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Form, Input, message } from 'antd';
 import PropTypes from 'prop-types';
 import { useEffect, useId, useState } from 'react';
@@ -16,19 +15,6 @@ const SignupModal = ({ onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const instanceId = useId();
-
-  // Force close function to ensure proper cleanup
-  const forceClose = () => {
-    // Reset modal state
-    document.body.classList.remove('modal-open');
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.body.style.overflow = '';
-
-    // Call the provided onClose
-    onClose();
-  };
 
   const handleSubmit = async (values) => {
     try {
@@ -67,7 +53,7 @@ const SignupModal = ({ onClose }) => {
 
         // Use setTimeout to ensure the success message is shown before closing
         setTimeout(() => {
-          forceClose();
+          onClose();
 
           // Dispatch a custom event to encourage components to refresh
           window.dispatchEvent(new CustomEvent('storage'));
@@ -105,107 +91,88 @@ const SignupModal = ({ onClose }) => {
     form.resetFields();
   }, [form]);
 
-  // Add effect to handle cleanup when component unmounts
-  useEffect(() => {
-    return () => {
-      // Ensure body scroll is restored on unmount
-      document.body.classList.remove('modal-open');
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
-    };
-  }, []);
-
-  // Prevent propagation of click events to stop modal from closing when clicked
-  const handleContentClick = (e) => {
-    e.stopPropagation();
-  };
-
   return (
-    <Dialog open={true} onClose={forceClose} maxWidth="sm" fullWidth onClick={handleContentClick}>
-      <DialogTitle>Sign Up</DialogTitle>
-      <DialogContent onClick={handleContentClick}>
-        <Form form={form} onFinish={handleSubmit} layout="vertical" className="auth-form">
-          <Form.Item
-            label="Username"
-            name="username"
-            rules={[
-              { required: true, message: 'Please input your username!' },
-              { min: 3, message: 'Username must be at least 3 characters!' },
-            ]}
-          >
-            <Input
-              id={`signup-username-${instanceId}`}
-              placeholder="Choose a username"
-              disabled={loading}
-            />
-          </Form.Item>
+    <div className="signup-modal-content">
+      <Form form={form} onFinish={handleSubmit} layout="vertical" className="auth-form">
+        <Form.Item
+          label="Username"
+          name="username"
+          rules={[
+            { required: true, message: 'Please input your username!' },
+            { min: 3, message: 'Username must be at least 3 characters!' },
+          ]}
+        >
+          <Input
+            id={`signup-username-${instanceId}`}
+            placeholder="Choose a username"
+            disabled={loading}
+          />
+        </Form.Item>
 
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: 'Please input your email!' },
-              { type: 'email', message: 'Please enter a valid email!' },
-            ]}
-          >
-            <Input
-              id={`signup-email-${instanceId}`}
-              placeholder="Enter your email"
-              disabled={loading}
-              autoComplete="email"
-            />
-          </Form.Item>
+        <Form.Item
+          label="Email"
+          name="email"
+          rules={[
+            { required: true, message: 'Please input your email!' },
+            { type: 'email', message: 'Please enter a valid email!' },
+          ]}
+        >
+          <Input
+            id={`signup-email-${instanceId}`}
+            placeholder="Enter your email"
+            disabled={loading}
+            autoComplete="email"
+          />
+        </Form.Item>
 
-          <Form.Item
-            label="Password"
-            name="password"
-            rules={[
-              { required: true, message: 'Please input your password!' },
-              { min: 8, message: 'Password must be at least 8 characters!' },
-              {
-                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                message:
-                  'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
+        <Form.Item
+          label="Password"
+          name="password"
+          rules={[
+            { required: true, message: 'Please input your password!' },
+            { min: 8, message: 'Password must be at least 8 characters!' },
+            {
+              pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+              message:
+                'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
+            },
+          ]}
+        >
+          <Input.Password
+            id={`signup-password-${instanceId}`}
+            placeholder="Choose a password"
+            disabled={loading}
+            autoComplete="new-password"
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Confirm Password"
+          name="confirmPassword"
+          dependencies={['password']}
+          rules={[
+            { required: true, message: 'Please confirm your password!' },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue('password') === value) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(new Error('Passwords do not match!'));
               },
-            ]}
-          >
-            <Input.Password
-              id={`signup-password-${instanceId}`}
-              placeholder="Choose a password"
-              disabled={loading}
-              autoComplete="new-password"
-            />
-          </Form.Item>
+            }),
+          ]}
+        >
+          <Input.Password
+            id={`signup-confirm-password-${instanceId}`}
+            placeholder="Confirm your password"
+            disabled={loading}
+            autoComplete="new-password"
+          />
+        </Form.Item>
+      </Form>
 
-          <Form.Item
-            label="Confirm Password"
-            name="confirmPassword"
-            dependencies={['password']}
-            rules={[
-              { required: true, message: 'Please confirm your password!' },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue('password') === value) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error('Passwords do not match!'));
-                },
-              }),
-            ]}
-          >
-            <Input.Password
-              id={`signup-confirm-password-${instanceId}`}
-              placeholder="Confirm your password"
-              disabled={loading}
-              autoComplete="new-password"
-            />
-          </Form.Item>
-        </Form>
-      </DialogContent>
-      <DialogActions onClick={handleContentClick}>
-        <Button onClick={forceClose} disabled={loading} variant="secondary">
+      <div className="modal-actions">
+        <Button onClick={onClose} disabled={loading} variant="secondary">
           Cancel
         </Button>
         <Button
@@ -217,8 +184,8 @@ const SignupModal = ({ onClose }) => {
         >
           Sign Up
         </Button>
-      </DialogActions>
-    </Dialog>
+      </div>
+    </div>
   );
 };
 

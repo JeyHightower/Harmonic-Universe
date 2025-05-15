@@ -14,6 +14,7 @@ const ConfirmationModal = lazy(() => import('./ConfirmationModal'));
 const FormModal = lazy(() => import('./FormModal'));
 const TestModal = lazy(() => import('./TestModal'));
 const LoginModal = lazy(() => import('../../features/auth/modals/LoginModal'));
+const SignupModal = lazy(() => import('../../features/auth/modals/SignupModal'));
 
 // Map of modal types to components
 const MODAL_COMPONENTS = {
@@ -22,6 +23,7 @@ const MODAL_COMPONENTS = {
   FORM: FormModal,
   TEST_MODAL: TestModal,
   LOGIN: LoginModal,
+  SIGNUP: SignupModal,
 };
 
 /**
