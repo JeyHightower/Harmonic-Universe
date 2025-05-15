@@ -1,3 +1,186 @@
+/* SUPER EMERGENCY MODAL FIX - HIGHEST PRIORITY */
+/* These fixes must be applied at the absolute top level */
+
+/* Basic document and body fixes */
+body {
+  pointer-events: auto !important;
+}
+
+/* Fix root modal containers */
+#root,
+#portal-root,
+.ant-modal-root,
+.ant-modal-wrap,
+.ant-modal-mask,
+.ant-modal,
+.modal-overlay,
+[role='dialog'] {
+  pointer-events: auto !important;
+  touch-action: auto !important;
+}
+
+/* Fix for ant-design structure */
+/* The wrap is the container for the entire modal */
+.ant-modal-wrap {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  overflow: auto !important;
+  outline: 0 !important;
+  pointer-events: auto !important;
+  z-index: 1000 !important;
+}
+
+/* The mask is the backdrop overlay */
+.ant-modal-mask {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  z-index: 1000 !important;
+  pointer-events: auto !important;
+}
+
+/* The modal itself */
+.ant-modal {
+  position: relative !important;
+  top: 100px !important;
+  margin: 0 auto !important;
+  padding-bottom: 24px !important;
+  pointer-events: auto !important;
+  z-index: 1001 !important;
+}
+
+/* The actual content container */
+.ant-modal-content {
+  position: relative !important;
+  background-color: #fff !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  pointer-events: auto !important;
+  z-index: 1001 !important;
+}
+
+/* Modal header */
+.ant-modal-header {
+  padding: 16px 24px !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  pointer-events: auto !important;
+  z-index: 1001 !important;
+}
+
+/* Modal body */
+.ant-modal-body {
+  padding: 24px !important;
+  pointer-events: auto !important;
+  z-index: 1001 !important;
+}
+
+/* Modal footer */
+.ant-modal-footer {
+  padding: 10px 16px !important;
+  border-top: 1px solid #f0f0f0 !important;
+  text-align: right !important;
+  pointer-events: auto !important;
+  z-index: 1001 !important;
+}
+
+/* Form Elements - HIGHEST PRIORITY */
+.ant-modal-body input,
+.ant-modal-body textarea,
+.ant-modal-body select,
+.ant-modal-body button,
+.ant-modal-content input,
+.ant-modal-content textarea,
+.ant-modal-content select,
+.ant-modal-content button,
+input,
+textarea,
+select,
+button {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 9999999 !important;
+  cursor: auto !important;
+}
+
+/* CRITICAL INPUT INTERACTION FIX - THIS MUST BE AT THE VERY TOP */
+/* This is an aggressive fix for inputs not being clickable in modals */
+
+/* Fix all ant design modal components */
+.ant-modal-wrap {
+  pointer-events: auto !important;
+}
+
+.ant-modal-mask {
+  pointer-events: auto !important;
+}
+
+.ant-modal {
+  pointer-events: auto !important;
+}
+
+/* Fix all input fields with extreme specificity and !important */
+.ant-modal-content input,
+.ant-modal-body input,
+.modal-content input,
+.modal-body input,
+input[type='text'],
+input[type='password'],
+input[type='email'],
+input[type='number'],
+input[type='search'],
+input[type='tel'],
+textarea,
+select,
+.ant-input,
+.ant-select,
+.ant-select-selector,
+.ant-checkbox-wrapper,
+.ant-radio-wrapper {
+  pointer-events: auto !important;
+  z-index: 999999 !important;
+  position: relative !important;
+  touch-action: auto !important;
+  user-select: auto !important;
+  -webkit-user-select: auto !important;
+  -moz-user-select: auto !important;
+  cursor: text !important;
+}
+
+/* Apply pointer events to the entire label for inputs (especially checkboxes and radios) */
+label,
+.ant-checkbox-wrapper,
+.ant-radio-wrapper {
+  pointer-events: auto !important;
+  z-index: 999999 !important;
+  position: relative !important;
+  cursor: pointer !important;
+}
+
+/* Special fixes for common UI components */
+.ant-select-dropdown,
+.ant-cascader-dropdown,
+.ant-dropdown,
+.ant-picker-dropdown {
+  pointer-events: auto !important;
+  z-index: 1100 !important;
+}
+
+/* Make sure buttons are also fully interactive */
+button,
+.ant-btn,
+[role='button'] {
+  pointer-events: auto !important;
+  z-index: 999999 !important;
+  position: relative !important;
+  cursor: pointer !important;
+}
+
 /* CRITICAL MODAL INPUT FIX - This must be at the very top of the file */
 /* These styles will override everything else to ensure inputs are clickable */
 

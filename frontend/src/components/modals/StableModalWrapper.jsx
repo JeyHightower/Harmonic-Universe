@@ -18,12 +18,13 @@ const StableModalWrapper = ({
   children,
 }) => {
   const [isVisible, setIsVisible] = useState(open);
+  const modalRef = useRef(null);
+  const instanceId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);
 
-  // Initialize with debugging
+  // Debug logging
   console.log('StableModalWrapper - COMPONENT INITIALIZED', {
-    componentName: 'StableModalWrapper',
+    id: instanceId.current,
     open,
-    isVisible,
   });
 
   // Create the portal root when the component mounts
@@ -31,19 +32,11 @@ const StableModalWrapper = ({
     ensurePortalRoot();
   }, []);
 
-  // Debug effect for open prop changes
+  // Sync the open prop to internal state
   useEffect(() => {
-    console.log('StableModalWrapper - open prop changed:', {
-      previousIsVisible: isVisible,
-      newOpen: open,
-    });
+    console.log('StableModalWrapper - open prop changed:', open);
     setIsVisible(open);
   }, [open]);
-
-  // Debug effect for visibility state changes
-  useEffect(() => {
-    console.log('StableModalWrapper - isVisible state changed:', { isVisible });
-  }, [isVisible]);
 
   const handleClose = () => {
     console.log('StableModalWrapper - handleClose called');
@@ -56,117 +49,59 @@ const StableModalWrapper = ({
   // Create a stable reference to the content
   const stableContent = useMemo(() => children, [children]);
 
-  // Combine default and passed styles
-  const combinedStyles = useMemo(
+  // Combined styles to ensure the modal is visible and interactive
+  const combinedStyle = useMemo(
     () => ({
+      display: 'block',
+      visibility: 'visible',
+      pointerEvents: 'auto',
       ...style,
     }),
     [style]
   );
 
-  const modalRef = useRef(null);
-  const instanceId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);
-
-  // Add debug logging
-  useEffect(() => {
-    console.log('StableModalWrapper - Rendering with props:', { title, open, width });
-
-    // Log when the modal should be visible
-    if (open) {
-      console.log('StableModalWrapper - Modal is set to be visible');
-
-      // Ensure consistent body scroll locking
-      if (document.body.style.overflow !== 'hidden') {
-        document.body.style.overflow = 'hidden';
-      }
-    } else {
-      console.log('StableModalWrapper - Modal is set to be hidden');
-      // Only restore body overflow if this is the last modal
-      if (!document.querySelector('.ant-modal:not(.stable-modal-' + instanceId.current + ')')) {
-        document.body.style.overflow = '';
-      }
-    }
-
-    return () => {
-      // Cleanup on unmount
-      if (
-        open &&
-        !document.querySelector('.ant-modal:not(.stable-modal-' + instanceId.current + ')')
-      ) {
-        document.body.style.overflow = '';
-      }
-    };
-  }, [title, open, width]);
-
-  // Safe close handler that won't trigger for content clicks
+  // Handle clicks on the modal itself
   const handleModalClick = (e) => {
-    // Always stop propagation to prevent underlying modals from receiving events
-    e.stopPropagation();
+    e.stopPropagation(); // Stop propagation to prevent unwanted effects
+    console.log('Modal content clicked');
   };
 
-  // Handle clicks on the modal content wrapper
+  // Handle clicks on the content wrapper
   const handleContentWrapperClick = (e) => {
-    // Prevent events from reaching backdrop
-    e.stopPropagation();
+    e.stopPropagation(); // Stop propagation to prevent backdrop from closing
+    console.log('Content wrapper clicked');
   };
 
-  // Enhanced interaction handler for form fields
+  // Enhanced form field interaction handler
   const handleFormFieldInteraction = (e) => {
-    // Don't let the event bubble to prevent unwanted closing
+    // This is critical - stop propagation to prevent modal closing
     e.stopPropagation();
 
     const target = e.target;
     const tagName = target.tagName.toLowerCase();
 
-    // Handle input fields, textareas and selects
-    if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') {
-      // Prevent default action that might interfere with focus
-      e.preventDefault();
+    console.log(`Modal input interaction: ${tagName}`);
 
-      // Force styles to make element interactive
-      target.style.pointerEvents = 'auto';
-      target.style.zIndex = '100000';
-      target.style.position = 'relative';
-
-      // Focus the input element immediately
-      target.focus();
-
-      console.log(`Modal input interaction: ${tagName} ${target.name || target.id}`);
-    }
-
-    // Handle buttons specifically
+    // Make sure the element is fully interactive
     if (
-      tagName === 'button' ||
-      target.getAttribute('role') === 'button' ||
-      target.classList.contains('btn') ||
-      target.classList.contains('button')
+      tagName === 'input' ||
+      tagName === 'textarea' ||
+      tagName === 'select' ||
+      tagName === 'button'
     ) {
-      target.style.pointerEvents = 'auto';
-      target.style.cursor = 'pointer';
-      target.style.zIndex = '100000';
+      // Apply extreme styling to ensure the element is interactive
+      target.style.setProperty('pointer-events', 'auto', 'important');
+      target.style.setProperty('z-index', '999999', 'important');
+      target.style.setProperty('position', 'relative', 'important');
+
+      // For inputs/textareas/selects, focus them
+      if (tagName !== 'button') {
+        setTimeout(() => {
+          target.focus();
+          console.log('Focused input');
+        }, 10);
+      }
     }
-  };
-
-  // Log right before rendering
-  console.log('StableModalWrapper - About to render Modal with open=', open, 'title=', title);
-  console.log('StableModalWrapper - Close handlers enabled: keyboard=true, maskClosable=true');
-
-  // Create standard footer with cancel button
-  const createFooter = () => {
-    return (
-      <div className="modal-footer">
-        <button className="modal-cancel-btn" onClick={handleClose} aria-label="Cancel">
-          Cancel
-        </button>
-      </div>
-    );
-  };
-
-  const combinedStyle = {
-    display: 'block',
-    visibility: 'visible',
-    pointerEvents: 'auto', // Ensure modal gets pointer events
-    ...style,
   };
 
   return (
@@ -174,9 +109,9 @@ const StableModalWrapper = ({
       title={title}
       open={isVisible}
       onCancel={handleClose}
-      footer={footer === null ? null : footer || createFooter()}
+      footer={footer === null ? null : footer}
       width={width}
-      destroyOnHidden={true}
+      destroyOnClose={true}
       maskClosable={true}
       className={`stable-modal stable-modal-${instanceId.current}`}
       style={combinedStyle}
@@ -187,12 +122,33 @@ const StableModalWrapper = ({
       keyboard={true}
       centered={true}
       closeIcon={true}
+      // Critical props for interaction
+      mask={true}
+      maskStyle={{
+        pointerEvents: 'auto',
+        zIndex: 1050,
+      }}
+      wrapProps={{
+        onClick: (e) => {
+          // Only close if directly clicking the backdrop
+          const isDirectWrapClick = e.target.classList.contains('ant-modal-wrap');
+          if (isDirectWrapClick) {
+            handleClose();
+          }
+          e.stopPropagation();
+        },
+        style: { pointerEvents: 'auto', zIndex: 1050 },
+      }}
       getContainer={() => document.getElementById('portal-root') || document.body}
       modalRender={(node) => (
         <div
           onClick={handleContentWrapperClick}
           className="modal-content-wrapper"
-          style={{ pointerEvents: 'auto' }}
+          style={{
+            pointerEvents: 'auto',
+            zIndex: 1051,
+            position: 'relative',
+          }}
         >
           {node}
         </div>

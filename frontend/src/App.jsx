@@ -1,10 +1,7 @@
 import React, { lazy, Suspense, useEffect, useState, useTransition } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
-import { useRoutes } from 'react-router-dom';
 import { PersistGate } from 'redux-persist/integration/react';
 import { ErrorBoundary, NetworkErrorHandler } from './components';
-import { ModalProvider } from './contexts/ModalContext';
-import routes from './routes/index.jsx';
 import { authService } from './services/auth.service.mjs';
 import store, { persistor } from './store';
 import { checkAuthState, logout } from './store/slices/authSlice';
@@ -106,8 +103,9 @@ const AppContent = () => {
   const [isPending, startTransition] = useTransition();
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Use React Router's useRoutes hook to render routes directly
-  const element = useRoutes(routes);
+  // Import AppRoutes instead of trying to use routes directly
+  // No need for useRoutes as AppRoutes already includes the Routes component
+  const AppRoutes = React.lazy(() => import('./routes/index'));
 
   // Apply interaction fixes after React has fully initialized
   useEffect(() => {
@@ -194,8 +192,12 @@ const AppContent = () => {
     );
   }
 
-  // Render the routes using useRoutes - without the test buttons
-  return <>{element}</>;
+  // Render the routes using AppRoutes component
+  return (
+    <Suspense fallback={<LoadingPage />}>
+      <AppRoutes />
+    </Suspense>
+  );
 };
 
 // Inside App.jsx, add a debugging panel component for CORS issues
@@ -275,7 +277,7 @@ const DebugPanel = () => {
           color: 'white',
           cursor: 'pointer',
           display: 'block',
-          width: '100%'
+          width: '100%',
         }}
       >
         Fix Interactions
@@ -285,18 +287,14 @@ const DebugPanel = () => {
 };
 
 // The main App component
-function App() {
+const App = () => {
   return (
     <ErrorBoundary>
       <NetworkErrorHandler>
         <Provider store={store}>
           <PersistGate loading={<LoadingPage />} persistor={persistor}>
             <ErrorBoundary>
-              <ModalProvider>
-                <ErrorBoundary>
-                  <AppContent />
-                </ErrorBoundary>
-              </ModalProvider>
+              <AppContent />
             </ErrorBoundary>
           </PersistGate>
         </Provider>
@@ -306,6 +304,6 @@ function App() {
       <DebugPanel />
     </ErrorBoundary>
   );
-}
+};
 
 export default App;

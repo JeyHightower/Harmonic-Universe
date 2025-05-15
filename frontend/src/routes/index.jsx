@@ -1,8 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import ProtectedRoute from '../components/routing/ProtectedRoute';
-import { ModalProvider } from '../contexts/ModalContext';
 import { SceneModal } from '../features/scene/index.mjs';
 import { ROUTES } from '../utils/routes';
 
@@ -108,11 +107,7 @@ const NotesRouteHandler = () => {
 };
 
 // Create a wrapped Layout component with ModalProvider
-const WrappedLayout = () => (
-  <ModalProvider>
-    <Layout />
-  </ModalProvider>
-);
+const WrappedLayout = () => <Layout />;
 
 // Login redirect component
 const LoginRedirect = () => {
@@ -292,4 +287,18 @@ const routes = [
   },
 ];
 
-export default routes;
+const AppRoutes = () => {
+  return (
+    <Routes>
+      {routes.map((route, index) => (
+        <Route key={index} path={route.path} element={route.element}>
+          {route.children?.map((child, childIndex) => (
+            <Route key={`${index}-${childIndex}`} index={child.index} element={child.element} />
+          ))}
+        </Route>
+      ))}
+    </Routes>
+  );
+};
+
+export default AppRoutes;

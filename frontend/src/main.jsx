@@ -7,7 +7,6 @@ import store, { persistor } from './store/store.mjs';
 // CSS imports in correct order to prevent conflicts
 import 'antd/dist/reset.css'; // Import Ant Design styles first
 import { StrictMode } from 'react';
-import { ModalProvider } from './contexts/ModalContext';
 import './styles/App.css'; // Last: App-specific styles
 import './styles/buttons.css'; // Sixth: Button styles
 import './styles/common.css'; // Fifth: Common component styles
@@ -24,6 +23,139 @@ import {
   fixModalFormElements,
   forceModalInteractivity,
 } from './utils/portalUtils';
+
+// Execute immediate emergency fix for modal interactions
+(function immediateModalFix() {
+  // We need this to run as early as possible
+  const fixModals = () => {
+    console.log('[EMERGENCY FIX] Applying direct DOM fixes to modals');
+
+    // Fix for all Ant Design modal components
+    const fixAntModal = () => {
+      // For all the ant-modal elements
+      document
+        .querySelectorAll(
+          '.ant-modal-root, .ant-modal-wrap, .ant-modal-mask, .ant-modal, .ant-modal-content'
+        )
+        .forEach((el) => {
+          if (el) {
+            el.style.setProperty('pointer-events', 'auto', 'important');
+            el.style.setProperty('z-index', '1000', 'important');
+          }
+        });
+
+      // For all inputs inside modals
+      document
+        .querySelectorAll(
+          '.ant-modal-content input, .ant-modal-body input, .ant-modal-content textarea, .ant-modal-body textarea, .ant-modal-content select, .ant-modal-body select, .ant-modal-content button, .ant-modal-body button'
+        )
+        .forEach((el) => {
+          if (el) {
+            el.style.setProperty('pointer-events', 'auto', 'important');
+            el.style.setProperty('z-index', '9999999', 'important');
+            el.style.setProperty('position', 'relative', 'important');
+
+            // Add direct event handlers for inputs
+            if (!el._inputClickHandler) {
+              const handler = (e) => {
+                e.stopPropagation();
+                console.log(`[EMERGENCY] ${el.tagName} clicked`);
+              };
+              el._inputClickHandler = handler;
+              el.addEventListener('click', handler, true);
+              el.addEventListener('mousedown', handler, true);
+              el.addEventListener('touchstart', handler, true);
+            }
+          }
+        });
+
+      // Fix the document click handler to not interfere with modals
+      if (!document._modalFixHandler) {
+        const handler = (e) => {
+          const isInModal = e.target.closest('.ant-modal-content, .ant-modal-body');
+          const isFormElement =
+            e.target.tagName === 'INPUT' ||
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.tagName === 'SELECT' ||
+            e.target.tagName === 'BUTTON';
+
+          if (isInModal && isFormElement) {
+            console.log('[EMERGENCY] Document captured form input click');
+            e.stopPropagation();
+          }
+        };
+        document._modalFixHandler = handler;
+        document.addEventListener('click', handler, true);
+      }
+    };
+
+    // Apply fixes immediately and on an interval
+    fixAntModal();
+
+    // Set an interval to keep applying fixes in case elements are dynamically added
+    if (!window._modalFixInterval) {
+      window._modalFixInterval = setInterval(fixAntModal, 500);
+      // Clear interval after 10 seconds to prevent performance issues
+      setTimeout(() => {
+        if (window._modalFixInterval) {
+          clearInterval(window._modalFixInterval);
+          window._modalFixInterval = null;
+        }
+      }, 10000);
+    }
+
+    // Create a MutationObserver to watch for dynamically added modals
+    if (!window._modalObserver) {
+      window._modalObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes && mutation.addedNodes.length) {
+            // Check if any modals were added
+            let hasModal = false;
+
+            for (const node of mutation.addedNodes) {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                if (
+                  node.classList?.contains('ant-modal') ||
+                  node.querySelector?.('.ant-modal, .ant-modal-content')
+                ) {
+                  hasModal = true;
+                  break;
+                }
+              }
+            }
+
+            if (hasModal) {
+              console.log('[EMERGENCY] Modal elements detected in DOM, applying fixes');
+              setTimeout(fixAntModal, 10);
+            }
+          }
+        });
+      });
+
+      // Start observing
+      window._modalObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    }
+  };
+
+  // Apply the fix immediately
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fixModals);
+  } else {
+    fixModals();
+  }
+
+  // Also apply on load and after a short delay
+  window.addEventListener('load', () => {
+    fixModals();
+    setTimeout(fixModals, 500);
+  });
+
+  // Make the fix accessible from the console for debugging
+  window.__emergencyModalFix = fixModals;
+})();
 
 // Setup global error handling
 window.onerror = function (msg, url, lineNo, columnNo, error) {
@@ -104,6 +236,9 @@ const getRootElement = () => {
   return rootElement;
 };
 
+// Add debugging info
+console.log('MODAL SYSTEM: Using Redux-based modal management exclusively');
+
 // Render application
 const renderApp = () => {
   // Ensure portal root exists before rendering
@@ -126,9 +261,7 @@ const renderApp = () => {
                 v7_relativeSplatPath: true,
               }}
             >
-              <ModalProvider>
-                <App />
-              </ModalProvider>
+              <App />
             </Router>
           </PersistGate>
         </Provider>
@@ -316,40 +449,112 @@ window.addEventListener('load', () => {
   setTimeout(() => {
     try {
       applyModalFixes();
+
+      // Apply extreme emergency fix for form inputs
+      forceModalInteractivity();
+
+      // Set up a MutationObserver to watch for dynamically added modals
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length) {
+            // Check if any of the added nodes are or contain modals
+            let hasModals = false;
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                if (
+                  node.classList?.contains('ant-modal') ||
+                  node.classList?.contains('modal-content') ||
+                  node.querySelector?.('.ant-modal, .modal-content, .ant-modal-content')
+                ) {
+                  hasModals = true;
+                }
+              }
+            });
+
+            if (hasModals) {
+              console.log('Modals detected in DOM changes, applying fixes');
+              setTimeout(() => {
+                forceModalInteractivity();
+              }, 50);
+            }
+          }
+        });
+      });
+
+      // Start observing the entire document
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+
+      // Add window.__fixModals to make it available in the console
+      window.__fixModals = () => {
+        console.log('Manual modal fix triggered');
+        forceModalInteractivity();
+      };
     } catch (error) {
       console.error('Error applying modal fixes on load:', error);
     }
   }, 100);
 });
 
-// Add a special handler for inputs inside modals to ensure they're always focusable
+// Super aggressive direct document event interceptor for modal inputs
 document.addEventListener(
-  'mousedown',
+  'pointerdown',
   (e) => {
-    const isInput =
+    // Check if this is happening inside a modal
+    const isInModal = e.target.closest(
+      '.modal-content, .ant-modal-content, .modal-body, .ant-modal-body, .MuiDialogContent-root, .ant-modal-wrap'
+    );
+
+    // Check if this is a form input element
+    const isFormInput =
       e.target.tagName === 'INPUT' ||
       e.target.tagName === 'TEXTAREA' ||
       e.target.tagName === 'SELECT';
 
-    const isInsideModal = e.target.closest(
-      '.modal-content, .modal-overlay, [role="dialog"], .ant-modal, .ant-modal-content'
-    );
+    if (isInModal && isFormInput) {
+      console.log('Emergency handler: Form input pointerdown in modal', e.target);
 
-    if (isInput && isInsideModal) {
-      console.log('Input clicked inside modal:', e.target);
+      // Prevent all event bubbling and default actions
       e.stopPropagation();
       e.stopImmediatePropagation();
+      e.preventDefault();
 
-      // Force focus
-      setTimeout(() => {
-        if (document.activeElement !== e.target) {
-          e.target.focus();
-        }
-      }, 0);
+      // Apply maximum-strength interactive styling directly
+      e.target.style.setProperty('pointer-events', 'auto', 'important');
+      e.target.style.setProperty('z-index', '999999', 'important');
+      e.target.style.setProperty('position', 'relative', 'important');
+      e.target.style.setProperty('touch-action', 'auto', 'important');
+      e.target.style.setProperty('user-select', 'auto', 'important');
+      e.target.style.setProperty('-webkit-user-select', 'auto', 'important');
+      e.target.style.setProperty(
+        'cursor',
+        e.target.tagName === 'SELECT' ? 'pointer' : 'text',
+        'important'
+      );
+
+      // Force focus on the input immediately
+      e.target.focus();
+
+      // Add attributes that might help
+      e.target.setAttribute('tabindex', '0');
+      e.target.setAttribute('data-interactive', 'true');
+
+      console.log('Applied emergency interactive styling to:', e.target);
+
+      // Force the input's parent containers to be interactive too
+      let parent = e.target.parentElement;
+      let depth = 0;
+      while (parent && depth < 5) {
+        parent.style.setProperty('pointer-events', 'auto', 'important');
+        depth++;
+        parent = parent.parentElement;
+      }
     }
   },
   true
-);
+); // Use capture phase to intercept earliest
 
 // Add a more aggressive handler for form inputs in modals
 document.addEventListener(
@@ -393,4 +598,4 @@ document.addEventListener(
 );
 
 // Export necessary functions for component usage
-export { applyInteractionFixes, applyModalFixes, fixModalFormElements };
+export { applyInteractionFixes, applyModalFixes, fixModalFormElements, forceModalInteractivity };

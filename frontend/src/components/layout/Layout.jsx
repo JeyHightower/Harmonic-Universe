@@ -1,25 +1,22 @@
 import React, {
-  useEffect,
-  useState,
-  useCallback,
   lazy,
   Suspense,
+  useCallback,
+  useEffect,
   useRef,
+  useState,
   useTransition,
 } from 'react';
 import { Outlet } from 'react-router-dom';
-import { useModal } from '../../contexts/ModalContext';
 import { MODAL_TYPES } from '../../constants/modalTypes';
-import { useSelector } from 'react-redux';
+import { useModalRedux } from '../../hooks/useModal';
 
 // Import Navigation component
 import Navigation from '../navigation/Navigation';
 
 // Import safe versions of hooks
-import { safeUseLocation, safeUseNavigate } from '../../utils/ensure-router-provider';
 import { safeUseDispatch } from '../../utils/ensure-redux-provider';
-import { safeImport } from '../../utils/dynamic-import';
-import { ensureRouterProvider } from '../../utils/ensure-router-provider';
+import { safeUseLocation, safeUseNavigate } from '../../utils/ensure-router-provider';
 
 // Import authSlice directly instead of using dynamic import
 import { demoLogin } from '../../store/slices/authSlice';
@@ -108,7 +105,7 @@ function Layout() {
   const location = safeUseLocation();
   const navigate = safeUseNavigate();
   const dispatch = safeUseDispatch();
-  const { openModal } = useModal();
+  const { openModal } = useModalRedux();
 
   // Local state for component needs
   const [initialized, setInitialized] = useState(false);

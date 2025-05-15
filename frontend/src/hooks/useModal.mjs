@@ -13,10 +13,11 @@ import { isValidModalType } from '../utils/modalRegistry';
 const { setTimeout, clearTimeout } = window;
 
 /**
- * Primary hook for managing modals using Redux
+ * PRIMARY REDUX-BASED MODAL HOOK
+ * This is the recommended hook to use for all modal operations
  * @returns {Object} Modal management functions and state
  */
-const useModal = () => {
+const useModalRedux = () => {
   const dispatch = useDispatch();
   const modalState = useSelector((state) => state.modal);
   const closeTimeoutRef = useRef(null);
@@ -76,33 +77,28 @@ const useModal = () => {
 };
 
 /**
- * Hook for using a specific modal type
- * @param {string} type - The modal type
- * @returns {Object} Modal management functions and state
+ * @deprecated Use useModalRedux instead - this alias is for backward compatibility only
  */
-export const useModalType = (type) => {
-  const { open, close, updateProps, isOpen, props, isTransitioning } = useModal();
+const useModal = () => {
+  console.warn('DEPRECATED: useModal() is deprecated. Use useModalRedux() instead.');
+  return useModalRedux();
+};
 
-  const openWithType = useCallback(
-    (modalProps = {}) => {
-      open(type, modalProps);
-    },
-    [open, type]
-  );
+export const useModalType = (type) => {
+  const { open, close, updateProps, isOpen, props, isTransitioning } = useModalRedux();
+
+  const openModal = useCallback((modalProps = {}) => open(type, modalProps), [open, type]);
 
   return {
-    open: openWithType,
+    open: openModal,
     close,
     updateProps,
-    isOpen: isOpen && props.type === type,
+    isOpen: isOpen && props?.type === type,
     props,
     isTransitioning,
   };
 };
 
-// For backward compatibility
-export const useModalRedux = () => {
-  return useModal();
-};
-
-export default useModal;
+// Make useModalRedux the default export for new code
+export { useModal, useModalRedux };
+export default useModalRedux;

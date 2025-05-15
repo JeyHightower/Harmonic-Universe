@@ -678,6 +678,22 @@ export const forceModalInteractivity = () => {
 
   console.log(`Found ${modalOverlays.length} modal overlays`);
 
+  // Direct fix for Ant Design specific modal components
+  const antModalWrap = document.querySelectorAll('.ant-modal-wrap');
+  antModalWrap.forEach((wrap) => {
+    wrap.style.setProperty('pointer-events', 'auto', 'important');
+  });
+
+  const antModalMask = document.querySelectorAll('.ant-modal-mask');
+  antModalMask.forEach((mask) => {
+    mask.style.setProperty('pointer-events', 'auto', 'important');
+  });
+
+  const antModals = document.querySelectorAll('.ant-modal');
+  antModals.forEach((modal) => {
+    modal.style.setProperty('pointer-events', 'auto', 'important');
+  });
+
   modalOverlays.forEach((overlay) => {
     // Make the overlay itself have pointer events
     overlay.style.pointerEvents = 'auto';
@@ -692,9 +708,9 @@ export const forceModalInteractivity = () => {
     }
 
     // Apply extreme z-index to ensure it's on top
-    modalContent.style.zIndex = '99999';
-    modalContent.style.position = 'relative';
-    modalContent.style.pointerEvents = 'auto !important';
+    modalContent.style.setProperty('z-index', '99999', 'important');
+    modalContent.style.setProperty('position', 'relative', 'important');
+    modalContent.style.setProperty('pointer-events', 'auto', 'important');
 
     // Find all form elements and make them extremely interactive
     const formElements = modalContent.querySelectorAll(
@@ -704,24 +720,36 @@ export const forceModalInteractivity = () => {
 
     formElements.forEach((el) => {
       // Force element to be interactive with inline styles (highest priority)
-      el.setAttribute(
-        'style',
-        `
+      const inlineStyles = `
         pointer-events: auto !important;
         touch-action: auto !important;
         cursor: ${el.tagName.toLowerCase() === 'button' || el.type === 'button' || el.type === 'submit' ? 'pointer' : 'text'} !important;
         position: relative !important;
-        z-index: 100000 !important;
+        z-index: 999999 !important;
         user-select: auto !important;
         -webkit-user-select: auto !important;
-      `
-      );
+      `;
+      el.setAttribute('style', inlineStyles);
+
+      // Add attributes to maximize clickability
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('data-interactive', 'true');
 
       // Add super aggressive direct event handlers
       const directMousedownHandler = (e) => {
         e.stopPropagation();
-        e.preventDefault();
-        console.log(`Mousedown on ${el.tagName} element`);
+        e.stopImmediatePropagation();
+
+        // When user interacts with input, add aggressive inline styles
+        const appliedStyles = `
+          pointer-events: auto !important;
+          z-index: 999999 !important;
+          position: relative !important;
+          outline: none !important;
+        `;
+        e.target.setAttribute('style', appliedStyles);
+
+        console.log(`Mousedown on ${el.tagName} element`, el);
 
         if (
           el.tagName.toLowerCase() === 'input' ||
@@ -731,14 +759,17 @@ export const forceModalInteractivity = () => {
           // Force focus after a brief delay
           setTimeout(() => {
             el.focus();
-            console.log(`Focused ${el.tagName} element`);
+            console.log(`Forced focus on ${el.tagName} element`, el);
           }, 0);
         }
+
+        return true;
       };
 
       const directClickHandler = (e) => {
         e.stopPropagation();
-        console.log(`Click on ${el.tagName} element`);
+        e.stopImmediatePropagation();
+        console.log(`Click on ${el.tagName} element`, el);
 
         if (
           el.tagName.toLowerCase() === 'input' ||
@@ -747,21 +778,55 @@ export const forceModalInteractivity = () => {
         ) {
           // Force focus
           el.focus();
-          console.log(`Focused ${el.tagName} element on click`);
+          console.log(`Focused ${el.tagName} element on click`, el);
         }
+
+        return true;
       };
 
       // Remove any existing handlers to avoid duplicates
       el.removeEventListener('mousedown', el._directMousedownHandler);
       el.removeEventListener('click', el._directClickHandler);
+      el.removeEventListener('focus', el._directFocusHandler);
+      el.removeEventListener('touchstart', el._directTouchStartHandler);
+
+      // Add focus handler
+      const focusHandler = (e) => {
+        console.log(`Focus event on ${el.tagName} element`, el);
+      };
+
+      // Add touch handler
+      const touchStartHandler = (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        console.log(`Touch on ${el.tagName} element`, el);
+
+        if (
+          el.tagName.toLowerCase() === 'input' ||
+          el.tagName.toLowerCase() === 'textarea' ||
+          el.tagName.toLowerCase() === 'select'
+        ) {
+          setTimeout(() => {
+            el.focus();
+            console.log(`Focused ${el.tagName} element on touch`, el);
+          }, 0);
+        }
+
+        return true;
+      };
 
       // Store handlers for future cleanup
       el._directMousedownHandler = directMousedownHandler;
       el._directClickHandler = directClickHandler;
+      el._directFocusHandler = focusHandler;
+      el._directTouchStartHandler = touchStartHandler;
 
       // Add event listeners with capture phase to ensure they run first
       el.addEventListener('mousedown', directMousedownHandler, true);
       el.addEventListener('click', directClickHandler, true);
+      el.addEventListener('focus', focusHandler, true);
+      el.addEventListener('touchstart', touchStartHandler, true);
 
       // For input fields, add additional focus handlers
       if (
@@ -771,10 +836,12 @@ export const forceModalInteractivity = () => {
       ) {
         // Make parent elements interactive too
         let parent = el.parentElement;
-        for (let i = 0; i < 5 && parent; i++) {
+        let depth = 0;
+        while (parent && depth < 5) {
           // Limit to 5 levels up
-          parent.style.pointerEvents = 'auto';
-          parent.style.touchAction = 'auto';
+          parent.style.setProperty('pointer-events', 'auto', 'important');
+          parent.style.setProperty('touch-action', 'auto', 'important');
+          depth++;
           parent = parent.parentElement;
         }
       }
@@ -782,6 +849,10 @@ export const forceModalInteractivity = () => {
       // Add helper class for debugging
       el.classList.add('force-interactive');
     });
+
+    // Remove any existing click shields
+    const existingShields = modalContent.querySelectorAll('.modal-click-shield');
+    existingShields.forEach((shield) => shield.remove());
 
     // Add a transparent div over the entire modal to capture any clicks that might
     // interfere with our form elements - but make sure it doesn't block interaction
@@ -799,8 +870,24 @@ export const forceModalInteractivity = () => {
     // Add very aggressive click handlers to the modal content
     const modalContentClickHandler = (e) => {
       // Only stop propagation if we're not clicking on a form element
-      if (!e.target.closest('input, textarea, select, button, [role="button"], a')) {
+      const isFormElement = e.target.closest('input, textarea, select, button, [role="button"], a');
+      if (!isFormElement) {
         e.stopPropagation();
+        e.stopImmediatePropagation();
+      } else {
+        console.log('Click on form element', e.target);
+
+        // For form elements, ensure they get focus
+        if (
+          e.target.tagName === 'INPUT' ||
+          e.target.tagName === 'TEXTAREA' ||
+          e.target.tagName === 'SELECT'
+        ) {
+          setTimeout(() => e.target.focus(), 0);
+        }
+
+        // Let the event continue
+        return true;
       }
     };
 
@@ -815,9 +902,27 @@ export const forceModalInteractivity = () => {
     const isInModal = e.target.closest(
       '.modal-overlay, [role="dialog"], .ant-modal-root, .MuiDialog-root, .universe-form-modal'
     );
+
     if (isInModal) {
       // Let the click through for modal content
       console.log('Click detected in modal:', e.target.tagName);
+
+      const isFormElement =
+        e.target.tagName === 'INPUT' ||
+        e.target.tagName === 'TEXTAREA' ||
+        e.target.tagName === 'SELECT' ||
+        e.target.tagName === 'BUTTON';
+
+      if (isFormElement) {
+        // Ensure the element gets focus
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        setTimeout(() => {
+          e.target.focus();
+          console.log('Forced focus from body handler', e.target);
+        }, 0);
+      }
     }
   };
 
@@ -825,6 +930,42 @@ export const forceModalInteractivity = () => {
   document.body.removeEventListener('click', document.body._modalClickHandler);
   document.body._modalClickHandler = bodyClickHandler;
   document.body.addEventListener('click', bodyClickHandler, true);
+
+  // Add mousedown event listener to the document which prioritizes form inputs
+  const documentMousedownHandler = (e) => {
+    const isInModal = e.target.closest(
+      '.modal-overlay, [role="dialog"], .ant-modal-root, .MuiDialog-root, .universe-form-modal'
+    );
+
+    if (isInModal) {
+      const isFormInput =
+        e.target.tagName === 'INPUT' ||
+        e.target.tagName === 'TEXTAREA' ||
+        e.target.tagName === 'SELECT';
+
+      if (isFormInput) {
+        console.log('Document capturing form input interaction', e.target);
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        // Force element to be interactive
+        e.target.style.setProperty('pointer-events', 'auto', 'important');
+        e.target.style.setProperty('z-index', '999999', 'important');
+
+        // Focus after a short delay
+        setTimeout(() => {
+          e.target.focus();
+          console.log('Focused from document handler', e.target);
+        }, 0);
+
+        return false; // Prevent default and stop propagation
+      }
+    }
+  };
+
+  document.removeEventListener('mousedown', document._documentMousedownHandler);
+  document._documentMousedownHandler = documentMousedownHandler;
+  document.addEventListener('mousedown', documentMousedownHandler, true);
 
   // Add a global emergency fixer to the window for manual triggering
   window.__FORCE_MODAL_FIX = forceModalInteractivity;

@@ -3,60 +3,72 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import logoSvg from '../../assets/logo.svg';
 import { MODAL_TYPES } from '../../constants/modalTypes';
-import { useModal } from '../../contexts/ModalContext';
+import { useModalRedux } from '../../hooks/useModal';
 import { authService } from '../../services/auth.service.mjs';
 import { logout } from '../../store/thunks/authThunks';
 import './Navigation.css';
 
 function Navigation() {
-  const { open } = useModal();
+  const { open } = useModalRedux();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const handleLoginClick = useCallback((e) => {
-    e.preventDefault();
-    console.log('[Navigation] Opening login modal');
-    open(MODAL_TYPES.LOGIN, {
-      title: 'Login',
-      size: 'medium',
-      position: 'center',
-      animation: 'fade',
-      closeOnEscape: true,
-      closeOnBackdrop: true,
-      preventBodyScroll: true,
-      showCloseButton: true,
-    });
-  }, [open]);
+  const handleLoginClick = useCallback(
+    (e) => {
+      e.preventDefault();
+      console.log('[Navigation] Opening login modal');
+      open(MODAL_TYPES.LOGIN, {
+        title: 'Login',
+        size: 'medium',
+        position: 'center',
+        animation: 'fade',
+        closeOnEscape: true,
+        closeOnBackdrop: true,
+        preventBodyScroll: true,
+        showCloseButton: true,
+      });
+    },
+    [open]
+  );
 
-  const handleSignupClick = useCallback((e) => {
-    e.preventDefault();
-    console.log('[Navigation] Opening signup modal');
-    open(MODAL_TYPES.SIGNUP, {
-      title: 'Sign Up',
-      size: 'medium',
-      position: 'center',
-      animation: 'fade',
-      closeOnEscape: true,
-      closeOnBackdrop: true,
-      preventBodyScroll: true,
-      showCloseButton: true,
-    });
-  }, [open]);
+  const handleSignupClick = useCallback(
+    (e) => {
+      e.preventDefault();
+      console.log('[Navigation] Opening signup modal');
+      open(MODAL_TYPES.SIGNUP, {
+        title: 'Sign Up',
+        size: 'medium',
+        position: 'center',
+        animation: 'fade',
+        closeOnEscape: true,
+        closeOnBackdrop: true,
+        preventBodyScroll: true,
+        showCloseButton: true,
+      });
+    },
+    [open]
+  );
 
-  const handleLogout = useCallback((e) => {
-    e.preventDefault();
-    console.log('[Navigation] Logging out user');
-    authService.clearAuthData();
-    dispatch(logout());
-    navigate('/');
-  }, [dispatch, navigate]);
+  const handleLogout = useCallback(
+    (e) => {
+      e.preventDefault();
+      console.log('[Navigation] Logging out user');
+      authService.clearAuthData();
+      dispatch(logout());
+      navigate('/');
+    },
+    [dispatch, navigate]
+  );
 
-  const handleDashboardClick = useCallback((e) => {
-    e.preventDefault();
-    console.log('[Navigation] Navigating to dashboard');
-    navigate('/dashboard');
-  }, [navigate]);
+  const handleDashboardClick = useCallback(
+    (e) => {
+      e.preventDefault();
+      console.log('[Navigation] Navigating to dashboard');
+      navigate('/dashboard');
+    },
+    [navigate]
+  );
 
   const handleLogoClick = (e) => {
     e.preventDefault(); // Prevent default link behavior
