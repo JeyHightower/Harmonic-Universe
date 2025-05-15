@@ -27,6 +27,7 @@ const Modal = forwardRef(
     const [isClosing, setIsClosing] = useState(false);
     const modalRef = useRef(null);
     const previousFocus = useRef(null);
+    const scrollPositionRef = useRef(0);
     const combinedRef = ref || modalRef;
 
     // Save previous focus and handle body scroll
@@ -35,8 +36,14 @@ const Modal = forwardRef(
         // Save previous focus for restoring later
         previousFocus.current = document.activeElement;
 
+        // Save current scroll position
+        scrollPositionRef.current = window.scrollY;
+
         // Lock body scroll
         document.body.classList.add('modal-open');
+        document.body.style.top = `-${scrollPositionRef.current}px`;
+        document.body.style.width = '100%';
+        document.body.style.position = 'fixed';
 
         // Show modal with animation delay
         requestAnimationFrame(() => {
@@ -48,6 +55,12 @@ const Modal = forwardRef(
         // Cleanup if component unmounts
         if (isOpen) {
           document.body.classList.remove('modal-open');
+          document.body.style.top = '';
+          document.body.style.position = '';
+          document.body.style.width = '';
+
+          // Restore scroll position
+          window.scrollTo(0, scrollPositionRef.current);
 
           // Restore focus
           if (previousFocus.current) {
