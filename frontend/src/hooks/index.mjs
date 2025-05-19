@@ -3,5 +3,6 @@
  * This file provides a single point of import for custom hooks
  */
 
+export { default as useAudio } from './useAudio';
 export { default as useSceneModal } from './useSceneModal';
-// Export additional hooks as they are created 
+// Export additional hooks as they are created

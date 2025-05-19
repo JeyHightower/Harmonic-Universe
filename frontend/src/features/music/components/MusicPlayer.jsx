@@ -1,26 +1,25 @@
 import { Download, Pause, PlayArrow, Sync, Visibility } from '@mui/icons-material';
 import {
-  Alert,
-  Box,
-  Card,
-  CircularProgress,
-  Divider,
-  FormControl,
-  FormControlLabel,
-  Grid,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
-  Slider,
-  Stack,
-  Switch,
-  Typography,
+    Alert,
+    Box,
+    Card,
+    CircularProgress,
+    Divider,
+    FormControl,
+    FormControlLabel,
+    Grid,
+    IconButton,
+    InputLabel,
+    MenuItem,
+    Select,
+    Slider,
+    Stack,
+    Switch,
+    Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
-import * as Tone from 'tone';
-import { initializeAudioContext, isAudioContextReady } from '../../../utils/audioManager';
+import { useAudio } from '../../../hooks';
 import { createVisualizer, drawVisualization } from '../../../utils/visualizerUtils';
 import '../styles/Music.css';
 
@@ -59,6 +58,9 @@ const MusicPlayer = ({
   const [showMusicInfoModal, setShowMusicInfoModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
 
+  // Use our audio hook for safe Tone.js access
+  const { initAudio, isReady, contextState } = useAudio();
+
   // References for Tone.js instruments and sequences
   const synthRef = useRef(null);
   const sequenceRef = useRef(null);
@@ -66,45 +68,29 @@ const MusicPlayer = ({
   const canvasRef = useRef(null);
   const analyzerRef = useRef(null);
   const animationRef = useRef(null);
+  const toneRef = useRef(null);
 
   // Initialize Tone.js on user interaction
   const initializeTone = async () => {
     try {
-      // Use our audio manager to initialize AudioContext safely
-      const success = await initializeAudioContext();
+      // Use Redux-based audio initialization
+      const success = await initAudio();
 
       if (!success) {
-        // If regular initialization fails, try an alternative approach
-        try {
-          console.log('Trying alternative AudioContext initialization method');
-
-          // Create a silent buffer and play it to unblock audio
-          const audioElement = document.createElement('audio');
-          audioElement.src =
-            'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-          audioElement.volume = 0.01;
-          await audioElement
-            .play()
-            .catch(() => console.log('Silent audio playback failed - this is OK'));
-
-          // Attempt to directly resume the context if it exists
-          if (Tone.context) {
-            await Tone.context.resume().catch((e) => console.warn('Resume attempt failed:', e));
-          } else {
-            // Try to create a new context
-            await Tone.start().catch((e) => console.warn('Tone.start failed:', e));
-          }
-        } catch (alternativeError) {
-          console.warn('Alternative initialization also failed:', alternativeError);
-          throw new Error('Failed to initialize audio context');
-        }
+        throw new Error('Failed to initialize audio context');
       }
 
-      // Make sure context is running - try to resume if needed
+      // Dynamically import Tone.js only after AudioContext is initialized
+      if (!toneRef.current) {
+        const Tone = await import('tone');
+        toneRef.current = Tone;
+      }
+
+      const Tone = toneRef.current;
+
+      // Make sure context is running
       if (Tone.context && Tone.context.state !== 'running') {
         try {
-          // Add a small delay to ensure we're still within user gesture timeframe
-          await new Promise((resolve) => setTimeout(resolve, 100));
           await Tone.context.resume();
         } catch (resumeError) {
           console.warn('Could not resume AudioContext:', resumeError);
@@ -146,8 +132,8 @@ const MusicPlayer = ({
 
   // Effect to update synth volume when it changes
   useEffect(() => {
-    if (synthRef.current) {
-      synthRef.current.volume.value = Tone.gainToDb(volume / 100);
+    if (synthRef.current && toneRef.current) {
+      synthRef.current.volume.value = toneRef.current.gainToDb(volume / 100);
     }
   }, [volume]);
 
@@ -195,6 +181,13 @@ const MusicPlayer = ({
     }
 
     try {
+      // Make sure Tone is loaded
+      if (!toneRef.current) {
+        return false;
+      }
+
+      const Tone = toneRef.current;
+
       // Dispose of existing sequence if any
       if (sequenceRef.current) {
         sequenceRef.current.dispose();
@@ -202,7 +195,8 @@ const MusicPlayer = ({
 
       // Initialize Tone.js if not already
       if (!audioContextInitialized) {
-        initializeTone();
+        const success = initializeTone();
+        if (!success) return false;
       }
 
       // Calculate timings
@@ -248,17 +242,8 @@ const MusicPlayer = ({
   const togglePlayback = async (forcedState = null) => {
     try {
       // Initialize Tone.js on user interaction
-      if (!audioContextInitialized || !isAudioContextReady()) {
+      if (!audioContextInitialized || !isReady) {
         // Force user interaction to initialize AudioContext
-        if (Tone.context && Tone.context.state !== 'running') {
-          try {
-            console.log('Attempting to resume AudioContext from toggle playback');
-            await Tone.context.resume();
-          } catch (resumeError) {
-            console.warn('Could not resume AudioContext:', resumeError);
-          }
-        }
-
         const initialized = await initializeTone();
         if (!initialized) {
           setError('Could not initialize audio. Please click again or refresh the page.');
@@ -266,6 +251,14 @@ const MusicPlayer = ({
         }
       }
 
+      // Make sure we have the Tone reference
+      if (!toneRef.current) {
+        console.error('Tone.js not loaded');
+        setError('Audio system not ready. Please try again.');
+        return;
+      }
+
+      const Tone = toneRef.current;
       const targetState = forcedState !== null ? forcedState : !isPlaying;
 
       try {
@@ -283,7 +276,7 @@ const MusicPlayer = ({
           }
 
           // Ensure AudioContext is running before starting sequence
-          if (Tone.context.state !== 'running') {
+          if (Tone.context && Tone.context.state !== 'running') {
             await Tone.context.resume();
           }
 
@@ -316,11 +309,16 @@ const MusicPlayer = ({
 
     try {
       // Initialize audio context if needed
-      if (!audioContextInitialized || !isAudioContextReady()) {
+      if (!audioContextInitialized || !isReady) {
         const initialized = await initializeTone();
         if (!initialized) {
           throw new Error('Failed to initialize audio context');
         }
+      }
+
+      // Make sure we have the Tone reference
+      if (!toneRef.current) {
+        throw new Error('Tone.js not loaded');
       }
 
       // Stop any current playback

@@ -7,6 +7,7 @@ import store, { persistor } from './store/store.mjs';
 // CSS imports in correct order to prevent conflicts
 import 'antd/dist/reset.css'; // Import Ant Design styles first
 import { startTransition, StrictMode } from 'react';
+import { AudioProvider } from './components';
 import { resetModalState } from './store/slices/newModalSlice';
 import './styles/App.css'; // Last: App-specific styles
 import './styles/buttons.css'; // Sixth: Button styles
@@ -17,14 +18,11 @@ import './styles/reset.css'; // First: Reset browser defaults
 import './styles/theme.css'; // Third: Define theme variables
 import './styles/variables.css'; // Second: Define CSS variables
 import { AUTH_CONFIG, ensurePortalRoot } from './utils';
-import { setupAudioContextInitialization } from './utils/audioManager';
 import {
-  applyModalFixes,
-  fixModalFormElements,
-  forceModalInteractivity,
+    applyModalFixes,
+    fixModalFormElements,
+    forceModalInteractivity,
 } from './utils/portalUtils';
-// Import Tone for AudioContext handling
-import * as Tone from 'tone';
 
 // Ensure modal system is properly initialized
 const initModalSystem = () => {
@@ -134,159 +132,69 @@ const getRootElement = () => {
 // Add debugging info
 console.log('MODAL SYSTEM: Using Redux-based modal management exclusively');
 
-// Configure React Router future flags
+// Configure React Router - IMPORTANT: Remove any unused future flags
+// Only keeping the absolutely necessary flags to minimize conflicts
 const router = createBrowserRouter(
   [
     {
       path: '*',
       element: <App />,
+      // Add v7_startTransition at the route level instead of the router level
+      // This ensures compatibility with React 18 and React Router v7
+      future: {
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }
     },
-  ],
-  {
-    future: {
-      v7_startTransition: true,
-      v7_relativeSplatPath: true,
-    },
-  }
+  ]
 );
 
-// Render application
+// Logs React Router configuration in development mode
+if (isDevelopment) {
+  console.log('React Router configuration:', router.routes[0].future);
+}
+
+// Render application with improved error handling
 const renderApp = () => {
   // Initialize modal system before rendering
   initModalSystem();
 
   const root = createRoot(getRootElement());
 
-  // Use startTransition for Router rendering
-  startTransition(() => {
-    root.render(
-      <StrictMode>
-        <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <RouterProvider router={router} />
-          </PersistGate>
-        </Provider>
-      </StrictMode>
-    );
-  });
+  try {
+    // Use startTransition for Router rendering to ensure v7_startTransition works
+    startTransition(() => {
+      root.render(
+        <StrictMode>
+          <Provider store={store}>
+            <PersistGate loading={null} persistor={persistor}>
+              <AudioProvider>
+                <RouterProvider router={router} />
+              </AudioProvider>
+            </PersistGate>
+          </Provider>
+        </StrictMode>
+      );
+    });
+  } catch (error) {
+    console.error('Error rendering app:', error);
+    // Render a fallback if React fails to mount
+    const rootElement = getRootElement();
+    rootElement.innerHTML = `
+      <div style="padding: 20px; text-align: center;">
+        <h1>Failed to render application</h1>
+        <p>Please try refreshing the page. If the problem persists, contact support.</p>
+        <code style="display: block; margin-top: 20px; background: #f5f5f5; padding: 10px; border-radius: 4px; text-align: left; overflow: auto;">
+          ${error.toString()}
+        </code>
+      </div>
+    `;
+  }
 };
 
 // Initialize the application
 const init = async () => {
   try {
-    // Prevent auto-play behavior that could trigger AudioContext errors
-    document.body.addEventListener(
-      'touchstart',
-      function onFirstTouch() {
-        // Only needed for the first touch
-        document.body.removeEventListener('touchstart', onFirstTouch);
-      },
-      { once: true }
-    );
-
-    // Setup audio context initialization on user interaction
-    setupAudioContextInitialization();
-
-    // Add event listeners to resume AudioContext on user interaction
-    const userInteractionEvents = ['click', 'touchstart', 'keydown', 'mousedown'];
-
-    const resumeAudioContext = (event) => {
-      // Only respond to trusted (actual user) events
-      if (!event.isTrusted) return;
-
-      if (typeof Tone !== 'undefined' && Tone.context) {
-        if (Tone.context.state !== 'running') {
-          console.log('Attempting to resume AudioContext after user interaction');
-
-          // Wait a moment before trying to resume
-          setTimeout(() => {
-            Tone.context
-              .resume()
-              .then(() => {
-                console.log('AudioContext resumed successfully');
-              })
-              .catch((err) => {
-                console.error('Failed to resume AudioContext:', err);
-              });
-          }, 300);
-        }
-      }
-    };
-
-    // Remove previous listeners if any
-    userInteractionEvents.forEach((event) => {
-      document.removeEventListener(event, resumeAudioContext);
-    });
-
-    // Add listeners
-    userInteractionEvents.forEach((event) => {
-      document.addEventListener(event, resumeAudioContext, { capture: true });
-    });
-
-    // Add a special handler for the first click anywhere
-    const firstInteractionHandler = (event) => {
-      if (!event.isTrusted) return;
-
-      // Try to start Tone.js after a small delay
-      if (typeof Tone !== 'undefined') {
-        console.log('First user interaction detected, starting Tone.js');
-
-        // Delay starting to ensure we're within a valid user gesture
-        setTimeout(() => {
-          try {
-            // Check if we need to unlock the AudioContext first
-            if (window.AudioContext || window.webkitAudioContext) {
-              const tempContext = new (window.AudioContext || window.webkitAudioContext)();
-              tempContext
-                .resume()
-                .then(() => {
-                  tempContext.close();
-                  startToneJS();
-                })
-                .catch(() => {
-                  tempContext.close();
-                  startToneJS();
-                });
-            } else {
-              startToneJS();
-            }
-          } catch (error) {
-            console.warn('Error preparing audio environment:', error);
-            startToneJS(); // Try anyway
-          }
-        }, 200);
-      }
-
-      // Remove the one-time handler after first interaction
-      userInteractionEvents.forEach((evt) => {
-        document.removeEventListener(evt, firstInteractionHandler, { capture: true });
-      });
-    };
-
-    // Helper function to start Tone.js
-    const startToneJS = () => {
-      Tone.start()
-        .then(() => {
-          console.log('Tone.js started successfully');
-        })
-        .catch((err) => {
-          console.warn('Error starting Tone.js:', err);
-          // Fall back to just resuming the context if starting fails
-          if (Tone.context) {
-            Tone.context
-              .resume()
-              .catch((resumeErr) =>
-                console.error('Failed to resume AudioContext as fallback:', resumeErr)
-              );
-          }
-        });
-    };
-
-    // Add first interaction handler
-    userInteractionEvents.forEach((event) => {
-      document.addEventListener(event, firstInteractionHandler, { once: true, capture: true });
-    });
-
     renderApp();
   } catch (error) {
     console.error('Failed to initialize app:', error);

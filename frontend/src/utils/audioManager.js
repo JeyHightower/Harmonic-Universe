@@ -3,7 +3,8 @@
  * This ensures AudioContext is only started after user interaction
  */
 
-import * as Tone from 'tone';
+// IMPORTANT: Do NOT import Tone directly to prevent auto-initialization
+// The Tone module will be passed in from main.jsx after being properly loaded
 
 // Track whether we've initialized Tone.js
 let isInitialized = false;
@@ -11,26 +12,34 @@ let pendingCallbacks = [];
 let initializationAttempts = 0;
 const MAX_ATTEMPTS = 3;
 
-// Setup visibility change listeners to handle page focus/visibility changes
-document.addEventListener('visibilitychange', () => {
-  if (
-    document.visibilityState === 'visible' &&
-    Tone.context &&
-    Tone.context.state === 'suspended'
-  ) {
-    console.log('Page became visible, attempting to resume AudioContext');
-    Tone.context.resume().catch((error) => {
-      console.warn('Failed to resume AudioContext on visibility change:', error);
-    });
-  }
-});
+// Add a flag to track whether initialization is in progress
+let isInitializing = false;
+
+// Add a flag to track if we're in a user gesture context
+let inUserGesture = false;
+
+// Create a special unlocked context flag
+let hasUnlockedAudioContext = false;
 
 /**
  * Initialize Tone.js AudioContext
  * This should only be called after user interaction
+ * @param {Object} Tone - The Tone.js module instance to use
  * @returns {Promise<boolean>} Whether initialization was successful
  */
-export const initializeAudioContext = async () => {
+export const initializeAudioContext = async (Tone) => {
+  // Make sure we have a valid Tone object
+  if (!Tone) {
+    console.error('No Tone module provided to initializeAudioContext');
+    return false;
+  }
+
+  // Prevent concurrent initializations
+  if (isInitializing) {
+    console.error('Error initializing audio context: Audio initialization already in progress');
+    return false;
+  }
+
   // Prevent excessive initialization attempts
   if (initializationAttempts >= MAX_ATTEMPTS) {
     console.warn(`AudioContext initialization failed after ${MAX_ATTEMPTS} attempts.`);
@@ -42,156 +51,236 @@ export const initializeAudioContext = async () => {
     return true;
   }
 
+  isInitializing = true;
   initializationAttempts++;
 
   try {
+    console.log('Starting AudioContext initialization...');
+
     // Check if context already exists and its state
     if (Tone.context && Tone.context.state === 'running') {
       isInitialized = true;
+      isInitializing = false;
       return true;
     }
 
-    // Resume context if it exists but is suspended
-    if (Tone.context && Tone.context.state === 'suspended') {
+    // Detect browser type for specialized handling
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    // Different approach for different browser families
+    if (isIOS || isSafari) {
+      console.log('Using iOS/Safari audio unlock sequence');
+
+      // For iOS/Safari we need to use a HTML audio element first
       try {
-        await Tone.context.resume();
-
-        // Verify that resuming worked
-        if (Tone.context.state === 'running') {
-          isInitialized = true;
-          console.log('AudioContext successfully resumed');
-
-          // Execute any pending callbacks
-          pendingCallbacks.forEach((callback) => callback());
-          pendingCallbacks = [];
-
-          return true;
-        } else {
-          console.warn('AudioContext resume did not transition to running state');
-        }
-      } catch (resumeError) {
-        console.error('Error resuming AudioContext:', resumeError);
+        await unlockAudioForMobile();
+        hasUnlockedAudioContext = true;
+      } catch (e) {
+        console.warn('Mobile audio unlock failed:', e);
       }
     }
 
-    // If we get here, we need to create a new context
-    console.log('Attempting to start Tone.js audio context');
-
-    // Try to create a temporary audio element and play it to unblock audio context
+    // Use a standard approach for all browsers
     try {
-      const audioElement = document.createElement('audio');
-      audioElement.src =
-        'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-      audioElement.volume = 0.01; // Very quiet
-      await audioElement.play();
-      // Let it play for a moment to ensure the AudioContext is unblocked
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      audioElement.pause();
-    } catch (silentAudioError) {
-      // Ignore errors here, this was just a best effort
-      console.warn('Could not play silent audio to unblock context:', silentAudioError);
+      console.log('Creating and playing silent sound to unlock audio...');
+      await createAndPlaySilentSound();
+      hasUnlockedAudioContext = true;
+    } catch (e) {
+      console.warn('Silent sound failed:', e);
     }
 
-    // Now actually start Tone.js
-    await Tone.start();
+    // Carefully create or resume Tone.js context
+    console.log('Now attempting to start Tone.js...');
 
-    // Double-check it's actually running
+    try {
+      // If we already have a context, try to resume it
+      if (Tone.context) {
+        if (Tone.context.state !== 'running') {
+          await Tone.context.resume();
+          console.log('Existing Tone.js context resumed');
+        }
+      } else {
+        // Explicitly create a new context with the right settings
+        console.log('Creating new Tone.js context');
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioContextClass();
+
+        // Resume the context immediately within the user gesture
+        await audioContext.resume();
+
+        // Assign this context to Tone.js
+        Tone.setContext(audioContext);
+        console.log('New AudioContext created and assigned to Tone.js');
+      }
+    } catch (e) {
+      console.warn('Error initializing Tone.js context directly:', e);
+
+      // Fall back to the standard Tone.start() method
+      try {
+        await Tone.start();
+        console.log('Tone.js started with fallback method');
+      } catch (toneError) {
+        console.error('Failed to start Tone.js with fallback method:', toneError);
+      }
+    }
+
+    // Verify if it worked
     if (Tone.context && Tone.context.state === 'running') {
       isInitialized = true;
+      isInitializing = false;
       console.log('Tone.js AudioContext successfully started');
 
+      // Setup visibility change listener
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' &&
+            Tone.context &&
+            Tone.context.state === 'suspended') {
+          console.log('Page became visible, attempting to resume AudioContext');
+          Tone.context.resume().catch((error) => {
+            console.warn('Failed to resume AudioContext on visibility change:', error);
+          });
+        }
+      });
+
       // Execute any pending callbacks
-      pendingCallbacks.forEach((callback) => callback());
-      pendingCallbacks = [];
+      while (pendingCallbacks.length > 0) {
+        try {
+          const callback = pendingCallbacks.shift();
+          callback(Tone);
+        } catch (e) {
+          console.error('Error executing audio callback:', e);
+        }
+      }
 
       return true;
     } else {
-      console.warn('Tone.start() did not result in a running context');
+      console.warn('AudioContext still not running after initialization attempts');
+      isInitializing = false;
       return false;
     }
   } catch (error) {
     console.error('Failed to initialize AudioContext:', error);
+    isInitializing = false;
     return false;
   }
 };
 
 /**
+ * Helper function to create and play a silent sound
+ * This helps with AudioContext initialization on most browsers
+ */
+const createAndPlaySilentSound = async () => {
+  // Create a temporary context
+  const tempContext = new (window.AudioContext || window.webkitAudioContext)();
+
+  // Create a silent buffer
+  const buffer = tempContext.createBuffer(1, 1, 22050);
+  const source = tempContext.createBufferSource();
+  source.buffer = buffer;
+  source.connect(tempContext.destination);
+
+  // Play the silent sound
+  source.start(0);
+
+  // Resume the context
+  await tempContext.resume();
+
+  // Close it after a short delay
+  setTimeout(() => {
+    if (tempContext && tempContext.state !== 'closed') {
+      tempContext.close().catch(e => console.warn('Error closing temp context:', e));
+    }
+  }, 100);
+
+  return true;
+};
+
+/**
+ * Special function to unlock audio on mobile devices
+ * Combines multiple approaches for maximum compatibility
+ */
+const unlockAudioForMobile = async () => {
+  // Method 1: Silent audio element
+  const audioEl = document.createElement('audio');
+  audioEl.src = 'data:audio/mp3;base64,/+MYxAAAAANIAAAAAExBTUUzLjk4LjIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  audioEl.loop = false;
+  audioEl.autoplay = false;
+  audioEl.muted = false;
+  audioEl.volume = 0.01;
+  document.body.appendChild(audioEl);
+
+  try {
+    await audioEl.play();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    audioEl.pause();
+  } finally {
+    document.body.removeChild(audioEl);
+  }
+
+  // Method 2: WebAudio oscillator (works well on iOS)
+  try {
+    const tempContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = tempContext.createOscillator();
+    const gainNode = tempContext.createGain();
+    gainNode.gain.value = 0.001; // Nearly silent
+    oscillator.connect(gainNode);
+    gainNode.connect(tempContext.destination);
+    oscillator.start(0);
+    oscillator.stop(0.001);
+
+    await tempContext.resume();
+
+    setTimeout(() => {
+      if (tempContext && tempContext.state !== 'closed') {
+        tempContext.close().catch(e => {});
+      }
+    }, 100);
+
+    return true;
+  } catch (e) {
+    console.warn('Oscillator method failed:', e);
+    return false;
+  }
+};
+
+/**
+ * Special function to unlock audio on iOS by playing a silent audio file
+ * @deprecated Use unlockAudioForMobile instead
+ */
+const unlockAudioForIOS = unlockAudioForMobile;
+
+/**
  * Check if AudioContext is initialized and running
+ * @param {Object} Tone - The Tone.js module instance to check
  * @returns {boolean} Whether AudioContext is initialized and running
  */
-export const isAudioContextReady = () => {
-  return isInitialized && Tone.context && Tone.context.state === 'running';
+export const isAudioContextReady = (Tone) => {
+  return isInitialized && Tone && Tone.context && Tone.context.state === 'running';
 };
 
 /**
  * Execute a function only after AudioContext is initialized
- * If not yet initialized, the function will be queued for later execution
- * @param {Function} callback Function to execute
+ * This function now accepts a Tone parameter to avoid global imports
+ * @param {Function} callback Function to execute - will receive Tone as a parameter
+ * @param {Object} Tone - The Tone.js module instance
  */
-export const withAudioContext = (callback) => {
-  if (isAudioContextReady()) {
-    callback();
+export const withAudioContext = (callback, Tone) => {
+  if (Tone && isAudioContextReady(Tone)) {
+    callback(Tone);
   } else {
     pendingCallbacks.push(callback);
   }
 };
 
 /**
- * Attach audio initialization to user interaction events
- * Call this during application startup
+ * Legacy function to maintain compatibility with existing code
+ * @deprecated Use the explicit Tone parameter versions instead
  */
 export const setupAudioContextInitialization = () => {
-  const userInteractionEvents = ['click', 'touchstart', 'keydown', 'mousedown'];
-
-  // Clear any existing handlers to avoid duplicates
-  const existingHandler = window.__audioManagerInitHandler;
-  if (existingHandler) {
-    userInteractionEvents.forEach((evt) => {
-      document.removeEventListener(evt, existingHandler);
-    });
-  }
-
-  const initHandler = async (event) => {
-    // Only initialize on trusted (actual user) events
-    if (event.isTrusted) {
-      // Skip if already initialized successfully
-      if (isAudioContextReady()) {
-        return;
-      }
-
-      const success = await initializeAudioContext();
-
-      // Remove event listeners after successful initialization
-      if (success) {
-        userInteractionEvents.forEach((evt) => {
-          document.removeEventListener(evt, initHandler, { capture: true });
-        });
-
-        // Store successful attempt time
-        localStorage.setItem('audio_context_initialized', Date.now().toString());
-      }
-    }
-  };
-
-  // Store the handler for potential cleanup
-  window.__audioManagerInitHandler = initHandler;
-
-  // Add event listeners for user interactions with capture phase
-  userInteractionEvents.forEach((event) => {
-    document.addEventListener(event, initHandler, { capture: true });
-  });
-
-  // Also respond to window focus events which may help resume suspended contexts
-  window.addEventListener('focus', async () => {
-    if (Tone.context && Tone.context.state === 'suspended') {
-      try {
-        await Tone.context.resume();
-        console.log('AudioContext resumed on window focus');
-      } catch (error) {
-        console.warn('Failed to resume AudioContext on window focus:', error);
-      }
-    }
-  });
+  console.warn('setupAudioContextInitialization is deprecated, using main.jsx initialization instead');
+  // This function is kept for backward compatibility but no longer used
+  // All initialization now happens in main.jsx with explicit Tone loading
 };
 
 // Default export with all functions

@@ -38,7 +38,7 @@ const NotesPage = lazy(() => import('../features/note/pages/NotesPage'));
 const CharacterDetail = lazy(() => import('../features/character/pages/CharacterDetail'));
 const NoteDetail = lazy(() => import('../features/note/pages/NoteDetail'));
 const SettingsPage = lazy(() => import('../features/settings/pages/SettingsPage'));
-const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard'));
+const Dashboard = lazy(() => import('../features/dashboard/pages/Dashboard.jsx'));
 const Home = lazy(() => import('../features/home/pages/Home'));
 const LoginPage = lazy(() => import('../features/auth/pages/LoginPage'));
 const UniverseDetail = lazy(() => import('../features/universe/pages/UniverseDetail'));
@@ -289,11 +289,11 @@ const routes = [
 
 const AppRoutes = () => {
   return (
-    <Routes>
+    <Routes future={{ v7_startTransition: true }}>
       {routes.map((route, index) => (
         <Route key={index} path={route.path} element={route.element}>
           {route.children?.map((child, childIndex) => (
-            <Route key={`${index}-${childIndex}`} index={child.index} element={child.element} />
+            <Route key={`${index}-${childIndex}`} path={child.path} index={child.index} element={child.element} />
           ))}
         </Route>
       ))}

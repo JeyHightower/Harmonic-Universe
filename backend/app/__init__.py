@@ -134,7 +134,7 @@ def setup_cors(app):
          resources=resources,
          supports_credentials=supports_credentials,
          methods=methods,
-         allow_headers=allow_headers,
+         allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token", "X-Request-Attempt"],
          expose_headers=expose_headers,
          max_age=max_age)
 
@@ -151,7 +151,7 @@ def setup_cors(app):
                 if 'Access-Control-Allow-Origin' in response.headers:
                     del response.headers['Access-Control-Allow-Origin']
                 response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+                response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Request-Attempt')
                 response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
                 # Ensure only one 'Access-Control-Allow-Credentials' header is set
                 if 'Access-Control-Allow-Credentials' in response.headers:

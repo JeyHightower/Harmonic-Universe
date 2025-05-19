@@ -1,17 +1,18 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { combineReducers } from 'redux';
 import {
-  FLUSH,
-  PAUSE,
-  PERSIST,
-  persistReducer,
-  persistStore,
-  PURGE,
-  REGISTER,
-  REHYDRATE,
+    FLUSH,
+    PAUSE,
+    PERSIST,
+    persistReducer,
+    persistStore,
+    PURGE,
+    REGISTER,
+    REHYDRATE,
 } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import modalMiddleware from './middleware/newModalMiddleware';
+import audioReducer from './slices/audioSlice.mjs';
 import authReducer from './slices/authSlice';
 import characterReducer from './slices/characterSlice';
 import modalReducer from './slices/newModalSlice';
@@ -87,13 +88,22 @@ const scenesPersistConfig = {
   writeFailHandler: handlePersistError,
 };
 
+// Audio state persistence configuration - only persist browser detection info
+const audioPersistConfig = {
+  key: 'audio',
+  storage: getStorage(),
+  whitelist: ['iOS', 'safari'], // Only persist browser detection
+  blacklist: ['initializing', 'initialized', 'error', 'contextState'],
+  writeFailHandler: handlePersistError,
+};
+
 // Root persist config
 const persistConfig = {
   key: 'root',
   version: 1,
   storage: getStorage(),
   whitelist: [], // Don't persist anything at root level
-  blacklist: ['modal'], // Never persist modal state
+  blacklist: ['modal', 'audio'], // Never persist modal state or audio state at root level
   writeFailHandler: handlePersistError,
 };
 
@@ -104,6 +114,7 @@ const rootReducer = combineReducers({
   characters: characterReducer,
   notes: noteReducer,
   modal: modalReducer, // No persisting for modal state
+  audio: persistReducer(audioPersistConfig, audioReducer), // Add audio reducer with minimal persistence
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
