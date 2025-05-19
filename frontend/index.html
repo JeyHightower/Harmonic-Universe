@@ -1,10 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <!-- Allow autoplay and audio functionality -->
+    <meta http-equiv="Feature-Policy" content="autoplay 'self'; speaker 'self'" />
+    <meta http-equiv="Permissions-Policy" content="autoplay=*, speaker=*" />
     <title>Harmonic Universe</title>
     <meta
       name="description"
@@ -16,6 +19,39 @@
     <div id="root"></div>
     <!-- Portal root for modals -->
     <div id="portal-root"></div>
+    <!-- Audio element to help with AudioContext unlocking -->
+    <audio id="audio-unlock" preload="auto" style="display: none"></audio>
+    <script>
+      // Try to unlock AudioContext early
+      window.addEventListener('DOMContentLoaded', function () {
+        // Set up audio unblocking on first user interaction
+        const unblockAudio = function () {
+          const audioElement = document.getElementById('audio-unlock');
+          if (audioElement) {
+            audioElement
+              .play()
+              .then(() => {
+                audioElement.pause();
+                audioElement.currentTime = 0;
+                console.log('Audio unlocked via silent play');
+              })
+              .catch((e) => {
+                console.log('Silent audio play failed (this is normal):', e);
+              });
+          }
+
+          // Remove event listeners after first interaction
+          ['click', 'touchstart', 'keydown'].forEach(function (event) {
+            document.removeEventListener(event, unblockAudio, true);
+          });
+        };
+
+        // Add listeners for first interaction
+        ['click', 'touchstart', 'keydown'].forEach(function (event) {
+          document.addEventListener(event, unblockAudio, { once: true, capture: true });
+        });
+      });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

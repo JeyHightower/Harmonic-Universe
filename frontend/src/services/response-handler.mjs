@@ -3,47 +3,96 @@
  * Common utilities for handling API responses
  */
 
-import { log } from "../utils/logger";
+import { log } from '../utils/logger.mjs';
 
 /**
- * Handle a successful API response
- * @param {any} data - Response data
- * @param {number} status - HTTP status code
- * @param {string} message - Success message (optional)
- * @returns {object} - Standardized response object
+ * Handle successful API responses
+ * @param {Object} response - The response object from axios
+ * @returns {Object} The processed response data
  */
-export const handleSuccess = (data, status = 200, message = '') => {
-  return {
-    success: true,
-    status,
-    message: message || getDefaultSuccessMessage(status),
-    data,
-  };
+export const handleSuccess = (response) => {
+  // For direct API responses from axios
+  if (response && response.data !== undefined) {
+    return response;
+  }
+
+  // For responses that are already processed or direct data
+  return response;
 };
 
 /**
- * Handle an API error
- * @param {Error} error - Error object from axios or other source
- * @returns {object} - Standardized error response object
+ * Handle API errors with improved clarity and consistency
+ * @param {Error|Object} error - Error object (can be axios error, regular Error, or custom object)
+ * @returns {Object} Standardized error response
  */
 export const handleError = (error) => {
-  // Get detailed error info
-  const status = error.response?.status || 500;
-  const message = error.response?.data?.message || error.message || 'Unknown error';
-  const data = error.response?.data || null;
-  
-  // Log the error
-  log('api', 'API Error', {
-    status,
-    message,
-    originalError: error.message,
+  // Log all errors for debugging
+  log('api-error', error.message || 'Unknown error', {
+    status: error.response?.status,
+    data: error.response?.data,
+    url: error.config?.url,
   });
-  
+
+  // Handle axios error response
+  if (error.response) {
+    // Server responded with a status code outside the 2xx range
+    const { status, data, statusText } = error.response;
+
+    // Specifically handle 500 errors with more detail
+    if (status >= 500) {
+      // Track server errors distinctly
+      log('server-error', 'Server responded with an error', {
+        status,
+        url: error.config?.url,
+        data,
+      });
+
+      // Create a better error object
+      const enhancedError = {
+        message:
+          data?.message || `Server Error (${status}): ${statusText || 'Internal Server Error'}`,
+        status,
+        data,
+        serverError: true,
+        originalError: error,
+      };
+
+      // Dispatch a custom event to notify the app
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('server-error', {
+            detail: {
+              status,
+              url: error.config?.url,
+              message: enhancedError.message,
+            },
+          })
+        );
+      }
+
+      return enhancedError;
+    }
+
+    return {
+      message: data?.message || data?.error || statusText || 'API request failed',
+      status,
+      data,
+    };
+  }
+
+  // Handle network errors (like CORS, network down)
+  if (error.request) {
+    // The request was made but no response was received
+    return {
+      message: 'Network error: No response received from server',
+      networkError: true,
+      request: error.request,
+    };
+  }
+
+  // Something else caused the error
   return {
-    success: false,
-    status,
-    message,
-    data,
+    message: error.message || 'Unknown error occurred',
     originalError: error,
   };
 };
@@ -75,12 +124,12 @@ const getDefaultSuccessMessage = (status) => {
 export const validateResponse = (data, validator) => {
   try {
     if (!validator) {
-      return { 
-        valid: true, 
-        data 
+      return {
+        valid: true,
+        data,
       };
     }
-    
+
     const isValid = validator(data);
     return {
       valid: isValid,
@@ -141,12 +190,12 @@ export const processResponseData = (response, defaultMessage = '') => {
   if (response && typeof response === 'object' && 'success' in response) {
     return response;
   }
-  
+
   // For axios responses directly
   if (response && response.status && response.data) {
     return handleSuccess(response.data, response.status, defaultMessage);
   }
-  
+
   // For other responses, wrap them in our standard format
   return handleSuccess(response, 200, defaultMessage);
 };
@@ -161,4 +210,4 @@ export const responseHandler = {
   processResponseData,
 };
 
-export default responseHandler; 
+export default responseHandler;

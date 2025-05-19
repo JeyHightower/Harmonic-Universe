@@ -74,7 +74,41 @@ const MusicPlayer = ({
       const success = await initializeAudioContext();
 
       if (!success) {
-        throw new Error('Failed to initialize audio context');
+        // If regular initialization fails, try an alternative approach
+        try {
+          console.log('Trying alternative AudioContext initialization method');
+
+          // Create a silent buffer and play it to unblock audio
+          const audioElement = document.createElement('audio');
+          audioElement.src =
+            'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+          audioElement.volume = 0.01;
+          await audioElement
+            .play()
+            .catch(() => console.log('Silent audio playback failed - this is OK'));
+
+          // Attempt to directly resume the context if it exists
+          if (Tone.context) {
+            await Tone.context.resume().catch((e) => console.warn('Resume attempt failed:', e));
+          } else {
+            // Try to create a new context
+            await Tone.start().catch((e) => console.warn('Tone.start failed:', e));
+          }
+        } catch (alternativeError) {
+          console.warn('Alternative initialization also failed:', alternativeError);
+          throw new Error('Failed to initialize audio context');
+        }
+      }
+
+      // Make sure context is running - try to resume if needed
+      if (Tone.context && Tone.context.state !== 'running') {
+        try {
+          // Add a small delay to ensure we're still within user gesture timeframe
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          await Tone.context.resume();
+        } catch (resumeError) {
+          console.warn('Could not resume AudioContext:', resumeError);
+        }
       }
 
       if (!synthRef.current) {
@@ -212,42 +246,65 @@ const MusicPlayer = ({
 
   // Toggle playback of the current music
   const togglePlayback = async (forcedState = null) => {
-    // Initialize Tone.js on user interaction
-    if (!audioContextInitialized || !isAudioContextReady()) {
-      const initialized = await initializeTone();
-      if (!initialized) return;
-    }
-
-    const targetState = forcedState !== null ? forcedState : !isPlaying;
-
     try {
-      if (targetState) {
-        // Start playback
-        if (!musicData) {
-          // Generate music if none exists
-          await generateMusic();
+      // Initialize Tone.js on user interaction
+      if (!audioContextInitialized || !isAudioContextReady()) {
+        // Force user interaction to initialize AudioContext
+        if (Tone.context && Tone.context.state !== 'running') {
+          try {
+            console.log('Attempting to resume AudioContext from toggle playback');
+            await Tone.context.resume();
+          } catch (resumeError) {
+            console.warn('Could not resume AudioContext:', resumeError);
+          }
+        }
+
+        const initialized = await initializeTone();
+        if (!initialized) {
+          setError('Could not initialize audio. Please click again or refresh the page.');
           return;
-        }
-
-        if (!sequenceRef.current && musicData) {
-          // Create sequence if not exists
-          createMusicSequence(musicData);
-        }
-
-        if (sequenceRef.current) {
-          sequenceRef.current.start(0);
-        }
-      } else {
-        // Stop playback
-        if (sequenceRef.current) {
-          sequenceRef.current.stop();
         }
       }
 
-      setIsPlaying(targetState);
-    } catch (error) {
-      console.error('Error toggling playback:', error);
-      setError('Failed to toggle playback');
+      const targetState = forcedState !== null ? forcedState : !isPlaying;
+
+      try {
+        if (targetState) {
+          // Start playback
+          if (!musicData) {
+            // Generate music if none exists
+            await generateMusic();
+            return;
+          }
+
+          if (!sequenceRef.current && musicData) {
+            // Create sequence if not exists
+            createMusicSequence(musicData);
+          }
+
+          // Ensure AudioContext is running before starting sequence
+          if (Tone.context.state !== 'running') {
+            await Tone.context.resume();
+          }
+
+          if (sequenceRef.current) {
+            sequenceRef.current.start(0);
+          }
+        } else {
+          // Stop playback
+          if (sequenceRef.current) {
+            sequenceRef.current.stop();
+          }
+        }
+
+        setIsPlaying(targetState);
+      } catch (error) {
+        console.error('Error toggling playback:', error);
+        setError('Failed to toggle playback');
+      }
+    } catch (outerError) {
+      console.error('Critical error in playback toggle:', outerError);
+      setError('An unexpected error occurred. Please refresh the page and try again.');
     }
   };
 

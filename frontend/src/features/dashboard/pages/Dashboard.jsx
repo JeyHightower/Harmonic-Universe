@@ -24,6 +24,7 @@ import { UniverseCard, UniverseModal } from '../../universe';
 import { message } from 'antd';
 import { authService } from '../../../services/auth.service.mjs';
 import { demoUserService } from '../../../services/demo-user.service.mjs';
+import { clearError } from '../../../store/slices/universeSlice.mjs';
 import { logout, validateAndRefreshToken } from '../../../store/thunks/authThunks';
 import {
   applyModalInteractionFixesThunk,
@@ -48,6 +49,10 @@ const Dashboard = () => {
   const [sortOption, setSortOption] = useState('updated_at');
   const [filterOption, setFilterOption] = useState('all');
   const [newUniverseId, setNewUniverseId] = useState(null);
+  const [connectionError, setConnectionError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const maxRetries = 3;
 
   // Initialize modal portal and apply fixes on component mount
   useEffect(() => {
@@ -77,6 +82,10 @@ const Dashboard = () => {
   // Enhanced function to load universes with better error handling and logging
   const loadUniverses = useCallback(() => {
     console.log('Dashboard - Loading universes');
+    setConnectionError(false);
+
+    // Clear any previous errors
+    dispatch(clearError());
 
     // Check if this is a demo session
     const isDemoSession = demoUserService.isDemoSession();
@@ -95,45 +104,55 @@ const Dashboard = () => {
       }
 
       // Continue to load universes using dispatch
-      return dispatch(fetchUniverses()).catch((error) => {
-        console.error('Dashboard - Error loading universes in demo mode:', error);
-        return Promise.resolve({ error: 'Error loading demo universes' });
-      });
-    }
-
-    // Not in demo mode, check for valid token
-    if (!authService.hasValidToken()) {
-      console.log('Dashboard - No valid token found, attempting refresh');
-
-      // Try to refresh the token
-      return authService
-        .refreshToken()
-        .then(() => {
-          console.log('Dashboard - Token refreshed successfully, loading universes');
-          return dispatch(fetchUniverses());
+      return dispatch(fetchUniverses())
+        .unwrap()
+        .then((result) => {
+          console.log('Dashboard - Successfully loaded universes in demo mode');
+          return result;
         })
         .catch((error) => {
-          console.error('Dashboard - Token refresh failed:', error.message);
+          console.error('Dashboard - Error loading universes in demo mode:', error);
 
-          // Only redirect for auth errors, not network errors
-          if (error.response?.status >= 400 || !error.message?.includes('Network Error')) {
-            console.log('Dashboard - Redirecting to login due to auth error');
-            navigate('/?modal=login', { replace: true });
-          } else {
-            console.log(
-              'Dashboard - Network error during token refresh, proceeding with existing token'
-            );
-            // Attempt to load universes with the existing token since it might be a temporary network issue
-            return dispatch(fetchUniverses());
+          // Handle server errors gracefully
+          if (error.serverError || (error.response && error.response.status >= 500)) {
+            console.warn('Server error detected (500), showing error UI');
+            setConnectionError(true);
+
+            // Schedule an automatic retry if we haven't exceeded the limit
+            if (retryCount < maxRetries) {
+              console.log(
+                `Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`
+              );
+              setTimeout(() => {
+                setRetryCount((prev) => prev + 1);
+              }, 3000); // Wait 3 seconds before retrying
+            }
           }
 
-          return Promise.resolve({ error: 'Authentication error' });
+          // Let Redux handle the error state for non-connection errors
+          return Promise.reject(error);
         });
     }
 
-    // Token is valid, proceed with loading universes
-    return dispatch(fetchUniverses()).catch((error) => {
+    // Helper function to handle fetch errors
+    const handleFetchError = (error) => {
       console.error('Dashboard - Error loading universes:', error);
+
+      // Handle server errors gracefully
+      if (error.serverError || (error.response && error.response.status >= 500)) {
+        console.warn('Server error detected (500), showing error UI');
+        setConnectionError(true);
+
+        // Schedule an automatic retry if we haven't exceeded the limit
+        if (retryCount < maxRetries) {
+          console.log(`Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`);
+          setTimeout(() => {
+            setRetryCount((prev) => prev + 1);
+          }, 3000); // Wait 3 seconds before retrying
+        }
+
+        return Promise.reject(error);
+      }
 
       // Handle specific error cases
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -144,23 +163,108 @@ const Dashboard = () => {
           .refreshToken()
           .then(() => {
             console.log('Dashboard - Token refreshed, retrying universe load');
-            return dispatch(fetchUniverses());
+            return dispatch(fetchUniverses()).unwrap().catch(handleFetchError);
           })
           .catch(() => {
             console.log('Dashboard - Token refresh failed, redirecting to login');
+            dispatch(logout());
             navigate('/?modal=login', { replace: true });
-            return Promise.resolve({ error: 'Authentication error' });
+            return Promise.reject(error);
           });
       }
 
-      return Promise.resolve({ error: error.message });
-    });
-  }, [dispatch, navigate]);
+      return Promise.reject(error);
+    };
+
+    // Not in demo mode, check for valid token
+    if (!authService.hasValidToken()) {
+      console.log('Dashboard - No valid token found, attempting refresh');
+
+      // Try to refresh the token
+      return authService
+        .refreshToken()
+        .then(() => {
+          console.log('Dashboard - Token refreshed successfully, loading universes');
+          return dispatch(fetchUniverses())
+            .unwrap()
+            .then((result) => {
+              console.log('Dashboard - Successfully loaded universes after token refresh');
+              return result;
+            })
+            .catch(handleFetchError);
+        })
+        .catch((error) => {
+          console.error('Dashboard - Token refresh failed:', error.message);
+
+          // Handle server errors gracefully
+          if (error.serverError || (error.response && error.response.status >= 500)) {
+            console.warn('Server error detected (500) during token refresh, showing error UI');
+            setConnectionError(true);
+
+            // Schedule an automatic retry if we haven't exceeded the limit
+            if (retryCount < maxRetries) {
+              console.log(
+                `Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`
+              );
+              setTimeout(() => {
+                setRetryCount((prev) => prev + 1);
+              }, 3000); // Wait 3 seconds before retrying
+            }
+
+            return Promise.reject(error);
+          }
+
+          // Only redirect for auth errors, not network errors
+          if (error.response?.status >= 400 || !error.message?.includes('Network Error')) {
+            console.log('Dashboard - Redirecting to login due to auth error');
+            dispatch(logout());
+            navigate('/?modal=login', { replace: true });
+          } else {
+            console.log(
+              'Dashboard - Network error during token refresh, proceeding with existing token'
+            );
+            // Attempt to load universes with the existing token since it might be a temporary network issue
+            return dispatch(fetchUniverses())
+              .unwrap()
+              .then((result) => {
+                console.log('Dashboard - Successfully loaded universes with existing token');
+                return result;
+              })
+              .catch(handleFetchError);
+          }
+
+          return Promise.reject(error);
+        });
+    }
+
+    // Token is valid, proceed with loading universes
+    return dispatch(fetchUniverses())
+      .unwrap()
+      .then((result) => {
+        console.log('Dashboard - Successfully loaded universes with valid token');
+        return result;
+      })
+      .catch(handleFetchError);
+  }, [dispatch, navigate, retryCount, maxRetries]);
 
   // Load universes on component mount
   useEffect(() => {
     console.log('Dashboard - Component mounted, loading universes');
     loadUniverses();
+
+    // Add event listener for server errors
+    const handleServerError = (event) => {
+      console.warn('Dashboard - Server error event received:', event.detail);
+      setConnectionError(true);
+    };
+
+    // Listen for server-error events
+    window.addEventListener('server-error', handleServerError);
+
+    // Cleanup listener on unmount
+    return () => {
+      window.removeEventListener('server-error', handleServerError);
+    };
   }, [loadUniverses]);
 
   // Check for authentication and load data on component mount
@@ -229,6 +333,8 @@ const Dashboard = () => {
 
   const handleCreateClick = () => {
     console.log('Dashboard - Create button clicked');
+    // Clear any errors before opening the create modal
+    dispatch(clearError());
     setIsCreateModalOpen(true);
   };
 
@@ -250,6 +356,9 @@ const Dashboard = () => {
 
   const handleViewUniverse = (universe) => {
     console.log('Viewing universe:', universe);
+
+    // Clear any errors before navigating
+    dispatch(clearError());
 
     // Ensure we have a fresh auth token before navigating
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
@@ -273,6 +382,8 @@ const Dashboard = () => {
 
   const handleEditUniverse = (universe) => {
     console.log('Editing universe:', universe);
+    // Clear any errors before editing
+    dispatch(clearError());
     setSelectedUniverse(universe);
     setIsEditModalOpen(true);
   };
@@ -291,6 +402,8 @@ const Dashboard = () => {
 
   const handleDeleteUniverse = (universe) => {
     console.log('Deleting universe:', universe);
+    // Clear any errors before delete confirmation
+    dispatch(clearError());
     setSelectedUniverse(universe);
     setIsDeleteModalOpen(true);
   };
@@ -342,6 +455,75 @@ const Dashboard = () => {
           return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
       }
     });
+  };
+
+  const handleRetry = () => {
+    setIsRetrying(true);
+    setRetryCount((count) => count + 1);
+
+    // Clear any errors in Redux store
+    dispatch(clearError());
+
+    // Small delay before retry
+    setTimeout(() => {
+      dispatch(fetchUniverses())
+        .unwrap()
+        .then((result) => {
+          console.log('Dashboard - Successfully retried loading universes');
+          setConnectionError(false);
+        })
+        .catch((error) => {
+          console.error('Retry failed:', error);
+          // Server errors handled by the loadUniverses function and Redux
+        })
+        .finally(() => {
+          setIsRetrying(false);
+        });
+    }, 1000);
+  };
+
+  const renderErrorDialog = () => {
+    return (
+      <Dialog
+        open={connectionError}
+        onClose={() => setConnectionError(false)}
+        aria-labelledby="error-dialog-title"
+      >
+        <DialogTitle id="error-dialog-title">Server Connection Error</DialogTitle>
+        <DialogContent>
+          <p>There was an error connecting to the server. This might be due to:</p>
+          <ul>
+            <li>Temporary server unavailability</li>
+            <li>Network connection issues</li>
+            <li>Authentication problems</li>
+          </ul>
+          {error && (
+            <div style={{ marginTop: '10px', color: '#d32f2f' }}>
+              <p>
+                <strong>Error details:</strong> {error.message || error}
+              </p>
+            </div>
+          )}
+          {retryCount >= maxRetries && (
+            <div style={{ color: 'red', marginTop: '10px' }}>
+              Maximum retry attempts reached. You may need to refresh the page or login again.
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => navigate('/?modal=login')} color="secondary">
+            Go to Login
+          </Button>
+          <Button
+            onClick={handleRetry}
+            color="primary"
+            disabled={isRetrying || retryCount >= maxRetries}
+          >
+            {isRetrying ? <CircularProgress size={24} /> : 'Retry'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
   };
 
   if (error) {
@@ -441,6 +623,8 @@ const Dashboard = () => {
         )}
         {/* Modals */}
         {renderModals()}
+        {/* Error Dialog */}
+        {renderErrorDialog()}
       </div>
     );
   }
@@ -582,6 +766,8 @@ const Dashboard = () => {
         ))}
       </div>
       {renderModals()}
+      {/* Error Dialog */}
+      {renderErrorDialog()}
     </div>
   );
 

@@ -6,7 +6,7 @@
 import axios from 'axios';
 import { API_CONFIG } from '../utils/config';
 import { log } from '../utils/logger.mjs';
-import { clearAuthData, getToken } from './auth.service.mjs';
+import { getToken } from './auth.service.mjs';
 import { API_SERVICE_CONFIG } from './config.mjs';
 
 let isRefreshing = false;
@@ -224,7 +224,7 @@ const clearCacheForUrl = (url) => {
   }
 };
 
-// Request interceptor for authentication
+// Request interceptor for authentication and retry handling
 axiosInstance.interceptors.request.use(
   async (config) => {
     logApiOperation('request-interceptor', {
@@ -233,61 +233,184 @@ axiosInstance.interceptors.request.use(
       headers: config.headers,
     });
 
+    // Store original timeout for potential retries
+    config._originalTimeout = config.timeout || API_CONFIG.TIMEOUT;
+
+    // Add custom header for tracking request attempts
+    config.headers = config.headers || {};
+    config.headers['X-Request-Attempt'] = config.headers['X-Request-Attempt']
+      ? parseInt(config.headers['X-Request-Attempt']) + 1
+      : 1;
+
+    // Log attempt count if retrying
+    const attemptCount = parseInt(config.headers['X-Request-Attempt']);
+    if (attemptCount > 1) {
+      logApiOperation('request-retry', {
+        attemptCount,
+        url: config.url,
+      });
+    }
+
+    // Retry configuration
+    const maxRetries = config._retryMax || API_SERVICE_CONFIG.MAX_RETRIES;
+
+    // Add token from local storage if available and not already present
+    try {
+      // Only add auth token if not previously set
+      const token = getToken();
+      if (token && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${token}`;
+        logApiOperation('auth-token-added', { token: `${token.substring(0, 5)}...` });
+      }
+    } catch (error) {
+      logApiOperation('auth-token-error', { message: error.message });
+      // Continue with request even if token can't be added
+    }
+
     // Add CORS proxy if needed
     if (config.url && shouldUseCorsProxy()) {
       config.url = getCorsProxyUrl(config.url);
       logApiOperation('request-proxied', { url: config.url });
     }
 
-    // Add authorization header if token exists
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      logApiOperation('request-auth', { hasToken: true });
-    }
-
     return config;
   },
   (error) => {
     logApiOperation('request-error', {
-      error: error.message,
-      stack: error.stack,
+      message: error.message,
+      code: error.code,
     });
+
+    // For retryable errors, set up retry logic
+    if (error.message.includes('timeout') || error.message.includes('Network Error')) {
+      return Promise.reject(error);
+    }
+
+    // For server errors (500), track and improve error details
+    if (error.response && error.response.status >= 500) {
+      logApiOperation('server-error', {
+        status: error.response.status,
+        url: error.config?.url,
+        data: error.response.data,
+      });
+
+      // Add better error message
+      error.message = `Server Error (${error.response.status}): ${error.response.data?.message || 'Internal Server Error'}`;
+    }
+
     return Promise.reject(error);
   }
 );
 
-// Response interceptor with enhanced error handling
+// Response interceptor for error handling and token refresh
 axiosInstance.interceptors.response.use(
   (response) => {
+    // Log success response
     logApiOperation('response-success', {
-      status: response.status,
       url: response.config.url,
-      data: typeof response.data === 'object' ? Object.keys(response.data) : typeof response.data,
+      status: response.status,
+      size: response.data ? JSON.stringify(response.data).length : 0,
     });
+
+    // For successful responses, we can consider caching if it's a GET request
+    if (response.config.method.toLowerCase() === 'get' && response.config.cache !== false) {
+      const cacheKey = response.config.url;
+      cache.set(cacheKey, {
+        data: response.data,
+        timestamp: Date.now(),
+        status: response.status,
+        headers: response.headers,
+      });
+      logApiOperation('response-cached', { url: cacheKey });
+    }
+
     return response;
   },
   async (error) => {
+    // Log response error
     logApiOperation('response-error', {
-      message: error.message,
-      status: error.response?.status,
       url: error.config?.url,
-      data: error.response?.data,
+      status: error.response?.status,
+      message: error.message,
     });
 
-    // Add to errors collection
-    if (window.apiDebug) {
-      window.apiDebug.errors.push({
-        time: new Date().toISOString(),
+    // Handle server errors (500) better
+    if (error.response && error.response.status >= 500) {
+      logApiOperation('server-error', {
+        status: error.response.status,
         url: error.config?.url,
-        status: error.response?.status,
-        message: error.message,
+        data: error.response.data,
       });
+
+      // Add better error message
+      error.message = `Server Error (${error.response.status}): ${error.response.data?.message || 'Internal Server Error'}`;
+
+      // Ensure the error has proper response details
+      error.serverError = true;
+
+      // Dispatch an event to notify the app about server error
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('server-error', {
+            detail: {
+              status: error.response.status,
+              url: error.config?.url,
+              message: error.message,
+            },
+          })
+        );
+      }
+
+      return Promise.reject(error);
     }
 
+    // Original error handling logic for non-500 errors
     const originalRequest = error.config;
     if (!originalRequest) {
       return Promise.reject(error);
+    }
+
+    // Handle server errors (500s) with retry logic
+    const maxRetries = 2;
+    const isServerError = error.response && error.response.status >= 500;
+    const safeToRetry =
+      !originalRequest.method ||
+      ['get', 'options', 'head'].includes(originalRequest.method.toLowerCase());
+    const attemptsMade = originalRequest.headers['X-Request-Attempt']
+      ? parseInt(originalRequest.headers['X-Request-Attempt'])
+      : 1;
+
+    if (isServerError && originalRequest && attemptsMade <= maxRetries && safeToRetry) {
+      logApiOperation('server-error-retry', {
+        status: error.response.status,
+        url: originalRequest.url,
+        attempt: attemptsMade,
+        maxRetries,
+      });
+
+      // Add a small delay before retrying to give the server time to recover
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attemptsMade));
+
+      // Retry the request with updated headers
+      return axiosInstance(originalRequest);
+    }
+
+    // If it's a server error but we won't retry, log it specially
+    if (isServerError) {
+      logApiOperation('server-error-no-retry', {
+        status: error.response.status,
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+        reason:
+          attemptsMade > maxRetries
+            ? 'max-retries-exceeded'
+            : !safeToRetry
+              ? 'unsafe-method'
+              : 'unknown',
+      });
+
+      // Add clearer error message
+      error.message = `Server error (${error.response.status}): ${error.message}`;
     }
 
     // Handle Method Not Allowed (405) errors
@@ -749,7 +872,7 @@ const post = async (url, data = {}, options = {}) => {
       data: data,
       hasToken: !!getToken(),
       tokenLength: getToken()?.length || 0,
-      options: { ...options, headers: options.headers || {} }
+      options: { ...options, headers: options.headers || {} },
     });
   }
 
@@ -804,7 +927,7 @@ const post = async (url, data = {}, options = {}) => {
       // Sanitize data to remove any numbered keys that may have been accidentally added
       if (data && typeof data === 'object') {
         const sanitizedData = {};
-        Object.keys(data).forEach(key => {
+        Object.keys(data).forEach((key) => {
           // Skip keys that are just digits (0, 1, 2, etc.)
           if (!/^\d+$/.test(key)) {
             sanitizedData[key] = data[key];
@@ -821,25 +944,26 @@ const post = async (url, data = {}, options = {}) => {
 
       // Make the request with retry logic for scene-related endpoints with enhanced logging
       console.log('HTTP Client: Sending scene POST request');
-      const response = await withRetry(
-        async () => {
-          const resp = await axiosInstance.post(formattedUrl, data, options);
-          console.log('HTTP Client: Scene POST successful', {
-            status: resp.status,
-            statusText: resp.statusText,
-            dataKeys: Object.keys(resp.data || {})
-          });
+      const response = await withRetry(async () => {
+        const resp = await axiosInstance.post(formattedUrl, data, options);
+        console.log('HTTP Client: Scene POST successful', {
+          status: resp.status,
+          statusText: resp.statusText,
+          dataKeys: Object.keys(resp.data || {}),
+        });
 
-          // Enhanced logging for scene IDs
-          if (resp.data && resp.data.scene && resp.data.scene.id) {
-            console.log('HTTP Client: Scene created with ID:', resp.data.scene.id,
-                        'Type:', typeof resp.data.scene.id);
-          }
+        // Enhanced logging for scene IDs
+        if (resp.data && resp.data.scene && resp.data.scene.id) {
+          console.log(
+            'HTTP Client: Scene created with ID:',
+            resp.data.scene.id,
+            'Type:',
+            typeof resp.data.scene.id
+          );
+        }
 
-          return resp;
-        },
-        options
-      );
+        return resp;
+      }, options);
       return response.data;
     } catch (error) {
       console.error('HTTP Client: Scene POST request failed', {
@@ -847,7 +971,7 @@ const post = async (url, data = {}, options = {}) => {
         status: error.response?.status,
         statusText: error.response?.statusText,
         errorData: error.response?.data,
-        errorMessage: error.message
+        errorMessage: error.message,
       });
       throw error;
     }
@@ -974,7 +1098,7 @@ export const httpClient = {
         data: data,
         hasToken: !!getToken(),
         tokenLength: getToken()?.length || 0,
-        options: { ...options, headers: options.headers || {} }
+        options: { ...options, headers: options.headers || {} },
       });
     }
 
@@ -1029,7 +1153,7 @@ export const httpClient = {
         // Sanitize data to remove any numbered keys that may have been accidentally added
         if (data && typeof data === 'object') {
           const sanitizedData = {};
-          Object.keys(data).forEach(key => {
+          Object.keys(data).forEach((key) => {
             // Skip keys that are just digits (0, 1, 2, etc.)
             if (!/^\d+$/.test(key)) {
               sanitizedData[key] = data[key];
@@ -1046,25 +1170,26 @@ export const httpClient = {
 
         // Make the request with retry logic for scene-related endpoints with enhanced logging
         console.log('HTTP Client: Sending scene POST request');
-        const response = await withRetry(
-          async () => {
-            const resp = await axiosInstance.post(formattedUrl, data, options);
-            console.log('HTTP Client: Scene POST successful', {
-              status: resp.status,
-              statusText: resp.statusText,
-              dataKeys: Object.keys(resp.data || {})
-            });
+        const response = await withRetry(async () => {
+          const resp = await axiosInstance.post(formattedUrl, data, options);
+          console.log('HTTP Client: Scene POST successful', {
+            status: resp.status,
+            statusText: resp.statusText,
+            dataKeys: Object.keys(resp.data || {}),
+          });
 
-            // Enhanced logging for scene IDs
-            if (resp.data && resp.data.scene && resp.data.scene.id) {
-              console.log('HTTP Client: Scene created with ID:', resp.data.scene.id,
-                          'Type:', typeof resp.data.scene.id);
-            }
+          // Enhanced logging for scene IDs
+          if (resp.data && resp.data.scene && resp.data.scene.id) {
+            console.log(
+              'HTTP Client: Scene created with ID:',
+              resp.data.scene.id,
+              'Type:',
+              typeof resp.data.scene.id
+            );
+          }
 
-            return resp;
-          },
-          options
-        );
+          return resp;
+        }, options);
         return response.data;
       } catch (error) {
         console.error('HTTP Client: Scene POST request failed', {
@@ -1072,7 +1197,7 @@ export const httpClient = {
           status: error.response?.status,
           statusText: error.response?.statusText,
           errorData: error.response?.data,
-          errorMessage: error.message
+          errorMessage: error.message,
         });
         throw error;
       }
@@ -1174,7 +1299,7 @@ export const httpClient = {
             return {
               message: 'Resource not found or already deleted',
               success: true,
-              id: formattedUrl.split('/').filter(Boolean).pop()
+              id: formattedUrl.split('/').filter(Boolean).pop(),
             };
           }
 
@@ -1186,7 +1311,7 @@ export const httpClient = {
           url: formattedUrl,
           status: error.response?.status,
           statusText: error.response?.statusText,
-          errorMessage: error.message
+          errorMessage: error.message,
         });
         throw error;
       }
@@ -1253,17 +1378,17 @@ export const httpClient = {
 };
 
 export {
-    addAuthHeader,
-    axiosInstance,
-    clearCache,
-    clearCacheForUrl,
-    del,
-    get,
-    getCorsProxyUrl,
-    logApiOperation,
-    post,
-    put,
-    shouldUseCorsProxy
+  addAuthHeader,
+  axiosInstance,
+  clearCache,
+  clearCacheForUrl,
+  del,
+  get,
+  getCorsProxyUrl,
+  logApiOperation,
+  post,
+  put,
+  shouldUseCorsProxy,
 };
 
 export default httpClient;

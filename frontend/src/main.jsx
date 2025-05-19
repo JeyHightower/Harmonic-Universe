@@ -23,6 +23,8 @@ import {
   fixModalFormElements,
   forceModalInteractivity,
 } from './utils/portalUtils';
+// Import Tone for AudioContext handling
+import * as Tone from 'tone';
 
 // Ensure modal system is properly initialized
 const initModalSystem = () => {
@@ -172,8 +174,118 @@ const renderApp = () => {
 // Initialize the application
 const init = async () => {
   try {
+    // Prevent auto-play behavior that could trigger AudioContext errors
+    document.body.addEventListener(
+      'touchstart',
+      function onFirstTouch() {
+        // Only needed for the first touch
+        document.body.removeEventListener('touchstart', onFirstTouch);
+      },
+      { once: true }
+    );
+
     // Setup audio context initialization on user interaction
     setupAudioContextInitialization();
+
+    // Add event listeners to resume AudioContext on user interaction
+    const userInteractionEvents = ['click', 'touchstart', 'keydown', 'mousedown'];
+
+    const resumeAudioContext = (event) => {
+      // Only respond to trusted (actual user) events
+      if (!event.isTrusted) return;
+
+      if (typeof Tone !== 'undefined' && Tone.context) {
+        if (Tone.context.state !== 'running') {
+          console.log('Attempting to resume AudioContext after user interaction');
+
+          // Wait a moment before trying to resume
+          setTimeout(() => {
+            Tone.context
+              .resume()
+              .then(() => {
+                console.log('AudioContext resumed successfully');
+              })
+              .catch((err) => {
+                console.error('Failed to resume AudioContext:', err);
+              });
+          }, 300);
+        }
+      }
+    };
+
+    // Remove previous listeners if any
+    userInteractionEvents.forEach((event) => {
+      document.removeEventListener(event, resumeAudioContext);
+    });
+
+    // Add listeners
+    userInteractionEvents.forEach((event) => {
+      document.addEventListener(event, resumeAudioContext, { capture: true });
+    });
+
+    // Add a special handler for the first click anywhere
+    const firstInteractionHandler = (event) => {
+      if (!event.isTrusted) return;
+
+      // Try to start Tone.js after a small delay
+      if (typeof Tone !== 'undefined') {
+        console.log('First user interaction detected, starting Tone.js');
+
+        // Delay starting to ensure we're within a valid user gesture
+        setTimeout(() => {
+          try {
+            // Check if we need to unlock the AudioContext first
+            if (window.AudioContext || window.webkitAudioContext) {
+              const tempContext = new (window.AudioContext || window.webkitAudioContext)();
+              tempContext
+                .resume()
+                .then(() => {
+                  tempContext.close();
+                  startToneJS();
+                })
+                .catch(() => {
+                  tempContext.close();
+                  startToneJS();
+                });
+            } else {
+              startToneJS();
+            }
+          } catch (error) {
+            console.warn('Error preparing audio environment:', error);
+            startToneJS(); // Try anyway
+          }
+        }, 200);
+      }
+
+      // Remove the one-time handler after first interaction
+      userInteractionEvents.forEach((evt) => {
+        document.removeEventListener(evt, firstInteractionHandler, { capture: true });
+      });
+    };
+
+    // Helper function to start Tone.js
+    const startToneJS = () => {
+      Tone.start()
+        .then(() => {
+          console.log('Tone.js started successfully');
+        })
+        .catch((err) => {
+          console.warn('Error starting Tone.js:', err);
+          // Fall back to just resuming the context if starting fails
+          if (Tone.context) {
+            Tone.context
+              .resume()
+              .catch((resumeErr) =>
+                console.error('Failed to resume AudioContext as fallback:', resumeErr)
+              );
+          }
+        });
+    };
+
+    // Add first interaction handler
+    userInteractionEvents.forEach((event) => {
+      document.addEventListener(event, firstInteractionHandler, { once: true, capture: true });
+    });
 
     renderApp();
   } catch (error) {

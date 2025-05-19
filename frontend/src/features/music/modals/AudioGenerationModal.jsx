@@ -157,6 +157,16 @@ const AudioGenerationModal = ({
         throw new Error('Failed to initialize audio context');
       }
 
+      // Ensure Tone.js context is running
+      if (Tone.context && Tone.context.state !== 'running') {
+        try {
+          await Tone.context.resume();
+          console.log('AudioContext resumed before audio generation');
+        } catch (resumeError) {
+          console.warn('Failed to resume AudioContext:', resumeError);
+        }
+      }
+
       // Generate audio using the API
       const response = await audioService.generateAudio(universeId, sceneId, {
         algorithm: formData.algorithm,

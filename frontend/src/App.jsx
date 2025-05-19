@@ -12,6 +12,8 @@ import { setupModalDebugging } from './utils/modalDebug.mjs';
 // Import the safer interaction fixes
 import { ModalManager } from './components/modals';
 import { applyEssentialFixes, setupAutoFix } from './utils/interactionFixes.mjs';
+// Import Tone for AudioContext handling
+import * as Tone from 'tone';
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (
@@ -286,19 +288,66 @@ const DebugPanel = () => {
 
 // The main App component
 const App = () => {
+  // Setup auto-fix on mount
+  useEffect(() => {
+    const cleanup = setupAutoFix();
+    return () => cleanup();
+  }, []);
+
+  // Setup AudioContext handling
+  useEffect(() => {
+    // Prepare for AudioContext initialization on first user interaction
+    const handleFirstInteraction = (event) => {
+      if (!event.isTrusted) return;
+
+      console.log('First user interaction in App component');
+
+      // Try to start or resume AudioContext after a small delay
+      setTimeout(() => {
+        try {
+          if (Tone.context) {
+            if (Tone.context.state !== 'running') {
+              Tone.context.resume().then(() => {
+                console.log('AudioContext resumed from App component');
+              });
+            }
+          } else {
+            Tone.start().then(() => {
+              console.log('Tone.js started from App component');
+            });
+          }
+        } catch (error) {
+          console.warn('App component audio initialization error:', error);
+        }
+
+        // Clean up the event listeners
+        ['mousedown', 'touchstart', 'keydown'].forEach((eventType) => {
+          document.removeEventListener(eventType, handleFirstInteraction, { capture: true });
+        });
+      }, 100);
+    };
+
+    // Add event listeners for user interactions
+    ['mousedown', 'touchstart', 'keydown'].forEach((eventType) => {
+      document.addEventListener(eventType, handleFirstInteraction, { capture: true });
+    });
+
+    return () => {
+      // Clean up event listeners
+      ['mousedown', 'touchstart', 'keydown'].forEach((eventType) => {
+        document.removeEventListener(eventType, handleFirstInteraction, { capture: true });
+      });
+    };
+  }, []);
+
   return (
-    <ErrorBoundary>
+    <ErrorBoundary fallback={<ErrorFallback />}>
       <NetworkErrorHandler>
-        <ErrorBoundary>
+        <Suspense fallback={<LoadingPage />}>
           <AppContent />
-        </ErrorBoundary>
+          <ModalManager />
+        </Suspense>
       </NetworkErrorHandler>
-
-      {/* Add ModalManager for the new modal system */}
-      <ModalManager />
-
-      {/* Add DebugPanel at the end */}
-      <DebugPanel />
     </ErrorBoundary>
   );
 };
