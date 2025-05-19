@@ -6,7 +6,7 @@ import App from './App';
 import store, { persistor } from './store/store.mjs';
 // CSS imports in correct order to prevent conflicts
 import 'antd/dist/reset.css'; // Import Ant Design styles first
-import { StrictMode } from 'react';
+import { startTransition, StrictMode } from 'react';
 import { resetModalState } from './store/slices/newModalSlice';
 import './styles/App.css'; // Last: App-specific styles
 import './styles/buttons.css'; // Sixth: Button styles
@@ -17,6 +17,7 @@ import './styles/reset.css'; // First: Reset browser defaults
 import './styles/theme.css'; // Third: Define theme variables
 import './styles/variables.css'; // Second: Define CSS variables
 import { AUTH_CONFIG, ensurePortalRoot } from './utils';
+import { setupAudioContextInitialization } from './utils/audioManager';
 import {
   applyModalFixes,
   fixModalFormElements,
@@ -153,20 +154,27 @@ const renderApp = () => {
   initModalSystem();
 
   const root = createRoot(getRootElement());
-  root.render(
-    <StrictMode>
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <RouterProvider router={router} />
-        </PersistGate>
-      </Provider>
-    </StrictMode>
-  );
+
+  // Use startTransition for Router rendering
+  startTransition(() => {
+    root.render(
+      <StrictMode>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <RouterProvider router={router} />
+          </PersistGate>
+        </Provider>
+      </StrictMode>
+    );
+  });
 };
 
 // Initialize the application
 const init = async () => {
   try {
+    // Setup audio context initialization on user interaction
+    setupAudioContextInitialization();
+
     renderApp();
   } catch (error) {
     console.error('Failed to initialize app:', error);

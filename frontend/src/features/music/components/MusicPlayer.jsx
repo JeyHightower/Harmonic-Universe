@@ -1,42 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { Download, Pause, PlayArrow, Sync, Visibility } from '@mui/icons-material';
 import {
-  Button,
+  Alert,
   Box,
   Card,
-  CardContent,
-  CardActions,
-  Typography,
-  Slider,
-  Switch,
-  FormControlLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Divider,
   CircularProgress,
-  Alert,
-  Grid,
+  Divider,
   FormControl,
+  FormControlLabel,
+  Grid,
+  IconButton,
   InputLabel,
+  MenuItem,
+  Select,
+  Slider,
   Stack,
-  CardMedia,
+  Switch,
+  Typography,
 } from '@mui/material';
-import {
-  PlayArrow,
-  Pause,
-  Download,
-  Visibility,
-  Info,
-  Settings,
-  Sync,
-  SkipNext,
-  SkipPrevious,
-  VolumeUp,
-  Loop,
-} from '@mui/icons-material';
-import * as Tone from 'tone';
 import PropTypes from 'prop-types';
-import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { useEffect, useRef, useState } from 'react';
+import * as Tone from 'tone';
+import { initializeAudioContext, isAudioContextReady } from '../../../utils/audioManager';
 import { createVisualizer, drawVisualization } from '../../../utils/visualizerUtils';
 import '../styles/Music.css';
 
@@ -86,7 +70,12 @@ const MusicPlayer = ({
   // Initialize Tone.js on user interaction
   const initializeTone = async () => {
     try {
-      await Tone.start();
+      // Use our audio manager to initialize AudioContext safely
+      const success = await initializeAudioContext();
+
+      if (!success) {
+        throw new Error('Failed to initialize audio context');
+      }
 
       if (!synthRef.current) {
         // Create synthesizer
@@ -223,7 +212,8 @@ const MusicPlayer = ({
 
   // Toggle playback of the current music
   const togglePlayback = async (forcedState = null) => {
-    if (!audioContextInitialized) {
+    // Initialize Tone.js on user interaction
+    if (!audioContextInitialized || !isAudioContextReady()) {
       const initialized = await initializeTone();
       if (!initialized) return;
     }
@@ -269,8 +259,11 @@ const MusicPlayer = ({
 
     try {
       // Initialize audio context if needed
-      if (!audioContextInitialized) {
-        await initializeTone();
+      if (!audioContextInitialized || !isAudioContextReady()) {
+        const initialized = await initializeTone();
+        if (!initialized) {
+          throw new Error('Failed to initialize audio context');
+        }
       }
 
       // Stop any current playback

@@ -401,8 +401,10 @@ export const refreshToken = createAsyncThunk(
       console.debug('Refreshing token');
 
       // Import needed services
-      const { authService } = await import('../../services/auth.service.mjs');
-      const { demoUserService } = await import('../../services/demo-user.service.mjs');
+      const { authService } = await import(/* @vite-ignore */ '../../services/auth.service.mjs');
+      const { demoUserService } = await import(
+        /* @vite-ignore */ '../../services/demo-user.service.mjs'
+      );
 
       // Check if this is a demo session
       const isDemoSession = demoUserService.isDemoSession();

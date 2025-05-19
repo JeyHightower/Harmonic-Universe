@@ -70,14 +70,16 @@ export const fetchScenes = createAsyncThunk(
         console.log(`[${timestamp}] REDUX-THUNK: Checking if universe ${numericUniverseId} exists`);
 
         // Import apiClient dynamically to avoid circular imports
-        const apiServices = await import('../../../services/api.adapter.mjs');
+        const apiServices = await import(/* @vite-ignore */ '../../../services/api.adapter.mjs');
         const apiClient = apiServices.default;
 
         const universeResponse = await apiClient.universes.getUniverse(numericUniverseId);
         console.log(`[${timestamp}] REDUX-THUNK: Universe check response:`, universeResponse);
 
         if (!universeResponse || !universeResponse.data || !universeResponse.data.universe) {
-          console.error(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist or is not accessible`);
+          console.error(
+            `[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist or is not accessible`
+          );
           // Return empty scenes array with success status instead of throwing an error
           return {
             universeId: numericUniverseId,
@@ -88,7 +90,9 @@ export const fetchScenes = createAsyncThunk(
 
         // Check if universe is deleted
         if (universeResponse.data.universe.is_deleted) {
-          console.error(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} has been deleted`);
+          console.error(
+            `[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} has been deleted`
+          );
           // Return empty scenes array with success status
           return {
             universeId: numericUniverseId,
@@ -97,13 +101,17 @@ export const fetchScenes = createAsyncThunk(
           };
         }
 
-        console.log(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} exists and is accessible, proceeding to fetch scenes`);
+        console.log(
+          `[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} exists and is accessible, proceeding to fetch scenes`
+        );
       } catch (universeError) {
         console.warn(`[${timestamp}] REDUX-THUNK: Error checking universe:`, universeError);
 
         // Only return empty result if we got a 404, otherwise continue with scene fetching
         if (universeError.response && universeError.response.status === 404) {
-          console.error(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist (404 from universe API)`);
+          console.error(
+            `[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist (404 from universe API)`
+          );
           return {
             universeId: numericUniverseId,
             scenes: [],
@@ -135,7 +143,9 @@ export const fetchScenes = createAsyncThunk(
 
         // Check if the error is due to universe not existing (404)
         if (initialError.response && initialError.response.status === 404) {
-          console.error(`[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist (404 from scenes API)`);
+          console.error(
+            `[${timestamp}] REDUX-THUNK: Universe ${numericUniverseId} does not exist (404 from scenes API)`
+          );
           return {
             universeId: numericUniverseId,
             scenes: [],
@@ -329,7 +339,10 @@ export const createScene = createAsyncThunk(
       }
 
       // Log the formatted data before sending to the API
-      console.log(`THUNK createScene [${timestamp}]: Sending formatted data to API:`, formattedData);
+      console.log(
+        `THUNK createScene [${timestamp}]: Sending formatted data to API:`,
+        formattedData
+      );
 
       // Only make the API call once for a given timestamp
       console.log(`THUNK createScene [${timestamp}]: Calling sceneService.createScene once`);
@@ -349,8 +362,15 @@ export const createScene = createAsyncThunk(
       const defaultSceneData = {
         // Generate a temporary ID that fits within PostgreSQL integer limits
         // Take last 7 digits of timestamp and add small random number for uniqueness
-        id: response.data?.scene?.id || response.data?.id ||
-            parseInt(Date.now().toString().slice(-7) + Math.floor(Math.random() * 100).toString().padStart(2, '0')),
+        id:
+          response.data?.scene?.id ||
+          response.data?.id ||
+          parseInt(
+            Date.now().toString().slice(-7) +
+              Math.floor(Math.random() * 100)
+                .toString()
+                .padStart(2, '0')
+          ),
         name: formattedData.name || 'New Scene',
         description: formattedData.description || '',
         universe_id: formattedData.universe_id,
@@ -380,7 +400,10 @@ export const createScene = createAsyncThunk(
         };
       }
 
-      console.log(`THUNK createScene [${timestamp}]: Final scene data with is_deleted=false:`, sceneResponseData);
+      console.log(
+        `THUNK createScene [${timestamp}]: Final scene data with is_deleted=false:`,
+        sceneResponseData
+      );
 
       // Normalize the scene data
       const normalizedSceneData = normalizeSceneData(sceneResponseData);
@@ -395,7 +418,10 @@ export const createScene = createAsyncThunk(
 
       // Update store if dispatch is available (do this after returning the response)
       if (dispatch) {
-        console.log(`THUNK createScene [${timestamp}]: Adding scene to store:`, normalizedSceneData.id);
+        console.log(
+          `THUNK createScene [${timestamp}]: Adding scene to store:`,
+          normalizedSceneData.id
+        );
 
         // Use a separate function to update the Redux store to avoid race conditions
         setTimeout(() => {
@@ -428,7 +454,10 @@ export const createScene = createAsyncThunk(
               });
             }
           } catch (storeError) {
-            console.error(`THUNK createScene [${timestamp}]: Error updating Redux store:`, storeError);
+            console.error(
+              `THUNK createScene [${timestamp}]: Error updating Redux store:`,
+              storeError
+            );
           }
         }, 0);
       }
@@ -468,7 +497,7 @@ export const updateScene = createAsyncThunk(
       // Create a copy of the data with the properly formatted ID
       const formattedSceneData = {
         ...sceneData,
-        id: formattedSceneId
+        id: formattedSceneId,
       };
 
       console.log(`updateScene - Updating scene with ID: ${formattedSceneId}`, formattedSceneData);
@@ -488,11 +517,14 @@ export const updateScene = createAsyncThunk(
 
         const formattedSceneData = {
           ...sceneData,
-          id: formattedSceneId
+          id: formattedSceneId,
         };
 
         // Try alternative endpoint
-        const backupResponse = await sceneService.updateScene(`/api/scenes/${formattedSceneId}`, formattedSceneData);
+        const backupResponse = await sceneService.updateScene(
+          `/api/scenes/${formattedSceneId}`,
+          formattedSceneData
+        );
         console.log('updateScene - Backup response:', backupResponse);
 
         return backupResponse.data;
@@ -514,9 +546,10 @@ export const deleteScene = createAsyncThunk(
   async (sceneId, { rejectWithValue }) => {
     try {
       // Handle both scene object and direct ID
-      const formattedSceneId = typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
-        ? String(sceneId.id)
-        : String(sceneId);
+      const formattedSceneId =
+        typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
+          ? String(sceneId.id)
+          : String(sceneId);
 
       console.log(`deleteScene - Deleting scene with ID: ${formattedSceneId}`);
 
@@ -531,9 +564,10 @@ export const deleteScene = createAsyncThunk(
       // Attempt backup method
       try {
         // Handle both scene object and direct ID
-        const formattedSceneId = typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
-          ? String(sceneId.id)
-          : String(sceneId);
+        const formattedSceneId =
+          typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
+            ? String(sceneId.id)
+            : String(sceneId);
 
         console.log('deleteScene - Attempting backup method for scene ID:', formattedSceneId);
 
@@ -659,7 +693,9 @@ export const createSceneAndRefresh = createAsyncThunk(
       const universeId = sceneData.universe_id || sceneData.universeId;
 
       if (!universeId) {
-        console.warn('THUNK createSceneAndRefresh: No universe_id found in scene data, cannot refresh');
+        console.warn(
+          'THUNK createSceneAndRefresh: No universe_id found in scene data, cannot refresh'
+        );
         return createResult;
       }
 
@@ -692,7 +728,9 @@ export const updateSceneAndRefresh = createAsyncThunk(
       const universeId = sceneData.universe_id || sceneData.universeId;
 
       if (!universeId) {
-        console.warn('THUNK updateSceneAndRefresh: No universe_id found in scene data, cannot refresh');
+        console.warn(
+          'THUNK updateSceneAndRefresh: No universe_id found in scene data, cannot refresh'
+        );
         return updateResult;
       }
 
@@ -730,7 +768,9 @@ export const deleteSceneAndRefresh = createAsyncThunk(
       }
 
       // Immediately refresh the scenes list to update the UI
-      console.log(`THUNK deleteSceneAndRefresh: Refreshing scenes for universe ${effectiveUniverseId}`);
+      console.log(
+        `THUNK deleteSceneAndRefresh: Refreshing scenes for universe ${effectiveUniverseId}`
+      );
       await dispatch(fetchScenesForUniverse(effectiveUniverseId)).unwrap();
 
       return deleteResult;

@@ -1,16 +1,16 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as Tone from 'tone';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
-import { ModalSystem } from '../../../components/modals/index.mjs';
 import Select from '../../../components/common/Select';
 import Slider from '../../../components/common/Slider';
 import Spinner from '../../../components/common/Spinner';
-import '../../../styles/Modal.css';
+import { ModalSystem } from '../../../components/modals/index.mjs';
 import { audioService } from '../../../services';
-import { generateRandomId } from '../../../utils/idGenerators.mjs';
+import '../../../styles/Modal.css';
+import { initializeAudioContext } from '../../../utils/audioManager';
 
 /**
  * Modal for generating audio based on the physics of a universe and scene.
@@ -151,8 +151,11 @@ const AudioGenerationModal = ({
     setIsGenerating(true);
 
     try {
-      // Start audio context if not already started
-      await Tone.start();
+      // Initialize audio context safely using our manager
+      const success = await initializeAudioContext();
+      if (!success) {
+        throw new Error('Failed to initialize audio context');
+      }
 
       // Generate audio using the API
       const response = await audioService.generateAudio(universeId, sceneId, {

@@ -39,8 +39,8 @@ export const fetchUniverses = createAsyncThunk(
       console.log('Fetching universes with params:', params);
 
       // First, import modules we'll need
-      const authModule = await import('../../services/auth.service.mjs');
-      const demoModule = await import('../../services/demo-user.service.mjs');
+      const authModule = await import(/* @vite-ignore */ '../../services/auth.service.mjs');
+      const demoModule = await import(/* @vite-ignore */ '../../services/demo-user.service.mjs');
 
       // Check if this is a demo session
       const isDemoSession = demoModule.isDemoSession();

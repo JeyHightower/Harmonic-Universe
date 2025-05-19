@@ -59,7 +59,7 @@ export const getScenesByUniverse = async (universeId) => {
     // First check if the universe exists
     try {
       // Import universeService using dynamic import to avoid circular dependency
-      const { default: apiAdapter } = await import('./api.adapter.mjs');
+      const { default: apiAdapter } = await import(/* @vite-ignore */ './api.adapter.mjs');
 
       console.log('scenes.service: Checking if universe exists:', validatedId);
       const universeResponse = await apiAdapter.universes.getUniverse(validatedId);
@@ -83,7 +83,9 @@ export const getScenesByUniverse = async (universeId) => {
         });
       }
 
-      console.log(`Universe with ID ${validatedId} exists and is accessible, proceeding to fetch scenes`);
+      console.log(
+        `Universe with ID ${validatedId} exists and is accessible, proceeding to fetch scenes`
+      );
     } catch (universeError) {
       // If we can't verify the universe, log but continue to try fetching scenes
       console.warn(`Could not verify if universe ${validatedId} exists:`, universeError);
@@ -205,7 +207,7 @@ export const getSceneById = async (sceneId) => {
         errors.push(error3);
 
         // If all attempts fail and we have a 404 status in any of the errors, return a scene not found error
-        const hasNotFoundError = errors.some(err => err.response?.status === 404);
+        const hasNotFoundError = errors.some((err) => err.response?.status === 404);
         if (hasNotFoundError) {
           const errorMessage = `Scene with ID ${normalizedId} not found. It may have been deleted or doesn't exist.`;
           console.error('scenes', errorMessage);
@@ -213,7 +215,7 @@ export const getSceneById = async (sceneId) => {
         }
 
         // If we have any other errors, return the most specific one
-        const specificError = errors.find(err => err.response?.status) || errors[0];
+        const specificError = errors.find((err) => err.response?.status) || errors[0];
         console.error('scenes', 'All attempts failed:', specificError);
         return responseHandler.handleError(specificError);
       }
@@ -285,10 +287,10 @@ export const createScene = async (param1, param2) => {
 
     // Convert any camelCase keys to snake_case as expected by the API
     const formattedData = {};
-    Object.keys(sceneData).forEach(key => {
+    Object.keys(sceneData).forEach((key) => {
       // Convert camelCase to snake_case
       if (/[A-Z]/.test(key)) {
-        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
         formattedData[snakeKey] = sceneData[key];
       } else {
         formattedData[key] = sceneData[key];
@@ -332,7 +334,7 @@ export const createScene = async (param1, param2) => {
     console.error('scenes', 'Error details:', {
       message: error.message,
       response: error.response?.data,
-      status: error.response?.status
+      status: error.response?.status,
     });
     return responseHandler.handleError(error);
   }
@@ -372,7 +374,11 @@ export const updateScene = async (sceneId, sceneData) => {
       if (typeof sceneId === 'string' && /^\d+$/.test(sceneId)) {
         // Convert to integer if it's a numeric string
         response.data.scene.id = parseInt(sceneId, 10);
-        console.log('scenes', 'Converted string scene ID to integer in update response:', response.data.scene.id);
+        console.log(
+          'scenes',
+          'Converted string scene ID to integer in update response:',
+          response.data.scene.id
+        );
       }
     }
 

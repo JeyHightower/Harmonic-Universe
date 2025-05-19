@@ -99,7 +99,7 @@ export const register = async (userData) => {
 export async function demoLogin() {
   try {
     // Import the demo user service
-    const { demoUserService } = await import('./demo-user.service.mjs');
+    const { demoUserService } = await import(/* @vite-ignore */ './demo-user.service.mjs');
 
     // Use the demo user service to set up the demo session
     const demoData = demoUserService.setupDemoSession();
