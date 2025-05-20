@@ -17,6 +17,7 @@ import './styles/reset.css'; // First: Reset browser defaults
 import './styles/theme.css'; // Third: Define theme variables
 import './styles/variables.css'; // Second: Define CSS variables
 import { AUTH_CONFIG, ensurePortalRoot } from './utils';
+import { ROUTER_FUTURE_FLAGS } from './utils/ensure-router-provider.mjs';
 import {
     applyModalFixes,
     fixModalFormElements,
@@ -131,21 +132,18 @@ const getRootElement = () => {
 // Add debugging info
 console.log('MODAL SYSTEM: Using Redux-based modal management exclusively');
 
-// Configure React Router - IMPORTANT: Remove any unused future flags
-// Only keeping the absolutely necessary flags to minimize conflicts
+// Configure React Router with future flags at the router level
 const router = createBrowserRouter(
   [
     {
       path: '*',
-      element: <App />,
-      // Add v7_startTransition at the route level instead of the router level
-      // This ensures compatibility with React 18 and React Router v7
-      future: {
-        v7_startTransition: true,
-        v7_relativeSplatPath: true
-      }
+      element: <App />
     },
-  ]
+  ],
+  {
+    // Apply future flags at the router level to prevent warnings
+    future: ROUTER_FUTURE_FLAGS
+  }
 );
 
 // Logs React Router configuration in development mode
@@ -167,7 +165,10 @@ const renderApp = () => {
         <StrictMode>
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
-              <RouterProvider router={router} />
+              <RouterProvider
+                router={router}
+                future={ROUTER_FUTURE_FLAGS}
+              />
             </PersistGate>
           </Provider>
         </StrictMode>

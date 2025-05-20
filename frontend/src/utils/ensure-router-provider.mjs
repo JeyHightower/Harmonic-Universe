@@ -1,5 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import React from "react";
+
+// React Router future flags configuration
+const ROUTER_FUTURE_FLAGS = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true
+};
 
 /**
  * Safe version of useLocation that ensures Router Provider is available
@@ -50,3 +55,6 @@ export const useRouterProvider = () => {
 
 // For backward compatibility
 export const ensureRouterProvider = useRouterProvider;
+
+// Export future flags for consistent use across the application
+export { ROUTER_FUTURE_FLAGS };

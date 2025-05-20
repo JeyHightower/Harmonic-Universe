@@ -1,388 +1,359 @@
 /**
- * AudioManager - A utility for safely initializing and managing Tone.js AudioContext
- * This ensures AudioContext is only started after user interaction
+ * Global Audio Manager
+ *
+ * Provides centralized control of audio initialization and state management
+ * to prevent concurrent initialization attempts and handle errors gracefully.
  */
 
-// IMPORTANT: Do NOT import Tone directly to prevent auto-initialization
-// The Tone module will be passed in from main.jsx after being properly loaded
-
-// Global event coordination system for audio initialization
-const setupAudioEventSystem = () => {
-  if (typeof window !== 'undefined' && !window.__AUDIO_EVENT_SYSTEM) {
-    window.__AUDIO_EVENT_SYSTEM = {
-      dispatchEvent: (eventName, data) => {
-        window.dispatchEvent(new CustomEvent(`audio:${eventName}`, { detail: data }));
-      },
-      addEventListener: (eventName, callback) => {
-        window.addEventListener(`audio:${eventName}`, (e) => callback(e.detail), false);
-        return () => window.removeEventListener(`audio:${eventName}`, callback);
-      },
-      // Track state globally
-      STATE: {
-        lastInitTime: 0,
-        initialized: false,
-        initializing: false,
-        attempts: 0
-      }
-    };
-  }
-  return window.__AUDIO_EVENT_SYSTEM;
+// Global audio initialization state
+const AudioState = {
+  UNINITIALIZED: 'uninitialized',
+  INITIALIZING: 'initializing',
+  INITIALIZED: 'initialized',
+  FAILED: 'failed',
+  WAITING_FOR_USER: 'waiting_for_user'
 };
 
-// Initialize the event system
-const audioEvents = setupAudioEventSystem();
+// Error codes for audio initialization
+const AudioErrorCode = {
+  IN_PROGRESS: 'INIT_IN_PROGRESS',
+  DEBOUNCED: 'INIT_DEBOUNCED',
+  NO_USER_GESTURE: 'NO_USER_GESTURE',
+  APP_LOADING: 'APP_LOADING',
+  ALREADY_INITIALIZED: 'ALREADY_INITIALIZED',
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR'
+};
 
-// Track whether we've initialized Tone.js
-let isInitialized = false;
-let pendingCallbacks = [];
-let initializationAttempts = 0;
-const MAX_ATTEMPTS = 3;
+// Singleton to track global audio initialization state
+class AudioManager {
+  constructor() {
+    this.state = AudioState.UNINITIALIZED;
+    this.pendingPromise = null;
+    this.lastAttempt = 0;
+    this.attempts = 0;
+    this.error = null;
+    this.debounceTime = 1000; // ms
+    this.appReady = false;  // Track if app has loaded enough to initialize audio
+    this.userGestureTimestamp = 0; // Track the latest user gesture timestamp
 
-// Add a flag to track whether initialization is in progress
-let isInitializing = false;
+    // Set a timer to mark the app as ready after a delay
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        this.appReady = true;
+        if (window.__AUDIO_MANAGER) {
+          window.__AUDIO_MANAGER.appReady = true;
+        }
+        console.debug('[AudioManager] App marked as ready for audio initialization');
+      }, 3000); // Wait 3 seconds before allowing auto-initialization
+    }
 
-// Track when the last initialization attempt was made
-let lastInitializationTime = 0;
-const MIN_INIT_INTERVAL = 500; // ms
+    // Initialize global state
+    if (typeof window !== 'undefined') {
+      window.__AUDIO_MANAGER = {
+        state: this.state,
+        lastAttempt: this.lastAttempt,
+        attempts: this.attempts,
+        initialized: false,
+        appReady: this.appReady,
+        errors: [],
+        userGestureTimestamp: 0
+      };
+    }
+  }
 
-// Add a flag to track if we're in a user gesture context
-let inUserGesture = false;
+  /**
+   * Check if audio is currently being initialized
+   * @returns {boolean} True if initialization is in progress
+   */
+  isInitializing() {
+    const inProgress = this.state === AudioState.INITIALIZING && this.pendingPromise !== null;
 
-// Create a special unlocked context flag
-let hasUnlockedAudioContext = false;
+    // If there's a global promise, check that too
+    if (typeof window !== 'undefined' && window.__GLOBAL_AUDIO_STATE) {
+      return inProgress || window.__GLOBAL_AUDIO_STATE.initializing;
+    }
+
+    return inProgress;
+  }
+
+  /**
+   * Check if audio has been successfully initialized
+   * @returns {boolean} True if audio is initialized
+   */
+  isInitialized() {
+    const isInit = this.state === AudioState.INITIALIZED;
+
+    // Also check global initialization state if available
+    if (typeof window !== 'undefined') {
+      if (window.__GLOBAL_AUDIO_STATE) {
+        return isInit || window.__GLOBAL_AUDIO_STATE.initialized;
+      }
+
+      // Also check Tone.js context state if available
+      if (window.Tone && window.Tone.context && window.Tone.context.state === 'running') {
+        return true;
+      }
+    }
+
+    return isInit;
+  }
+
+  /**
+   * Get the global audio state
+   * @returns {string} Current audio state
+   */
+  getState() {
+    return this.state;
+  }
+
+  /**
+   * Check if the app is ready for audio initialization
+   * @returns {boolean} True if the app is ready
+   */
+  isAppReady() {
+    return this.appReady;
+  }
+
+  /**
+   * Set the audio state
+   * @param {string} state New audio state
+   */
+  setState(state) {
+    this.state = state;
+    if (window.__AUDIO_MANAGER) {
+      window.__AUDIO_MANAGER.state = state;
+      window.__AUDIO_MANAGER.initialized = state === AudioState.INITIALIZED;
+    }
+  }
+
+  /**
+   * Record an error
+   * @param {Error} error The error to record
+   */
+  recordError(error) {
+    this.error = error;
+    if (window.__AUDIO_MANAGER) {
+      if (!window.__AUDIO_MANAGER.errors) {
+        window.__AUDIO_MANAGER.errors = [];
+      }
+      window.__AUDIO_MANAGER.errors.push({
+        time: Date.now(),
+        message: error.message,
+        code: error.code || 'UNKNOWN'
+      });
+    }
+  }
+
+  /**
+   * Track a user gesture that can be used for audio initialization
+   */
+  trackUserGesture() {
+    const now = Date.now();
+    this.userGestureTimestamp = now;
+
+    if (typeof window !== 'undefined') {
+      window.__AUDIO_USER_GESTURE_TIMESTAMP = now;
+      if (window.__AUDIO_MANAGER) {
+        window.__AUDIO_MANAGER.userGestureTimestamp = now;
+      }
+      console.debug('[AudioManager] User gesture tracked at', new Date(now).toISOString());
+    }
+  }
+
+  /**
+   * Check if a recent user gesture is available
+   * @returns {boolean} True if a recent user gesture is available
+   */
+  hasUserGesture() {
+    // Check our internal timestamp
+    const internalGesture = this.userGestureTimestamp > 0 &&
+                            (Date.now() - this.userGestureTimestamp < 5000);
+
+    // Also check window global (legacy support)
+    const windowGesture = typeof window !== 'undefined' &&
+                          window.__AUDIO_USER_GESTURE_TIMESTAMP &&
+                          (Date.now() - window.__AUDIO_USER_GESTURE_TIMESTAMP < 5000);
+
+    return internalGesture || windowGesture;
+  }
+
+  /**
+   * Record an initialization attempt
+   */
+  recordAttempt() {
+    this.attempts++;
+    this.lastAttempt = Date.now();
+    if (window.__AUDIO_MANAGER) {
+      window.__AUDIO_MANAGER.attempts = this.attempts;
+      window.__AUDIO_MANAGER.lastAttempt = this.lastAttempt;
+    }
+  }
+
+  /**
+   * Check if initialization is allowed (not within debounce period)
+   * @returns {boolean} True if initialization is allowed
+   */
+  canInitialize() {
+    return Date.now() - this.lastAttempt > this.debounceTime;
+  }
+
+  /**
+   * Check initialization preconditions and return appropriate error if any fail
+   * @returns {Error|null} Error if initialization should not proceed, null if ok to proceed
+   */
+  checkInitPreconditions() {
+    // Check if already initialized successfully
+    if (this.isInitialized()) {
+      const error = new Error('Audio already initialized');
+      error.code = AudioErrorCode.ALREADY_INITIALIZED;
+      return error;
+    }
+
+    // Check if initialization is in progress
+    if (this.isInitializing()) {
+      const error = new Error('Audio initialization already in progress');
+      error.code = AudioErrorCode.IN_PROGRESS;
+      return error;
+    }
+
+    // Check debounce period
+    if (!this.canInitialize()) {
+      const error = new Error('Audio initialization attempted too quickly');
+      error.code = AudioErrorCode.DEBOUNCED;
+      return error;
+    }
+
+    // Check for user gesture
+    if (!this.hasUserGesture()) {
+      const error = new Error('Audio initialization requires user interaction');
+      error.code = AudioErrorCode.NO_USER_GESTURE;
+      return error;
+    }
+
+    // Check if app is ready
+    if (!this.appReady) {
+      const error = new Error('App not ready for audio initialization');
+      error.code = AudioErrorCode.APP_LOADING;
+      return error;
+    }
+
+    return null;
+  }
+
+  /**
+   * Reset the manager state
+   */
+  reset() {
+    this.state = AudioState.UNINITIALIZED;
+    this.pendingPromise = null;
+    this.lastAttempt = 0;
+    this.attempts = 0;
+    this.error = null;
+
+    if (window.__AUDIO_MANAGER) {
+      window.__AUDIO_MANAGER.state = this.state;
+      window.__AUDIO_MANAGER.lastAttempt = this.lastAttempt;
+      window.__AUDIO_MANAGER.attempts = this.attempts;
+      window.__AUDIO_MANAGER.initialized = false;
+      window.__AUDIO_MANAGER.errors = [];
+    }
+  }
+}
+
+// Create a singleton instance
+const audioManager = new AudioManager();
+
+// Make the audioManager globally available for direct access
+if (typeof window !== 'undefined') {
+  window.audioManager = audioManager;
+
+  // Add global event listeners to track user interactions
+  const trackUserInteraction = () => {
+    audioManager.trackUserGesture();
+    console.debug('[AudioManager] User interaction detected and tracked');
+  };
+
+  // Capture all possible user interaction events
+  const interactionEvents = [
+    'click', 'touchstart', 'mousedown',
+    'keydown', 'pointerdown', 'touchend'
+  ];
+
+  // Add listeners with passive option for better performance
+  interactionEvents.forEach(eventType => {
+    window.addEventListener(eventType, trackUserInteraction, { passive: true });
+  });
+}
 
 /**
- * Initialize Tone.js AudioContext
- * This should only be called after user interaction
- * @param {Object} Tone - The Tone.js module instance to use
- * @returns {Promise<boolean>} Whether initialization was successful
+ * Initialize the audio context for the application
+ * @returns {Promise<boolean>} A promise that resolves to true if initialization was successful
  */
-export const initializeAudioContext = async (Tone) => {
-  // Make sure we have a valid Tone object
-  if (!Tone) {
-    console.error('No Tone module provided to initializeAudioContext');
-    return false;
-  }
-
-  // Use the shared state from the event system
-  const { STATE } = window.__AUDIO_EVENT_SYSTEM || setupAudioEventSystem();
-
-  // Check global initialization lock
-  if (STATE.initializing) {
-    audioEvents.dispatchEvent('initialization-skipped', { reason: 'already-in-progress' });
-    console.warn('Audio initialization already in progress (global state)');
-    return false;
-  }
-
-  // Apply rate limiting to initialization attempts
-  const now = Date.now();
-  if (now - STATE.lastInitTime < MIN_INIT_INTERVAL) {
-    audioEvents.dispatchEvent('initialization-throttled', {
-      timeSinceLastAttempt: now - STATE.lastInitTime
-    });
-    console.warn(`Audio initialization attempted too quickly (${now - STATE.lastInitTime}ms since last attempt)`);
-    return false;
-  }
-
-  // Global check for already initialized and working
-  if (STATE.initialized && Tone.context && Tone.context.state === 'running') {
-    audioEvents.dispatchEvent('already-initialized', { contextState: Tone.context.state });
+const initializeAudioContext = async () => {
+  // If we already successfully initialized, return early
+  if (audioManager.isInitialized()) {
     return true;
   }
 
-  // Prevent excessive initialization attempts
-  if (STATE.attempts >= MAX_ATTEMPTS) {
-    audioEvents.dispatchEvent('max-attempts-reached', { attempts: STATE.attempts });
-    console.warn(`AudioContext initialization failed after ${STATE.attempts} attempts.`);
-    return false;
-  }
+  // Check preconditions before attempting initialization
+  const preconditionError = audioManager.checkInitPreconditions();
+  if (preconditionError) {
+    console.warn('Audio initialization preconditions not met:', preconditionError.message);
+    audioManager.recordError(preconditionError);
 
-  // Set all initialization locks
-  STATE.initializing = true;
-  STATE.lastInitTime = now;
-  STATE.attempts++;
-  isInitializing = true;
-  window.__AUDIO_INITIALIZING = true;
+    // If it's just because we don't have a user gesture yet, attempt to work around it
+    if (preconditionError.code === AudioErrorCode.NO_USER_GESTURE && typeof window !== 'undefined') {
+      // Force track a user gesture for cases where we're inside a genuine user interaction
+      // but the manager doesn't know about it yet
+      audioManager.trackUserGesture();
 
-  // Broadcast initialization started
-  audioEvents.dispatchEvent('initialization-started', {
-    attempt: STATE.attempts,
-    timestamp: now
-  });
-
-  try {
-    console.log('Starting AudioContext initialization...');
-
-    // Check if context already exists and its state
-    if (Tone.context && Tone.context.state === 'running') {
-      isInitialized = true;
-      isInitializing = false;
-      return true;
-    }
-
-    // Detect browser type for specialized handling
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-    // Different approach for different browser families
-    if (isIOS || isSafari) {
-      console.log('Using iOS/Safari audio unlock sequence');
-
-      // For iOS/Safari we need to use a HTML audio element first
-      try {
-        await unlockAudioForMobile();
-        hasUnlockedAudioContext = true;
-      } catch (e) {
-        console.warn('Mobile audio unlock failed:', e);
+      // Retry the precondition check
+      const retryError = audioManager.checkInitPreconditions();
+      if (retryError && retryError.code === AudioErrorCode.NO_USER_GESTURE) {
+        return false; // Still no user gesture, give up
       }
-    }
-
-    // Use a standard approach for all browsers
-    try {
-      console.log('Creating and playing silent sound to unlock audio...');
-      await createAndPlaySilentSound();
-      hasUnlockedAudioContext = true;
-    } catch (e) {
-      console.warn('Silent sound failed:', e);
-    }
-
-    // Carefully create or resume Tone.js context
-    console.log('Now attempting to start Tone.js...');
-
-    try {
-      // If we already have a context, try to resume it
-      if (Tone.context) {
-        if (Tone.context.state !== 'running') {
-          await Tone.context.resume();
-          console.log('Existing Tone.js context resumed');
-        }
-      } else {
-        // Explicitly create a new context with the right settings
-        console.log('Creating new Tone.js context');
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        const audioContext = new AudioContextClass();
-
-        // Resume the context immediately within the user gesture
-        await audioContext.resume();
-
-        // Assign this context to Tone.js
-        Tone.setContext(audioContext);
-        console.log('New AudioContext created and assigned to Tone.js');
-      }
-    } catch (e) {
-      console.warn('Error initializing Tone.js context directly:', e);
-
-      // Fall back to the standard Tone.start() method
-      try {
-        await Tone.start();
-        console.log('Tone.js started with fallback method');
-      } catch (toneError) {
-        console.error('Failed to start Tone.js with fallback method:', toneError);
-      }
-    }
-
-    // Verify if it worked
-    if (Tone.context && Tone.context.state === 'running') {
-      isInitialized = true;
-
-      // Update global state
-      STATE.initialized = true;
-      STATE.initializing = false;
-
-      // Release all locks
-      isInitializing = false;
-      window.__AUDIO_INITIALIZING = false;
-
-      // Broadcast success
-      audioEvents.dispatchEvent('initialization-success', {
-        contextState: Tone.context.state,
-        attempts: STATE.attempts
-      });
-
-      console.log('Tone.js AudioContext successfully started');
-
-      // Setup visibility change listener
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' &&
-            Tone.context &&
-            Tone.context.state === 'suspended') {
-          console.log('Page became visible, attempting to resume AudioContext');
-          Tone.context.resume().catch((error) => {
-            console.warn('Failed to resume AudioContext on visibility change:', error);
-          });
-        }
-      });
-
-      // Execute any pending callbacks
-      while (pendingCallbacks.length > 0) {
-        try {
-          const callback = pendingCallbacks.shift();
-          callback(Tone);
-        } catch (e) {
-          console.error('Error executing audio callback:', e);
-        }
-      }
-
-      return true;
     } else {
-      console.warn('AudioContext still not running after initialization attempts');
-
-      // Update global state
-      STATE.initializing = false;
-
-      // Release all locks
-      isInitializing = false;
-      window.__AUDIO_INITIALIZING = false;
-
-      // Broadcast failure
-      audioEvents.dispatchEvent('initialization-failed', {
-        reason: 'context-not-running',
-        attempts: STATE.attempts
-      });
-
       return false;
     }
-  } catch (error) {
-    console.error('Failed to initialize AudioContext:', error);
-
-    // Update global state
-    STATE.initializing = false;
-
-    // Release all locks on error
-    isInitializing = false;
-    window.__AUDIO_INITIALIZING = false;
-
-    // Broadcast error
-    audioEvents.dispatchEvent('initialization-error', {
-      error: error.message,
-      attempts: STATE.attempts
-    });
-
-    return false;
-  }
-};
-
-/**
- * Helper function to create and play a silent sound
- * This helps with AudioContext initialization on most browsers
- */
-const createAndPlaySilentSound = async () => {
-  // Create a temporary context
-  const tempContext = new (window.AudioContext || window.webkitAudioContext)();
-
-  // Create a silent buffer
-  const buffer = tempContext.createBuffer(1, 1, 22050);
-  const source = tempContext.createBufferSource();
-  source.buffer = buffer;
-  source.connect(tempContext.destination);
-
-  // Play the silent sound
-  source.start(0);
-
-  // Resume the context
-  await tempContext.resume();
-
-  // Close it after a short delay
-  setTimeout(() => {
-    if (tempContext && tempContext.state !== 'closed') {
-      tempContext.close().catch(e => console.warn('Error closing temp context:', e));
-    }
-  }, 100);
-
-  return true;
-};
-
-/**
- * Special function to unlock audio on mobile devices
- * Combines multiple approaches for maximum compatibility
- */
-const unlockAudioForMobile = async () => {
-  // Method 1: Silent audio element
-  const audioEl = document.createElement('audio');
-  audioEl.src = 'data:audio/mp3;base64,/+MYxAAAAANIAAAAAExBTUUzLjk4LjIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-  audioEl.loop = false;
-  audioEl.autoplay = false;
-  audioEl.muted = false;
-  audioEl.volume = 0.01;
-  document.body.appendChild(audioEl);
-
-  try {
-    await audioEl.play();
-    await new Promise(resolve => setTimeout(resolve, 100));
-    audioEl.pause();
-  } finally {
-    document.body.removeChild(audioEl);
   }
 
-  // Method 2: WebAudio oscillator (works well on iOS)
+  // Record this attempt
+  audioManager.recordAttempt();
+  audioManager.setState(AudioState.INITIALIZING);
+
   try {
-    const tempContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = tempContext.createOscillator();
-    const gainNode = tempContext.createGain();
-    gainNode.gain.value = 0.001; // Nearly silent
-    oscillator.connect(gainNode);
-    gainNode.connect(tempContext.destination);
-    oscillator.start(0);
-    oscillator.stop(0.001);
-
-    await tempContext.resume();
-
-    setTimeout(() => {
-      if (tempContext && tempContext.state !== 'closed') {
-        tempContext.close().catch(e => {});
+    // If we have Tone.js available, try to initialize it
+    if (typeof window !== 'undefined' && window.Tone) {
+      try {
+        await window.Tone.start();
+        console.debug('[AudioManager] Audio context initialized successfully via Tone.js');
+        audioManager.setState(AudioState.INITIALIZED);
+        return true;
+      } catch (toneError) {
+        console.warn('[AudioManager] Failed to initialize with Tone.start(), falling back to AudioContext', toneError);
       }
-    }, 100);
+    }
 
-    return true;
-  } catch (e) {
-    console.warn('Oscillator method failed:', e);
+    // Fallback to standard Web Audio API
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const context = new AudioContext();
+      if (context.state === 'running' || await context.resume()) {
+        console.debug('[AudioManager] Audio context initialized successfully via Web Audio API');
+        audioManager.setState(AudioState.INITIALIZED);
+        return true;
+      }
+    }
+
+    throw new Error('No audio context available');
+  } catch (error) {
+    console.error('[AudioManager] Failed to initialize audio context:', error);
+    audioManager.recordError(error);
+    audioManager.setState(AudioState.FAILED);
     return false;
   }
 };
 
-/**
- * Special function to unlock audio on iOS by playing a silent audio file
- * @deprecated Use unlockAudioForMobile instead
- */
-const unlockAudioForIOS = unlockAudioForMobile;
-
-/**
- * Check if AudioContext is initialized and running
- * @param {Object} Tone - The Tone.js module instance to check
- * @returns {boolean} Whether AudioContext is initialized and running
- */
-export const isAudioContextReady = (Tone) => {
-  return isInitialized && Tone && Tone.context && Tone.context.state === 'running';
-};
-
-/**
- * Execute a function only after AudioContext is initialized
- * This function now accepts a Tone parameter to avoid global imports
- * @param {Function} callback Function to execute - will receive Tone as a parameter
- * @param {Object} Tone - The Tone.js module instance
- */
-export const withAudioContext = (callback, Tone) => {
-  if (Tone && isAudioContextReady(Tone)) {
-    callback(Tone);
-  } else {
-    pendingCallbacks.push(callback);
-  }
-};
-
-/**
- * Legacy function to maintain compatibility with existing code
- * @deprecated Use the explicit Tone parameter versions instead
- */
-export const setupAudioContextInitialization = () => {
-  console.warn('setupAudioContextInitialization is deprecated, using main.jsx initialization instead');
-  // This function is kept for backward compatibility but no longer used
-  // All initialization now happens in main.jsx with explicit Tone loading
-};
-
-// Default export with all functions
-export default {
-  initializeAudioContext,
-  isAudioContextReady,
-  withAudioContext,
-  setupAudioContextInitialization,
-};
+// Export the singleton and constants
+export { AudioErrorCode, AudioState, initializeAudioContext };
+export default audioManager;

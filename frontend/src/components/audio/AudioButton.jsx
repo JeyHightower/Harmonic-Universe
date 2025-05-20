@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { hideUnlockButton, initializeAudio } from '../../store/slices/audioSlice.mjs';
+import { hideUnlockButton, initializeAudio, unlockAttempted } from '../../store/slices/audioSlice.mjs';
 
 /**
  * AudioButton component for user-triggered audio context initialization
@@ -16,7 +16,16 @@ const AudioButton = () => {
     e.preventDefault();
     e.stopPropagation();
 
+    // Mark that we have explicit user gesture for audio
+    window.__AUDIO_USER_GESTURE_TIMESTAMP = Date.now();
+
+    // Mark that an explicit unlock attempt was made
+    dispatch(unlockAttempted());
+
     try {
+      // Wait a brief moment to ensure browser recognizes this as a user gesture
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       // Try to initialize audio through Redux
       await dispatch(initializeAudio()).unwrap();
 

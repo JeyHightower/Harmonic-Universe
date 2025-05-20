@@ -151,19 +151,25 @@ const AudioGenerationModal = ({
     setIsGenerating(true);
 
     try {
-      // Initialize audio context safely using our manager
-      const success = await initializeAudioContext();
-      if (!success) {
-        throw new Error('Failed to initialize audio context');
+      // Track user gesture before initializing audio
+      if (typeof window !== 'undefined' && window.audioManager) {
+        window.audioManager.trackUserGesture();
+      } else if (typeof window !== 'undefined' && window.__AUDIO_MANAGER) {
+        window.__AUDIO_MANAGER.userGestureTimestamp = Date.now();
       }
 
-      // Ensure Tone.js context is running
-      if (Tone.context && Tone.context.state !== 'running') {
-        try {
-          await Tone.context.resume();
-          console.log('AudioContext resumed before audio generation');
-        } catch (resumeError) {
-          console.warn('Failed to resume AudioContext:', resumeError);
+      // Initialize audio context safely using our manager - this should now recognize the user gesture
+      const success = await initializeAudioContext();
+      if (!success) {
+        // If initialization fails, try a direct approach with user gesture already registered
+        if (Tone.context && Tone.context.state !== 'running') {
+          try {
+            await Tone.start(); // This is the recommended way to start Tone.js with user gesture
+            console.log('AudioContext started directly via Tone.start()');
+          } catch (startError) {
+            console.warn('Failed to start AudioContext via Tone.start():', startError);
+            throw new Error('Failed to initialize audio context: ' + startError.message);
+          }
         }
       }
 

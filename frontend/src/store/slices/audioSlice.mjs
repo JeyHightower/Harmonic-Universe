@@ -20,7 +20,7 @@ export const initializeAudio = createAsyncThunk(
   async (_, { getState, rejectWithValue, dispatch }) => {
     const { audio } = getState();
 
-    // First check our own state
+    // First check our own Redux state
     if (audio.initializing) {
       console.error('Error initializing audio context: Audio initialization already in progress');
       return rejectWithValue({
@@ -29,25 +29,53 @@ export const initializeAudio = createAsyncThunk(
       });
     }
 
+    // Check if already successfully initialized
+    if (audio.initialized && audio.ready && audio.contextState === 'running') {
+      console.debug('Audio already initialized and running, returning current state');
+      return {
+        contextState: audio.contextState,
+        iOS: audio.iOS,
+        safari: audio.safari,
+      };
+    }
+
     // Check global audio event system
-    if (typeof window !== 'undefined' && window.__AUDIO_EVENT_SYSTEM) {
-      const { STATE } = window.__AUDIO_EVENT_SYSTEM;
-      if (STATE.initializing) {
-        return rejectWithValue({
-          message: 'Audio initialization already in progress in another component',
-          code: 'GLOBAL_INIT_IN_PROGRESS'
-        });
+    if (typeof window !== 'undefined') {
+      // Check AudioManager if it exists
+      if (window.__AUDIO_MANAGER) {
+        if (window.__AUDIO_MANAGER.state === 'INITIALIZING') {
+          return rejectWithValue({
+            message: 'Audio initialization already in progress in AudioManager',
+            code: 'GLOBAL_INIT_IN_PROGRESS'
+          });
+        }
       }
 
-      // If already successful globally, just return that state
-      if (STATE.initialized) {
-        const Tone = await import('tone');
-        if (Tone.context && Tone.context.state === 'running') {
-          return {
-            contextState: Tone.context.state,
-            iOS: /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream,
-            safari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
-          };
+      // Also check legacy event system
+      if (window.__AUDIO_EVENT_SYSTEM) {
+        const { STATE } = window.__AUDIO_EVENT_SYSTEM;
+        if (STATE.initializing) {
+          return rejectWithValue({
+            message: 'Audio initialization already in progress in another component',
+            code: 'GLOBAL_INIT_IN_PROGRESS'
+          });
+        }
+
+        // If already successful globally, just return that state
+        if (STATE.initialized) {
+          try {
+            const Tone = await import('tone');
+            if (Tone.context && Tone.context.state === 'running') {
+              return {
+                contextState: Tone.context.state,
+                iOS: /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream,
+                safari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+              };
+            }
+          } catch (err) {
+            // Continue with initialization if we can't verify context state
+            console.debug('Unable to verify Tone context state:', err);
+          }
         }
       }
     }
@@ -65,8 +93,33 @@ export const initializeAudio = createAsyncThunk(
       });
     }
 
+    // Check if this is triggered by a user gesture
+    // In browsers, user gestures create a small window of opportunity to start AudioContext
+    const hasUserGesture = (window.__AUDIO_USER_GESTURE_TIMESTAMP &&
+                            (Date.now() - window.__AUDIO_USER_GESTURE_TIMESTAMP < 5000)) ||
+                           (window.__AUDIO_MANAGER?.userGestureTimestamp &&
+                            (Date.now() - window.__AUDIO_MANAGER.userGestureTimestamp < 5000));
+
+    if (!hasUserGesture && !audio.unlockAttempted) {
+      console.warn('Audio initialization attempted without user gesture');
+      return rejectWithValue({
+        message: 'Audio initialization requires user interaction',
+        code: 'NO_USER_GESTURE'
+      });
+    }
+
     // Update last initialization time
     window.__AUDIO_LAST_INIT_TIME = now;
+
+    // Set global initialization flag
+    if (window.__AUDIO_EVENT_SYSTEM) {
+      window.__AUDIO_EVENT_SYSTEM.STATE.initializing = true;
+    }
+
+    // Also set flag in AudioManager if it exists
+    if (window.__AUDIO_MANAGER) {
+      window.__AUDIO_MANAGER.state = 'INITIALIZING';
+    }
 
     try {
       // Dynamically import Tone to prevent auto-initialization
@@ -83,8 +136,12 @@ export const initializeAudio = createAsyncThunk(
         const source = tempContext.createBufferSource();
         source.buffer = buffer;
         source.connect(tempContext.destination);
-        source.start(0);
-        await tempContext.resume();
+
+        // Start only if we have a user gesture or explicit unlock attempt
+        if (hasUserGesture || audio.unlockAttempted) {
+          source.start(0);
+          await tempContext.resume();
+        }
 
         // Close after a delay
         setTimeout(() => {
@@ -106,9 +163,12 @@ export const initializeAudio = createAsyncThunk(
         document.body.appendChild(audioEl);
 
         try {
-          await audioEl.play();
-          await new Promise(resolve => setTimeout(resolve, 100));
-          audioEl.pause();
+          // Play only if we have a user gesture or explicit unlock attempt
+          if (hasUserGesture || audio.unlockAttempted) {
+            await audioEl.play();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            audioEl.pause();
+          }
         } finally {
           document.body.removeChild(audioEl);
         }
@@ -119,13 +179,21 @@ export const initializeAudio = createAsyncThunk(
       try {
         // If context exists, try to resume it
         if (Tone.context) {
-          if (Tone.context.state !== 'running') {
+          if (Tone.context.state !== 'running' && (hasUserGesture || audio.unlockAttempted)) {
             await Tone.context.resume();
+
+            // Double-check context state after a brief pause
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
           contextState = Tone.context.state;
         } else {
-          // Create a new context
-          await Tone.start();
+          // Create a new context only if we have a user gesture or explicit unlock
+          if (hasUserGesture || audio.unlockAttempted) {
+            await Tone.start();
+          } else {
+            // Only create context, don't start it without user gesture
+            Tone.context = new (window.AudioContext || window.webkitAudioContext)();
+          }
           contextState = Tone.context ? Tone.context.state : 'unknown';
         }
       } catch (e) {
@@ -134,13 +202,20 @@ export const initializeAudio = createAsyncThunk(
           // Create a custom AudioContext and attach it to Tone.js
           // This can help overcome some browser restrictions
           const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          await audioContext.resume();
+
+          // Resume only if we have a user gesture or explicit unlock
+          if (hasUserGesture || audio.unlockAttempted) {
+            await audioContext.resume();
+          }
 
           // Set the context explicitly
           Tone.setContext(audioContext);
           contextState = audioContext.state;
         } catch (fallbackError) {
-          return rejectWithValue(`Failed to initialize audio: ${fallbackError.message}`);
+          return rejectWithValue({
+            message: `Failed to initialize audio: ${fallbackError.message}`,
+            code: 'CONTEXT_CREATION_FAILED'
+          });
         }
       }
 
@@ -150,7 +225,20 @@ export const initializeAudio = createAsyncThunk(
         safari: isSafari,
       };
     } catch (error) {
-      return rejectWithValue(`Audio initialization error: ${error.message}`);
+      return rejectWithValue({
+        message: `Audio initialization error: ${error.message}`,
+        code: error.code || 'UNKNOWN_ERROR'
+      });
+    } finally {
+      // Always clean up global initialization flags
+      if (window.__AUDIO_EVENT_SYSTEM) {
+        window.__AUDIO_EVENT_SYSTEM.STATE.initializing = false;
+      }
+
+      // Also update AudioManager state
+      if (window.__AUDIO_MANAGER) {
+        window.__AUDIO_MANAGER.state = 'FAILED';
+      }
     }
   }
 );
@@ -171,6 +259,11 @@ const audioSlice = createSlice({
     },
     setContextState(state, action) {
       state.contextState = action.payload;
+
+      // If context is now running, update ready state
+      if (action.payload === 'running') {
+        state.ready = true;
+      }
     },
     resetAudioState(state) {
       // Reset state but keep browser detection
@@ -202,6 +295,12 @@ const audioSlice = createSlice({
         if (state.ready) {
           state.unlockButtonVisible = false;
         }
+
+        // Update global state
+        if (window.__AUDIO_MANAGER) {
+          window.__AUDIO_MANAGER.state = 'INITIALIZED';
+          window.__AUDIO_MANAGER.initialized = true;
+        }
       })
       .addCase(initializeAudio.rejected, (state, action) => {
         state.initializing = false;
@@ -210,11 +309,21 @@ const audioSlice = createSlice({
         // Handle structured error responses
         if (action.payload && typeof action.payload === 'object') {
           // Check if this is just a debounce or in-progress error, not a real failure
-          if (action.payload.code === 'INIT_DEBOUNCED' || action.payload.code === 'INIT_IN_PROGRESS') {
+          if (action.payload.code === 'INIT_DEBOUNCED' ||
+              action.payload.code === 'INIT_IN_PROGRESS' ||
+              action.payload.code === 'GLOBAL_INIT_IN_PROGRESS') {
             // These are not true failures, so don't show the unlock button
             state.error = action.payload.message;
             return;
           }
+
+          // For user gesture errors, always show unlock button
+          if (action.payload.code === 'NO_USER_GESTURE') {
+            state.error = action.payload.message;
+            state.unlockButtonVisible = true;
+            return;
+          }
+
           state.error = action.payload.message || 'Unknown audio initialization error';
         } else {
           state.error = action.payload || 'Unknown audio initialization error';

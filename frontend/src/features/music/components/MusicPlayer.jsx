@@ -73,8 +73,43 @@ const MusicPlayer = ({
   // Initialize Tone.js on user interaction
   const initializeTone = async () => {
     try {
+      // Mark that we have explicit user gesture for audio
+      window.__AUDIO_USER_GESTURE_TIMESTAMP = Date.now();
+
       // Use Redux-based audio initialization
-      const success = await initAudio();
+      const success = await initAudio().catch(err => {
+        // Handle expected errors gracefully
+        if (err && err.code === 'INIT_IN_PROGRESS') {
+          console.debug('MusicPlayer: Audio initialization already in progress, waiting...');
+          // Return a polling promise that resolves when audio is ready
+          return new Promise(resolve => {
+            // Check audio status periodically until ready
+            const checkInterval = setInterval(() => {
+              if (isReady) {
+                clearInterval(checkInterval);
+                resolve(true);
+              }
+            }, 500);
+
+            // Set a timeout to avoid infinite waiting
+            setTimeout(() => {
+              clearInterval(checkInterval);
+              resolve(false);
+            }, 5000);
+          });
+        } else if (err && err.code === 'NO_USER_GESTURE') {
+          // If no user gesture, we need to show a message to the user
+          setError('Please click again to enable audio playback');
+          return false;
+        } else if (err && err.code === 'ALREADY_INITIALIZED') {
+          // Already initialized is actually a success case
+          console.debug('MusicPlayer: Audio already initialized');
+          return true;
+        } else {
+          console.debug('MusicPlayer: Audio initialization error:', err);
+          return false;
+        }
+      });
 
       if (!success) {
         throw new Error('Failed to initialize audio context');
@@ -91,7 +126,16 @@ const MusicPlayer = ({
       // Make sure context is running
       if (Tone.context && Tone.context.state !== 'running') {
         try {
+          // Try to resume audio context within user gesture window
           await Tone.context.resume();
+
+          // If resume succeeds, check state again after a short delay
+          // Sometimes browsers need a moment to fully resume
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          if (Tone.context.state !== 'running') {
+            console.warn('AudioContext still not running after resume attempt');
+          }
         } catch (resumeError) {
           console.warn('Could not resume AudioContext:', resumeError);
         }
@@ -241,6 +285,9 @@ const MusicPlayer = ({
   // Toggle playback of the current music
   const togglePlayback = async (forcedState = null) => {
     try {
+      // Mark that we have explicit user gesture for audio
+      window.__AUDIO_USER_GESTURE_TIMESTAMP = Date.now();
+
       // Initialize Tone.js on user interaction
       if (!audioContextInitialized || !isReady) {
         // Force user interaction to initialize AudioContext
@@ -277,6 +324,7 @@ const MusicPlayer = ({
 
           // Ensure AudioContext is running before starting sequence
           if (Tone.context && Tone.context.state !== 'running') {
+            // Try to resume context with the current user gesture
             await Tone.context.resume();
           }
 
@@ -308,6 +356,9 @@ const MusicPlayer = ({
     setSuccessMessage(null);
 
     try {
+      // Mark that we have explicit user gesture for audio
+      window.__AUDIO_USER_GESTURE_TIMESTAMP = Date.now();
+
       // Initialize audio context if needed
       if (!audioContextInitialized || !isReady) {
         const initialized = await initializeTone();
