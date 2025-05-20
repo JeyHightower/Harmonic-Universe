@@ -114,7 +114,7 @@ class Universe(BaseModel):
     def get_notes_count(self) -> int:
         """Get the count of notes in the universe."""
         try:
-            query = text("SELECT COUNT(*) FROM notes WHERE universe_id = :universe_id AND is_deleted = 0")
+            query = text("SELECT COUNT(*) FROM notes WHERE universe_id = :universe_id AND is_deleted = false")
             result = db.session.execute(query, {"universe_id": self.id})
             return result.scalar() or 0
         except Exception as e:

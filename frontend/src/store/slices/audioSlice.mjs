@@ -17,14 +17,56 @@ const initialState = {
 // Async thunk to initialize the audio context
 export const initializeAudio = createAsyncThunk(
   'audio/initialize',
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { getState, rejectWithValue, dispatch }) => {
     const { audio } = getState();
 
-    // Prevent multiple initialization attempts in quick succession
+    // First check our own state
     if (audio.initializing) {
       console.error('Error initializing audio context: Audio initialization already in progress');
-      return rejectWithValue('Audio initialization already in progress');
+      return rejectWithValue({
+        message: 'Audio initialization already in progress',
+        code: 'INIT_IN_PROGRESS'
+      });
     }
+
+    // Check global audio event system
+    if (typeof window !== 'undefined' && window.__AUDIO_EVENT_SYSTEM) {
+      const { STATE } = window.__AUDIO_EVENT_SYSTEM;
+      if (STATE.initializing) {
+        return rejectWithValue({
+          message: 'Audio initialization already in progress in another component',
+          code: 'GLOBAL_INIT_IN_PROGRESS'
+        });
+      }
+
+      // If already successful globally, just return that state
+      if (STATE.initialized) {
+        const Tone = await import('tone');
+        if (Tone.context && Tone.context.state === 'running') {
+          return {
+            contextState: Tone.context.state,
+            iOS: /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream,
+            safari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+          };
+        }
+      }
+    }
+
+    // Add a debounce mechanism
+    let lastInitTime = window.__AUDIO_LAST_INIT_TIME || 0;
+    const now = Date.now();
+    const DEBOUNCE_TIME = 500; // ms
+
+    if (now - lastInitTime < DEBOUNCE_TIME) {
+      console.warn(`Audio initialization attempted too quickly (${now - lastInitTime}ms since last attempt)`);
+      return rejectWithValue({
+        message: 'Audio initialization attempted too quickly',
+        code: 'INIT_DEBOUNCED'
+      });
+    }
+
+    // Update last initialization time
+    window.__AUDIO_LAST_INIT_TIME = now;
 
     try {
       // Dynamically import Tone to prevent auto-initialization
@@ -164,7 +206,21 @@ const audioSlice = createSlice({
       .addCase(initializeAudio.rejected, (state, action) => {
         state.initializing = false;
         state.attempts += 1;
-        state.error = action.payload || 'Unknown audio initialization error';
+
+        // Handle structured error responses
+        if (action.payload && typeof action.payload === 'object') {
+          // Check if this is just a debounce or in-progress error, not a real failure
+          if (action.payload.code === 'INIT_DEBOUNCED' || action.payload.code === 'INIT_IN_PROGRESS') {
+            // These are not true failures, so don't show the unlock button
+            state.error = action.payload.message;
+            return;
+          }
+          state.error = action.payload.message || 'Unknown audio initialization error';
+        } else {
+          state.error = action.payload || 'Unknown audio initialization error';
+        }
+
+        // Only show unlock button for actual errors, not for debounced attempts
         state.unlockButtonVisible = true;
       });
   }

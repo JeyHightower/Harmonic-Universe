@@ -5,15 +5,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import {
-  selectInteractionFixes,
-  selectInteractionFixesApplied,
-  selectModalZIndexLevels,
+    applyInteractionFixes,
+    selectInteractionFixes,
+    selectInteractionFixesApplied,
+    selectModalZIndexLevels,
 } from '../../../store/slices/newModalSlice';
 import { createUniverse, updateUniverse } from '../../../store/thunks/universeThunks';
 import {
-  applyModalFixes,
-  ensurePortalRoot,
-  forceModalInteractivity,
+    applyModalFixes,
+    ensurePortalRoot,
+    forceModalInteractivity,
 } from '../../../utils/portalUtils';
 import '../styles/UniverseFormModal.css';
 
@@ -51,6 +52,7 @@ const UniverseModal = ({
   const formRef = useRef(null);
   const nameInputRef = useRef(null);
   const modalRef = useRef(null);
+  const fixesAppliedRef = useRef(false);
 
   // Determine the actual mode from props
   const actualMode = mode || (isEdit ? 'edit' : 'create');
@@ -98,7 +100,7 @@ const UniverseModal = ({
 
   // Apply modal fixes when the modal is opened
   useEffect(() => {
-    if (isModalOpen) {
+    if (isModalOpen && !fixesAppliedRef.current) {
       console.log('UniverseModal opened - applying interaction fixes directly');
 
       // First ensure the portal root exists
@@ -108,24 +110,38 @@ const UniverseModal = ({
       applyModalFixes();
       forceModalInteractivity();
 
-      // Also dispatch Redux action to update state
-      dispatch(
-        applyInteractionFixes({
-          zIndex: {
-            baseModal: 1050,
-            baseContent: 1055,
-            baseForm: 1060,
-            baseInputs: 1065,
-          },
-        })
-      );
+      // Only dispatch once to prevent multiple dispatches
+      if (!fixesAppliedRef.current && !interactionFixesApplied) {
+        try {
+          dispatch(
+            applyInteractionFixes({
+              zIndex: {
+                baseModal: 1050,
+                baseContent: 1055,
+                baseForm: 1060,
+                baseInputs: 1065,
+              },
+            })
+          );
+          fixesAppliedRef.current = true;
+        } catch (error) {
+          console.error('Failed to apply interaction fixes:', error);
+        }
+      }
 
       // Focus the name input if it exists
-      if (nameInputRef.current) {
-        nameInputRef.current.focus();
-      }
+      setTimeout(() => {
+        if (nameInputRef.current) {
+          nameInputRef.current.focus();
+        }
+      }, 100);
     }
-  }, [isModalOpen, dispatch]);
+
+    // Clean up fixes ref when modal closes
+    if (!isModalOpen) {
+      fixesAppliedRef.current = false;
+    }
+  }, [isModalOpen, dispatch, interactionFixesApplied]);
 
   // Apply additional fixes when the modal element is available
   useEffect(() => {

@@ -159,6 +159,28 @@ const enableCorsDebugging = () => {
       const originalConsoleError = console.error;
       console.error = function (...args) {
         const errorMessage = args.join(' ');
+
+        // Filter out repeated audio initialization errors that we've already handled
+        if (errorMessage.includes('Audio initialization already in progress')) {
+          // Don't log these errors to the console, they're being handled by our audio system
+          // But still track them for debugging
+          if (window.apiDebug) {
+            window.apiDebug.audioErrors = window.apiDebug.audioErrors || [];
+            window.apiDebug.audioErrors.push({
+              time: new Date().toISOString(),
+              message: errorMessage,
+              count: (window.__AUDIO_ERROR_COUNT = (window.__AUDIO_ERROR_COUNT || 0) + 1),
+            });
+          }
+
+          // Only log the first few occurrences, then suppress
+          if (window.__AUDIO_ERROR_COUNT <= 3) {
+            originalConsoleError.apply(console, args);
+          }
+
+          return;
+        }
+
         if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
           console.log(
             '%c CORS ERROR DETECTED! ',

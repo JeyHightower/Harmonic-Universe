@@ -7,7 +7,6 @@ import store, { persistor } from './store/store.mjs';
 // CSS imports in correct order to prevent conflicts
 import 'antd/dist/reset.css'; // Import Ant Design styles first
 import { startTransition, StrictMode } from 'react';
-import { AudioProvider } from './components';
 import { resetModalState } from './store/slices/newModalSlice';
 import './styles/App.css'; // Last: App-specific styles
 import './styles/buttons.css'; // Sixth: Button styles
@@ -168,9 +167,7 @@ const renderApp = () => {
         <StrictMode>
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
-              <AudioProvider>
-                <RouterProvider router={router} />
-              </AudioProvider>
+              <RouterProvider router={router} />
             </PersistGate>
           </Provider>
         </StrictMode>

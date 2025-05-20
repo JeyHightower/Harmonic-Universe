@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState, useTransition } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ErrorBoundary, NetworkErrorHandler } from './components';
+import { AudioProvider, ErrorBoundary, NetworkErrorHandler } from './components';
 import { authService } from './services/auth.service.mjs';
 import { checkAuthState, logout } from './store/slices/authSlice';
 import './styles'; // Import all styles
@@ -296,8 +296,10 @@ const App = () => {
     <ErrorBoundary fallback={<ErrorFallback />}>
       <NetworkErrorHandler>
         <Suspense fallback={<LoadingPage />}>
-          <AppContent />
-          <ModalManager />
+          <AudioProvider>
+            <AppContent />
+            <ModalManager />
+          </AudioProvider>
         </Suspense>
       </NetworkErrorHandler>
     </ErrorBoundary>

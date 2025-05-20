@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types';
+import React from 'react';
 import '../../styles/Input.css';
 
-function Input({
+const Input = React.forwardRef(({
   type = 'text',
   label,
   name,
@@ -16,7 +17,8 @@ function Input({
   required = false,
   className = '',
   rows = 3,
-}) {
+  style = {},
+}, ref) => {
   const inputId = `input-${name}`;
   const hasError = Boolean(error);
 
@@ -45,14 +47,14 @@ function Input({
 
   // Add the event handlers to the input element
   const inputProps = {
-    ...props,
     onMouseDown: handleMouseDown,
     onClick: handleClick,
     style: {
       pointerEvents: 'auto',
-      cursor: props.type === 'text' ? 'text' : 'pointer',
+      cursor: type === 'text' ? 'text' : 'pointer',
       position: 'relative',
       zIndex: '10000',
+      ...style,
     },
   };
 
@@ -87,6 +89,8 @@ function Input({
             if (onClick) onClick(e);
           }}
           onMouseDown={handleMouseDown}
+          style={inputProps.style}
+          ref={ref}
         />
       ) : (
         <input
@@ -111,6 +115,8 @@ function Input({
             if (onClick) onClick(e);
           }}
           onMouseDown={handleMouseDown}
+          style={inputProps.style}
+          ref={ref}
         />
       )}
       {hasError && (
@@ -120,7 +126,9 @@ function Input({
       )}
     </div>
   );
-}
+});
+
+Input.displayName = 'Input';
 
 Input.propTypes = {
   type: PropTypes.oneOf(['text', 'password', 'email', 'number', 'tel', 'url', 'textarea']),
@@ -137,6 +145,7 @@ Input.propTypes = {
   required: PropTypes.bool,
   className: PropTypes.string,
   rows: PropTypes.number,
+  style: PropTypes.object,
 };
 
 export default Input;

@@ -6,6 +6,32 @@
 // IMPORTANT: Do NOT import Tone directly to prevent auto-initialization
 // The Tone module will be passed in from main.jsx after being properly loaded
 
+// Global event coordination system for audio initialization
+const setupAudioEventSystem = () => {
+  if (typeof window !== 'undefined' && !window.__AUDIO_EVENT_SYSTEM) {
+    window.__AUDIO_EVENT_SYSTEM = {
+      dispatchEvent: (eventName, data) => {
+        window.dispatchEvent(new CustomEvent(`audio:${eventName}`, { detail: data }));
+      },
+      addEventListener: (eventName, callback) => {
+        window.addEventListener(`audio:${eventName}`, (e) => callback(e.detail), false);
+        return () => window.removeEventListener(`audio:${eventName}`, callback);
+      },
+      // Track state globally
+      STATE: {
+        lastInitTime: 0,
+        initialized: false,
+        initializing: false,
+        attempts: 0
+      }
+    };
+  }
+  return window.__AUDIO_EVENT_SYSTEM;
+};
+
+// Initialize the event system
+const audioEvents = setupAudioEventSystem();
+
 // Track whether we've initialized Tone.js
 let isInitialized = false;
 let pendingCallbacks = [];
@@ -14,6 +40,10 @@ const MAX_ATTEMPTS = 3;
 
 // Add a flag to track whether initialization is in progress
 let isInitializing = false;
+
+// Track when the last initialization attempt was made
+let lastInitializationTime = 0;
+const MIN_INIT_INTERVAL = 500; // ms
 
 // Add a flag to track if we're in a user gesture context
 let inUserGesture = false;
@@ -34,25 +64,51 @@ export const initializeAudioContext = async (Tone) => {
     return false;
   }
 
-  // Prevent concurrent initializations
-  if (isInitializing) {
-    console.error('Error initializing audio context: Audio initialization already in progress');
+  // Use the shared state from the event system
+  const { STATE } = window.__AUDIO_EVENT_SYSTEM || setupAudioEventSystem();
+
+  // Check global initialization lock
+  if (STATE.initializing) {
+    audioEvents.dispatchEvent('initialization-skipped', { reason: 'already-in-progress' });
+    console.warn('Audio initialization already in progress (global state)');
     return false;
   }
 
-  // Prevent excessive initialization attempts
-  if (initializationAttempts >= MAX_ATTEMPTS) {
-    console.warn(`AudioContext initialization failed after ${MAX_ATTEMPTS} attempts.`);
+  // Apply rate limiting to initialization attempts
+  const now = Date.now();
+  if (now - STATE.lastInitTime < MIN_INIT_INTERVAL) {
+    audioEvents.dispatchEvent('initialization-throttled', {
+      timeSinceLastAttempt: now - STATE.lastInitTime
+    });
+    console.warn(`Audio initialization attempted too quickly (${now - STATE.lastInitTime}ms since last attempt)`);
     return false;
   }
 
-  // Prevent multiple initializations
-  if (isInitialized && Tone.context && Tone.context.state === 'running') {
+  // Global check for already initialized and working
+  if (STATE.initialized && Tone.context && Tone.context.state === 'running') {
+    audioEvents.dispatchEvent('already-initialized', { contextState: Tone.context.state });
     return true;
   }
 
+  // Prevent excessive initialization attempts
+  if (STATE.attempts >= MAX_ATTEMPTS) {
+    audioEvents.dispatchEvent('max-attempts-reached', { attempts: STATE.attempts });
+    console.warn(`AudioContext initialization failed after ${STATE.attempts} attempts.`);
+    return false;
+  }
+
+  // Set all initialization locks
+  STATE.initializing = true;
+  STATE.lastInitTime = now;
+  STATE.attempts++;
   isInitializing = true;
-  initializationAttempts++;
+  window.__AUDIO_INITIALIZING = true;
+
+  // Broadcast initialization started
+  audioEvents.dispatchEvent('initialization-started', {
+    attempt: STATE.attempts,
+    timestamp: now
+  });
 
   try {
     console.log('Starting AudioContext initialization...');
@@ -128,7 +184,21 @@ export const initializeAudioContext = async (Tone) => {
     // Verify if it worked
     if (Tone.context && Tone.context.state === 'running') {
       isInitialized = true;
+
+      // Update global state
+      STATE.initialized = true;
+      STATE.initializing = false;
+
+      // Release all locks
       isInitializing = false;
+      window.__AUDIO_INITIALIZING = false;
+
+      // Broadcast success
+      audioEvents.dispatchEvent('initialization-success', {
+        contextState: Tone.context.state,
+        attempts: STATE.attempts
+      });
+
       console.log('Tone.js AudioContext successfully started');
 
       // Setup visibility change listener
@@ -156,12 +226,38 @@ export const initializeAudioContext = async (Tone) => {
       return true;
     } else {
       console.warn('AudioContext still not running after initialization attempts');
+
+      // Update global state
+      STATE.initializing = false;
+
+      // Release all locks
       isInitializing = false;
+      window.__AUDIO_INITIALIZING = false;
+
+      // Broadcast failure
+      audioEvents.dispatchEvent('initialization-failed', {
+        reason: 'context-not-running',
+        attempts: STATE.attempts
+      });
+
       return false;
     }
   } catch (error) {
     console.error('Failed to initialize AudioContext:', error);
+
+    // Update global state
+    STATE.initializing = false;
+
+    // Release all locks on error
     isInitializing = false;
+    window.__AUDIO_INITIALIZING = false;
+
+    // Broadcast error
+    audioEvents.dispatchEvent('initialization-error', {
+      error: error.message,
+      attempts: STATE.attempts
+    });
+
     return false;
   }
 };

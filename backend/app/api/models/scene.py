@@ -128,7 +128,7 @@ class Scene(BaseModel):
         try:
             if hasattr(self, 'characters'):
                 return len([c for c in self.characters if not getattr(c, 'is_deleted', False)])
-            query = text("SELECT COUNT(*) FROM character_scenes cs JOIN characters c ON cs.character_id = c.id WHERE cs.scene_id = :scene_id AND c.is_deleted = 0")
+            query = text("SELECT COUNT(*) FROM character_scenes cs JOIN characters c ON cs.character_id = c.id WHERE cs.scene_id = :scene_id AND c.is_deleted = false")
             result = db.session.execute(query, {"scene_id": self.id})
             return result.scalar() or 0
         except Exception as e:
@@ -138,7 +138,7 @@ class Scene(BaseModel):
     def get_notes_count(self) -> int:
         """Get the count of notes in the scene."""
         try:
-            query = text("SELECT COUNT(*) FROM notes WHERE scene_id = :scene_id AND is_deleted = 0")
+            query = text("SELECT COUNT(*) FROM notes WHERE scene_id = :scene_id AND is_deleted = false")
             result = db.session.execute(query, {"scene_id": self.id})
             return result.scalar() or 0
         except Exception as e:
