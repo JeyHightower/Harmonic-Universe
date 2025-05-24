@@ -165,12 +165,47 @@ export const logout = async () => {
  * @returns {Promise<string>} New access token
  */
 export async function refreshToken() {
+  // Add retry mechanism and token lock to prevent concurrent refresh attempts
+  if (typeof window !== 'undefined' && window.__TOKEN_REFRESH_IN_PROGRESS) {
+    console.log('Token refresh already in progress, waiting for it to complete');
+
+    // Return a promise that resolves when the existing refresh completes
+    return new Promise((resolve, reject) => {
+      const checkInterval = setInterval(() => {
+        if (!window.__TOKEN_REFRESH_IN_PROGRESS) {
+          clearInterval(checkInterval);
+
+          // Get the result of the completed refresh
+          const token = localStorage.getItem(TOKEN_KEY);
+          if (token) {
+            resolve(token);
+          } else {
+            reject(new Error('No token available after refresh completed'));
+          }
+        }
+      }, 100);
+
+      // Set a timeout to avoid infinite waiting
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        reject(new Error('Timed out waiting for token refresh'));
+      }, 5000);
+    });
+  }
+
+  // Set the global flag to indicate a refresh is in progress
+  if (typeof window !== 'undefined') {
+    window.__TOKEN_REFRESH_IN_PROGRESS = true;
+  }
+
   try {
     let refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
 
     // If no refresh token is available, we can't refresh
     if (!refreshToken) {
       console.error('No refresh token available for token refresh');
+      // Set a flag to indicate token verification failed
+      localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
       throw new Error('No refresh token available');
     }
 
@@ -180,6 +215,8 @@ export async function refreshToken() {
       console.error('Invalid refresh token format - not a valid JWT token');
       // Clear the invalid token
       localStorage.removeItem(REFRESH_TOKEN_KEY);
+      // Set a flag to indicate token verification failed
+      localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
       throw new Error('Invalid refresh token format');
     }
 
@@ -197,8 +234,8 @@ export async function refreshToken() {
       refreshTokenLength: refreshToken.length,
     });
 
-    // First attempt with standard endpoint
     try {
+      // First attempt with standard endpoint
       const response = await httpClient.post(
         refreshEndpoint,
         { refresh_token: refreshToken },
@@ -298,6 +335,11 @@ export async function refreshToken() {
     }
 
     throw error;
+  } finally {
+    // Always clear the in-progress flag
+    if (typeof window !== 'undefined') {
+      window.__TOKEN_REFRESH_IN_PROGRESS = false;
+    }
   }
 }
 

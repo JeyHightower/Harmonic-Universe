@@ -507,10 +507,24 @@ axiosInstance.interceptors.response.use(
         const refreshToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
         if (!refreshToken) {
           logApiOperation('token-refresh-failed', { reason: 'No refresh token available' });
-          clearAuthData();
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
+
+          // Set token verification failed flag
+          localStorage.setItem('token_verification_failed', 'true');
+
+          // Only clear the main token, don't redirect if we're on a public route
+          localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
+
+          // Only redirect to login if we're not already on a public route
+          const publicRoutes = ['/login', '/signup', '/reset-password', '/'];
+          const isPublicRoute = publicRoutes.some((route) =>
+            window.location.pathname.includes(route)
+          );
+
+          if (!isPublicRoute && !window.location.pathname.includes('/login')) {
+            console.log('Redirecting to login due to missing refresh token');
+            window.location.href = '/?modal=login';
           }
+
           return Promise.reject(new Error('Authentication required - no refresh token available'));
         }
 

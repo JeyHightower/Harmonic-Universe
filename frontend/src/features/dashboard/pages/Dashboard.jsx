@@ -79,18 +79,56 @@ const Dashboard = () => {
   let lastDashboardLogoutAttempt = 0;
   const DASHBOARD_LOGOUT_COOLDOWN = 2000; // 2 seconds
 
-  // Enhanced function to load universes with better error handling and logging
-  const loadUniverses = useCallback(() => {
-    console.log('Dashboard - Loading universes');
-    setConnectionError(false);
+  // Create a memoized function to load universes
+  const loadUniverses = useCallback(async () => {
+    // Update the timestamp to prevent duplicate calls
+    lastDashboardLoadAttempt = Date.now();
 
-    // Clear any previous errors
-    dispatch(clearError());
+    // Handle errors from fetching universes
+    const handleFetchError = (error) => {
+      console.error('Dashboard - Error loading universes:', error);
+
+      // Handle server errors gracefully
+      if (error.serverError || (error.response && error.response.status >= 500)) {
+        console.warn('Server error detected (500), showing error UI');
+        setConnectionError(true);
+
+        // Schedule an automatic retry if we haven't exceeded the limit
+        if (retryCount < maxRetries) {
+          console.log(`Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`);
+          setTimeout(() => {
+            setRetryCount((prev) => prev + 1);
+          }, 3000); // Wait 3 seconds before retrying
+        }
+
+        return Promise.reject(error);
+      }
+
+      // Handle specific error cases
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('Dashboard - Authentication error loading universes, attempting token refresh');
+
+        // Try to refresh the token and retry
+        return authService
+          .refreshToken()
+          .then(() => {
+            console.log('Dashboard - Token refreshed, retrying universe load');
+            return dispatch(fetchUniverses()).unwrap().catch(handleFetchError);
+          })
+          .catch(() => {
+            console.log('Dashboard - Token refresh failed, redirecting to login');
+            dispatch(logout());
+            navigate('/?modal=login', { replace: true });
+            return Promise.reject(error);
+          });
+      }
+
+      return Promise.reject(error);
+    };
 
     // Check if this is a demo session
     const isDemoSession = demoUserService.isDemoSession();
 
-    // If in demo mode and tokens are missing, regenerate them
     if (isDemoSession) {
       console.log('Dashboard - Demo session detected');
 
@@ -134,107 +172,145 @@ const Dashboard = () => {
         });
     }
 
-    // Helper function to handle fetch errors
-    const handleFetchError = (error) => {
-      console.error('Dashboard - Error loading universes:', error);
-
-      // Handle server errors gracefully
-      if (error.serverError || (error.response && error.response.status >= 500)) {
-        console.warn('Server error detected (500), showing error UI');
-        setConnectionError(true);
-
-        // Schedule an automatic retry if we haven't exceeded the limit
-        if (retryCount < maxRetries) {
-          console.log(`Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`);
-          setTimeout(() => {
-            setRetryCount((prev) => prev + 1);
-          }, 3000); // Wait 3 seconds before retrying
-        }
-
-        return Promise.reject(error);
-      }
-
-      // Handle specific error cases
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        console.log('Dashboard - Authentication error loading universes, attempting token refresh');
-
-        // Try to refresh the token and retry
-        return authService
-          .refreshToken()
-          .then(() => {
-            console.log('Dashboard - Token refreshed, retrying universe load');
-            return dispatch(fetchUniverses()).unwrap().catch(handleFetchError);
-          })
-          .catch(() => {
-            console.log('Dashboard - Token refresh failed, redirecting to login');
-            dispatch(logout());
-            navigate('/?modal=login', { replace: true });
-            return Promise.reject(error);
-          });
-      }
-
-      return Promise.reject(error);
-    };
-
     // Not in demo mode, check for valid token
     if (!authService.hasValidToken()) {
-      console.log('Dashboard - No valid token found, attempting refresh');
+      console.log('Dashboard - No valid token found, checking refresh token availability');
 
-      // Try to refresh the token
-      return authService
-        .refreshToken()
-        .then(() => {
-          console.log('Dashboard - Token refreshed successfully, loading universes');
-          return dispatch(fetchUniverses())
-            .unwrap()
-            .then((result) => {
-              console.log('Dashboard - Successfully loaded universes after token refresh');
-              return result;
-            })
-            .catch(handleFetchError);
-        })
-        .catch((error) => {
-          console.error('Dashboard - Token refresh failed:', error.message);
+      // Check if a refresh token exists before attempting to refresh
+      const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      if (!refreshToken) {
+        console.log('Dashboard - No refresh token available, redirecting to login');
+        // Clear any stale auth data
+        authService.clearAuthData();
+        dispatch(logout());
+        // Use a short timeout to ensure the auth state updates before redirect
+        setTimeout(() => {
+          navigate('/?modal=login', {
+            replace: true,
+            state: { message: 'Your session has expired. Please log in again.' },
+          });
+        }, 10);
+        return Promise.reject(new Error('No refresh token available'));
+      }
 
-          // Handle server errors gracefully
-          if (error.serverError || (error.response && error.response.status >= 500)) {
-            console.warn('Server error detected (500) during token refresh, showing error UI');
-            setConnectionError(true);
+      // Try to refresh the token - using promise chain instead of async/await
+      console.log('Dashboard - Attempting to refresh token');
 
-            // Schedule an automatic retry if we haven't exceeded the limit
-            if (retryCount < maxRetries) {
-              console.log(
-                `Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`
-              );
-              setTimeout(() => {
-                setRetryCount((prev) => prev + 1);
-              }, 3000); // Wait 3 seconds before retrying
+      // Create a function to handle the token refresh logic
+      const attemptTokenRefresh = () => {
+        // Track refresh attempts
+        let refreshAttemptInProgress = false;
+
+        // Add a timeout to avoid waiting too long
+        const refreshPromise = authService.refreshToken();
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Token refresh timed out')), 8000);
+        });
+
+        refreshAttemptInProgress = true;
+
+        // Use Promise.race wrapped in a Promise chain
+        return Promise.race([refreshPromise, timeoutPromise])
+          .then((refreshedToken) => {
+            if (!refreshedToken) {
+              throw new Error('Failed to refresh token - no token returned');
             }
 
-            return Promise.reject(error);
-          }
-
-          // Only redirect for auth errors, not network errors
-          if (error.response?.status >= 400 || !error.message?.includes('Network Error')) {
-            console.log('Dashboard - Redirecting to login due to auth error');
-            dispatch(logout());
-            navigate('/?modal=login', { replace: true });
-          } else {
-            console.log(
-              'Dashboard - Network error during token refresh, proceeding with existing token'
-            );
-            // Attempt to load universes with the existing token since it might be a temporary network issue
+            console.log('Dashboard - Token refreshed successfully, loading universes');
             return dispatch(fetchUniverses())
               .unwrap()
               .then((result) => {
-                console.log('Dashboard - Successfully loaded universes with existing token');
+                console.log('Dashboard - Successfully loaded universes after token refresh');
                 return result;
               })
               .catch(handleFetchError);
-          }
+          })
+          .catch((error) => {
+            console.error('Dashboard - Token refresh failed:', error.message);
 
-          return Promise.reject(error);
-        });
+            // Check if token refresh is already in progress elsewhere
+            if (
+              typeof window !== 'undefined' &&
+              window.__TOKEN_REFRESH_IN_PROGRESS &&
+              !refreshAttemptInProgress
+            ) {
+              console.log(
+                'Dashboard - Another token refresh is in progress, waiting for completion'
+              );
+
+              // Wait a moment for the other refresh to complete then check for token
+              return new Promise((resolve) => setTimeout(resolve, 1000)).then(() => {
+                // Check if a token is now available
+                const newToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+                if (newToken) {
+                  console.log('Dashboard - New token available after waiting for parallel refresh');
+                  return dispatch(fetchUniverses())
+                    .unwrap()
+                    .then((result) => {
+                      console.log('Dashboard - Successfully loaded universes with refreshed token');
+                      return result;
+                    })
+                    .catch(handleFetchError);
+                }
+
+                // No token available, propagate the original error
+                throw error;
+              });
+            }
+
+            // Handle server errors gracefully
+            if (error.serverError || (error.response && error.response.status >= 500)) {
+              console.warn('Server error detected (500) during token refresh, showing error UI');
+              setConnectionError(true);
+
+              // Schedule an automatic retry if we haven't exceeded the limit
+              if (retryCount < maxRetries) {
+                console.log(
+                  `Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`
+                );
+                setTimeout(() => {
+                  setRetryCount((prev) => prev + 1);
+                }, 3000); // Wait 3 seconds before retrying
+              }
+
+              throw error;
+            }
+
+            // Only redirect for auth errors, not network errors
+            if (
+              error.response?.status >= 400 ||
+              (!error.message?.includes('Network Error') && !error.message?.includes('timed out'))
+            ) {
+              console.log('Dashboard - Redirecting to login due to auth error');
+              authService.clearAuthData();
+              dispatch(logout());
+              // Use a short timeout to ensure the auth state updates before redirect
+              setTimeout(() => {
+                navigate('/?modal=login', {
+                  replace: true,
+                  state: { message: 'Your session has expired. Please log in again.' },
+                });
+              }, 10);
+
+              throw error;
+            } else {
+              console.log(
+                'Dashboard - Network error during token refresh, proceeding with existing token'
+              );
+              // Attempt to load universes with the existing token since it might be a temporary network issue
+              return dispatch(fetchUniverses())
+                .unwrap()
+                .then((result) => {
+                  console.log('Dashboard - Successfully loaded universes with existing token');
+                  return result;
+                })
+                .catch(handleFetchError);
+            }
+          });
+      };
+
+      // Execute the token refresh logic
+      return attemptTokenRefresh();
     }
 
     // Token is valid, proceed with loading universes

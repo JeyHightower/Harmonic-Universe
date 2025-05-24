@@ -151,27 +151,114 @@ const AudioGenerationModal = ({
     setIsGenerating(true);
 
     try {
-      // Track user gesture before initializing audio
-      if (typeof window !== 'undefined' && window.audioManager) {
-        window.audioManager.trackUserGesture();
-      } else if (typeof window !== 'undefined' && window.__AUDIO_MANAGER) {
-        window.__AUDIO_MANAGER.userGestureTimestamp = Date.now();
+      // Track user gesture before attempting to initialize audio
+      if (typeof window !== 'undefined') {
+        // First, ensure we track this as a user gesture
+        if (window.audioManager) {
+          window.audioManager.trackUserGesture();
+        } else if (window.__AUDIO_MANAGER) {
+          window.__AUDIO_MANAGER.userGestureTimestamp = Date.now();
+        }
+
+        // Set a global flag that can be used by other components
+        window.__AUDIO_USER_GESTURE_TIMESTAMP = Date.now();
       }
 
-      // Initialize audio context safely using our manager - this should now recognize the user gesture
-      const success = await initializeAudioContext();
-      if (!success) {
-        // If initialization fails, try a direct approach with user gesture already registered
-        if (Tone.context && Tone.context.state !== 'running') {
-          try {
-            await Tone.start(); // This is the recommended way to start Tone.js with user gesture
-            console.log('AudioContext started directly via Tone.start()');
-          } catch (startError) {
-            console.warn('Failed to start AudioContext via Tone.start():', startError);
-            throw new Error('Failed to initialize audio context: ' + startError.message);
-          }
+      // Wait briefly to ensure the user gesture is recognized
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // If audio is already initializing elsewhere, wait for it to complete
+      // rather than attempting a competing initialization
+      if (window.audioManager?.isInitializing()) {
+        console.log('Waiting for existing audio initialization to complete...');
+
+        // Create a waiting promise with timeout
+        const waitForInit = new Promise((resolve) => {
+          const startTime = Date.now();
+          const MAX_WAIT_TIME = 3000; // 3 seconds max wait
+
+          const checkInterval = setInterval(() => {
+            // Stop waiting if initialization completes or times out
+            if (window.audioManager?.isInitialized() ||
+                (Date.now() - startTime > MAX_WAIT_TIME)) {
+              clearInterval(checkInterval);
+              resolve(window.audioManager?.isInitialized() || false);
+            }
+          }, 100);
+        });
+
+        // Wait for existing initialization to complete
+        const initSuccess = await waitForInit;
+        if (!initSuccess) {
+          console.warn('Timed out waiting for audio initialization, proceeding anyway');
         }
       }
+
+      // Safely initialize audio context
+      console.log('Attempting to initialize audio context...');
+      let contextInitialized = false;
+
+      try {
+        // First try our managed approach
+        contextInitialized = await initializeAudioContext();
+      } catch (initError) {
+        console.warn('Error during managed audio initialization:', initError);
+      }
+
+      // If managed initialization failed, try direct Tone.js approach
+      if (!contextInitialized) {
+        console.log('Managed initialization failed, trying Tone.js directly');
+        try {
+          // Try to start Tone.js directly - we're definitely in a user gesture context here
+          if (Tone.context && Tone.context.state !== 'running') {
+            try {
+              await Tone.start();
+              console.log('AudioContext started directly via Tone.start()');
+              contextInitialized = true;
+            } catch (toneStartError) {
+              console.warn('Failed to start via Tone.start():', toneStartError);
+
+              // Try resume as a fallback
+              try {
+                await Tone.context.resume();
+                console.log('AudioContext resumed via Tone.context.resume()');
+                contextInitialized = true;
+              } catch (resumeError) {
+                console.warn('Failed to resume Tone context:', resumeError);
+              }
+            }
+          } else if (Tone.context && Tone.context.state === 'running') {
+            // Context is already running
+            console.log('AudioContext already in running state');
+            contextInitialized = true;
+          }
+        } catch (toneError) {
+          console.warn('Failed to initialize via Tone.js:', toneError);
+        }
+      }
+
+      // Last ditch effort - try playing a silent sound
+      if (!contextInitialized) {
+        try {
+          console.log('Using fallback silent sound technique');
+          const tempContext = new (window.AudioContext || window.webkitAudioContext)();
+          const buffer = tempContext.createBuffer(1, 1, 22050);
+          const source = tempContext.createBufferSource();
+          source.buffer = buffer;
+          source.connect(tempContext.destination);
+          source.start(0);
+          await tempContext.resume();
+
+          // We don't close this context as it might be needed for the actual generation
+          console.log('Successfully unlocked audio via silent sound');
+          contextInitialized = true;
+        } catch (silentSoundError) {
+          console.warn('Silent sound technique failed:', silentSoundError);
+        }
+      }
+
+      // Log the result of our initialization attempts
+      console.log(`Audio context initialization ${contextInitialized ? 'succeeded' : 'may have failed'}, proceeding with generation attempt...`);
 
       // Generate audio using the API
       const response = await audioService.generateAudio(universeId, sceneId, {
@@ -193,7 +280,11 @@ const AudioGenerationModal = ({
             audioPlayer.current
               .play()
               .then(() => setIsPlaying(true))
-              .catch((e) => console.error('Error playing audio', e));
+              .catch((e) => {
+                console.error('Error playing audio', e);
+                // If autoplay fails, don't show an error to the user
+                // as this is likely due to browser autoplay restrictions
+              });
           }
         }, 500);
       } else {

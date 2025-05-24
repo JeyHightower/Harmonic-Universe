@@ -56,6 +56,11 @@ export const login = createAsyncThunk(
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, response.data.token);
       }
 
+      // Store the refresh token if available
+      if (response.data?.refresh_token) {
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, response.data.refresh_token);
+      }
+
       // Store user data if available
       if (response.data?.user) {
         localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(response.data.user));
@@ -497,10 +502,16 @@ export const validateAndRefreshToken = createAsyncThunk(
 
         // Extract the new token
         const newToken = response.data?.token || response.token;
+        const newRefreshToken = response.data?.refresh_token || response.refresh_token;
 
         if (newToken) {
           // Update token in localStorage
           localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
+
+          // Update refresh token if provided
+          if (newRefreshToken) {
+            localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, newRefreshToken);
+          }
 
           // Update authorization header
           if (api.defaults && api.defaults.headers) {
