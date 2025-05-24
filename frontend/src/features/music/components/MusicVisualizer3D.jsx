@@ -1,20 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Scene,
-  PerspectiveCamera,
-  WebGLRenderer,
-  AmbientLight,
-  DirectionalLight,
-  BufferGeometry,
-  BufferAttribute,
-  PointsMaterial,
-  Points,
-  AdditiveBlending,
-  Color,
-  ShaderMaterial,
-} from 'three';
-import * as THREE from 'three';
 import PropTypes from 'prop-types';
+import React, { useEffect, useRef, useState } from 'react';
 import '../styles/MusicVisualizer3D.css';
 
 // Define window globals to fix ESLint errors
@@ -38,13 +23,28 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     complexity: 0.5,
     style: 'default',
   });
-  const [isThreeAvailable, setIsThreeAvailable] = useState(
-    typeof THREE !== 'undefined' && typeof THREE.Scene === 'function'
-  );
+  const [isThreeAvailable, setIsThreeAvailable] = useState(false);
+  const [THREE, setTHREE] = useState(null);
+
+  // Load Three.js dynamically
+  useEffect(() => {
+    const loadThree = async () => {
+      try {
+        const ThreeModule = await import('three');
+        setTHREE(ThreeModule);
+        setIsThreeAvailable(true);
+      } catch (error) {
+        console.error('Failed to load Three.js:', error);
+        setIsThreeAvailable(false);
+      }
+    };
+
+    loadThree();
+  }, []);
 
   // Create particle system
   const createParticles = React.useCallback(() => {
-    if (!sceneRef.current) return;
+    if (!sceneRef.current || !THREE) return;
 
     // Clean up existing particles
     if (particlesRef.current) {
@@ -98,11 +98,11 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     const particles = new THREE.Points(geometry, material);
     sceneRef.current.add(particles);
     particlesRef.current = particles;
-  }, [musicData]);
+  }, [musicData, THREE]);
 
   // Create stars background
   const createStars = React.useCallback(() => {
-    if (!sceneRef.current) return;
+    if (!sceneRef.current || !THREE) return;
 
     // Clean up existing stars
     if (starsRef.current) {
@@ -165,7 +165,7 @@ const MusicVisualizer3D = ({ isPlaying, musicData, analyzerData }) => {
     const stars = new THREE.Points(starGeometry, starMaterial);
     sceneRef.current.add(stars);
     starsRef.current = stars;
-  }, []);
+  }, [THREE]);
 
   // Update scene appearance based on AI style
   const updateSceneForStyle = React.useCallback((style) => {

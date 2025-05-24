@@ -41,20 +41,63 @@ export default defineConfig({
     },
   },
   build: {
+    chunkSizeWarningLimit: 1000, // Increase limit to 1MB since we've optimized chunking
     rollupOptions: {
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('react')) {
+            // React ecosystem
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
               return 'vendor-react';
             }
-            if (id.includes('redux')) {
+
+            // Redux ecosystem
+            if (id.includes('redux') || id.includes('@reduxjs/toolkit')) {
               return 'vendor-redux';
             }
-            if (id.includes('antd')) {
+
+            // Ant Design ecosystem
+            if (id.includes('antd') || id.includes('@ant-design')) {
               return 'vendor-antd';
             }
-            return 'vendor';
+
+            // Material-UI ecosystem (large)
+            if (id.includes('@mui') || id.includes('@emotion')) {
+              return 'vendor-mui';
+            }
+
+            // Three.js (very large 3D library)
+            if (id.includes('three')) {
+              return 'vendor-three';
+            }
+
+            // Audio libraries (large)
+            if (id.includes('tone')) {
+              return 'vendor-audio';
+            }
+
+            // Animation libraries
+            if (id.includes('framer-motion')) {
+              return 'vendor-animation';
+            }
+
+            // Date/time libraries
+            if (id.includes('dayjs') || id.includes('moment')) {
+              return 'vendor-datetime';
+            }
+
+            // Utility libraries (smaller)
+            if (
+              id.includes('axios') ||
+              id.includes('classnames') ||
+              id.includes('prop-types') ||
+              id.includes('history')
+            ) {
+              return 'vendor-utils';
+            }
+
+            // Remaining smaller dependencies
+            return 'vendor-misc';
           }
         },
       },

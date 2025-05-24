@@ -1,7 +1,6 @@
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as Tone from 'tone';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import Select from '../../../components/common/Select';
@@ -80,9 +79,18 @@ const AudioGenerationModal = ({
       if (synth) {
         synth.dispose();
       }
-      if (Tone.Transport.state === 'started') {
-        Tone.Transport.stop();
-      }
+      // Clean up Tone.js if it was loaded
+      const cleanup = async () => {
+        try {
+          const Tone = await import('tone');
+          if (Tone.Transport.state === 'started') {
+            Tone.Transport.stop();
+          }
+        } catch (error) {
+          // Tone wasn't loaded, nothing to clean up
+        }
+      };
+      cleanup();
     };
   }, []);
 
@@ -165,7 +173,7 @@ const AudioGenerationModal = ({
       }
 
       // Wait briefly to ensure the user gesture is recognized
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // If audio is already initializing elsewhere, wait for it to complete
       // rather than attempting a competing initialization
@@ -179,8 +187,7 @@ const AudioGenerationModal = ({
 
           const checkInterval = setInterval(() => {
             // Stop waiting if initialization completes or times out
-            if (window.audioManager?.isInitialized() ||
-                (Date.now() - startTime > MAX_WAIT_TIME)) {
+            if (window.audioManager?.isInitialized() || Date.now() - startTime > MAX_WAIT_TIME) {
               clearInterval(checkInterval);
               resolve(window.audioManager?.isInitialized() || false);
             }
@@ -209,6 +216,9 @@ const AudioGenerationModal = ({
       if (!contextInitialized) {
         console.log('Managed initialization failed, trying Tone.js directly');
         try {
+          // Dynamically import Tone.js only when needed
+          const Tone = await import('tone');
+
           // Try to start Tone.js directly - we're definitely in a user gesture context here
           if (Tone.context && Tone.context.state !== 'running') {
             try {
@@ -258,7 +268,9 @@ const AudioGenerationModal = ({
       }
 
       // Log the result of our initialization attempts
-      console.log(`Audio context initialization ${contextInitialized ? 'succeeded' : 'may have failed'}, proceeding with generation attempt...`);
+      console.log(
+        `Audio context initialization ${contextInitialized ? 'succeeded' : 'may have failed'}, proceeding with generation attempt...`
+      );
 
       // Generate audio using the API
       const response = await audioService.generateAudio(universeId, sceneId, {
