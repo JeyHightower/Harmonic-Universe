@@ -16,7 +16,7 @@ const ExportModal = ({ visible, onClose, data, type = 'json' }) => {
       case 'json':
         exportData = JSON.stringify(data, null, 2);
         break;
-      case 'csv':
+      case 'csv': {
         // Create header row from first item's keys
         const headers = Object.keys(data[0]);
         // Create data rows
@@ -25,6 +25,7 @@ const ExportModal = ({ visible, onClose, data, type = 'json' }) => {
         mimeType = 'text/csv';
         fileName = `export-${Date.now()}.csv`;
         break;
+      }
       default:
         exportData = JSON.stringify(data, null, 2);
     }

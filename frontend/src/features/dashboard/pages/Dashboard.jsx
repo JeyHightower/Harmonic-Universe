@@ -1,18 +1,18 @@
 import {
-  Add as AddIcon,
-  Logout as LogoutIcon,
-  Refresh as RefreshIcon,
-  RestartAlt as ResetIcon,
+    Add as AddIcon,
+    Logout as LogoutIcon,
+    Refresh as RefreshIcon,
+    RestartAlt as ResetIcon,
 } from '@mui/icons-material';
 import {
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Tooltip,
-  Typography,
+    Button,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Tooltip,
+    Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,8 +27,8 @@ import { demoUserService } from '../../../services/demo-user.service.mjs';
 import { clearError } from '../../../store/slices/universeSlice.mjs';
 import { logout, validateAndRefreshToken } from '../../../store/thunks/authThunks';
 import {
-  applyModalInteractionFixesThunk,
-  initializeModalPortalThunk,
+    applyModalInteractionFixesThunk,
+    initializeModalPortalThunk,
 } from '../../../store/thunks/modalThunks';
 import { deleteUniverse, fetchUniverses } from '../../../store/thunks/universeThunks';
 import { AUTH_CONFIG } from '../../../utils/config';
@@ -54,6 +54,11 @@ const Dashboard = () => {
   const [isRetrying, setIsRetrying] = useState(false);
   const maxRetries = 3;
 
+  // Track last dashboard logout attempt
+  let lastDashboardLogoutAttempt = 0;
+  let lastDashboardLoadAttempt = 0;
+  const DASHBOARD_LOGOUT_COOLDOWN = 2000; // 2 seconds
+
   // Initialize modal portal and apply fixes on component mount
   useEffect(() => {
     console.log('Dashboard - Initializing modal portal');
@@ -74,10 +79,6 @@ const Dashboard = () => {
         console.error('Error initializing modal infrastructure:', error);
       });
   }, [dispatch]);
-
-  // Track last dashboard logout attempt
-  let lastDashboardLogoutAttempt = 0;
-  const DASHBOARD_LOGOUT_COOLDOWN = 2000; // 2 seconds
 
   // Create a memoized function to load universes
   const loadUniverses = useCallback(async () => {

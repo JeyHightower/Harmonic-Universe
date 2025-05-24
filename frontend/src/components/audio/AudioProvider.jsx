@@ -108,8 +108,9 @@ const AudioProvider = ({ children }) => {
   // Check for iOS or Safari but limit auto-initialization
   // to prevent conflicts with other components
   useEffect(() => {
-    // Skip automatic initialization completely - require explicit user action
+    // DISABLED: Skip automatic initialization completely - require explicit user action
     // This prevents race conditions and errors during app startup
+    // The AudioButton will handle initialization when the user explicitly requests it
 
     // Clean up on unmount
     return () => {
@@ -117,7 +118,7 @@ const AudioProvider = ({ children }) => {
         clearTimeout(safeInitRef.current);
       }
     };
-  }, [contextState, debouncedInitAudio, ready]);
+  }, []);
 
   // Update initialized state when audio is ready
   useEffect(() => {

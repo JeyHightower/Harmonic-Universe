@@ -20,9 +20,12 @@ export const initializeAudio = createAsyncThunk(
   async (_, { getState, rejectWithValue, dispatch }) => {
     const { audio } = getState();
 
-    // First check our own Redux state
-    if (audio.initializing) {
-      console.error('Error initializing audio context: Audio initialization already in progress');
+    // ENHANCED: Check for any ongoing initialization attempts first
+    // This prevents the error log from appearing in the console
+    if (audio.initializing ||
+        (typeof window !== 'undefined' && window.__AUDIO_MANAGER?.state === 'INITIALIZING') ||
+        (typeof window !== 'undefined' && window.__AUDIO_EVENT_SYSTEM?.STATE?.initializing)) {
+      // Return a rejection without logging an error since this is expected behavior
       return rejectWithValue({
         message: 'Audio initialization already in progress',
         code: 'INIT_IN_PROGRESS'

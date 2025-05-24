@@ -337,7 +337,7 @@ export const logout = createAsyncThunk('auth/logout', async (_, { dispatch, reje
     });
 
     // Create a click event and dispatch it on the link
-    const clickEvent = new MouseEvent('click');
+    const clickEvent = new window.MouseEvent('click');
     homeLink.dispatchEvent(clickEvent);
 
     return { message: 'Logged out successfully' };
