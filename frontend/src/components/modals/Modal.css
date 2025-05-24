@@ -89,9 +89,10 @@
 
 .stable-modal .ant-modal-body {
   padding: 24px;
-  max-height: 80vh;
+  max-height: calc(85vh - 150px);
   overflow-y: auto;
   pointer-events: auto !important; /* Force auto */
+  flex: 1;
 }
 
 /* Interactive elements inside modals */
@@ -143,7 +144,7 @@ button,
 /* Scene modal specific styling */
 .scene-form-container.scene-modal-content {
   padding: 24px;
-  max-height: calc(80vh - 130px);
+  max-height: calc(85vh - 180px);
   overflow: auto;
   pointer-events: auto !important; /* Force auto */
 }

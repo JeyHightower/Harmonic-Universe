@@ -17,8 +17,9 @@
 
 .scene-form-container {
   padding: 8px 0;
-  max-height: 75vh;
+  max-height: calc(85vh - 180px);
   overflow-y: auto;
+  flex: 1;
 }
 
 .scene-form {
@@ -153,5 +154,9 @@
   .scene-form-modal {
     width: 90% !important;
     margin: 0 auto;
+  }
+
+  .scene-form-container {
+    max-height: calc(95vh - 120px);
   }
 }

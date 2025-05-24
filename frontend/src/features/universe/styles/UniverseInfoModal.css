@@ -1,7 +1,8 @@
 .universe-info-modal {
   padding: 1rem;
-  max-height: 80vh;
+  max-height: calc(85vh - 180px);
   overflow-y: auto;
+  flex: 1;
 }
 
 .universe-info-section {

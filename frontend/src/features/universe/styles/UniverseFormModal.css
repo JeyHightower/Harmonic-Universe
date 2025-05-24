@@ -363,6 +363,9 @@
 
 .universe-form-container {
   padding: 8px 0;
+  max-height: calc(85vh - 180px);
+  overflow-y: auto;
+  flex: 1;
 }
 
 .universe-form .form-row {

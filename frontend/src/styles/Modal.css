@@ -47,11 +47,14 @@ body {
 /* The modal itself */
 .ant-modal {
   position: relative !important;
-  top: 100px !important;
+  top: 50px !important;
   margin: 0 auto !important;
   padding-bottom: 24px !important;
   pointer-events: auto !important;
   z-index: 1001 !important;
+  max-height: calc(100vh - 100px) !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 /* The actual content container */
@@ -63,6 +66,10 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   pointer-events: auto !important;
   z-index: 1001 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
 }
 
 /* Modal header */
@@ -71,6 +78,7 @@ body {
   border-bottom: 1px solid #f0f0f0 !important;
   pointer-events: auto !important;
   z-index: 1001 !important;
+  flex-shrink: 0 !important;
 }
 
 /* Modal body */
@@ -78,6 +86,9 @@ body {
   padding: 24px !important;
   pointer-events: auto !important;
   z-index: 1001 !important;
+  overflow-y: auto !important;
+  flex: 1 !important;
+  max-height: calc(100vh - 200px) !important;
 }
 
 /* Modal footer */
@@ -87,6 +98,10 @@ body {
   text-align: right !important;
   pointer-events: auto !important;
   z-index: 1001 !important;
+  flex-shrink: 0 !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  background-color: #fff !important;
 }
 
 /* Form Elements - HIGHEST PRIORITY */
@@ -369,11 +384,16 @@ textarea {
 }
 
 .modal-backdrop {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
   pointer-events: auto !important;
 }
 
@@ -385,6 +405,7 @@ textarea {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  margin: auto;
 }
 
 .modal-container {
@@ -404,6 +425,9 @@ textarea {
   animation: modalZoomIn 300ms ease-in-out;
   pointer-events: auto !important;
   min-width: 300px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   /* Ensure this creates a stacking context */
   isolation: isolate;
   z-index: 1051 !important;
@@ -423,6 +447,7 @@ textarea {
   pointer-events: auto !important;
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -459,9 +484,10 @@ textarea {
   padding: var(--spacing-md, 1rem);
   overflow-y: auto;
   pointer-events: auto !important;
-  max-height: 75vh;
+  max-height: calc(85vh - 200px);
   position: relative;
   z-index: 2;
+  flex: 1;
 }
 
 .modal-body.centered {
@@ -476,7 +502,7 @@ textarea {
 .scene-form-container {
   padding: 8px 0;
   overflow-y: auto;
-  max-height: 75vh;
+  max-height: calc(85vh - 180px);
   pointer-events: auto !important;
 }
 
@@ -494,6 +520,7 @@ textarea {
   pointer-events: auto !important;
   position: relative;
   z-index: 3;
+  flex-shrink: 0;
 }
 
 /* ===== Modal Sizes ===== */
@@ -743,6 +770,15 @@ input[type='submit'] {
   .modal-medium,
   .modal-large {
     width: 95%;
+    max-height: 95vh;
+  }
+
+  .modal-body {
+    max-height: calc(95vh - 120px);
+  }
+
+  .ant-modal-body {
+    max-height: calc(95vh - 120px) !important;
   }
 }
 
@@ -972,6 +1008,8 @@ label {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 1000 !important;
   pointer-events: auto !important;
@@ -982,6 +1020,7 @@ label {
   border-radius: 4px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   max-width: 90%;
+  max-height: 90vh;
   position: relative;
   z-index: 1001 !important;
   display: flex;
@@ -1071,6 +1110,7 @@ label {
   pointer-events: auto !important;
   position: relative;
   z-index: 1003 !important;
+  max-height: calc(85vh - 150px);
 }
 
 .modal-footer {
@@ -1284,3 +1324,102 @@ label {
     width: 95%;
   }
 }
+
+/* COMPREHENSIVE MODAL HEIGHT AND VIEWPORT FIX */
+/* This section ensures all modals are properly constrained to viewport */
+
+/* Universal modal height constraints */
+.ant-modal,
+.modal,
+.stable-modal .ant-modal {
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Universal modal content constraints */
+.ant-modal-content,
+.modal-content,
+.stable-modal .ant-modal-content {
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Universal modal body scrolling */
+.ant-modal-body,
+.modal-body,
+.stable-modal .ant-modal-body {
+  overflow-y: auto !important;
+  flex: 1 !important;
+  max-height: calc(90vh - 150px) !important;
+}
+
+/* Universal modal header/footer positioning */
+.ant-modal-header,
+.modal-header,
+.stable-modal .ant-modal-header {
+  flex-shrink: 0 !important;
+}
+
+.ant-modal-footer,
+.modal-footer,
+.stable-modal .ant-modal-footer {
+  flex-shrink: 0 !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  background-color: #fff !important;
+  z-index: 10 !important;
+}
+
+/* Ensure modal backdrop allows scrolling when needed */
+.ant-modal-wrap,
+.modal-backdrop {
+  overflow-y: auto !important;
+  padding: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Mobile viewport adjustments */
+@media (max-width: 768px) {
+  .ant-modal,
+  .modal,
+  .stable-modal .ant-modal {
+    max-height: 95vh !important;
+    margin: 10px !important;
+  }
+
+  .ant-modal-body,
+  .modal-body,
+  .stable-modal .ant-modal-body {
+    max-height: calc(95vh - 120px) !important;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .ant-modal,
+  .modal,
+  .stable-modal .ant-modal {
+    max-height: 98vh !important;
+    margin: 5px !important;
+  }
+
+  .ant-modal-body,
+  .modal-body,
+  .stable-modal .ant-modal-body {
+    max-height: calc(98vh - 100px) !important;
+  }
+}
+
+/* Force proper modal positioning */
+.ant-modal-centered .ant-modal {
+  top: auto !important;
+  transform: none !important;
+  margin: auto !important;
+}
+
+/* END COMPREHENSIVE MODAL HEIGHT FIX */
