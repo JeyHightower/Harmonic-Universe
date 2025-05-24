@@ -1,32 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Container,
-  Typography,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  IconButton,
-  Box,
-  CircularProgress,
-  Alert,
-  TextField,
-  InputAdornment,
-  Chip,
-  Paper,
-} from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
-  Search as SearchIcon,
   ArrowBack as ArrowBackIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
   Label as LabelIcon,
+  Search as SearchIcon,
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
-import { NoteFormModal } from '..';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Container,
+  Grid,
+  IconButton,
+  InputAdornment,
+  Paper,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../../../services/api.adapter';
 
 const NotesPage = () => {
@@ -39,9 +38,9 @@ const NotesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [allTags, setAllTags] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('create');
-  const [selectedNoteId, setSelectedNoteId] = useState(null);
+
+  // Use Redux modal system
+  const { open: openModal } = useModalState();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,35 +97,69 @@ const NotesPage = () => {
   }, [universeId, sceneId, characterId]);
 
   const handleCreateNote = () => {
-    setModalType('create');
-    setSelectedNoteId(null);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.NOTE_FORM, {
+      universeId: universeId ? Number(universeId) : parent?.data?.universe_id || null,
+      sceneId: sceneId ? Number(sceneId) : null,
+      characterId: characterId ? Number(characterId) : null,
+      mode: 'create',
+      onSuccess: handleNoteSuccess,
+    });
   };
 
   const handleEditNote = (noteId) => {
-    setModalType('edit');
-    setSelectedNoteId(noteId);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.NOTE_FORM, {
+      noteId,
+      universeId: universeId ? Number(universeId) : parent?.data?.universe_id || null,
+      sceneId: sceneId ? Number(sceneId) : null,
+      characterId: characterId ? Number(characterId) : null,
+      mode: 'edit',
+      onSuccess: handleNoteSuccess,
+    });
   };
 
   const handleViewNote = (noteId) => {
-    setModalType('view');
-    setSelectedNoteId(noteId);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.NOTE_FORM, {
+      noteId,
+      universeId: universeId ? Number(universeId) : parent?.data?.universe_id || null,
+      sceneId: sceneId ? Number(sceneId) : null,
+      characterId: characterId ? Number(characterId) : null,
+      mode: 'view',
+      onSuccess: handleNoteSuccess,
+    });
   };
 
   const handleDeleteNote = (noteId) => {
-    setModalType('delete');
-    setSelectedNoteId(noteId);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.CONFIRMATION, {
+      title: 'Delete Note',
+      message: 'Are you sure you want to delete this note? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await apiClient.deleteNote(noteId);
+          setNotes(notes.filter((note) => note.id !== noteId));
+
+          // Recalculate all tags
+          const deletedNote = notes.find((note) => note.id === noteId);
+          if (deletedNote && deletedNote.tags && deletedNote.tags.length > 0) {
+            const tagsSet = new Set();
+            notes.forEach((note) => {
+              if (note.id !== noteId && note.tags && Array.isArray(note.tags)) {
+                note.tags.forEach((tag) => tagsSet.add(tag));
+              }
+            });
+            setAllTags(Array.from(tagsSet));
+          }
+        } catch (error) {
+          console.error('Error deleting note:', error);
+          setError('Failed to delete note. Please try again.');
+        }
+      },
+      confirmText: 'Delete',
+      dangerMode: true,
+    });
   };
 
-  const handleModalClose = () => {
-    setModalOpen(false);
-  };
-
-  const handleNoteSuccess = (updatedNote) => {
-    if (modalType === 'create') {
+  const handleNoteSuccess = (updatedNote, mode) => {
+    if (mode === 'create') {
       setNotes([...notes, updatedNote]);
 
       // Update all tags
@@ -135,7 +168,7 @@ const NotesPage = () => {
         updatedNote.tags.forEach((tag) => newTags.add(tag));
       }
       setAllTags(Array.from(newTags));
-    } else if (modalType === 'edit') {
+    } else if (mode === 'edit') {
       setNotes(notes.map((note) => (note.id === updatedNote.id ? updatedNote : note)));
 
       // Recalculate all tags
@@ -149,20 +182,6 @@ const NotesPage = () => {
         updatedNote.tags.forEach((tag) => tagsSet.add(tag));
       }
       setAllTags(Array.from(tagsSet));
-    } else if (modalType === 'delete') {
-      setNotes(notes.filter((note) => note.id !== selectedNoteId));
-
-      // Recalculate all tags
-      const deletedNote = notes.find((note) => note.id === selectedNoteId);
-      if (deletedNote && deletedNote.tags && deletedNote.tags.length > 0) {
-        const tagsSet = new Set();
-        notes.forEach((note) => {
-          if (note.id !== selectedNoteId && note.tags && Array.isArray(note.tags)) {
-            note.tags.forEach((tag) => tagsSet.add(tag));
-          }
-        });
-        setAllTags(Array.from(tagsSet));
-      }
     }
   };
 
@@ -373,17 +392,6 @@ const NotesPage = () => {
           ))}
         </Grid>
       )}
-
-      <NoteFormModal
-        isOpen={modalOpen}
-        onClose={handleModalClose}
-        noteId={selectedNoteId}
-        universeId={universeId ? Number(universeId) : parent?.data?.universe_id || null}
-        sceneId={sceneId ? Number(sceneId) : null}
-        characterId={characterId ? Number(characterId) : null}
-        type={modalType}
-        onSuccess={handleNoteSuccess}
-      />
     </Container>
   );
 };

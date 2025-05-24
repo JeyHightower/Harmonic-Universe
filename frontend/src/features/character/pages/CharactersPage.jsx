@@ -1,44 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import {
-  Container,
-  Typography,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  IconButton,
-  Box,
-  CircularProgress,
-  Alert,
-  TextField,
-  InputAdornment,
-  CardMedia,
-  CardHeader,
-  Chip,
-} from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
-  Search as SearchIcon,
   ArrowBack as ArrowBackIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Search as SearchIcon,
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CircularProgress,
+  Container,
+  Grid,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
-// Create a dummy CharacterModal component since we can't find the actual one
-const CharacterModal = ({ open, onClose, type, characterId }) => {
-  return (
-    <div>
-      <h3>Character Modal</h3>
-      <p>This is a placeholder for the character modal component.</p>
-      <button onClick={onClose}>Close</button>
-    </div>
-  );
-};
-
-// Fix the API import path
+// Redux modal system imports
 import { useDispatch, useSelector } from 'react-redux';
 import api from '../../../services/api.adapter';
 import { clearCharacters } from '../../../store/slices/characterSlice';
@@ -117,9 +103,9 @@ const CharactersPageContent = ({ universeId }) => {
   const [universe, setUniverse] = useState(null);
   const [scenes, setScenes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('create');
-  const [selectedCharacterId, setSelectedCharacterId] = useState(null);
+
+  // Use Redux modal system
+  const { open: openModal } = useModalState();
 
   // Update local state when Redux state changes
   useEffect(() => {
@@ -297,38 +283,52 @@ const CharactersPageContent = ({ universeId }) => {
   const handleCreateCharacter = () => {
     console.log('Creating character for universe:', safeUniverseId);
     console.log('Available scenes for character:', scenes);
-    setModalType('create');
-    setSelectedCharacterId(null);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.CHARACTER_FORM, {
+      universeId: String(safeUniverseId),
+      mode: 'create',
+      onSuccess: handleCharacterSuccess,
+      availableScenes: scenes,
+    });
   };
 
   const handleEditCharacter = (characterId) => {
-    setModalType('edit');
-    setSelectedCharacterId(characterId);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.CHARACTER_FORM, {
+      universeId: String(safeUniverseId),
+      characterId: String(characterId),
+      mode: 'edit',
+      onSuccess: handleCharacterSuccess,
+      availableScenes: scenes,
+    });
   };
 
   const handleViewCharacter = (characterId) => {
-    setModalType('view');
-    setSelectedCharacterId(characterId);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.CHARACTER_FORM, {
+      universeId: String(safeUniverseId),
+      characterId: String(characterId),
+      mode: 'view',
+      onSuccess: handleCharacterSuccess,
+      availableScenes: scenes,
+    });
   };
 
   const handleDeleteCharacter = (characterId) => {
-    setModalType('delete');
-    setSelectedCharacterId(characterId);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.CONFIRMATION, {
+      title: 'Delete Character',
+      message: 'Are you sure you want to delete this character? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await api.deleteCharacter(characterId);
+          handleCharacterSuccess('delete');
+        } catch (error) {
+          console.error('Error deleting character:', error);
+        }
+      },
+      confirmText: 'Delete',
+      dangerMode: true,
+    });
   };
 
-  const handleModalClose = () => {
-    setModalOpen(false);
-    // Reset modal state
-    if (modalType === 'create') {
-      setSelectedCharacterId(null);
-    }
-  };
-
-  const handleCharacterSuccess = (actionType) => {
+  const handleCharacterSuccess = () => {
     // Refresh the character list from API
     dispatch(fetchCharactersByUniverse(safeUniverseId));
   };
@@ -483,18 +483,6 @@ const CharactersPageContent = ({ universeId }) => {
             </Grid>
           ))}
         </Grid>
-      )}
-
-      {modalOpen && (
-        <CharacterModal
-          open={modalOpen}
-          onClose={handleModalClose}
-          characterId={selectedCharacterId}
-          universeId={Number(safeUniverseId)}
-          mode={modalType}
-          onSuccess={handleCharacterSuccess}
-          availableScenes={scenes}
-        />
       )}
     </Container>
   );

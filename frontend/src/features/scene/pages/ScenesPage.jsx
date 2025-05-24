@@ -32,7 +32,6 @@ import {
   deleteSceneAndRefresh,
   fetchScenes,
 } from '../../../store/thunks/consolidated/scenesThunks';
-import SceneModal from '../modals/SceneModal';
 
 // Create a wrapper component that handles redirection logic
 const ScenesPageWrapper = () => {
@@ -269,13 +268,13 @@ const ScenesPageContent = ({ universeId }) => {
   const [error, setError] = useState(null);
   const [universe, setUniverse] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('create');
-  const [selectedSceneId, setSelectedSceneId] = useState(null);
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
+
+  // Use Redux modal system
+  const { open: openModal } = useModalState();
 
   // Update local state when Redux state changes - now prioritize universeScenes over scenesFromStore
   useEffect(() => {
@@ -527,40 +526,21 @@ const ScenesPageContent = ({ universeId }) => {
   }, [dispatch, navigate, safeUniverseId, scenes.length, isUniverseExists]);
 
   const handleCreateScene = () => {
-    // Add comprehensive debugging
     console.log('ScenesPage - handleCreateScene called');
-    console.log('ScenesPage - Current state before opening modal:', {
-      safeUniverseId,
-      modalType: 'create',
-      selectedSceneId: null,
-      currentModalOpen: modalOpen,
-    });
-
-    // Set modal properties for creation
-    setModalType('create');
-    setSelectedSceneId(null);
-
-    // Log before setting modalOpen
-    console.log('ScenesPage - About to set modalOpen to true');
-
-    // Set modal to open
-    setModalOpen(true);
-
-    // Log after setting modalOpen
-    console.log('ScenesPage - modalOpen set to true, modal should appear now');
-
-    // Check if the modal component will actually render based on conditions
-    console.log('ScenesPage - Modal will render if all these are true:', {
-      modalOpenState: true,
-      safeUniverseIdExists: !!safeUniverseId,
-      safeUniverseIdValue: safeUniverseId,
+    openModal(MODAL_TYPES.SCENE_FORM, {
+      universeId: String(safeUniverseId),
+      mode: 'create',
+      onSuccess: handleModalSuccess,
     });
   };
 
   const handleEditScene = (sceneId) => {
-    setModalType('edit');
-    setSelectedSceneId(sceneId);
-    setModalOpen(true);
+    openModal(MODAL_TYPES.SCENE_FORM, {
+      universeId: String(safeUniverseId),
+      sceneId: String(sceneId),
+      mode: 'edit',
+      onSuccess: handleModalSuccess,
+    });
   };
 
   const handleViewScene = (sceneId) => {
@@ -587,30 +567,35 @@ const ScenesPageContent = ({ universeId }) => {
   };
 
   const handleDeleteScene = async (sceneId) => {
-    if (window.confirm('Are you sure you want to delete this scene?')) {
-      try {
-        // Use the Redux thunk with correct endpoint and with refresh
-        await dispatch(
-          deleteSceneAndRefresh({
-            sceneId,
-            universeId: safeUniverseId,
-          })
-        ).unwrap();
-        console.log(`Scene ${sceneId} deleted successfully`);
-      } catch (error) {
-        console.error('Error deleting scene:', error);
-        setError('Failed to delete scene. Please try again.');
-      }
-    }
+    openModal(MODAL_TYPES.CONFIRMATION, {
+      title: 'Delete Scene',
+      message: 'Are you sure you want to delete this scene? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          // Use the Redux thunk with correct endpoint and with refresh
+          await dispatch(
+            deleteSceneAndRefresh({
+              sceneId,
+              universeId: safeUniverseId,
+            })
+          ).unwrap();
+          console.log(`Scene ${sceneId} deleted successfully`);
+        } catch (error) {
+          console.error('Error deleting scene:', error);
+          setError('Failed to delete scene. Please try again.');
+        }
+      },
+      confirmText: 'Delete',
+      dangerMode: true,
+    });
   };
 
-  const handleModalClose = () => {
-    console.log('ScenesPage - Closing scene modal');
-    setModalOpen(false);
-
-    // We're already handling refreshes in the onSuccess handler,
-    // so we don't need to refresh again here which could cause issues
-    // with the validation logic rerunning
+  const handleModalSuccess = () => {
+    console.log('ScenesPage - Scene modal success');
+    // Refresh scenes data after successful operation
+    if (safeUniverseId) {
+      dispatch(fetchScenes(safeUniverseId));
+    }
   };
 
   const handleBackToUniverse = () => {
@@ -720,25 +705,6 @@ const ScenesPageContent = ({ universeId }) => {
 
         {renderScenesList()}
       </Box>
-
-      {/* Debug logging for modal conditions */}
-      {console.log('ScenesPage - Modal render condition check:', {
-        modalOpen,
-        safeUniverseId,
-        shouldRenderModal: !!(modalOpen && safeUniverseId),
-      })}
-
-      {/* Scene Modal */}
-      {modalOpen && safeUniverseId && (
-        <SceneModal
-          open={modalOpen}
-          onClose={handleModalClose}
-          onSuccess={handleModalSuccess}
-          universeId={String(safeUniverseId)}
-          sceneId={selectedSceneId ? String(selectedSceneId) : undefined}
-          modalType={modalType}
-        />
-      )}
     </Container>
   );
 };

@@ -132,6 +132,7 @@ export const getModalComponent = async (type) => {
     MODAL_TYPES.UNIVERSE_CREATE,
     'SCENE_FORM',
     'CHARACTER_FORM',
+    'NOTE_FORM',
     'audio-generate',
     'audio-details',
     'music-create',
@@ -167,6 +168,18 @@ export const getModalComponent = async (type) => {
           component = CharacterModule.default;
         } catch (e) {
           console.warn('Fallback to FormModal for CharacterModal', e);
+          component = FormModal;
+        }
+        break;
+      case 'NOTE_FORM':
+        console.log('Loading NoteFormModal');
+        try {
+          const NoteFormModalModule = await import(
+            /* @vite-ignore */ '../features/note/modals/NoteFormModal.jsx'
+          );
+          component = NoteFormModalModule.default;
+        } catch (e) {
+          console.warn('Fallback to FormModal for NoteFormModal', e);
           component = FormModal;
         }
         break;
@@ -252,6 +265,8 @@ export const getModalDisplayName = (type) => {
     SCENE_FORM: 'Scene',
     [MODAL_TYPES.CHARACTER_FORM]: 'Character',
     CHARACTER_FORM: 'Character',
+    [MODAL_TYPES.NOTE_FORM]: 'Note',
+    NOTE_FORM: 'Note',
     [MODAL_TYPES.PHYSICS_OBJECT]: 'Physics Object',
     PHYSICS_OBJECT: 'Physics Object',
     [MODAL_TYPES.PHYSICS_PARAMETERS]: 'Physics Parameters',
@@ -470,6 +485,7 @@ export const getModalComponentSync = (type) => {
     MODAL_TYPES.UNIVERSE_CREATE,
     'SCENE_FORM',
     'CHARACTER_FORM',
+    'NOTE_FORM',
     'audio-generate',
     'audio-details',
     'music-create',

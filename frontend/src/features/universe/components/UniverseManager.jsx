@@ -5,13 +5,15 @@
  * including listing, creating, editing, and deleting universes.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { UniverseDeleteModal, UniverseModal } from '../';
 import Button from '../../../components/common/Button';
 import Icon from '../../../components/common/Icon';
 import Spinner from '../../../components/common/Spinner';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { useModalState } from '../../../hooks/useModalState';
+import api from '../../../services/api.adapter';
 import { fetchUniverses } from '../../../store/thunks/universeThunks';
 import '../styles/Universe.css';
 
@@ -20,9 +22,8 @@ const UniverseManager = () => {
   const navigate = useNavigate();
   const { universes, loading, error } = useSelector((state) => state.universes);
 
-  const [selectedUniverse, setSelectedUniverse] = useState(null);
-  const [modalMode, setModalMode] = useState(null); // 'create', 'edit', 'view', 'delete'
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  // Use Redux modal system
+  const { open: openModal } = useModalState();
 
   // Fetch universes when component mounts
   useEffect(() => {
@@ -34,31 +35,43 @@ const UniverseManager = () => {
   };
 
   const handleCreateUniverse = () => {
-    setSelectedUniverse(null);
-    setModalMode('create');
-    setIsModalVisible(true);
+    openModal(MODAL_TYPES.UNIVERSE_CREATE, {
+      mode: 'create',
+      onSuccess: handleModalSuccess,
+    });
   };
 
   const handleViewUniverse = (universe) => {
-    setSelectedUniverse(universe);
-    setModalMode('view');
-    setIsModalVisible(true);
+    openModal(MODAL_TYPES.UNIVERSE_CREATE, {
+      mode: 'view',
+      universe: universe,
+      onSuccess: handleModalSuccess,
+    });
   };
 
   const handleEditUniverse = (universe) => {
-    setSelectedUniverse(universe);
-    setModalMode('edit');
-    setIsModalVisible(true);
+    openModal(MODAL_TYPES.UNIVERSE_CREATE, {
+      mode: 'edit',
+      universe: universe,
+      onSuccess: handleModalSuccess,
+    });
   };
 
   const handleDeleteUniverse = (universe) => {
-    setSelectedUniverse(universe);
-    setModalMode('delete');
-    setIsModalVisible(true);
-  };
-
-  const handleModalClose = () => {
-    setIsModalVisible(false);
+    openModal(MODAL_TYPES.CONFIRMATION, {
+      title: 'Delete Universe',
+      message: `Are you sure you want to delete "${universe.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await api.deleteUniverse(universe.id);
+          handleModalSuccess(universe, 'delete');
+        } catch (error) {
+          console.error('Error deleting universe:', error);
+        }
+      },
+      confirmText: 'Delete',
+      dangerMode: true,
+    });
   };
 
   const handleModalSuccess = (universe, action) => {
@@ -70,16 +83,10 @@ const UniverseManager = () => {
 
     // If it's a newly created universe, navigate to it after a short delay to ensure UI update
     if (action === 'create' && universe && universe.id) {
-      // Close the modal
-      setIsModalVisible(false);
-
       // Navigate to the new universe
       setTimeout(() => {
         handleNavigateToUniverse(universe.id);
       }, 100); // Small delay to ensure Redux state is properly updated
-    } else {
-      // For other actions (edit, delete), just close the modal
-      setIsModalVisible(false);
     }
   };
 
@@ -195,34 +202,6 @@ const UniverseManager = () => {
       </div>
 
       <div className="universe-manager-content">{renderUniverseItems()}</div>
-
-      {isModalVisible && modalMode === 'create' && (
-        <UniverseModal
-          isOpen={isModalVisible}
-          onClose={handleModalClose}
-          onSuccess={(universe) => handleModalSuccess(universe, 'create')}
-          isEdit={false}
-        />
-      )}
-
-      {isModalVisible && modalMode === 'edit' && selectedUniverse && (
-        <UniverseModal
-          isOpen={isModalVisible}
-          onClose={handleModalClose}
-          onSuccess={(universe) => handleModalSuccess(universe, 'update')}
-          universe={selectedUniverse}
-          isEdit={true}
-        />
-      )}
-
-      {isModalVisible && modalMode === 'delete' && selectedUniverse && (
-        <UniverseDeleteModal
-          isOpen={isModalVisible}
-          onClose={handleModalClose}
-          onSuccess={(universe) => handleModalSuccess(universe, 'delete')}
-          universe={selectedUniverse}
-        />
-      )}
     </div>
   );
 };

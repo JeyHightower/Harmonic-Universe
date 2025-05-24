@@ -5,7 +5,7 @@ import {
   SettingOutlined,
   SoundOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Col, Empty, List, Modal, Row, Slider, Spin, Tabs, message } from 'antd';
+import { Button, Card, Col, Empty, List, Row, Slider, Spin, Tabs, message } from 'antd';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -30,8 +30,6 @@ const HarmonyPage = () => {
   });
   const [harmonyParameters, setHarmonyParameters] = useState([]);
   const [fetchingParameters, setFetchingParameters] = useState(false);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [parameterToDelete, setParameterToDelete] = useState(null);
 
   const universe = useSelector((state) => state.universe.currentUniverse);
 
@@ -100,11 +98,16 @@ const HarmonyPage = () => {
   };
 
   const showDeleteConfirm = (parameter) => {
-    setParameterToDelete(parameter);
-    setDeleteModalVisible(true);
+    open(MODAL_TYPES.CONFIRMATION, {
+      title: 'Delete Harmony Parameter',
+      message: `Are you sure you want to delete "${parameter.name}"? This action cannot be undone.`,
+      onConfirm: () => handleDeleteHarmonyParameter(parameter),
+      confirmText: 'Delete',
+      dangerMode: true,
+    });
   };
 
-  const handleDeleteHarmonyParameter = async () => {
+  const handleDeleteHarmonyParameter = async (parameterToDelete) => {
     if (!parameterToDelete) return;
 
     try {
@@ -120,9 +123,6 @@ const HarmonyPage = () => {
     } catch (error) {
       console.error('Error deleting harmony parameter:', error);
       message.error('Failed to delete harmony parameter');
-    } finally {
-      setDeleteModalVisible(false);
-      setParameterToDelete(null);
     }
   };
 
@@ -318,22 +318,6 @@ const HarmonyPage = () => {
           },
         ]}
       />
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        title="Delete Harmony Parameter"
-        open={deleteModalVisible}
-        onOk={handleDeleteHarmonyParameter}
-        onCancel={() => {
-          setDeleteModalVisible(false);
-          setParameterToDelete(null);
-        }}
-        okText="Delete"
-        okButtonProps={{ danger: true }}
-      >
-        <p>Are you sure you want to delete "{parameterToDelete?.name}"?</p>
-        <p>This action cannot be undone.</p>
-      </Modal>
     </div>
   );
 };
