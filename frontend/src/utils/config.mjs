@@ -36,8 +36,8 @@ export const PUBLIC_URL = isNodeEnv ? '/' : import.meta.env.PUBLIC_URL || '/';
 export const API_URL = IS_PRODUCTION
   ? '' // Empty string in production to avoid double /api prefix
   : isNodeEnv
-    ? 'http://localhost:5002/api'
-    : import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+    ? 'http://localhost:5001/api'
+    : import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // Export the CDN URL
 export const CDN_URL = isNodeEnv ? '' : import.meta.env.VITE_CDN_URL || '';
@@ -138,8 +138,8 @@ export const API_CONFIG = {
   BASE_URL: IS_PRODUCTION
     ? '' // Empty string in production to avoid double /api prefix
     : isNodeEnv
-      ? 'http://localhost:5002'
-      : import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002', // Don't include /api in BASE_URL
+      ? 'http://localhost:5001'
+      : import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001', // Don't include /api in BASE_URL
   // API prefix should always be /api, used for both local and production
   API_PREFIX: '/api',
   TIMEOUT: 30000,
@@ -153,7 +153,7 @@ export const API_CONFIG = {
   RETRY_DELAY: 2000,
   // Health check endpoint configuration
   HEALTH_CHECK: {
-    ENDPOINT: IS_PRODUCTION ? '/api/health' : 'http://localhost:5002/api/health',
+    ENDPOINT: IS_PRODUCTION ? '/api/health' : 'http://localhost:5001/api/health',
     TIMEOUT: 5000,
     RETRY_ATTEMPTS: 3,
     INTERVAL: 60000,
@@ -600,8 +600,8 @@ export const APP_CONFIG = {
     BASE_URL: IS_PRODUCTION
       ? '/api' // Use relative URL in production
       : isNodeEnv
-        ? 'http://localhost:5002/api'
-        : import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api',
+        ? 'http://localhost:5001/api'
+        : import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api',
     TIMEOUT: 30000,
   },
   FEATURES: {

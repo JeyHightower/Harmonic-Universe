@@ -5,7 +5,7 @@ class Config:
     # Basic Flask config
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    PORT = int(os.environ.get('PORT', 5002))
+    PORT = int(os.environ.get('PORT', 5001))
 
     # Database config - PostgreSQL only
     database_url = os.environ.get('DATABASE_URL') or 'postgresql://postgres:postgres@localhost:5432/harmonic_universe'
@@ -58,8 +58,8 @@ class Config:
         print(f"DEBUG - JWT_SECRET_KEY: '{JWT_SECRET_KEY[:5]}...'")
         print(f"DEBUG - JWT_REFRESH_SECRET_KEY: '{JWT_REFRESH_SECRET_KEY[:5]}...'")
 
-    # CORS Configuration
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+    # CORS Configuration - include common frontend development ports
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174').split(',')
     CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
     CORS_HEADERS = ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"]
     CORS_EXPOSE_HEADERS = ["Content-Length", "Content-Type", "Authorization"]
@@ -139,8 +139,13 @@ class DevelopmentConfig(Config):
         ],
     }
 
-    # Override CORS settings for development
-    CORS_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+    # Override CORS settings for development - include both 5173 and 5174 for Vite flexibility
+    CORS_ORIGINS = [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5174'
+    ]
     CORS_SUPPORTS_CREDENTIALS = True
 
     # More permissive rate limiting for development
