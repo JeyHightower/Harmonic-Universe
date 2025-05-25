@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+ROOT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 
@@ -24,7 +24,7 @@ print_red() {
 
 # Check if Python virtual environment exists
 check_backend() {
-    if [ ! -d "$BACKEND_DIR/venv" ]; then
+    if [ ! -d "$BACKEND_DIR/myenv" ]; then
         print_red "Backend virtual environment not found. Please run setup.sh first."
         exit 1
     fi
@@ -59,8 +59,8 @@ check_postgres() {
 start_backend() {
     print_yellow "Starting backend server..."
     cd "$BACKEND_DIR"
-    source venv/bin/activate
-    
+    source myenv/bin/activate
+
     # Start the backend server in the background
     python run.py &
     BACKEND_PID=$!
@@ -71,7 +71,7 @@ start_backend() {
 start_frontend() {
     print_yellow "Starting frontend server..."
     cd "$FRONTEND_DIR"
-    
+
     # Start the frontend server in the background
     npm run dev &
     FRONTEND_PID=$!
@@ -97,24 +97,24 @@ trap cleanup SIGINT SIGTERM
 # Main function
 main() {
     print_green "==== Starting Harmonic Universe Application ===="
-    
+
     # Check prerequisites
     check_backend
     check_frontend
     check_postgres
-    
+
     # Start servers
     start_backend
     start_frontend
-    
+
     print_green "==== Harmonic Universe is running ===="
     print_yellow "Backend server: http://localhost:5001"
     print_yellow "Frontend server: http://localhost:5173"
     print_yellow "Press Ctrl+C to stop both servers."
-    
+
     # Keep the script running
     wait
 }
 
 # Run main function
-main 
+main
