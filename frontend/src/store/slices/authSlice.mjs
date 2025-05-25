@@ -81,6 +81,9 @@ export const demoLogin = createAsyncThunk('auth/demoLogin', async (_, { dispatch
     if (data.token) {
       localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.token);
     }
+    if (data.refresh_token) {
+      localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, data.refresh_token);
+    }
     if (data.user) {
       localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(data.user));
     }
@@ -109,6 +112,11 @@ export const handleAuthTokens = createAsyncThunk(
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, tokens.token);
       } else if (tokens.access_token) {
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, tokens.access_token);
+      }
+
+      // Store refresh token in localStorage if provided
+      if (tokens.refresh_token) {
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, tokens.refresh_token);
       }
 
       // Store user in localStorage if provided

@@ -9,7 +9,7 @@ import UniverseCard from './UniverseCard';
 
 const UniverseList = () => {
   const dispatch = useDispatch();
-  const { universes, loading, error } = useSelector((state) => state.universe);
+  const { universes, loading, error } = useSelector((state) => state.universes);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [universeToDelete, setUniverseToDelete] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'public', 'private'

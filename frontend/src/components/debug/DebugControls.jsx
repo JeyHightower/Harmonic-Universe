@@ -23,7 +23,7 @@ const DebugControls = () => {
   const [visible, setVisible] = useState(false);
   const [logs, setLogs] = useState([]);
   const [expanded, setExpanded] = useState(false);
-  const debug = useSelector((state) => state.universe?.debug || false);
+  const debug = useSelector((state) => state.universes?.debug || false);
 
   // Handle direct modal testing
   const testLoginModal = () => {

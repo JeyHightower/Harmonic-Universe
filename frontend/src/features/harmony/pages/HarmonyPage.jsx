@@ -31,7 +31,7 @@ const HarmonyPage = () => {
   const [harmonyParameters, setHarmonyParameters] = useState([]);
   const [fetchingParameters, setFetchingParameters] = useState(false);
 
-  const universe = useSelector((state) => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universes.currentUniverse);
 
   useEffect(() => {
     const loadUniverse = async () => {

@@ -59,7 +59,7 @@ function PhysicsPanel({
 }) {
   const dispatch = useDispatch();
   const { open } = useModalState();
-  const currentUniverse = useSelector((state) => state.universe.currentUniverse);
+  const currentUniverse = useSelector((state) => state.universes.currentUniverse);
   const [physicsParams, setPhysicsParams] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

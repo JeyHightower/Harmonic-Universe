@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../components/common/Button.jsx';
 import Spinner from '../../../components/common/Spinner.jsx';
+import apiClient from '../../../services/api.adapter';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks.mjs';
 import '../styles/Storyboard.css';
-import apiClient from '../../../services/api.adapter';
 
 const StoryboardDetail = () => {
   const { universeId, storyboardId } = useParams();
@@ -20,7 +20,7 @@ const StoryboardDetail = () => {
   const [zoom, setZoom] = useState(1);
   const [selectedPoint, setSelectedPoint] = useState(null);
 
-  const universe = useSelector((state) => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universes.currentUniverse);
 
   // Fetch universe if not already loaded
   useEffect(() => {

@@ -6,7 +6,7 @@
 import axios from 'axios';
 import { API_CONFIG } from '../utils/config';
 import { log } from '../utils/logger.mjs';
-import { getToken } from './auth.service.mjs';
+import { clearAuthData, getToken, refreshToken } from './auth.service.mjs';
 import { API_SERVICE_CONFIG } from './config.mjs';
 
 let isRefreshing = false;
@@ -504,8 +504,8 @@ axiosInstance.interceptors.response.use(
         }
 
         // Get refresh token and validate format
-        const refreshToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
-        if (!refreshToken) {
+        const refreshTokenValue = localStorage.getItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
+        if (!refreshTokenValue) {
           logApiOperation('token-refresh-failed', { reason: 'No refresh token available' });
 
           // Set token verification failed flag
@@ -529,7 +529,7 @@ axiosInstance.interceptors.response.use(
         }
 
         // Validate refresh token format before attempting to use it
-        const tokenParts = refreshToken.split('.');
+        const tokenParts = refreshTokenValue.split('.');
         if (tokenParts.length !== 3) {
           logApiOperation('token-refresh-failed', { reason: 'Invalid refresh token format' });
           clearAuthData();

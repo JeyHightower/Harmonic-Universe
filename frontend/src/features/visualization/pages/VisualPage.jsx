@@ -24,7 +24,7 @@ const VisualPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('gallery');
 
-  const universe = useSelector((state) => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universes.currentUniverse);
 
   useEffect(() => {
     const loadUniverse = async () => {

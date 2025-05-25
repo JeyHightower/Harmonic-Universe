@@ -199,10 +199,63 @@ export async function refreshToken() {
   }
 
   try {
-    let refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    // FIRST PRIORITY: Check if this is a demo session - do this before anything else
+    const currentToken = localStorage.getItem(TOKEN_KEY);
+    const currentRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    const currentUser = localStorage.getItem(USER_KEY);
+
+    console.log('Debug - refreshToken: Initial authentication state:', {
+      hasCurrentToken: !!currentToken,
+      hasRefreshToken: !!currentRefreshToken,
+      hasUser: !!currentUser,
+      currentTokenPreview: currentToken ? `${currentToken.substring(0, 20)}...` : 'none',
+      refreshTokenPreview: currentRefreshToken
+        ? `${currentRefreshToken.substring(0, 20)}...`
+        : 'none',
+      userPreview: currentUser ? JSON.parse(currentUser).username || 'no username' : 'none',
+    });
+
+    // Use a more direct demo session check
+    let isDemoSession = false;
+    if (currentToken) {
+      try {
+        const parts = currentToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          isDemoSession =
+            payload.sub &&
+            (payload.sub.includes('demo-') ||
+              payload.sub.includes('demo_') ||
+              payload.sub === 'demo-user');
+        }
+      } catch (e) {
+        // If JWT parsing fails, check for legacy demo tokens
+        isDemoSession =
+          currentToken.startsWith('demo-') ||
+          currentToken.includes('demo_token_') ||
+          currentToken.includes('demo-token-');
+      }
+    }
+
+    console.log('Debug - refreshToken: isDemoSession =', isDemoSession);
+
+    if (isDemoSession) {
+      console.log('Demo session detected in refreshToken, regenerating demo tokens');
+      const { demoUserService } = await import('./demo-user.service.mjs');
+      const demoData = demoUserService.setupDemoSession();
+      return demoData.token;
+    }
+
+    // Only proceed with regular token refresh if NOT a demo session
+    let refreshTokenValue = localStorage.getItem(REFRESH_TOKEN_KEY);
+
+    console.log('Debug - refreshToken: About to check refresh token availability:', {
+      hasRefreshToken: !!refreshTokenValue,
+      refreshTokenLength: refreshTokenValue ? refreshTokenValue.length : 0,
+    });
 
     // If no refresh token is available, we can't refresh
-    if (!refreshToken) {
+    if (!refreshTokenValue) {
       console.error('No refresh token available for token refresh');
       // Set a flag to indicate token verification failed
       localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
@@ -210,7 +263,7 @@ export async function refreshToken() {
     }
 
     // Ensure the refresh token is in valid JWT format (has 3 segments)
-    const tokenParts = refreshToken.split('.');
+    const tokenParts = refreshTokenValue.split('.');
     if (tokenParts.length !== 3) {
       console.error('Invalid refresh token format - not a valid JWT token');
       // Clear the invalid token
@@ -224,21 +277,18 @@ export async function refreshToken() {
     const refreshEndpoint = authEndpoints.refresh;
     console.log('Using refresh endpoint:', refreshEndpoint);
 
-    // Get the current token for backup
-    const currentToken = localStorage.getItem(TOKEN_KEY);
-
     // Add detailed logging for debugging
     console.log('Refreshing token:', {
       endpoint: refreshEndpoint,
       hasCurrentToken: !!currentToken,
-      refreshTokenLength: refreshToken.length,
+      refreshTokenLength: refreshTokenValue.length,
     });
 
     try {
       // First attempt with standard endpoint
       const response = await httpClient.post(
         refreshEndpoint,
-        { refresh_token: refreshToken },
+        { refresh_token: refreshTokenValue },
         {
           headers: {
             Authorization: currentToken ? `Bearer ${currentToken}` : undefined,
@@ -284,7 +334,7 @@ export async function refreshToken() {
         // Try the alternate endpoint
         const retryResponse = await httpClient.post(
           alternateEndpoint,
-          { refresh_token: refreshToken },
+          { refresh_token: refreshTokenValue },
           {
             headers: {
               Authorization: currentToken ? `Bearer ${currentToken}` : undefined,
@@ -617,6 +667,26 @@ export function hasValidToken() {
   try {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return false;
+
+    // Check if this is a demo session by examining the token format
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        // Decode the payload to check if it's a demo token
+        const payload = JSON.parse(atob(parts[1]));
+        if (
+          payload.sub &&
+          (payload.sub.includes('demo-') ||
+            payload.sub.includes('demo_') ||
+            payload.sub === 'demo-user')
+        ) {
+          console.log('Demo token detected in hasValidToken, considering valid');
+          return true;
+        }
+      }
+    } catch (e) {
+      // If token parsing fails, continue with regular validation
+    }
 
     const decoded = decodeToken(token);
     if (!decoded) return false;

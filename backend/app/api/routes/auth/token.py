@@ -349,11 +349,27 @@ def refresh():
                 expires_delta=timedelta(minutes=30)
             )
 
+            # Create new refresh token for token rotation security
+            refresh_token_payload = {
+                'sub': user_id,
+                'type': 'refresh',
+                'iat': datetime.now(timezone.utc)
+            }
+
+            refresh_secret_key = get_jwt_refresh_secret_key()
+            new_refresh_token = create_token(
+                payload=refresh_token_payload,
+                secret_key=refresh_secret_key,
+                expires_delta=timedelta(days=7)  # 7 days for refresh token
+            )
+
             # Create response
             response = make_response(jsonify({
                 'success': True,
                 'message': 'Token refreshed successfully',
-                'access_token': access_token
+                'access_token': access_token,
+                'token': access_token,  # Also include 'token' for frontend compatibility
+                'refresh_token': new_refresh_token
             }))
 
             # Set cookies for cookie-based auth

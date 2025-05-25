@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchUniverses, updateUniverse } from '../../../store/thunks/universeThunks';
-import apiClient from '../../../services/api';
-import { endpoints } from '../../../services/endpoints';
-import { validateDescription, validateUniverseName } from '../../../utils/validation';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
-import { ModalSystem } from '../../../components/modals/index.mjs';
 import Spinner from '../../../components/common/Spinner';
+import { ModalSystem } from '../../../components/modals/index.mjs';
+import apiClient from '../../../services/api';
+import { endpoints } from '../../../services/endpoints';
+import { fetchUniverses, updateUniverse } from '../../../store/thunks/universeThunks';
+import { validateDescription, validateUniverseName } from '../../../utils/validation';
 import { PhysicsPanel } from '../../physics';
 import '../styles/Universe.css';
 
@@ -16,7 +16,7 @@ function UniverseEdit() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
-  const { universes } = useSelector((state) => state.universe);
+  const { universes } = useSelector((state) => state.universes);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

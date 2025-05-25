@@ -15,7 +15,7 @@ const PhysicsPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('objects');
 
-  const universe = useSelector((state) => state.universe.currentUniverse);
+  const universe = useSelector((state) => state.universes.currentUniverse);
 
   useEffect(() => {
     const loadUniverse = async () => {

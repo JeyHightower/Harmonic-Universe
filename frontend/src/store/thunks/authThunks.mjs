@@ -478,21 +478,32 @@ export const validateAndRefreshToken = createAsyncThunk(
 
       // Get the current token
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const refreshTokenValue = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+
+      console.log('Debug - validateAndRefreshToken:', {
+        hasToken: !!token,
+        hasRefreshToken: !!refreshTokenValue,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+      });
 
       if (!token) {
+        console.log('Debug - validateAndRefreshToken: No token found');
         return rejectWithValue('No authentication token found');
       }
 
       // For demo tokens, regenerate a fresh token
       const isDemoSession = demoUserService.isDemoSession();
+      console.log('Debug - validateAndRefreshToken: isDemoSession =', isDemoSession);
+
       if (isDemoSession) {
-        console.log('Demo session detected, regenerating demo tokens');
+        console.log('Demo session detected in validateAndRefreshToken, regenerating demo tokens');
         const demoData = demoUserService.setupDemoSession();
         return { valid: true, token: demoData.token };
       }
 
       // For real tokens, force a refresh regardless of expiration
       try {
+        console.log('Debug - validateAndRefreshToken: Attempting to refresh real token');
         // Force token refresh
         const response = await api.auth.refreshToken();
 

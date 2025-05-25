@@ -1,18 +1,18 @@
 import {
-    Add as AddIcon,
-    Logout as LogoutIcon,
-    Refresh as RefreshIcon,
-    RestartAlt as ResetIcon,
+  Add as AddIcon,
+  Logout as LogoutIcon,
+  Refresh as RefreshIcon,
+  RestartAlt as ResetIcon,
 } from '@mui/icons-material';
 import {
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Tooltip,
-    Typography,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,8 +27,8 @@ import { demoUserService } from '../../../services/demo-user.service.mjs';
 import { clearError } from '../../../store/slices/universeSlice.mjs';
 import { logout, validateAndRefreshToken } from '../../../store/thunks/authThunks';
 import {
-    applyModalInteractionFixesThunk,
-    initializeModalPortalThunk,
+  applyModalInteractionFixesThunk,
+  initializeModalPortalThunk,
 } from '../../../store/thunks/modalThunks';
 import { deleteUniverse, fetchUniverses } from '../../../store/thunks/universeThunks';
 import { AUTH_CONFIG } from '../../../utils/config';
@@ -85,6 +85,51 @@ const Dashboard = () => {
     // Update the timestamp to prevent duplicate calls
     lastDashboardLoadAttempt = Date.now();
 
+    // FIRST: Check if this is a demo session before any other operations
+    const isDemoSession = demoUserService.isDemoSession();
+    console.log('Dashboard - loadUniverses: isDemoSession check =', isDemoSession);
+
+    if (isDemoSession) {
+      console.log('Dashboard - Demo session detected in loadUniverses, using demo flow');
+
+      // Check if we have both tokens
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+
+      if (!token || !refreshToken) {
+        console.log('Dashboard - Demo tokens missing, regenerating demo session');
+        demoUserService.setupDemoSession();
+      }
+
+      // Continue to load universes using dispatch for demo sessions
+      try {
+        const result = await dispatch(fetchUniverses()).unwrap();
+        console.log('Dashboard - Successfully loaded universes in demo mode');
+        return result;
+      } catch (error) {
+        console.error('Dashboard - Error loading universes in demo mode:', error);
+
+        // Handle server errors gracefully
+        if (error.serverError || (error.response && error.response.status >= 500)) {
+          console.warn('Server error detected (500), showing error UI');
+          setConnectionError(true);
+
+          // Schedule an automatic retry if we haven't exceeded the limit
+          if (retryCount < maxRetries) {
+            console.log(
+              `Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`
+            );
+            setTimeout(() => {
+              setRetryCount((prev) => prev + 1);
+            }, 3000); // Wait 3 seconds before retrying
+          }
+        }
+
+        // Let Redux handle the error state for non-connection errors
+        throw error;
+      }
+    }
+
     // Handle errors from fetching universes
     const handleFetchError = (error) => {
       console.error('Dashboard - Error loading universes:', error);
@@ -127,52 +172,6 @@ const Dashboard = () => {
       return Promise.reject(error);
     };
 
-    // Check if this is a demo session
-    const isDemoSession = demoUserService.isDemoSession();
-
-    if (isDemoSession) {
-      console.log('Dashboard - Demo session detected');
-
-      // Check if we have both tokens
-      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-      const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-
-      if (!token || !refreshToken) {
-        console.log('Dashboard - Demo tokens missing, regenerating demo session');
-        demoUserService.setupDemoSession();
-      }
-
-      // Continue to load universes using dispatch
-      return dispatch(fetchUniverses())
-        .unwrap()
-        .then((result) => {
-          console.log('Dashboard - Successfully loaded universes in demo mode');
-          return result;
-        })
-        .catch((error) => {
-          console.error('Dashboard - Error loading universes in demo mode:', error);
-
-          // Handle server errors gracefully
-          if (error.serverError || (error.response && error.response.status >= 500)) {
-            console.warn('Server error detected (500), showing error UI');
-            setConnectionError(true);
-
-            // Schedule an automatic retry if we haven't exceeded the limit
-            if (retryCount < maxRetries) {
-              console.log(
-                `Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`
-              );
-              setTimeout(() => {
-                setRetryCount((prev) => prev + 1);
-              }, 3000); // Wait 3 seconds before retrying
-            }
-          }
-
-          // Let Redux handle the error state for non-connection errors
-          return Promise.reject(error);
-        });
-    }
-
     // Not in demo mode, check for valid token
     if (!authService.hasValidToken()) {
       console.log('Dashboard - No valid token found, checking refresh token availability');
@@ -191,6 +190,8 @@ const Dashboard = () => {
             state: { message: 'Your session has expired. Please log in again.' },
           });
         }, 10);
+
+        // Return a rejected promise that can be caught
         return Promise.reject(new Error('No refresh token available'));
       }
 
@@ -327,7 +328,12 @@ const Dashboard = () => {
   // Load universes on component mount
   useEffect(() => {
     console.log('Dashboard - Component mounted, loading universes');
-    loadUniverses();
+
+    // Add proper error handling to prevent uncaught promise rejections
+    loadUniverses().catch((error) => {
+      console.error('Dashboard - loadUniverses failed in mount useEffect:', error);
+      // Error is already handled in loadUniverses function, just log it here
+    });
 
     // Add event listener for server errors
     const handleServerError = (event) => {
@@ -359,8 +365,10 @@ const Dashboard = () => {
         console.log('Demo tokens missing, regenerating');
         demoUserService.setupDemoSession();
       }
-      // Proceed to load universes
-      loadUniverses();
+      // Proceed to load universes with error handling
+      loadUniverses().catch((error) => {
+        console.error('Dashboard - loadUniverses failed in demo session useEffect:', error);
+      });
       return;
     }
 
@@ -380,7 +388,9 @@ const Dashboard = () => {
     }
 
     console.log('Dashboard - Fetching universes...');
-    loadUniverses();
+    loadUniverses().catch((error) => {
+      console.error('Dashboard - loadUniverses failed in auth useEffect:', error);
+    });
   }, [isAuthenticated, dispatch, navigate, loadUniverses]);
 
   // Consistent logout handler that uses the auth service
@@ -437,9 +447,67 @@ const Dashboard = () => {
     // Clear any errors before navigating
     dispatch(clearError());
 
-    // Ensure we have a fresh auth token before navigating
+    // Add debugging to understand the authentication state
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+    const user = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+
+    console.log('Debug - handleViewUniverse authentication state:', {
+      hasToken: !!token,
+      hasRefreshToken: !!refreshToken,
+      hasUser: !!user,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+      refreshTokenPreview: refreshToken ? `${refreshToken.substring(0, 20)}...` : 'none',
+      userPreview: user ? JSON.parse(user).username || 'no username' : 'none',
+    });
+
+    // Check if this is a demo session first
+    const isDemoSession = demoUserService.isDemoSession();
+    console.log('Debug - isDemoSession result:', isDemoSession);
+
+    // Add detailed demo session debugging
     if (token) {
+      try {
+        const parts = token.split('.');
+        console.log('Debug - Token format check:', {
+          isJWT: parts.length === 3,
+          parts: parts.length,
+        });
+
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          console.log('Debug - Token payload:', {
+            sub: payload.sub,
+            isDemoSub:
+              payload.sub &&
+              (payload.sub.includes('demo-') ||
+                payload.sub.includes('demo_') ||
+                payload.sub === 'demo-user'),
+            exp: payload.exp,
+            iat: payload.iat,
+          });
+        }
+      } catch (e) {
+        console.log('Debug - Token parsing failed:', e.message);
+        console.log('Debug - Legacy token check:', {
+          startsWithDemo: token.startsWith('demo-'),
+          includesDemoToken: token.includes('demo_token_'),
+          includesDemoHyphen: token.includes('demo-token-'),
+        });
+      }
+    }
+
+    if (isDemoSession) {
+      console.log('Demo session detected, ensuring tokens are valid and navigating directly');
+      // For demo sessions, just ensure tokens are set up and navigate
+      demoUserService.setupDemoSession();
+      navigate(`/universes/${universe.id}`);
+      return;
+    }
+
+    // For non-demo sessions, ensure we have a fresh auth token before navigating
+    if (token) {
+      console.log('Non-demo session with token, attempting to validate and refresh');
       // Force token refresh to ensure it's valid
       dispatch(validateAndRefreshToken())
         .then(() => {
@@ -452,6 +520,7 @@ const Dashboard = () => {
           dispatch(logout());
         });
     } else {
+      console.log('Non-demo session without token, requiring authentication');
       message.error('Authentication required. Please log in.');
       dispatch(logout());
     }

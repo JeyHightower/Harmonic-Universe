@@ -1,24 +1,24 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { combineReducers } from 'redux';
 import {
-    FLUSH,
-    PAUSE,
-    PERSIST,
-    persistReducer,
-    persistStore,
-    PURGE,
-    REGISTER,
-    REHYDRATE,
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  persistReducer,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
 } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import modalMiddleware from './middleware/newModalMiddleware';
 import audioReducer from './slices/audioSlice.mjs';
-import authReducer from './slices/authSlice';
-import characterReducer from './slices/characterSlice';
-import modalReducer from './slices/newModalSlice';
-import noteReducer from './slices/noteSlice';
-import scenesReducer from './slices/scenesSlice';
-import universeReducer from './slices/universeSlice';
+import authReducer from './slices/authSlice.mjs';
+import characterReducer from './slices/characterSlice.mjs';
+import modalReducer from './slices/newModalSlice.js';
+import noteReducer from './slices/noteSlice.mjs';
+import scenesReducer from './slices/scenesSlice.mjs';
+import universeReducer from './slices/universeSlice.mjs';
 
 // Create a more resilient storage reference
 const createNoopStorage = () => {
