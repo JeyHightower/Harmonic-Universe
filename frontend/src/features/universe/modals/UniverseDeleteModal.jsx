@@ -54,12 +54,24 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
       maxWidth="sm"
       fullWidth
       className="universe-delete-modal"
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
+      aria-labelledby="delete-dialog-title"
+      aria-describedby="delete-dialog-description"
+      disablePortal={false}
+      keepMounted={false}
+      style={{ zIndex: 1300 }}
+      BackdropProps={{
+        style: { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+      }}
+      PaperProps={{
+        className: 'universe-delete-modal-paper',
+        elevation: 24,
+      }}
     >
-      <DialogTitle id="alert-dialog-title">{'Delete Universe'}</DialogTitle>
-      <DialogContent>
-        <div className="delete-confirmation">
+      <DialogTitle id="delete-dialog-title" className="universe-delete-modal-title">
+        Delete Universe
+      </DialogTitle>
+      <DialogContent className="universe-delete-modal-content">
+        <div className="delete-confirmation" id="delete-dialog-description">
           <p className="delete-message">
             Are you sure you want to delete the universe &quot;{universe?.name}&quot;?
           </p>
@@ -68,14 +80,30 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
             associated with this universe.
           </p>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="error-message" role="alert">
+              {error}
+            </div>
+          )}
         </div>
       </DialogContent>
-      <DialogActions>
-        <Button type="button" variant="secondary" onClick={onClose} disabled={isDeleting}>
+      <DialogActions className="universe-delete-modal-actions">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onClose}
+          disabled={isDeleting}
+          className="cancel-button"
+        >
           Cancel
         </Button>
-        <Button type="button" variant="danger" onClick={handleDelete} disabled={isDeleting}>
+        <Button
+          type="button"
+          variant="danger"
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="delete-button"
+        >
           {isDeleting ? 'Deleting...' : 'Delete Universe'}
         </Button>
       </DialogActions>

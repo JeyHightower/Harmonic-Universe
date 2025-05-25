@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { UniverseDeleteModal, UniverseModal } from '../';
 import Button from '../../../components/common/Button';
 import {
   createSceneAndRefresh,
@@ -10,6 +9,7 @@ import {
 } from '../../../store/thunks/consolidated/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { SceneCard, SceneModal } from '../../scene/index.mjs';
+import { UniverseDeleteModal, UniverseModal } from '../index.mjs';
 import '../styles/Universe.css';
 
 const UniverseDetail = () => {

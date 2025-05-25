@@ -10,11 +10,21 @@ from . import universes_bp
 def get_universe(universe_id):
     try:
         # Get current user ID from JWT
-        user_id = get_jwt_identity()
-        if not user_id:
+        user_id_str = get_jwt_identity()
+        if not user_id_str:
             current_app.logger.error(f"Invalid JWT token for universe {universe_id}")
             return jsonify({
                 'message': 'Invalid authentication token',
+                'error': 'invalid_token'
+            }), 401
+
+        # Convert user_id to integer for comparison with database
+        try:
+            user_id = int(user_id_str)
+        except (ValueError, TypeError):
+            current_app.logger.error(f"Invalid user ID format in JWT: {user_id_str}")
+            return jsonify({
+                'message': 'Invalid authentication token format',
                 'error': 'invalid_token'
             }), 401
 

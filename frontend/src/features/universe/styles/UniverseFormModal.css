@@ -737,74 +737,247 @@
 
 /* Delete modal specific styles */
 
-.universe-delete-modal .MuiPaper-root {
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+.universe-delete-modal {
+  /* Ensure proper z-index without conflicts */
+  z-index: 1300 !important;
 }
 
-.universe-delete-modal .MuiDialogTitle-root {
-  padding: 1.25rem 1.5rem;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e2e8f0;
-  color: #e53e3e;
+.universe-delete-modal-paper {
+  border-radius: 12px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+  max-width: 500px !important;
+  width: 90vw !important;
+  margin: 0 auto !important;
+  /* Ensure modal doesn't exceed viewport */
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  /* Override any conflicting global styles */
+  pointer-events: auto !important;
+  position: relative !important;
 }
 
-.universe-delete-modal .MuiDialogContent-root {
-  padding: 1.5rem;
+.universe-delete-modal-title {
+  padding: 1.5rem 2rem 1rem 2rem !important;
+  background-color: #fef2f2 !important;
+  border-bottom: 1px solid #fecaca !important;
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+  font-size: 1.25rem !important;
+  /* Ensure title is properly positioned */
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-.universe-delete-modal .MuiDialogActions-root {
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
+.universe-delete-modal-content {
+  padding: 2rem !important;
+  background-color: #ffffff !important;
+  /* Ensure content is scrollable if needed */
+  overflow-y: auto !important;
+  max-height: 60vh !important;
+  /* Override global styles */
+  pointer-events: auto !important;
 }
 
-.delete-confirmation {
-  padding: 0;
+.universe-delete-modal-actions {
+  padding: 1rem 2rem 2rem 2rem !important;
+  border-top: 1px solid #f3f4f6 !important;
+  background-color: #ffffff !important;
+  gap: 1rem !important;
+  justify-content: flex-end !important;
+  /* Ensure actions are properly positioned */
+  position: relative !important;
+  z-index: 1 !important;
+  /* Override global styles */
+  pointer-events: auto !important;
 }
 
-.delete-message {
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
-  color: #333;
+.universe-delete-modal .delete-confirmation {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
-.delete-warning {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: #fff5f5;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
+.universe-delete-modal .delete-message {
+  font-size: 1.125rem !important;
+  margin-bottom: 1.5rem !important;
+  color: #374151 !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+}
+
+.universe-delete-modal .delete-warning {
+  font-size: 0.95rem !important;
+  color: #6b7280 !important;
+  margin-bottom: 0 !important;
+  padding: 1.25rem !important;
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 8px !important;
+  line-height: 1.5 !important;
+  /* Add warning icon */
+  position: relative !important;
+  padding-left: 3rem !important;
+}
+
+.universe-delete-modal .delete-warning::before {
+  content: '⚠️';
+  position: absolute;
+  left: 1rem;
+  top: 1.25rem;
+  font-size: 1.25rem;
+}
+
+.universe-delete-modal .error-message {
+  margin-top: 1rem !important;
+  padding: 1rem !important;
+  background-color: #fee2e2 !important;
+  border: 1px solid #fca5a5 !important;
+  border-radius: 6px !important;
+  color: #dc2626 !important;
+  font-size: 0.9rem !important;
+}
+
+/* Button specific styles */
+.universe-delete-modal .cancel-button {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.universe-delete-modal .cancel-button:hover {
+  background-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+.universe-delete-modal .delete-button {
+  background-color: #dc2626 !important;
+  color: white !important;
+  border: 1px solid #dc2626 !important;
+}
+
+.universe-delete-modal .delete-button:hover {
+  background-color: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+.universe-delete-modal .delete-button:disabled,
+.universe-delete-modal .cancel-button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .universe-delete-modal-paper {
+    width: 95vw !important;
+    margin: 1rem !important;
+    border-radius: 8px !important;
+  }
+
+  .universe-delete-modal-title {
+    padding: 1.25rem 1.5rem 0.75rem 1.5rem !important;
+    font-size: 1.125rem !important;
+  }
+
+  .universe-delete-modal-content {
+    padding: 1.5rem !important;
+  }
+
+  .universe-delete-modal-actions {
+    padding: 1rem 1.5rem 1.5rem 1.5rem !important;
+    flex-direction: column-reverse !important;
+    gap: 0.75rem !important;
+  }
+
+  .universe-delete-modal-actions button {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .universe-delete-modal .delete-warning {
+    padding: 1rem !important;
+    padding-left: 2.5rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .universe-delete-modal .delete-warning::before {
+    left: 0.75rem;
+    top: 1rem;
+    font-size: 1.125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .universe-delete-modal-paper {
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    max-height: 100vh !important;
+  }
+
+  .universe-delete-modal-content {
+    max-height: calc(100vh - 200px) !important;
+  }
 }
 
 /* Dark mode support for delete modal */
 @media (prefers-color-scheme: dark) {
-  .universe-delete-modal .MuiDialogTitle-root {
-    background-color: #16213e;
-    border-bottom: 1px solid #2a2a3c;
-    color: #fc8181;
+  .universe-delete-modal-title {
+    background-color: #1f2937 !important;
+    border-bottom: 1px solid #374151 !important;
+    color: #f87171 !important;
   }
 
-  .universe-delete-modal .MuiDialogContent-root {
-    background-color: #1a1a2e;
-    color: #e2e8f0;
+  .universe-delete-modal-content {
+    background-color: #111827 !important;
+    color: #f9fafb !important;
   }
 
-  .universe-delete-modal .MuiDialogActions-root {
-    background-color: #1a1a2e;
-    border-top: 1px solid #2a2a3c;
+  .universe-delete-modal-actions {
+    background-color: #111827 !important;
+    border-top: 1px solid #374151 !important;
   }
 
-  .delete-message {
-    color: #e2e8f0;
+  .universe-delete-modal .delete-message {
+    color: #f9fafb !important;
   }
 
-  .delete-warning {
-    color: #a0aec0;
-    background-color: #2d3748;
-    border-color: #4a5568;
+  .universe-delete-modal .delete-warning {
+    color: #d1d5db !important;
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
   }
+
+  .universe-delete-modal .error-message {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #f87171 !important;
+  }
+
+  .universe-delete-modal .cancel-button {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+    border-color: #4b5563 !important;
+  }
+
+  .universe-delete-modal .cancel-button:hover {
+    background-color: #4b5563 !important;
+    color: #ffffff !important;
+  }
+}
+
+/* Ensure delete modal takes precedence over global modal styles */
+.universe-delete-modal * {
+  box-sizing: border-box !important;
+}
+
+/* Override any conflicting z-index from global styles */
+.universe-delete-modal .MuiBackdrop-root {
+  z-index: 1299 !important;
+}
+
+.universe-delete-modal .MuiDialog-container {
+  z-index: 1300 !important;
 }
 
 /* Redux-powered modal fixes to override conflicting styles */

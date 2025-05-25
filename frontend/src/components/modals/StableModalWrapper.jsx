@@ -111,7 +111,7 @@ const StableModalWrapper = ({
       onCancel={handleClose}
       footer={footer === null ? null : footer}
       width={width}
-      destroyOnClose={true}
+      destroyOnHidden={true}
       maskClosable={true}
       className={`stable-modal stable-modal-${instanceId.current}`}
       style={combinedStyle}
@@ -124,9 +124,11 @@ const StableModalWrapper = ({
       closeIcon={true}
       // Critical props for interaction
       mask={true}
-      maskStyle={{
-        pointerEvents: 'auto',
-        zIndex: 1050,
+      styles={{
+        mask: {
+          pointerEvents: 'auto',
+          zIndex: 1050,
+        },
       }}
       wrapProps={{
         onClick: (e) => {
