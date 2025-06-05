@@ -13,6 +13,7 @@ node_modules/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+.pnpm-store/
 
 # Python Dependencies
 __pycache__/
@@ -160,6 +161,7 @@ instance/
 *.bak
 *.orig
 *.old
+*.backup
 
 # Secrets & Keys
 *.pem
@@ -198,86 +200,46 @@ backend/.htaccess
 backend/config/
 backend/render.yaml
 backend/src/
-backend/static/
-backend/wsgi.py
-frontend/.env*
-!frontend/.env-frontend
-frontend/.npmrc
-frontend/.preinstallrc
-frontend/.render-buildcommands.yaml
-frontend/config/
-.qodo
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-.hypothesis/
-.pytest_cache/
-cover/
-*.mo
-*.pot
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-instance/
-.webassets-cache
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-flask_debug.log
+# Documentation and temporary files
+*.md
+!README.md
+!CONTRIBUTING.md
+!LICENSE.md
+terminal.md
+MODAL_CONVERSION_SUMMARY.md
+DATABASE_RESTORATION_GUIDE.md
+README.Docker.md
+README_NEW.md
 
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-dist/
-dist-ssr/
-*.local
+# Development scripts and tools
+*.sh
+!render-build.sh
+!render-start.sh
+!docker-entrypoint.sh
+cleanupDockerContainers.sh
+dockerLocalPRR.sh
+restore-database.sh
+setup-env.sh
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.cursor/
-.qodo/
+# Frontend specific
+frontend/.eslintrc.cjs
+frontend/debug-auth.js
+frontend/DOCKER_README.md
+frontend/start.sh
+frontend/src/**/*.backup
+frontend/src/**/*.bak
+frontend/src/**/*\ 2.*
+
+# Backend specific
+backend/**/*.backup
+backend/**/*.bak
+backend/create_tables.py
+backend/scripts/create_demo_data.py
+backend/scripts/setup_demo.sh
+
+# Keep specific migration files
+!backend/migrations/versions/562893e38854_merge_migration_branches.py
+!backend/migrations/versions/5da119559737_create_initial_tables.py
+!backend/migrations/versions/d212af8da78a_add_notes_table.py
+!backend/migrations/versions/fix_music_table.py
