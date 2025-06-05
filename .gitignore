@@ -56,6 +56,7 @@ myenv/
 !.env-frontend
 !backend/.env-backend
 !frontend/.env-frontend
+!backend/.env.example
 
 # Build & Distribution
 /build/
@@ -162,6 +163,8 @@ instance/
 *.orig
 *.old
 *.backup
+*_new
+.gitignore_new
 
 # Secrets & Keys
 *.pem
@@ -200,6 +203,7 @@ backend/.htaccess
 backend/config/
 backend/render.yaml
 backend/src/
+backend/static/
 
 # Documentation and temporary files
 *.md
@@ -231,6 +235,16 @@ frontend/src/**/*.backup
 frontend/src/**/*.bak
 frontend/src/**/*\ 2.*
 
+# Frontend source files to track
+!frontend/src/components/
+!frontend/src/features/
+!frontend/src/hooks/
+!frontend/src/routes/
+!frontend/src/store/
+!frontend/src/styles/
+!frontend/src/utils/
+!frontend/src/index.html
+
 # Backend specific
 backend/**/*.backup
 backend/**/*.bak
@@ -238,8 +252,12 @@ backend/create_tables.py
 backend/scripts/create_demo_data.py
 backend/scripts/setup_demo.sh
 
-# Keep specific migration files
+# Migration files
+backend/migrations/versions/*
 !backend/migrations/versions/562893e38854_merge_migration_branches.py
 !backend/migrations/versions/5da119559737_create_initial_tables.py
 !backend/migrations/versions/d212af8da78a_add_notes_table.py
 !backend/migrations/versions/fix_music_table.py
+
+# Routes to track
+!backend/app/api/routes/characters/universe_routes.py
