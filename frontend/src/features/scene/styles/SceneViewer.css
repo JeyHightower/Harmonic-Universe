@@ -1,0 +1,197 @@
+.scene-viewer {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.scene-card-detail {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #fff;
+  overflow: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.scene-image-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+  background: #f0f2f5;
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
+}
+
+.scene-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.scene-details {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scene-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.scene-title {
+  margin: 0 !important;
+  color: #1a1a1a;
+  font-weight: 600 !important;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scene-type-tag {
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+
+.scene-description {
+  margin-bottom: 32px;
+}
+
+.description-text {
+  color: #4a4a4a;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-top: 8px !important;
+  white-space: pre-wrap;
+}
+
+.scene-metadata {
+  background: #fff;
+  margin-bottom: 0;
+}
+
+.scene-metadata .ant-descriptions-item-label {
+  width: 160px;
+  color: #666;
+  font-weight: 500;
+  background: #fafafa;
+}
+
+.scene-metadata .ant-descriptions-item-content {
+  color: #1a1a1a;
+  padding: 12px 24px;
+}
+
+/* Modal styles */
+.MuiDialog-paper {
+  min-width: 400px !important;
+  width: 90% !important;
+  max-width: 800px !important;
+  height: 80vh !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  z-index: 1300 !important;
+  position: relative !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.MuiDialogContent-root {
+  padding: 0 !important;
+  overflow: hidden !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Fix for content jumping and flickering */
+.scene-modal {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px;
+}
+
+/* Improve modal backdrop stability */
+.MuiBackdrop-root {
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1200 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .scene-viewer {
+    padding: 0;
+  }
+
+  .scene-image-container {
+    height: 200px;
+  }
+
+  .scene-details {
+    padding: 16px;
+  }
+
+  .scene-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .scene-type-tag {
+    margin-left: 0;
+  }
+
+  .MuiDialog-paper {
+    min-width: 320px !important;
+    height: 80vh !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .scene-image-container {
+    height: 180px;
+  }
+
+  .scene-metadata .ant-descriptions-item-label {
+    width: 120px;
+  }
+}
+
+/* Force hardware acceleration */
+* {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+}

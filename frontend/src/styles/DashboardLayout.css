@@ -1,0 +1,273 @@
+/* Dashboard Layout Styles */
+
+/* Main Container */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px;
+  position: relative;
+  pointer-events: auto !important;
+  z-index: 10;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+  position: relative;
+  z-index: 30;
+  pointer-events: auto !important;
+}
+
+/* Dashboard Title */
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 30;
+}
+
+/* Dashboard Actions Area */
+.dashboard-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  position: relative;
+  z-index: 30;
+  pointer-events: auto !important;
+}
+
+/* Dashboard Individual Action Button */
+.dashboard-actions button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 40;
+  min-width: 100px;
+}
+
+/* Logout Button Specific Styles */
+.dashboard-actions button[data-action="logout"] {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 45;
+}
+
+/* Universe Grid Container */
+.universes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+  position: relative;
+  z-index: 20;
+  pointer-events: auto !important;
+}
+
+/* First row universe cards - apply higher z-index */
+.universes-grid .universe-card:nth-child(-n+4) {
+  z-index: 35;
+}
+
+/* Universe Card */
+.universe-card {
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  position: relative;
+  z-index: 25;
+  pointer-events: auto !important;
+}
+
+.universe-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  z-index: 36;
+}
+
+/* Universe Card Media */
+.universe-card-media {
+  height: 140px;
+  object-fit: cover;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 26;
+}
+
+/* Universe Card Content */
+.universe-card-content {
+  flex-grow: 1;
+  padding: 16px;
+  pointer-events: auto !important;
+}
+
+/* Universe Card Title */
+.universe-card-title {
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  pointer-events: auto !important;
+}
+
+/* Universe Card Description */
+.universe-card-description {
+  margin-bottom: 16px;
+  color: var(--text-secondary, #666);
+  line-height: 1.5;
+  pointer-events: auto !important;
+}
+
+/* Universe Card Actions */
+.universe-card-actions {
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto !important;
+}
+
+/* Universe Card Action Buttons */
+.universe-card-action-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: auto !important;
+}
+
+/* Universe Card Feature Buttons */
+.universe-card-feature-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  pointer-events: auto !important;
+}
+
+/* Individual Universe Card Button */
+.universe-card-button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* Universe Card Feature Button */
+.universe-card-feature-button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* New Universe Highlight */
+.universe-card.new {
+  box-shadow: 0 0 0 3px var(--success-color, #10b981);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  border-radius: 8px;
+  background-color: var(--bg-secondary, #f8f9fa);
+  margin-top: 32px;
+  position: relative;
+  z-index: 5;
+  pointer-events: auto !important;
+}
+
+.empty-state h2 {
+  margin-bottom: 16px;
+  color: var(--text-primary, #333);
+  pointer-events: auto !important;
+}
+
+.empty-state p {
+  margin-bottom: 24px;
+  color: var(--text-secondary, #666);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  pointer-events: auto !important;
+}
+
+.empty-state button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  pointer-events: auto !important;
+}
+
+/* Error Message */
+.error-message {
+  padding: 16px;
+  border-radius: 8px;
+  background-color: var(--error-bg, #fee2e2);
+  color: var(--error-text, #ef4444);
+  margin: 24px 0;
+  position: relative;
+  z-index: 5;
+  pointer-events: auto !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 16px;
+  }
+
+  .universes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+/* Additional selectors to ensure clickability */
+.dashboard-container *,
+.dashboard-header *,
+.dashboard-actions *,
+.universes-grid *,
+.universe-card * {
+  pointer-events: auto !important;
+}

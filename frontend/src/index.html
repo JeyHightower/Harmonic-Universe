@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Allow autoplay and audio -->
+    <meta http-equiv="Feature-Policy" content="autoplay 'self'; speaker 'self'" />
+    <meta http-equiv="Origin-Trial" content="AudioContext" />
+    <!-- Preload audio interface -->
+    <link rel="preload" href="#audio-interface" as="document" />
+    <title>Vite + React</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="portal-root"></div>
+    <!-- Empty audio element to help with audio context unlocking -->
+    <audio id="audio-interface" preload="auto" style="display: none"></audio>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
