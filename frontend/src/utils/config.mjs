@@ -138,8 +138,8 @@ export const API_CONFIG = {
   BASE_URL: IS_PRODUCTION
     ? '' // Empty string in production to avoid double /api prefix
     : isNodeEnv
-      ? 'http://localhost:5001'
-      : import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001', // Don't include /api in BASE_URL
+      ? 'http://localhost:5001/api'
+      : import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api', // Now includes /api in BASE_URL
   // API prefix should always be /api, used for both local and production
   API_PREFIX: '/api',
   TIMEOUT: 30000,

@@ -12,14 +12,15 @@ def delete_character(character_id):
     try:
         character = Character.query.get_or_404(character_id)
         user_id = get_jwt_identity()
-        
+
         # Get the universe for this character
         universe_id = character.universe_id
-        
+
         # Check if the universe belongs to the user (only owner can delete)
         universe = Universe.query.get_or_404(universe_id)
-        
-        if universe.user_id != user_id:
+
+        # Convert both IDs to strings for comparison
+        if str(universe.user_id) != str(user_id):
             return jsonify({
                 'message': 'Access denied'
             }), 403
@@ -27,15 +28,15 @@ def delete_character(character_id):
         # Soft delete
         character.is_deleted = True
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Character deleted successfully'
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error deleting character: {str(e)}")
         return jsonify({
             'message': 'Error deleting character',
             'error': str(e)
-        }), 500 
+        }), 500

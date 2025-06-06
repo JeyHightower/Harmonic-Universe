@@ -9,4 +9,4 @@ from .create_routes import *
 from .update_routes import *
 from .delete_routes import *
 
-# All routes are already registered with scenes_bp in their respective modules 
+# All routes are already registered with scenes_bp in their respective modules
