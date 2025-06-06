@@ -5,7 +5,7 @@ import logoSvg from '../../assets/logo.svg';
 import { MODAL_TYPES } from '../../constants/modalTypes';
 import { useModalState } from '../../hooks/useModalState';
 import { authService } from '../../services/auth.service.mjs';
-import { logout } from '../../store/thunks/authThunks';
+import { logoutThunk } from '../../store/thunks/authThunks';
 import './Navigation.css';
 
 function Navigation() {
@@ -91,7 +91,7 @@ function Navigation() {
       e.preventDefault();
       console.log('[Navigation] Logging out user');
       authService.clearAuthData();
-      dispatch(logout());
+      dispatch(logoutThunk());
       navigate('/');
     },
     [dispatch, navigate]

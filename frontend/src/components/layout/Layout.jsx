@@ -10,6 +10,7 @@ import React, {
 import { Outlet } from 'react-router-dom';
 import { MODAL_TYPES } from '../../constants/modalTypes';
 import { useModalState } from '../../hooks/useModalState';
+import { demoLogin } from '../../store/thunks/authThunks';
 
 // Import Navigation component
 import Navigation from '../navigation/Navigation';
@@ -17,9 +18,6 @@ import Navigation from '../navigation/Navigation';
 // Import safe versions of hooks
 import { safeUseDispatch } from '../../utils/ensure-redux-provider';
 import { safeUseLocation, safeUseNavigate } from '../../utils/ensure-router-provider';
-
-// Import authSlice directly instead of using dynamic import
-import { demoLogin } from '../../store/slices/authSlice';
 
 // Footer with React.lazy for code splitting
 const FooterFallback = () => (

@@ -1,14 +1,20 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api.adapter';
-import { demoUserService } from '../../services/demo-user.service.mjs';
-import { logout, validateAndRefreshToken } from '../thunks/authThunks';
+import { demoService } from '../../services/demo.service.mjs';
+import { logoutThunk, validateAndRefreshToken } from '../thunks/authThunks';
 
 const handleError = (error) => {
   console.error('API Error:', error);
+  // Format error to ensure we don't return a complex object that could be accidentally rendered
+  const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
   return {
-    message: error.response?.data?.message || error.message || 'An error occurred',
-    status: error.response?.status,
-    data: error.response?.data,
+    message: errorMessage,
+    status: error.response?.status || 500,
+    // Only include essential data, not the full response which might be complex
+    data:
+      typeof error.response?.data === 'string'
+        ? error.response?.data
+        : error.response?.data?.error || errorMessage,
   };
 };
 
@@ -32,221 +38,22 @@ const normalizeUniverses = (universes) => {
   return universes.map(normalizeUniverseData);
 };
 
+// Replace dynamic import with direct import
+const isDemoSession = () => demoService.isDemoSession();
+
 // Fetch all universes
 export const fetchUniverses = createAsyncThunk(
-  'universe/fetchUniverses',
-  async (params, { rejectWithValue, dispatch }) => {
+  'universes/fetchUniverses',
+  async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching universes with params:', params);
-
-      // First, import modules we'll need
-      const authModule = await import(/* @vite-ignore */ '../../services/auth.service.mjs');
-
-      // Check if this is a demo session
-      const isDemoSession = demoUserService.isDemoSession();
-      if (isDemoSession) {
-        console.log('Demo session detected, using demo data');
-
-        // Check if we need to refresh demo tokens
-        const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-        const refreshToken = localStorage.getItem('refreshToken');
-
-        if (!token || !refreshToken) {
-          console.log('Demo tokens missing, regenerating');
-          await demoUserService.setupDemoSession();
-        }
-
-        // Return demo universes data
-        return {
-          universes: [
-            {
-              id: 'demo-universe-1',
-              name: 'Demo Universe',
-              description: 'This is a demo universe for testing purposes',
-              user_id: 'demo-user',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              is_public: true,
-              tags: ['demo', 'test'],
-              scene_count: 5,
-            },
-          ],
-        };
+      if (isDemoSession()) {
+        // Return demo data directly
+        return [];
       }
 
-      // Check if there's already a token verification failure flag set
-      const tokenVerificationFailed = localStorage.getItem('token_verification_failed');
-      if (tokenVerificationFailed === 'true') {
-        console.error('Token verification previously failed, aborting universes fetch');
-
-        // Don't clear the token here - let auth management handle it
-        return rejectWithValue({
-          message: 'Authentication token verification failed. Please log in again.',
-          status: 401,
-          authError: true,
-        });
-      }
-
-      // Use local token validation first for faster check
-      const hasToken = authModule.hasValidToken();
-      if (!hasToken) {
-        console.log('No valid token found, attempting refresh before fetching universes');
-
-        try {
-          const newToken = await authModule.refreshToken();
-          if (!newToken) {
-            console.error('Token refresh failed - no token returned');
-            return rejectWithValue({
-              message: 'Authentication required - please log in again.',
-              status: 401,
-              authError: true,
-            });
-          }
-          console.log('Token refreshed successfully, continuing to fetch universes');
-        } catch (refreshError) {
-          console.error('Error refreshing token:', refreshError.message);
-
-          // Only redirect for auth errors, not network errors
-          if (
-            refreshError.response?.status === 401 ||
-            refreshError.response?.status === 403 ||
-            refreshError.response?.status === 405
-          ) {
-            return rejectWithValue({
-              message: 'Authentication failed. Please log in again.',
-              status: refreshError.response?.status || 401,
-              authError: true,
-            });
-          }
-
-          // For network errors, proceed with existing token as it might be a temporary issue
-          console.log('Network error during token refresh, proceeding with existing token');
-        }
-      }
-
-      // Proceed with API call to load universes
-      try {
-        const response = await api.universes.getUniverses(params);
-        console.log('Got universes response:', {
-          status: response.status,
-          data: response.data,
-          hasUniverses: !!response.data?.universes,
-          universesCount: response.data?.universes?.length || 0,
-          headers: response.headers,
-        });
-
-        // Determine the format of the universes data
-        let universes = [];
-
-        if (response && response.data && Array.isArray(response.data)) {
-          console.log('Response.data is an array of universes');
-          universes = normalizeUniverses(response.data);
-        } else if (response && Array.isArray(response)) {
-          console.log('Response itself is an array of universes');
-          universes = normalizeUniverses(response);
-        } else if (
-          response &&
-          response.data &&
-          response.data.universes &&
-          Array.isArray(response.data.universes)
-        ) {
-          console.log('Found universes array in response.data.universes');
-          universes = normalizeUniverses(response.data.universes);
-        } else if (response && response.universes && Array.isArray(response.universes)) {
-          console.log('Found universes array in response.universes');
-          universes = normalizeUniverses(response.universes);
-        } else if (
-          response &&
-          response.data &&
-          response.data.data &&
-          Array.isArray(response.data.data.universes)
-        ) {
-          console.log('Found universes array in response.data.data.universes');
-          universes = normalizeUniverses(response.data.data.universes);
-        } else if (
-          response &&
-          response.data &&
-          response.data.data &&
-          Array.isArray(response.data.data)
-        ) {
-          console.log('Found universes array in response.data.data');
-          universes = normalizeUniverses(response.data.data);
-        } else {
-          console.error('Unexpected universes response format:', response);
-          // Instead of returning empty array, try to extract any possible data
-          if (response && typeof response === 'object') {
-            // Look for any array property that might contain universes
-            const possibleArrays = Object.values(response).filter((val) => Array.isArray(val));
-            if (possibleArrays.length > 0) {
-              console.log(
-                'Found possible universes array in unexpected location',
-                possibleArrays[0]
-              );
-              universes = normalizeUniverses(possibleArrays[0]);
-            } else {
-              universes = [];
-            }
-          } else {
-            universes = [];
-          }
-        }
-
-        console.log('Normalized universes:', {
-          count: universes.length,
-          isArray: Array.isArray(universes),
-          hasData: !!universes,
-          data: universes,
-        });
-
-        return { universes };
-      } catch (apiError) {
-        // Check if this is an auth error
-        if (apiError.response?.status === 401) {
-          // This could happen if the token was just refreshed but still invalid
-          // Or if there's an issue with the backend auth system
-          console.error('Auth error after token validation/refresh:', apiError.message);
-
-          return rejectWithValue({
-            message:
-              apiError.response?.data?.message || 'Authentication failed after token refresh.',
-            status: 401,
-            authError: true,
-          });
-        }
-
-        // For other API errors, just pass through
-        throw apiError;
-      }
+      const response = await universeService.getAllUniverses();
+      return response.data;
     } catch (error) {
-      console.error('Error fetching universes:', {
-        error: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        headers: error.response?.headers,
-      });
-
-      // Handle specific token verification errors
-      if (error.response?.status === 401) {
-        const errorMessage = error.response?.data?.message || 'Authentication error';
-        console.error(`Authentication error (401): ${errorMessage}`);
-
-        // If there's a specific signature verification error, handle it specially
-        if (
-          errorMessage.includes('Signature verification failed') ||
-          errorMessage.includes('Invalid token') ||
-          errorMessage.includes('Token has expired')
-        ) {
-          console.error('Token signature verification failed - token may be invalid');
-          localStorage.setItem('token_verification_failed', 'true');
-        }
-
-        return rejectWithValue({
-          message: errorMessage,
-          status: 401,
-          authError: true,
-        });
-      }
-
       return rejectWithValue(handleError(error));
     }
   }
@@ -299,7 +106,7 @@ export const fetchUniverseById = createAsyncThunk(
         } catch (retryError) {
           console.error('Auth retry failed:', retryError);
           // Authentication failed, redirect to login
-          dispatch(logout());
+          dispatch(logoutThunk());
           return rejectWithValue({
             message: 'Authentication required. Please log in again.',
             status: error.response?.status || 401,

@@ -1,31 +1,16 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api.adapter';
 import { authService } from '../../services/auth.service.mjs';
-import { demoUserService } from '../../services/demo-user.service.mjs';
+import { demoService } from '../../services/demo.service.mjs';
 import { AUTH_CONFIG } from '../../utils/config.mjs';
+import { handleError } from '../../utils/error';
 import {
   loginFailure,
   loginStart,
   loginSuccess,
-  logoutFailure,
-  logoutSuccess,
+  logout,
   updateUser,
-} from '../slices/authSlice.mjs';
-
-const handleError = (error) => {
-  console.error('API Error:', error);
-  // Format error to ensure we don't return a complex object that could be accidentally rendered
-  const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
-  return {
-    message: errorMessage,
-    status: error.response?.status || 500,
-    // Only include essential data, not the full response which might be complex
-    data:
-      typeof error.response?.data === 'string'
-        ? error.response?.data
-        : error.response?.data?.error || errorMessage,
-  };
-};
+} from '../actions/authActions.mjs';
 
 // Function to cleanup all authentication state when logging out
 const cleanupAuthState = () => {
@@ -75,27 +60,46 @@ export const register = createAsyncThunk(
 );
 
 // Demo login
-export const demoLoginThunk = createAsyncThunk('auth/demoLogin', async (_, { dispatch }) => {
-  try {
-    console.log('Starting demo login process');
+export const demoLogin = createAsyncThunk(
+  'auth/demoLogin',
+  async (_, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(loginStart());
+      console.log('Thunk - Starting demo login process');
 
-    // Use the demo user service to set up the demo session
-    const demoData = await demoUserService.setupDemoSession();
+      try {
+        const response = await demoService.login();
+        console.log('Thunk - Demo login successful:', response);
 
-    // Update auth state with demo data
-    dispatch(
-      loginSuccess({
-        user: demoData.user,
-        token: demoData.token,
-      })
-    );
+        if (!response?.success || !response?.token || !response?.user) {
+          throw new Error('Invalid response from demo login');
+        }
 
-    return demoData;
-  } catch (error) {
-    console.error('Demo login failed:', error);
-    throw error;
+        // Update Redux state
+        dispatch(
+          loginSuccess({
+            user: response.user,
+            token: response.token,
+            refresh_token: response.refresh_token,
+          })
+        );
+
+        // Dispatch a storage event to notify other components
+        window.dispatchEvent(new CustomEvent('storage'));
+
+        return response;
+      } catch (error) {
+        console.error('Thunk - Demo login failed:', error);
+        dispatch(loginFailure(handleError(error)));
+        return rejectWithValue(handleError(error));
+      }
+    } catch (error) {
+      console.error('Thunk - Demo login process failed:', error);
+      dispatch(loginFailure(handleError(error)));
+      return rejectWithValue(handleError(error));
+    }
   }
-});
+);
 
 // Register a new user
 export const registerUser = createAsyncThunk(
@@ -191,26 +195,58 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Logout
-export const logout = createAsyncThunk('auth/logout', async (_, { dispatch, rejectWithValue }) => {
+// Check auth state
+export const checkAuthState = createAsyncThunk('auth/checkAuthState', async (_, { dispatch }) => {
   try {
-    console.log('Thunk - Starting logout process');
-
     // Check if this is a demo session
-    if (demoUserService.isDemoSession()) {
-      console.log('Thunk - Logging out demo user');
-      demoUserService.clearDemoSession();
-    } else {
-      console.log('Thunk - Logging out regular user');
-      await authService.logout();
+    if (demoService.isDemoSession()) {
+      const response = await demoService.login();
+      dispatch(
+        loginSuccess({
+          user: response.user,
+          token: response.token,
+          refresh_token: response.refresh_token,
+        })
+      );
+      return response;
     }
 
-    dispatch(logoutSuccess());
+    // Regular auth check
+    const response = await authService.validateToken();
+    if (response.success) {
+      dispatch(
+        loginSuccess({
+          user: response.user,
+          token: response.token,
+        })
+      );
+      return response;
+    }
+
+    dispatch(logout());
     return null;
   } catch (error) {
-    console.error('Thunk - Logout failed:', error);
-    dispatch(logoutFailure(handleError(error)));
-    return rejectWithValue(handleError(error));
+    console.error('Auth state check failed:', error);
+    dispatch(logout());
+    return null;
+  }
+});
+
+// Logout thunk
+export const logoutThunk = createAsyncThunk('auth/logout', async (_, { dispatch }) => {
+  try {
+    // Clean up demo session if needed
+    if (demoService.isDemoSession()) {
+      demoService.cleanup();
+    }
+
+    // Regular logout
+    await authService.logout();
+    dispatch(logout());
+  } catch (error) {
+    console.error('Logout failed:', error);
+    // Still dispatch logout even if API call fails
+    dispatch(logout());
   }
 });
 
@@ -240,8 +276,8 @@ export const validateToken = createAsyncThunk(
         return rejectWithValue('No token found');
       }
 
-      // Handle demo tokens locally by checking if it's a demo token using demoUserService
-      const isDemoToken = demoUserService.isDemoSession();
+      // Handle demo tokens locally by checking if it's a demo token using demoService
+      const isDemoToken = demoService.isDemoSession();
       if (isDemoToken) {
         console.log('Demo token detected, considering valid without server validation');
         return { valid: true };
@@ -266,16 +302,17 @@ export const refreshToken = createAsyncThunk(
 
       // Import needed services
       const { authService } = await import(/* @vite-ignore */ '../../services/auth.service.mjs');
-      const { demoUserService } = await import(
-        /* @vite-ignore */ '../../services/demo-user.service.mjs'
-      );
+      const { demoService } = await import(/* @vite-ignore */ '../../services/demo.service.mjs');
 
       // Check if this is a demo session
-      const isDemoSession = demoUserService.isDemoSession();
+      const isDemoSession = demoService.isDemoSession();
       if (isDemoSession) {
         console.log('Demo session detected, regenerating demo tokens');
-        const demoData = demoUserService.setupDemoSession();
-        return { token: demoData.token };
+        const demoData = await demoService.setupDemoSession();
+        // Store both tokens
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
+        localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, demoData.refresh_token);
+        return { token: demoData.token, refresh_token: demoData.refresh_token };
       }
 
       // Get refresh token from storage
@@ -351,13 +388,25 @@ export const validateAndRefreshToken = createAsyncThunk(
       }
 
       // For demo tokens, regenerate a fresh token
-      const isDemoSession = demoUserService.isDemoSession();
+      const isDemoSession = demoService.isDemoSession();
       console.log('Debug - validateAndRefreshToken: isDemoSession =', isDemoSession);
 
       if (isDemoSession) {
         console.log('Demo session detected in validateAndRefreshToken, regenerating demo tokens');
-        const demoData = await demoUserService.setupDemoSession();
-        return { valid: true, token: demoData.token };
+        try {
+          const demoData = await demoService.setupDemoSession();
+          // Ensure both tokens are stored
+          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, demoData.refresh_token);
+          return { valid: true, token: demoData.token };
+        } catch (demoError) {
+          console.error('Error setting up demo session:', demoError);
+          return rejectWithValue({
+            message: 'Failed to set up demo session',
+            status: 500,
+            authError: true,
+          });
+        }
       }
 
       // For real tokens, force a refresh regardless of expiration

@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useEffect, useState, useTransition } from 'react
 import { useDispatch, useSelector } from 'react-redux';
 import { AudioProvider, ErrorBoundary, NetworkErrorHandler } from './components';
 import { authService } from './services/auth.service.mjs';
-import { checkAuthState, logout } from './store/slices/authSlice';
+import { checkAuthState, logoutThunk } from './store/thunks/authThunks';
 import './styles'; // Import all styles
 import { AUTH_CONFIG } from './utils';
 import { fixModalZIndex, resetModalSystem } from './utils/modalUtils.mjs';
@@ -181,7 +181,7 @@ const AppContent = () => {
           onClick={() => {
             // Use centralized auth cleanup
             authService.clearAuthData();
-            dispatch(logout());
+            dispatch(logoutThunk());
           }}
         >
           Return to Login

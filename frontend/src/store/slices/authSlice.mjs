@@ -1,8 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { authService } from '../../services/auth.service.mjs';
-import { demoUserService } from '../../services/demo-user.service.mjs';
-import { AUTH_CONFIG, ROUTES, log } from '../../utils';
-import { login, register } from '../thunks/authThunks'; // Import login and register thunks
+import { demoService } from '../../services/demo.service.mjs';
+import { AUTH_CONFIG, log } from '../../utils';
+import { AUTH_ACTION_TYPES } from '../actions/authActions.mjs';
+import { checkAuthState, demoLogin, login, logoutThunk, register } from '../thunks/authThunks';
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {
@@ -63,37 +63,9 @@ const isDemoToken = (token) => {
 // Helper to setup demo mode when needed
 const setupDemoMode = async () => {
   console.debug('Setting up demo mode');
-
-  // Use the demoUserService to set up the demo session properly
-  const demoData = await demoUserService.setupDemoSession();
-  return demoData;
+  const response = await demoService.login();
+  return response;
 };
-
-// Demo login functionality
-export const demoLogin = createAsyncThunk('auth/demoLogin', async (_, { dispatch }) => {
-  try {
-    console.log('Starting demo login process');
-    logAuthOperation('demoLogin', { start: true });
-
-    // Use the demo user service to set up the demo session
-    const demoData = await demoUserService.setupDemoSession();
-
-    // Update auth state with demo data
-    dispatch(
-      loginSuccess({
-        user: demoData.user,
-        token: demoData.token,
-      })
-    );
-
-    logAuthOperation('demoLogin', { success: true });
-    return demoData;
-  } catch (error) {
-    console.error('Demo login failed:', error);
-    logAuthOperation('demoLogin', { error: error.message });
-    throw error;
-  }
-});
 
 // Handle auth tokens
 export const handleAuthTokens = createAsyncThunk(
@@ -133,154 +105,16 @@ export const handleAuthTokens = createAsyncThunk(
   }
 );
 
-// Check auth state
-export const checkAuthState = createAsyncThunk('auth/checkAuthState', async (_, { dispatch }) => {
-  try {
-    console.debug('Checking auth state');
-
-    // Get current auth data
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-    let userData = userStr ? JSON.parse(userStr) : null;
-
-    if (!token) {
-      console.debug('No token found');
-      dispatch(logout());
-      return null;
-    }
-
-    // Check if token verification previously failed
-    const tokenVerificationFailed = localStorage.getItem('token_verification_failed');
-    if (tokenVerificationFailed === 'true') {
-      console.warn('Token verification previously failed, logging out');
-      dispatch(logout());
-      return null;
-    }
-
-    // Demo mode handling
-    const isDemo = isDemoToken(token) || userData?.email === 'demo@example.com';
-
-    if (isDemo) {
-      console.log('Demo session detected, handling demo session');
-      // For demo sessions, don't try to validate with the server
-      // Just ensure we have valid demo data
-      userData = userData || createDemoUser();
-
-      // Update localStorage with fresh demo token if needed
-      if (!token.startsWith('demo-')) {
-        const newToken = `demo-token-${Date.now()}`;
-        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
-      }
-
-      dispatch(loginSuccess({ user: userData, token }));
-      return userData;
-    }
-
-    // Only try to validate non-demo tokens
-    try {
-      console.debug('Attempting to validate token');
-      const isValid = await authService.validateToken();
-      console.debug('Token validation result:', isValid);
-
-      if (isValid) {
-        if (userData) {
-          // Update localStorage with fresh data if needed
-          localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(userData));
-          dispatch(loginSuccess({ user: userData, token }));
-          return userData;
-        }
-      } else {
-        // Token invalid - remove auth data
-        console.warn('Token validation failed, handling as unauthenticated');
-        dispatch(logout());
-        return null;
-      }
-    } catch (err) {
-      console.warn('Token validation failed:', err);
-      dispatch(logout());
-      return null;
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Auth state check failed:', error);
-    dispatch(logout());
-    return null;
-  }
-});
-
-// Logout
-export const logout = createAsyncThunk('auth/logout', async (_, { dispatch }) => {
-  try {
-    console.debug('Logging out user');
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const isDemoToken = token && token.startsWith('demo-');
-
-    if (isDemoToken) {
-      console.log('Logging out demo user - cleaning up demo session');
-      // Use centralized auth data cleanup
-      authService.clearAuthData();
-      dispatch(logoutSuccess());
-      return null;
-    }
-
-    console.log('Normal logout - clearing auth data');
-    // Use centralized auth data cleanup
-    authService.clearAuthData();
-    dispatch(logoutSuccess());
-    return null;
-  } catch (error) {
-    console.error('Error during logout:', error);
-    dispatch(logoutFailure(error.message));
-    return null;
-  }
-});
-
 // Initialize the auth state
-const initialState = (() => {
-  try {
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-    const user = userStr ? JSON.parse(userStr) : null;
-
-    // Check if this is a demo session
-    const isDemo = user?.email === 'demo@example.com';
-
-    if (isDemo) {
-      console.log('Demo session detected in initial state');
-      return {
-        user,
-        token,
-        isAuthenticated: true,
-        status: 'idle',
-        error: null,
-        isLoading: false,
-        loginRedirect: ROUTES.HOME,
-      };
-    }
-
-    return {
-      user: user,
-      token: token || null,
-      isAuthenticated: !!token && !!user,
-      status: 'idle',
-      error: null,
-      isLoading: false,
-      loginRedirect: ROUTES.HOME,
-    };
-  } catch (error) {
-    console.error('Error initializing auth state:', error);
-    return {
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      status: 'idle',
-      error: null,
-      isLoading: false,
-      loginRedirect: ROUTES.HOME,
-    };
-  }
-})();
+const initialState = {
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  isLoading: false,
+  error: null,
+  loginRedirect: '/',
+  offlineMode: false,
+};
 
 const authSlice = createSlice({
   name: 'auth',
@@ -326,6 +160,21 @@ const authSlice = createSlice({
     },
     setOfflineMode: (state, action) => {
       state.offlineMode = action.payload;
+    },
+    logout: (state) => {
+      // Clean up demo session if needed
+      if (demoService.isDemoSession()) {
+        demoService.cleanup();
+      }
+
+      state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
+      state.error = null;
+      state.isLoading = false;
+    },
+    setLoginRedirect: (state, action) => {
+      state.loginRedirect = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -381,17 +230,17 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      .addCase(logout.pending, (state) => {
+      .addCase(logoutThunk.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(logout.fulfilled, (state) => {
+      .addCase(logoutThunk.fulfilled, (state) => {
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
         state.error = null;
       })
-      .addCase(logout.rejected, (state, action) => {
+      .addCase(logoutThunk.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
@@ -414,7 +263,7 @@ const authSlice = createSlice({
         state.error = action.error.message;
       })
       .addMatcher(
-        (action) => action.type === 'auth/tokenRefreshed',
+        (action) => action.type === AUTH_ACTION_TYPES.TOKEN_REFRESHED,
         (state, action) => {
           state.isLoading = false;
           state.error = null;
@@ -426,7 +275,7 @@ const authSlice = createSlice({
         }
       )
       .addMatcher(
-        (action) => action.type === 'auth/authFailure',
+        (action) => action.type === AUTH_ACTION_TYPES.AUTH_FAILURE,
         (state, action) => {
           state.isLoading = false;
           state.error = action.payload || 'Authentication error';
@@ -449,6 +298,8 @@ export const {
   clearError,
   setNetworkError,
   setOfflineMode,
+  logout,
+  setLoginRedirect,
 } = authSlice.actions;
 
 // Additional action exports for compatibility

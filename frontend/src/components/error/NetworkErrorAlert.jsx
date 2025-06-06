@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useModalState } from '../../hooks/useModalState';
-import { setNetworkError } from '../../store/slices/authSlice';
+import { setNetworkError } from '../../store/actions/authActions.mjs';
 import { API_CONFIG, MODAL_TYPES } from '../../utils/config';
 
 /**

@@ -3,13 +3,13 @@
  * Handles authentication operations like login, register, token validation
  */
 
-import { AUTH_CONFIG } from '../utils';
-import Logger from '../utils/logger';
-import { API_SERVICE_CONFIG } from './config';
+import { AUTH_CONFIG } from '../utils/config';
+import { API_SERVICE_CONFIG } from './config.mjs';
+import { demoService } from './demo.service.mjs';
 import { authEndpoints } from './endpoints.mjs';
 import { httpClient } from './http-client.mjs';
 
-// Constants for token-related localStorage keys
+// Constants for token storage
 const TOKEN_KEY = API_SERVICE_CONFIG.AUTH.TOKEN_KEY;
 const REFRESH_TOKEN_KEY = API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY;
 const USER_KEY = API_SERVICE_CONFIG.AUTH.USER_KEY;
@@ -25,6 +25,7 @@ const tokenValidationCache = {
 
 class AuthService {
   constructor() {
+    this.httpClient = httpClient;
     this.token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     this.refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
     this.user = this.getUserFromStorage();
@@ -42,63 +43,59 @@ class AuthService {
 
   async validateToken() {
     try {
-      // Check if we have a cached validation that's still valid
-      const now = Date.now();
-      if (
-        tokenValidationCache.lastValidation &&
-        now - tokenValidationCache.lastValidation < tokenValidationCache.cooldown
-      ) {
-        return tokenValidationCache.isValid;
+      // For demo users, just return success
+      if (this.isDemoUser()) {
+        return {
+          success: true,
+          user: JSON.parse(localStorage.getItem(AUTH_CONFIG.USER_KEY)),
+          token: localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
+        };
       }
 
-      // If there's an ongoing validation, return its promise
-      if (tokenValidationCache.validationPromise) {
-        return tokenValidationCache.validationPromise;
-      }
-
-      // Start new validation
-      tokenValidationCache.validationPromise = (async () => {
-        try {
-          const response = await httpClient.post(authEndpoints.validate);
-          tokenValidationCache.isValid = response.data?.valid === true;
-          tokenValidationCache.lastValidation = now;
-          return tokenValidationCache.isValid;
-        } catch (error) {
-          if (error.response?.status === 429) {
-            // If rate limited, use cached validation if available
-            if (tokenValidationCache.lastValidation) {
-              return tokenValidationCache.isValid;
-            }
-          }
-          // For other errors, consider token invalid
-          tokenValidationCache.isValid = false;
-          return false;
-        } finally {
-          tokenValidationCache.validationPromise = null;
-        }
-      })();
-
-      return tokenValidationCache.validationPromise;
+      // Regular token validation
+      const response = await this.httpClient.post(authEndpoints.validate);
+      return response.data;
     } catch (error) {
-      console.error('Token validation error:', error);
-      return false;
+      console.error('Token validation failed:', error);
+      throw error;
     }
   }
 
   async login(credentials) {
     try {
-      const response = await httpClient.post(authEndpoints.login, credentials);
-      this.handleAuthResponse(response.data);
-      return response.data;
+      const response = await this.httpClient.post(authEndpoints.login, credentials);
+
+      if (response?.data) {
+        const { token, refresh_token, user } = response.data;
+
+        localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);
+        if (refresh_token) {
+          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, refresh_token);
+        }
+        localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(user));
+
+        if (this.httpClient?.defaults?.headers?.common) {
+          this.httpClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+
+        return {
+          success: true,
+          token,
+          refresh_token,
+          user,
+        };
+      }
+
+      throw new Error('Invalid response from login endpoint');
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login failed:', error);
       throw error;
     }
   }
 
   async register(userData) {
     try {
-      const response = await httpClient.post(authEndpoints.register, userData);
+      const response = await this.httpClient.post(authEndpoints.register, userData);
       this.handleAuthResponse(response.data);
       return response.data;
     } catch (error) {
@@ -109,11 +106,20 @@ class AuthService {
 
   async logout() {
     try {
-      await httpClient.post(authEndpoints.logout);
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+      // If demo user, just clean up local data
+      if (this.isDemoUser()) {
+        demoService.cleanup();
+        return;
+      }
+
+      // Regular logout
+      await this.httpClient.post(authEndpoints.logout);
       this.clearAuthData();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still clear local data even if API call fails
+      this.clearAuthData();
+      throw error;
     }
   }
 
@@ -145,6 +151,10 @@ class AuthService {
     // Reset validation cache
     tokenValidationCache.lastValidation = null;
     tokenValidationCache.isValid = false;
+
+    if (this.httpClient?.defaults?.headers?.common) {
+      delete this.httpClient.defaults.headers.common['Authorization'];
+    }
   }
 
   isAuthenticated() {
@@ -152,15 +162,58 @@ class AuthService {
   }
 
   isDemoUser() {
-    return this.user?.email === 'demo@example.com';
+    return demoService.isDemoSession();
+  }
+
+  /**
+   * Handle demo login
+   */
+  async demoLogin() {
+    try {
+      console.log('Starting demo login process');
+      const response = await demoService.login();
+
+      if (response?.success) {
+        // Set http client auth header
+        if (httpClient?.defaults?.headers?.common) {
+          httpClient.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Demo login error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh token if needed
+   */
+  async refreshTokenIfNeeded() {
+    try {
+      // For demo users, just return success with new demo data
+      if (this.isDemoUser()) {
+        const response = await demoService.login();
+        return {
+          success: true,
+          token: response.token,
+          refresh_token: response.refresh_token,
+        };
+      }
+
+      // Regular token refresh
+      const response = await this.httpClient.post(authEndpoints.refresh);
+      return response.data;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      throw error;
+    }
   }
 }
 
-// Create the auth service instance
-const authService = new AuthService();
-
-// Export the instance and individual methods for backward compatibility
-export { authService, authService as default };
+// Export singleton instance
+export const authService = new AuthService();
 
 // Export individual methods for backward compatibility
 export const login = (credentials) => authService.login(credentials);
@@ -170,275 +223,7 @@ export const validateToken = () => authService.validateToken();
 export const clearAuthData = () => authService.clearAuthData();
 export const checkIsAuthenticated = () => authService.isAuthenticated();
 export const checkIsDemoUser = () => authService.isDemoUser();
-
-/**
- * Handle demo login (no server interaction)
- */
-export async function demoLogin() {
-  try {
-    // Import the demo user service
-    const { demoUserService } = await import(/* @vite-ignore */ './demo-user.service.mjs');
-
-    // Use the demo user service to set up the demo session
-    const demoData = await demoUserService.setupDemoSession();
-
-    // Log successful login
-    console.log('Demo login successful');
-    Logger.log('auth', 'User logged in with demo account');
-
-    // Set http client auth header
-    if (httpClient?.defaults?.headers?.common) {
-      httpClient.defaults.headers.common['Authorization'] = `Bearer ${demoData.token}`;
-    }
-
-    return {
-      success: true,
-      token: demoData.token,
-      refresh_token: demoData.refresh_token,
-      user: demoData.user,
-      message: 'Demo login successful',
-    };
-  } catch (error) {
-    console.error('Demo login error:', error);
-    return {
-      success: false,
-      message: 'Error during demo login',
-    };
-  }
-}
-
-/**
- * Refresh the access token using the refresh token
- * @returns {Promise<string>} New access token
- */
-export async function refreshToken() {
-  // Add retry mechanism and token lock to prevent concurrent refresh attempts
-  if (typeof window !== 'undefined' && window.__TOKEN_REFRESH_IN_PROGRESS) {
-    console.log('Token refresh already in progress, waiting for it to complete');
-
-    // Return a promise that resolves when the existing refresh completes
-    return new Promise((resolve, reject) => {
-      const checkInterval = setInterval(() => {
-        if (!window.__TOKEN_REFRESH_IN_PROGRESS) {
-          clearInterval(checkInterval);
-
-          // Get the result of the completed refresh
-          const token = localStorage.getItem(TOKEN_KEY);
-          if (token) {
-            resolve(token);
-          } else {
-            reject(new Error('No token available after refresh completed'));
-          }
-        }
-      }, 100);
-
-      // Set a timeout to avoid infinite waiting
-      setTimeout(() => {
-        clearInterval(checkInterval);
-        reject(new Error('Timed out waiting for token refresh'));
-      }, 5000);
-    });
-  }
-
-  // Set the global flag to indicate a refresh is in progress
-  if (typeof window !== 'undefined') {
-    window.__TOKEN_REFRESH_IN_PROGRESS = true;
-  }
-
-  try {
-    // FIRST PRIORITY: Check if this is a demo session - do this before anything else
-    const currentToken = localStorage.getItem(TOKEN_KEY);
-    const currentRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    const currentUser = localStorage.getItem(USER_KEY);
-
-    console.log('Debug - refreshToken: Initial authentication state:', {
-      hasCurrentToken: !!currentToken,
-      hasRefreshToken: !!currentRefreshToken,
-      hasUser: !!currentUser,
-      currentTokenPreview: currentToken ? `${currentToken.substring(0, 20)}...` : 'none',
-      refreshTokenPreview: currentRefreshToken
-        ? `${currentRefreshToken.substring(0, 20)}...`
-        : 'none',
-      userPreview: currentUser ? JSON.parse(currentUser).username || 'no username' : 'none',
-    });
-
-    // Use a more direct demo session check
-    let isDemoSession = false;
-    if (currentToken) {
-      try {
-        const parts = currentToken.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          isDemoSession =
-            payload.sub &&
-            (payload.sub.includes('demo-') ||
-              payload.sub.includes('demo_') ||
-              payload.sub === 'demo-user');
-        }
-      } catch (e) {
-        // If JWT parsing fails, check for legacy demo tokens
-        isDemoSession =
-          currentToken.startsWith('demo-') ||
-          currentToken.includes('demo_token_') ||
-          currentToken.includes('demo-token-');
-      }
-    }
-
-    console.log('Debug - refreshToken: isDemoSession =', isDemoSession);
-
-    if (isDemoSession) {
-      console.log('Demo session detected in refreshToken, regenerating demo tokens');
-      const { demoUserService } = await import('./demo-user.service.mjs');
-      const demoData = await demoUserService.setupDemoSession();
-      return demoData.token;
-    }
-
-    // Only proceed with regular token refresh if NOT a demo session
-    let refreshTokenValue = localStorage.getItem(REFRESH_TOKEN_KEY);
-
-    console.log('Debug - refreshToken: About to check refresh token availability:', {
-      hasRefreshToken: !!refreshTokenValue,
-      refreshTokenLength: refreshTokenValue ? refreshTokenValue.length : 0,
-    });
-
-    // If no refresh token is available, we can't refresh
-    if (!refreshTokenValue) {
-      console.error('No refresh token available for token refresh');
-      // Set a flag to indicate token verification failed
-      localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
-      throw new Error('No refresh token available');
-    }
-
-    // Ensure the refresh token is in valid JWT format (has 3 segments)
-    const tokenParts = refreshTokenValue.split('.');
-    if (tokenParts.length !== 3) {
-      console.error('Invalid refresh token format - not a valid JWT token');
-      // Clear the invalid token
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
-      // Set a flag to indicate token verification failed
-      localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
-      throw new Error('Invalid refresh token format');
-    }
-
-    // Use the correct endpoint from authEndpoints
-    const refreshEndpoint = authEndpoints.refresh;
-    console.log('Using refresh endpoint:', refreshEndpoint);
-
-    // Add detailed logging for debugging
-    console.log('Refreshing token:', {
-      endpoint: refreshEndpoint,
-      hasCurrentToken: !!currentToken,
-      refreshTokenLength: refreshTokenValue.length,
-    });
-
-    try {
-      // First attempt with standard endpoint
-      const response = await httpClient.post(
-        refreshEndpoint,
-        { refresh_token: refreshTokenValue },
-        {
-          headers: {
-            Authorization: currentToken ? `Bearer ${currentToken}` : undefined,
-            'Content-Type': 'application/json',
-          },
-          withCredentials: true,
-        }
-      );
-
-      // Extract token from response
-      const tokenData = response.data || response;
-      const newToken = tokenData.token || tokenData.access_token;
-      const newRefreshToken = tokenData.refresh_token;
-
-      // Handle successful refresh
-      if (newToken) {
-        console.log('Token refreshed successfully');
-        localStorage.setItem(TOKEN_KEY, newToken);
-        if (newRefreshToken) {
-          localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-        }
-        if (tokenData.user) {
-          localStorage.setItem(USER_KEY, JSON.stringify(tokenData.user));
-        }
-        localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
-        return newToken;
-      } else {
-        console.error('No token in refresh response:', tokenData);
-        throw new Error('Invalid refresh response: No token returned');
-      }
-    } catch (error) {
-      // If first attempt fails with 405 Method Not Allowed, try alternative endpoint format
-      if (error.response?.status === 405) {
-        console.warn('Method not allowed on primary endpoint, trying alternative format');
-
-        // Create the alternate endpoint by toggling the trailing slash
-        const alternateEndpoint = refreshEndpoint.endsWith('/')
-          ? refreshEndpoint.slice(0, -1)
-          : refreshEndpoint + '/';
-
-        console.log('Attempting with alternate endpoint:', alternateEndpoint);
-
-        // Try the alternate endpoint
-        const retryResponse = await httpClient.post(
-          alternateEndpoint,
-          { refresh_token: refreshTokenValue },
-          {
-            headers: {
-              Authorization: currentToken ? `Bearer ${currentToken}` : undefined,
-              'Content-Type': 'application/json',
-            },
-            withCredentials: true,
-          }
-        );
-
-        // Handle the response
-        const tokenData = retryResponse.data || retryResponse;
-        const newToken = tokenData.token || tokenData.access_token;
-        const newRefreshToken = tokenData.refresh_token;
-
-        if (newToken) {
-          console.log('Token refreshed successfully with alternate endpoint');
-          localStorage.setItem(TOKEN_KEY, newToken);
-          if (newRefreshToken) {
-            localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-          }
-          if (tokenData.user) {
-            localStorage.setItem(USER_KEY, JSON.stringify(tokenData.user));
-          }
-          localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
-          return newToken;
-        } else {
-          throw new Error('No token returned from alternate endpoint');
-        }
-      } else {
-        // Re-throw any other errors
-        throw error;
-      }
-    }
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-
-    // Check if we should clear auth data
-    const shouldClearAuth =
-      error.response?.status === 401 || // Unauthorized
-      error.response?.status === 403 || // Forbidden
-      (error.response?.status === 405 && error.retried) || // Method Not Allowed (after retry)
-      error.message?.includes('No refresh token available') ||
-      error.message?.includes('Invalid refresh');
-
-    if (shouldClearAuth) {
-      console.log('Clearing auth data due to refresh failure');
-      clearAuthData();
-    }
-
-    throw error;
-  } finally {
-    // Always clear the in-progress flag
-    if (typeof window !== 'undefined') {
-      window.__TOKEN_REFRESH_IN_PROGRESS = false;
-    }
-  }
-}
+export const demoLogin = () => authService.demoLogin();
 
 /**
  * Completely reset the authentication state

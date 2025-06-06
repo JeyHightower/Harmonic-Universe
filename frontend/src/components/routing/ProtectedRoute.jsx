@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState, useTransition } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
-import { demoLogin } from '../../store/slices/authSlice.mjs';
+import { demoLogin } from '../../store/thunks/authThunks';
 import { AUTH_CONFIG, ROUTES } from '../../utils';
 
 const ProtectedRoute = ({ children }) => {

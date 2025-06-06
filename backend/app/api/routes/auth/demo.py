@@ -39,7 +39,7 @@ def demo_login():
                     'error': str(e)
                 }), 500
 
-                # Create access and refresh tokens
+        # Create access and refresh tokens
         # Ensure user ID is converted to string for consistent behavior
         access_token = create_access_token(identity=str(demo_user.id))
         refresh_token = create_refresh_token(identity=str(demo_user.id))
@@ -49,6 +49,7 @@ def demo_login():
 
         # Create response
         response = jsonify({
+            'success': True,
             'message': 'Demo login successful',
             'token': access_token,
             'refresh_token': refresh_token,
@@ -81,6 +82,7 @@ def demo_login():
     except Exception as e:
         current_app.logger.error(f'Demo login error: {str(e)}')
         return jsonify({
+            'success': False,
             'message': 'An error occurred during demo login',
             'error': str(e)
         }), 500

@@ -22,9 +22,9 @@ import { useNavigate } from 'react-router-dom';
 import { UniverseCard, UniverseModal } from '../../universe';
 
 import { authService } from '../../../services/auth.service.mjs';
-import { demoUserService } from '../../../services/demo-user.service.mjs';
+import { demoService } from '../../../services/demo.service.mjs';
 import { clearError } from '../../../store/slices/universeSlice.mjs';
-import { logout } from '../../../store/thunks/authThunks';
+import { logoutThunk } from '../../../store/thunks/authThunks';
 import {
   applyModalInteractionFixesThunk,
   initializeModalPortalThunk,
@@ -39,7 +39,7 @@ import { AUTH_CONFIG } from '../../../utils/config';
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { universes, loading, error } = useSelector((state) => state.universes);
+  const { universes, loading: universesLoading, error } = useSelector((state) => state.universes);
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -51,6 +51,7 @@ const Dashboard = () => {
   const [connectionError, setConnectionError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [loading, setLoading] = useState(true);
   const maxRetries = 3;
 
   // Track last dashboard logout attempt
@@ -85,7 +86,7 @@ const Dashboard = () => {
     lastDashboardLoadAttempt = Date.now();
 
     // FIRST: Check if this is a demo session before any other operations
-    const isDemoSession = demoUserService.isDemoSession();
+    const isDemoSession = demoService.isDemoSession();
     console.log('Dashboard - loadUniverses: isDemoSession check =', isDemoSession);
 
     if (isDemoSession) {
@@ -98,7 +99,7 @@ const Dashboard = () => {
       if (!token || !refreshToken) {
         console.log('Dashboard - Demo tokens missing, regenerating demo session');
         try {
-          await demoUserService.setupDemoSession();
+          await demoService.setupDemoSession();
         } catch (error) {
           console.error('Error setting up demo session:', error);
           throw error;
@@ -173,29 +174,11 @@ const Dashboard = () => {
   // Check for authentication and load data on component mount
   useEffect(() => {
     // First check if this is a demo session
-    const isDemoSession = demoUserService.isDemoSession();
+    const isDemoSession = demoService.isDemoSession();
 
     if (isDemoSession) {
-      console.log('Dashboard - Demo session detected, ensuring tokens are set');
-      // Ensure demo tokens are properly set up
-      if (
-        !localStorage.getItem(AUTH_CONFIG.TOKEN_KEY) ||
-        !localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY)
-      ) {
-        console.log('Demo tokens missing, regenerating');
-        // Use .then() instead of await since we can't make useEffect async
-        demoUserService.setupDemoSession().then(() => {
-          // Proceed to load universes with error handling
-          loadUniverses().catch((error) => {
-            console.error('Dashboard - loadUniverses failed in demo session useEffect:', error);
-          });
-        });
-        return;
-      }
-      // If tokens exist, proceed to load universes
-      loadUniverses().catch((error) => {
-        console.error('Dashboard - loadUniverses failed in demo session useEffect:', error);
-      });
+      console.log('Dashboard - Demo session detected');
+      setLoading(false);
       return;
     }
 
@@ -209,16 +192,13 @@ const Dashboard = () => {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     if (!token) {
       console.log('No token found, redirecting to login');
-      dispatch(logout());
+      dispatch(logoutThunk());
       navigate('/?modal=login', { replace: true });
       return;
     }
 
-    console.log('Dashboard - Fetching universes...');
-    loadUniverses().catch((error) => {
-      console.error('Dashboard - loadUniverses failed in auth useEffect:', error);
-    });
-  }, [isAuthenticated, dispatch, navigate, loadUniverses]);
+    setLoading(false);
+  }, [isAuthenticated, dispatch, navigate]);
 
   // Consistent logout handler that uses the auth service
   const handleLogout = () => {
@@ -233,7 +213,7 @@ const Dashboard = () => {
 
     console.log('Dashboard - Logging out user');
     authService.clearAuthData();
-    dispatch(logout());
+    dispatch(logoutThunk());
     navigate('/?modal=login', { replace: true });
   };
 
@@ -241,7 +221,7 @@ const Dashboard = () => {
   const handleResetAuth = () => {
     console.log('Dashboard - Resetting authentication state');
     authService.resetAuth();
-    dispatch(logout());
+    dispatch(logoutThunk());
     navigate('/?modal=login', { replace: true });
   };
 
@@ -289,7 +269,7 @@ const Dashboard = () => {
     });
 
     // Check if this is a demo session first
-    const isDemoSession = demoUserService.isDemoSession();
+    const isDemoSession = demoService.isDemoSession();
     console.log('Debug - isDemoSession result:', isDemoSession);
 
     // Add detailed demo session debugging
@@ -328,7 +308,7 @@ const Dashboard = () => {
       console.log('Demo session detected, ensuring tokens are valid and navigating directly');
       // For demo sessions, just ensure tokens are set up and navigate
       try {
-        await demoUserService.setupDemoSession();
+        await demoService.setupDemoSession();
         navigate(`/universes/${universe.id}`);
       } catch (error) {
         console.error('Error setting up demo session:', error);

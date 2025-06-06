@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { demoLogin } from '../../../store/slices/authSlice.mjs';
+import { demoLogin } from '../../../store/thunks/authThunks';
 import Logger from '../../../utils/logger';
 
 const LoginPage = () => {
@@ -31,10 +31,9 @@ const LoginPage = () => {
       setLoading(true);
       setError(null);
 
-      // Use the demo login thunk
       const result = await dispatch(demoLogin()).unwrap();
 
-      if (result) {
+      if (result?.success) {
         Logger.log('auth', 'LoginPage - Demo login successful');
         setLoading(false);
       } else {

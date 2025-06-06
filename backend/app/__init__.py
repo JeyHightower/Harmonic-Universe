@@ -52,22 +52,7 @@ except ImportError:
     FIXES_AVAILABLE = False
 
 # Initialize extensions
-limiter = Limiter(
-    key_func=get_remote_address,
-    storage_uri="memory://",
-    storage_options={}
-)
-
-# Exempt OPTIONS requests from rate limiting to fix CORS preflight issues
-def exempt_options_requests():
-    def decorator(f):
-        def wrapped(*args, **kwargs):
-            if request.method == "OPTIONS":
-                return f(*args, **kwargs)
-            else:
-                return limiter.exempt(f)(*args, **kwargs)
-        return wrapped
-    return decorator
+from .extensions import db, migrate, jwt, limiter
 
 class DummyCache:
     def __init__(self, *args, **kwargs):

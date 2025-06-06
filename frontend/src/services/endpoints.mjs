@@ -95,7 +95,7 @@ export const safeId = (id) => {
 export const authEndpoints = {
   login: endpoint('/api/auth/login'),
   register: endpoint('/api/auth/signup'),
-  demoLogin: endpoint('/api/auth/demo-login/'),
+  demoLogin: endpoint('/api/auth/demo-login'),
   refresh: endpoint('/api/auth/refresh'),
   logout: endpoint('/api/auth/logout/'),
   validate: endpoint('/api/auth/validate/'),

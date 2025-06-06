@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ...models.universe import Scene, Universe
+from ...models.scene import Scene
 from ....extensions import db
 import traceback
-from app.__init__ import exempt_options_requests
+from ....utils.decorators import exempt_options_requests
 
 from . import scenes_bp  # import the Blueprint instance
 
@@ -249,4 +250,47 @@ def list_scenes():
         return jsonify({
             'message': 'Error listing scenes',
             'error': str(e)
+        }), 500
+
+@scenes_bp.route('/demo-universe-1/scenes/', methods=['GET', 'OPTIONS'], endpoint='get_demo_scenes')
+@scenes_bp.route('/demo-universe-1/scenes', methods=['GET', 'OPTIONS'], endpoint='get_demo_scenes_no_slash')
+@jwt_required(optional=True)
+@exempt_options_requests()
+def get_demo_scenes():
+    """Special handler for demo universe scene requests"""
+    try:
+        # Return demo scenes data
+        demo_scenes = [
+            {
+                'id': 'demo-scene-1',
+                'name': 'Demo Scene 1',
+                'description': 'First demo scene',
+                'universe_id': 'demo-universe-1',
+                'created_at': '2025-01-01T00:00:00Z',
+                'updated_at': '2025-01-01T00:00:00Z',
+                'is_public': True,
+                'order': 1
+            },
+            {
+                'id': 'demo-scene-2',
+                'name': 'Demo Scene 2',
+                'description': 'Second demo scene',
+                'universe_id': 'demo-universe-1',
+                'created_at': '2025-01-01T00:00:00Z',
+                'updated_at': '2025-01-01T00:00:00Z',
+                'is_public': True,
+                'order': 2
+            }
+        ]
+
+        return jsonify({
+            'message': 'Scenes retrieved successfully',
+            'scenes': demo_scenes
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving demo scenes: {str(e)}")
+        return jsonify({
+            'message': 'Error retrieving demo scenes',
+            'error': str(e),
+            'scenes': []
         }), 500

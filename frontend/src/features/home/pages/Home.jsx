@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button';
-import { checkAuthState, demoLogin } from '../../../store/slices/authSlice';
+import { checkAuthState, demoLogin } from '../../../store/thunks/authThunks';
 import '../../../styles/Home.css';
 import { AUTH_CONFIG } from '../../../utils/config';
 
@@ -34,11 +34,9 @@ function Home() {
   const handleDemoLogin = async () => {
     try {
       console.debug('[Home] Starting demo login process');
-
-      // Use the demo login thunk
       const result = await dispatch(demoLogin()).unwrap();
 
-      if (result) {
+      if (result?.success) {
         console.debug('[Home] Demo login successful');
         navigate('/dashboard', { replace: true });
       } else {
@@ -78,17 +76,11 @@ function Home() {
     <div className="home-container">
       <div className="home-content">
         <h1>Welcome to Harmonic Universe</h1>
-        <p>
-          Experience the perfect harmony of sound and physics in an immersive environment. Create,
-          explore, and discover the beauty of musical universes.
-        </p>
-        <div className="home-actions">
+        <p>Create and manage your story universes with ease.</p>
+        <div className="auth-buttons">
           <Button onClick={handleDemoLogin} variant="primary">
             Try Demo
           </Button>
-          <Link to="/demo-login" className="try-demo-direct">
-            <Button variant="secondary">Try Demo (Alternative)</Button>
-          </Link>
         </div>
       </div>
       <div className="features-grid">
