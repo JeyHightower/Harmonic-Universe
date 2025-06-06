@@ -26,7 +26,7 @@ def demo_login():
                     username='demo',
                     email='demo@example.com'
                 )
-                demo_user.set_password('demo123')
+                demo_user.set_password('Demo123!@#')
                 db.session.add(demo_user)
                 db.session.commit()
                 current_app.logger.info('Demo user created successfully')

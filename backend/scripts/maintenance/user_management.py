@@ -4,7 +4,7 @@ User Management Utility
 
 This script consolidates user management functionality from multiple scripts:
 - list_users.py
-- update_user.py 
+- update_user.py
 - update_password.py
 
 It provides a command-line interface for common user management tasks.
@@ -45,57 +45,47 @@ def update_user_password(username_or_email, new_password):
     with app.app_context():
         # Find the user by username or email
         user = User.query.filter(
-            (User.username == username_or_email) | 
+            (User.username == username_or_email) |
             (User.email == username_or_email)
         ).first()
-        
+
         if not user:
             print(f"User with username or email '{username_or_email}' not found")
             return False
-        
+
         # Update password
         user.set_password(new_password)
         db.session.commit()
-        
+
         print(f"Password updated for user: {user.username} ({user.email})")
         return True
 
-def reset_demo_user():
-    """Reset the demo user's password to 'demo123'."""
-    try:
-        app = create_app()
-        with app.app_context():
-            # Find the demo user
-            demo_user = User.query.filter_by(username='demo').first()
-            
-            if not demo_user:
-                print("Demo user not found. Creating demo user...")
-                demo_user = User(
-                    username='demo',
-                    email='demo@example.com'
-                )
-                db.session.add(demo_user)
-            
-            # Set password to 'demo123'
-            demo_user.set_password('demo123')
-            
-            # Commit the changes
+def reset_demo_password():
+    """Reset the demo user's password to 'Demo123!@#'."""
+    app = create_app()
+    with app.app_context():
+        # Find demo user
+        demo_user = User.query.filter_by(email='demo@example.com').first()
+
+        if not demo_user:
+            print("Demo user not found")
+            return False
+
+        try:
+            # Set password to 'Demo123!@#'
+            demo_user.set_password('Demo123!@#')
             db.session.commit()
-            
-            print(f"Demo user updated successfully!")
-            print(f"Username: {demo_user.username}")
-            print(f"Email: {demo_user.email}")
-            
-            # Verify the password
-            if demo_user.check_password('demo123'):
-                print("Password verification successful!")
+
+            # Verify password was set correctly
+            if demo_user.check_password('Demo123!@#'):
+                print("Demo user password reset successfully")
+                return True
             else:
-                print("Password verification failed!")
-            
-            return True
-    except Exception as e:
-        print(f"Error updating demo user: {str(e)}")
-        return False
+                print("Failed to verify new password")
+                return False
+        except Exception as e:
+            print(f"Error updating demo user: {str(e)}")
+            return False
 
 def create_user(username, email, password):
     """Create a new user."""
@@ -103,18 +93,18 @@ def create_user(username, email, password):
     with app.app_context():
         # Check if user already exists
         existing_user = User.query.filter(
-            (User.username == username) | 
+            (User.username == username) |
             (User.email == email)
         ).first()
-        
+
         if existing_user:
             print(f"User with username '{username}' or email '{email}' already exists")
             return False
-        
+
         # Create new user
         new_user = User(username=username, email=email)
         new_user.set_password(password)
-        
+
         try:
             db.session.add(new_user)
             db.session.commit()
@@ -131,14 +121,14 @@ def delete_user(username_or_email):
     with app.app_context():
         # Find the user by username or email
         user = User.query.filter(
-            (User.username == username_or_email) | 
+            (User.username == username_or_email) |
             (User.email == username_or_email)
         ).first()
-        
+
         if not user:
             print(f"User with username or email '{username_or_email}' not found")
             return False
-        
+
         try:
             # Delete the user (soft delete)
             user.delete()
@@ -151,30 +141,30 @@ def delete_user(username_or_email):
 def main():
     parser = argparse.ArgumentParser(description='User Management Utility')
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
-    
+
     # List users command
     list_parser = subparsers.add_parser('list', help='List all users')
-    
+
     # Create user command
     create_parser = subparsers.add_parser('create', help='Create a new user')
     create_parser.add_argument('username', help='Username for the new user')
     create_parser.add_argument('email', help='Email for the new user')
     create_parser.add_argument('password', help='Password for the new user')
-    
+
     # Update password command
     update_parser = subparsers.add_parser('update-password', help='Update user password')
     update_parser.add_argument('username_or_email', help='Username or email of the user')
     update_parser.add_argument('password', help='New password')
-    
+
     # Reset demo user command
     reset_demo_parser = subparsers.add_parser('reset-demo', help='Reset the demo user')
-    
+
     # Delete user command
     delete_parser = subparsers.add_parser('delete', help='Delete a user')
     delete_parser.add_argument('username_or_email', help='Username or email of the user to delete')
-    
+
     args = parser.parse_args()
-    
+
     if args.command == 'list':
         list_users()
     elif args.command == 'create':
@@ -182,11 +172,11 @@ def main():
     elif args.command == 'update-password':
         update_user_password(args.username_or_email, args.password)
     elif args.command == 'reset-demo':
-        reset_demo_user()
+        reset_demo_password()
     elif args.command == 'delete':
         delete_user(args.username_or_email)
     else:
         parser.print_help()
 
 if __name__ == '__main__':
-    main() 
+    main()

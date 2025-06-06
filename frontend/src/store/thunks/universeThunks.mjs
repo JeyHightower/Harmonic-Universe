@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api.adapter';
+import { demoUserService } from '../../services/demo-user.service.mjs';
 import { logout, validateAndRefreshToken } from '../thunks/authThunks';
 
 const handleError = (error) => {
@@ -40,10 +41,9 @@ export const fetchUniverses = createAsyncThunk(
 
       // First, import modules we'll need
       const authModule = await import(/* @vite-ignore */ '../../services/auth.service.mjs');
-      const demoModule = await import(/* @vite-ignore */ '../../services/demo-user.service.mjs');
 
       // Check if this is a demo session
-      const isDemoSession = demoModule.isDemoSession();
+      const isDemoSession = demoUserService.isDemoSession();
       if (isDemoSession) {
         console.log('Demo session detected, using demo data');
 
@@ -53,7 +53,7 @@ export const fetchUniverses = createAsyncThunk(
 
         if (!token || !refreshToken) {
           console.log('Demo tokens missing, regenerating');
-          demoModule.setupDemoSession();
+          await demoUserService.setupDemoSession();
         }
 
         // Return demo universes data

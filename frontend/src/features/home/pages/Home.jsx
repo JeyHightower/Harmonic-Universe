@@ -2,12 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button';
-import {
-    checkAuthState,
-    demoLogin,
-    loginFailure,
-    loginStart
-} from '../../../store/slices/authSlice';
+import { checkAuthState, demoLogin } from '../../../store/slices/authSlice';
 import '../../../styles/Home.css';
 import { AUTH_CONFIG } from '../../../utils/config';
 
@@ -39,9 +34,8 @@ function Home() {
   const handleDemoLogin = async () => {
     try {
       console.debug('[Home] Starting demo login process');
-      dispatch(loginStart());
 
-      // Use the demoLogin thunk instead of the utility
+      // Use the demo login thunk
       const result = await dispatch(demoLogin()).unwrap();
 
       if (result) {
@@ -52,7 +46,6 @@ function Home() {
       }
     } catch (error) {
       console.error('[Home] Demo login process failed:', error);
-      dispatch(loginFailure('Could not log in as demo user'));
     }
   };
 

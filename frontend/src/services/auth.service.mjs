@@ -3,11 +3,11 @@
  * Handles authentication operations like login, register, token validation
  */
 
+import { AUTH_CONFIG } from '../utils';
 import Logger from '../utils/logger';
 import { API_SERVICE_CONFIG } from './config';
-import { authEndpoints } from './endpoints';
-import { httpClient } from './http-client';
-import { responseHandler } from './response-handler';
+import { authEndpoints } from './endpoints.mjs';
+import { httpClient } from './http-client.mjs';
 
 // Constants for token-related localStorage keys
 const TOKEN_KEY = API_SERVICE_CONFIG.AUTH.TOKEN_KEY;
@@ -15,83 +15,161 @@ const REFRESH_TOKEN_KEY = API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY;
 const USER_KEY = API_SERVICE_CONFIG.AUTH.USER_KEY;
 const TOKEN_VERIFICATION_FAILED = 'token_verification_failed';
 
-// Add this to handle token refresh race conditions
+// Token validation cache
+const tokenValidationCache = {
+  lastValidation: null,
+  isValid: false,
+  validationPromise: null,
+  cooldown: 5000, // 5 seconds cooldown between validations
+};
 
-/**
- * Perform user login
- *- Either user email or credentials object with email and password
- * @param {string} [password] - User password (if first param is email)
- * @returns {Promise<object>} - Login response with auth token
- */
-export const login = async (emailOrCredentials, password) => {
-  try {
-    let loginData = {};
+class AuthService {
+  constructor() {
+    this.token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    this.refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+    this.user = this.getUserFromStorage();
+  }
 
-    // Handle both formats: (email, password) or ({email, password})
-    if (typeof emailOrCredentials === 'string') {
-      loginData = { email: emailOrCredentials, password };
-    } else if (typeof emailOrCredentials === 'object') {
-      loginData = emailOrCredentials;
-    } else {
-      throw new Error('Invalid login parameters');
+  getUserFromStorage() {
+    try {
+      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (error) {
+      console.error('Error parsing user from storage:', error);
+      return null;
     }
+  }
 
-    // Validate required fields
-    if (!loginData.email) {
-      throw new Error('Email is required for login');
-    }
-
-    if (!loginData.password) {
-      throw new Error('Password is required for login');
-    }
-
-    const response = await httpClient.post(authEndpoints.login, loginData);
-
-    // Handle successful login
-    if (response.token) {
-      // Clear any previous token verification failures
-      localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
-
-      // Store token in localStorage
-      localStorage.setItem(TOKEN_KEY, response.token);
-
-      // Store refresh token if provided, otherwise don't create a fallback
-      if (response.refresh_token) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+  async validateToken() {
+    try {
+      // Check if we have a cached validation that's still valid
+      const now = Date.now();
+      if (
+        tokenValidationCache.lastValidation &&
+        now - tokenValidationCache.lastValidation < tokenValidationCache.cooldown
+      ) {
+        return tokenValidationCache.isValid;
       }
 
-      // Log successful login
-      Logger.log('auth', 'User logged in successfully', {
-        email: loginData.email,
-        tokenLength: response.token.length,
-        tokenPreview: `${response.token.substring(0, 5)}...${response.token.substring(response.token.length - 5)}`,
-      });
+      // If there's an ongoing validation, return its promise
+      if (tokenValidationCache.validationPromise) {
+        return tokenValidationCache.validationPromise;
+      }
 
-      return responseHandler.handleSuccess(response);
+      // Start new validation
+      tokenValidationCache.validationPromise = (async () => {
+        try {
+          const response = await httpClient.post(authEndpoints.validate);
+          tokenValidationCache.isValid = response.data?.valid === true;
+          tokenValidationCache.lastValidation = now;
+          return tokenValidationCache.isValid;
+        } catch (error) {
+          if (error.response?.status === 429) {
+            // If rate limited, use cached validation if available
+            if (tokenValidationCache.lastValidation) {
+              return tokenValidationCache.isValid;
+            }
+          }
+          // For other errors, consider token invalid
+          tokenValidationCache.isValid = false;
+          return false;
+        } finally {
+          tokenValidationCache.validationPromise = null;
+        }
+      })();
+
+      return tokenValidationCache.validationPromise;
+    } catch (error) {
+      console.error('Token validation error:', error);
+      return false;
     }
-
-    return responseHandler.handleSuccess(response);
-  } catch (error) {
-    // Use console.error instead of Logger.error until we fix the logger
-    console.error('Login failed:', error);
-    return responseHandler.handleError(error);
   }
-};
 
-/**
- * Register a new user
- * @param {object} userData - User registration data
- * @returns {Promise<object>} - Registration response
- */
-export const register = async (userData) => {
-  try {
-    const response = await httpClient.post(authEndpoints.register, userData);
-    return responseHandler.handleSuccess(response);
-  } catch (error) {
-    Logger.logError('Registration failed', error, 'auth');
-    return responseHandler.handleError(error);
+  async login(credentials) {
+    try {
+      const response = await httpClient.post(authEndpoints.login, credentials);
+      this.handleAuthResponse(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   }
-};
+
+  async register(userData) {
+    try {
+      const response = await httpClient.post(authEndpoints.register, userData);
+      this.handleAuthResponse(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  }
+
+  async logout() {
+    try {
+      await httpClient.post(authEndpoints.logout);
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      this.clearAuthData();
+    }
+  }
+
+  handleAuthResponse(data) {
+    if (data.token) {
+      this.token = data.token;
+      localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, data.token);
+    }
+    if (data.refresh_token) {
+      this.refreshToken = data.refresh_token;
+      localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, data.refresh_token);
+    }
+    if (data.user) {
+      this.user = data.user;
+      localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(data.user));
+    }
+    // Reset validation cache
+    tokenValidationCache.lastValidation = null;
+    tokenValidationCache.isValid = false;
+  }
+
+  clearAuthData() {
+    this.token = null;
+    this.refreshToken = null;
+    this.user = null;
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+    // Reset validation cache
+    tokenValidationCache.lastValidation = null;
+    tokenValidationCache.isValid = false;
+  }
+
+  isAuthenticated() {
+    return !!this.token && !!this.user;
+  }
+
+  isDemoUser() {
+    return this.user?.email === 'demo@example.com';
+  }
+}
+
+// Create the auth service instance
+const authService = new AuthService();
+
+// Export the instance and individual methods for backward compatibility
+export { authService, authService as default };
+
+// Export individual methods for backward compatibility
+export const login = (credentials) => authService.login(credentials);
+export const register = (userData) => authService.register(userData);
+export const logout = () => authService.logout();
+export const validateToken = () => authService.validateToken();
+export const clearAuthData = () => authService.clearAuthData();
+export const checkIsAuthenticated = () => authService.isAuthenticated();
+export const checkIsDemoUser = () => authService.isDemoUser();
 
 /**
  * Handle demo login (no server interaction)
@@ -102,7 +180,7 @@ export async function demoLogin() {
     const { demoUserService } = await import(/* @vite-ignore */ './demo-user.service.mjs');
 
     // Use the demo user service to set up the demo session
-    const demoData = demoUserService.setupDemoSession();
+    const demoData = await demoUserService.setupDemoSession();
 
     // Log successful login
     console.log('Demo login successful');
@@ -128,37 +206,6 @@ export async function demoLogin() {
     };
   }
 }
-
-/**
- * Log the user out and clear all auth data
- * @returns {Promise<Object>} Result of the logout operation
- */
-export const logout = async () => {
-  try {
-    // Call logout endpoint if needed
-    const response = await httpClient.post(authEndpoints.logout);
-
-    // Clear all auth data
-    clearAuthData();
-
-    // Redirect to login page if needed
-    if (window && window.location) {
-      window.location.href = '/login';
-    }
-
-    return responseHandler.handleSuccess(response);
-  } catch (error) {
-    // Still clear auth data even if the logout request fails
-    clearAuthData();
-
-    // Redirect to login page if needed
-    if (window && window.location) {
-      window.location.href = '/login';
-    }
-
-    return responseHandler.handleError(error);
-  }
-};
 
 /**
  * Refresh the access token using the refresh token
@@ -242,7 +289,7 @@ export async function refreshToken() {
     if (isDemoSession) {
       console.log('Demo session detected in refreshToken, regenerating demo tokens');
       const { demoUserService } = await import('./demo-user.service.mjs');
-      const demoData = demoUserService.setupDemoSession();
+      const demoData = await demoUserService.setupDemoSession();
       return demoData.token;
     }
 
@@ -394,21 +441,6 @@ export async function refreshToken() {
 }
 
 /**
- * Clear all authentication data from localStorage
- */
-export function clearAuthData() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
-
-  // Clear auth headers
-  if (httpClient?.defaults?.headers?.common) {
-    delete httpClient.defaults.headers.common['Authorization'];
-  }
-}
-
-/**
  * Completely reset the authentication state
  * Use this function when experiencing auth issues or for testing
  * Can be called from browser console: authService.resetAuth()
@@ -437,150 +469,6 @@ export function resetAuth() {
 
   console.log('Authentication state completely reset. Please refresh the page and log in again.');
   return { success: true, message: 'Auth reset complete' };
-}
-
-/**
- * Validate the current token
- * @param {string} [token] - Optional token to validate (uses stored token if not provided)
- * @returns {Promise<object>} Validation result
- */
-export async function validateToken(token = null) {
-  if (!token) {
-    token = localStorage.getItem(TOKEN_KEY);
-  }
-
-  if (!token) {
-    return { valid: false, message: 'No token available to validate' };
-  }
-
-  try {
-    // Check if token is expired by decoding without verification
-    try {
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-
-      const decodedToken = JSON.parse(atob(tokenParts[1]));
-      const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
-
-      // If token is expired, try to refresh before validation
-      if (Date.now() >= expirationTime) {
-        console.log('Token expired, attempting refresh');
-        try {
-          const newToken = await refreshToken();
-          if (newToken) {
-            return { valid: true, refreshed: true, token: newToken };
-          }
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
-
-          // Don't clear auth data on network errors, as they might be temporary
-          if (!refreshError.message?.includes('Network Error')) {
-            clearAuthData();
-          }
-
-          return { valid: false, message: 'Token expired and refresh failed' };
-        }
-      }
-    } catch (parseError) {
-      console.warn('Error parsing token:', parseError);
-      // Continue with validation even if parsing fails
-    }
-
-    // Validate with server
-    try {
-      // Use a smaller timeout for validation to fail faster
-      const response = await httpClient.post(
-        authEndpoints.validate,
-        { token },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          withCredentials: true,
-          timeout: 5000, // 5 second timeout for faster failure
-        }
-      );
-
-      const validationResult = response.data || response;
-
-      if (validationResult.valid === true) {
-        // Update user data if provided
-        if (validationResult.user) {
-          localStorage.setItem(USER_KEY, JSON.stringify(validationResult.user));
-        }
-
-        // Clear any verification failure flags
-        localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
-
-        return { valid: true, user: validationResult.user };
-      } else {
-        throw new Error(validationResult.message || 'Token validation failed');
-      }
-    } catch (validationError) {
-      console.error('Server validation error:', validationError);
-
-      // If it's a network error (possibly CORS), use client-side validation as fallback
-      if (validationError.message?.includes('Network Error')) {
-        console.warn('Network error during validation, using client-side validation as fallback');
-
-        try {
-          // We've already checked expiration above, so if we're here the token isn't expired
-          return {
-            valid: true,
-            user: JSON.parse(localStorage.getItem(USER_KEY) || '{}'),
-            clientSideOnly: true,
-            message: 'Using client-side validation due to network error',
-          };
-        } catch (e) {
-          console.error('Client-side validation failed:', e);
-        }
-      }
-
-      // If server returns 401, token is definitely invalid
-      if (validationError.response && validationError.response.status === 401) {
-        // Try to refresh the token
-        try {
-          // Check if we have a main token before attempting refresh
-          const currentToken = localStorage.getItem(TOKEN_KEY);
-          if (!currentToken) {
-            console.warn('No token available for refresh after 401');
-            clearAuthData();
-            return { valid: false, message: 'No token available for validation or refresh' };
-          }
-
-          const newToken = await refreshToken();
-          if (newToken) {
-            return { valid: true, refreshed: true, token: newToken };
-          }
-        } catch (refreshError) {
-          console.error('Token refresh after 401 failed:', refreshError);
-          // Don't clear auth on network errors
-          if (!refreshError.message?.includes('Network Error')) {
-            clearAuthData();
-          }
-          return { valid: false, message: 'Token invalid and refresh failed' };
-        }
-      }
-
-      throw validationError;
-    }
-  } catch (error) {
-    console.error('Token validation error:', error);
-
-    // Don't set verification failure on network errors as they might be temporary
-    if (!error.message?.includes('Network Error')) {
-      localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
-    }
-
-    return {
-      valid: false,
-      message: error.message,
-      isNetworkError: error.message?.includes('Network Error'),
-    };
-  }
 }
 
 /**
@@ -706,23 +594,3 @@ export function hasValidToken() {
     return false;
   }
 }
-
-/**
- * Authentication service object
- */
-export const authService = {
-  login,
-  register,
-  demoLogin,
-  logout,
-  validateToken,
-  refreshToken,
-  isAuthenticated,
-  getToken,
-  clearAuthData,
-  resetAuth,
-  decodeToken,
-  hasValidToken,
-};
-
-export default authService;

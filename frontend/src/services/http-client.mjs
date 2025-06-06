@@ -6,7 +6,7 @@
 import axios from 'axios';
 import { API_CONFIG } from '../utils/config';
 import { log } from '../utils/logger.mjs';
-import { clearAuthData, getToken, refreshToken } from './auth.service.mjs';
+import { authService } from './auth.service.mjs';
 import { API_SERVICE_CONFIG } from './config.mjs';
 
 let isRefreshing = false;
@@ -496,7 +496,7 @@ axiosInstance.interceptors.response.use(
         if (!currentToken) {
           logApiOperation('token-refresh-failed', { reason: 'No token available to refresh' });
           // Clear auth data and redirect to login
-          clearAuthData();
+          authService.clearAuthData();
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
@@ -532,7 +532,7 @@ axiosInstance.interceptors.response.use(
         const tokenParts = refreshTokenValue.split('.');
         if (tokenParts.length !== 3) {
           logApiOperation('token-refresh-failed', { reason: 'Invalid refresh token format' });
-          clearAuthData();
+          authService.clearAuthData();
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
           }
@@ -561,7 +561,7 @@ axiosInstance.interceptors.response.use(
           return axiosInstance(originalRequest);
         } else {
           // If no new token was returned, clear auth and redirect
-          clearAuthData();
+          authService.clearAuthData();
           window.location.href = '/login';
           return Promise.reject(new Error('Token refresh failed - no new token'));
         }
@@ -575,7 +575,7 @@ axiosInstance.interceptors.response.use(
         refreshPromise = null;
 
         // Clear auth data and redirect to login on refresh failure
-        clearAuthData();
+        authService.clearAuthData();
 
         // Only redirect to login if not already on login page
         const currentPath = window.location.pathname;
