@@ -150,6 +150,15 @@ const AppContent = () => {
           return;
         }
 
+        // Check if token is valid locally first
+        if (!authService.isTokenValid(token)) {
+          console.warn('Token failed local validation');
+          authService.clearAuthData();
+          localStorage.setItem('token_verification_failed', 'true');
+          setAuthChecked(true);
+          return;
+        }
+
         // Check auth state with a state transition to avoid blocking UI
         startTransition(() => {
           dispatch(checkAuthState());
@@ -159,6 +168,8 @@ const AppContent = () => {
         setAuthChecked(true);
       } catch (e) {
         console.error('Auth check error:', e);
+        localStorage.setItem('token_verification_failed', 'true');
+        authService.clearAuthData();
         setAuthChecked(true);
       }
     };
@@ -181,6 +192,7 @@ const AppContent = () => {
           onClick={() => {
             // Use centralized auth cleanup
             authService.clearAuthData();
+            localStorage.setItem('token_verification_failed', 'true');
             dispatch(logoutThunk());
           }}
         >

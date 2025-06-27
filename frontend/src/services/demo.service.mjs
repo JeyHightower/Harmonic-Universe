@@ -3,26 +3,63 @@ import { authEndpoints } from './endpoints';
 import { httpClient } from './http-client';
 
 /**
+ * Utility to check if a JWT token is expired
+ * @param {string} token - JWT token
+ * @returns {boolean} - true if expired, false otherwise
+ */
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return true;
+    const now = Math.floor(Date.now() / 1000);
+    return payload.exp < now;
+  } catch (e) {
+    return true;
+  }
+}
+
+/**
  * DemoService class for handling demo user functionality
  */
 class DemoService {
   constructor() {
-    this.demoUser = {
-      id: 'demo',
-      email: 'demo@example.com',
-      username: 'Demo User',
-      role: 'user',
-    };
+    this.isDemoMode = false;
   }
 
   /**
-   * Check if current session is a demo session
+   * Check if current session is a valid, unexpired demo session
    */
-  isDemoSession() {
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  isValidDemoSession() {
     const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-    const user = userStr ? JSON.parse(userStr) : null;
-    return user?.email === 'demo@example.com';
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    if (!userStr || !token) return false;
+    try {
+      const user = JSON.parse(userStr);
+      if (!user?.email?.startsWith('demo_')) return false;
+      if (isTokenExpired(token)) return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Set up demo session only if not already valid
+   */
+  async setupDemoSession() {
+    try {
+      if (this.isValidDemoSession()) {
+        return { success: true };
+      }
+      // Otherwise, perform demo login
+      return await this.login();
+    } catch (error) {
+      console.error('Error setting up demo session:', error);
+      throw error;
+    }
   }
 
   /**
@@ -35,7 +72,7 @@ class DemoService {
       // Call the backend demo login endpoint with POST
       const response = await httpClient.post(authEndpoints.demoLogin);
 
-      if (!response?.success) {
+      if (!response?.user) {
         throw new Error('Invalid response from demo login endpoint');
       }
 
@@ -50,6 +87,8 @@ class DemoService {
       if (httpClient?.defaults?.headers?.common) {
         httpClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
+
+      this.isDemoMode = true;
 
       return {
         success: true,
@@ -74,6 +113,15 @@ class DemoService {
     if (httpClient?.defaults?.headers?.common) {
       delete httpClient.defaults.headers.common['Authorization'];
     }
+
+    this.isDemoMode = false;
+  }
+
+  /**
+   * Check if current session is a demo session (legacy, kept for compatibility)
+   */
+  isDemoSession() {
+    return this.isValidDemoSession();
   }
 }
 

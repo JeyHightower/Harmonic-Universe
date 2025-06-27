@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "harmonic-universe-backend"
 version = "0.1.0"
-description = "Backend for the Harmonic Universe application"
-authors = ["Your Name <your.email@example.com>"]
+description = "Backend for Harmonic Universe"
+authors = ["JeyHightower <Jamesehightower@gmail.com>"]
 readme = "README.md"
 packages = [
     { include = "app" }
@@ -36,7 +36,7 @@ Flask-Limiter = "3.5.0"
 limits = "3.7.0"
 python-magic = "0.4.27"
 python-dateutil = "2.8.2"
-email-validator = "2.1.0"
+email-validator = "2.1.1"
 requests = "2.31.0"
 structlog = "24.1.0"
 psutil = "5.9.8"

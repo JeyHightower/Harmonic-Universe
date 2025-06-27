@@ -102,48 +102,49 @@ def setup_static_folder(app):
                 break
 
 def setup_cors(app):
-    """Configure CORS for the application using Flask-CORS."""
-    # Get CORS configuration from app config
-    resources = app.config.get('CORS_RESOURCES', {r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}})
-    supports_credentials = app.config.get('CORS_SUPPORTS_CREDENTIALS', True)
-    methods = app.config.get('CORS_METHODS', ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"])
-    allow_headers = app.config.get('CORS_HEADERS', ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"])
-    expose_headers = app.config.get('CORS_EXPOSE_HEADERS', ["Content-Length", "Content-Type", "Authorization"])
-    max_age = app.config.get('CORS_MAX_AGE', 86400)
+    """Configure CORS for the application"""
+    origins = [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+    ]
 
-    # Log CORS configuration
-    app.logger.info(f"CORS configuration: origins={app.config.get('CORS_ORIGINS')}, credentials={supports_credentials}")
+    # Configure CORS with specific settings
+    CORS(app, resources={
+        r"/*": {
+            "origins": origins,
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+            "allow_headers": [
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "Accept",
+                "Origin",
+                "X-Demo-User",
+                "X-Request-Attempt"
+            ],
+            "supports_credentials": True,
+            "expose_headers": ["Content-Type", "Authorization"],
+            "max_age": 86400,  # 24 hours
+        }
+    })
 
-    # Configure CORS using Flask-CORS
-    CORS(app,
-         resources=resources,
-         supports_credentials=supports_credentials,
-         methods=methods,
-         allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token", "X-Request-Attempt"],
-         expose_headers=expose_headers,
-         max_age=max_age)
-
-    # Add a global response handler specifically for OPTIONS requests
+    # Add global response handler for CORS headers
     @app.after_request
     def after_request(response):
-        # If it's an OPTIONS request, ensure it gets proper CORS headers and a 200 status
-        if request.method == 'OPTIONS':
-            # Only modify if it's a 429 or other error status
-            if response.status_code != 200:
-                # Get the origin from the request headers or use a safe default
-                origin = request.headers.get('Origin', 'http://localhost:5173')
-                # Remove existing header before adding to prevent duplication
-                if 'Access-Control-Allow-Origin' in response.headers:
-                    del response.headers['Access-Control-Allow-Origin']
-                response.headers.add('Access-Control-Allow-Origin', origin)
-                response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Request-Attempt')
-                response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-                # Ensure only one 'Access-Control-Allow-Credentials' header is set
-                if 'Access-Control-Allow-Credentials' in response.headers:
-                    del response.headers['Access-Control-Allow-Credentials']
-                response.headers.add('Access-Control-Allow-Credentials', 'true')
-                response.headers.add('Access-Control-Max-Age', '86400')
-                response.status_code = 200
+        # Only add CORS headers if they haven't been set by Flask-CORS
+        if 'Access-Control-Allow-Origin' not in response.headers:
+            # Get the origin from the request headers or use a safe default
+            origin = request.headers.get('Origin', 'http://localhost:5173')
+
+            # Set CORS headers
+            response.headers.add('Access-Control-Allow-Origin', origin)
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,X-Demo-User,X-Request-Attempt')
+            response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH')
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Max-Age', '86400')
+
         return response
 
     return app

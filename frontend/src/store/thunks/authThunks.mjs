@@ -67,6 +67,25 @@ export const demoLogin = createAsyncThunk(
       dispatch(loginStart());
       console.log('Thunk - Starting demo login process');
 
+      // Check for a valid demo session before POSTing
+      if (demoService.isValidDemoSession()) {
+        const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+        const refresh_token = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        const user = userStr ? JSON.parse(userStr) : null;
+        if (user && token) {
+          dispatch(
+            loginSuccess({
+              user,
+              token,
+              refresh_token,
+            })
+          );
+          window.dispatchEvent(new CustomEvent('storage'));
+          return { success: true, user, token, refresh_token };
+        }
+      }
+
       try {
         const response = await demoService.login();
         console.log('Thunk - Demo login successful:', response);
@@ -283,11 +302,30 @@ export const validateToken = createAsyncThunk(
         return { valid: true };
       }
 
+      // Check if token is valid locally first
+      if (!authService.isTokenValid(token)) {
+        console.warn('Token failed local validation');
+        localStorage.setItem('token_verification_failed', 'true');
+        authService.clearAuthData();
+        return rejectWithValue('Token failed local validation');
+      }
+
       // For non-demo tokens, validate with the server
       const response = await api.auth.validateToken();
+
+      if (!response.data?.valid) {
+        localStorage.setItem('token_verification_failed', 'true');
+        authService.clearAuthData();
+        return rejectWithValue('Token validation failed');
+      }
+
+      // Clear token verification failed flag if validation succeeds
+      localStorage.removeItem('token_verification_failed');
       return response.data || { valid: response.success || false };
     } catch (error) {
       console.error('Token validation failed:', error);
+      localStorage.setItem('token_verification_failed', 'true');
+      authService.clearAuthData();
       return rejectWithValue(handleError(error));
     }
   }
@@ -409,6 +447,14 @@ export const validateAndRefreshToken = createAsyncThunk(
         }
       }
 
+      // Check if token is valid locally first
+      if (!authService.isTokenValid(token)) {
+        console.warn('Token failed local validation');
+        localStorage.setItem('token_verification_failed', 'true');
+        authService.clearAuthData();
+        return rejectWithValue('Token failed local validation');
+      }
+
       // For real tokens, force a refresh regardless of expiration
       try {
         console.log('Debug - validateAndRefreshToken: Attempting to refresh real token');
@@ -437,19 +483,28 @@ export const validateAndRefreshToken = createAsyncThunk(
             api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
           }
 
+          // Clear token verification failed flag
+          localStorage.removeItem('token_verification_failed');
+
           return { valid: true, token: newToken };
         }
       } catch (refreshError) {
         console.error('Error refreshing token:', refreshError);
+        localStorage.setItem('token_verification_failed', 'true');
+        authService.clearAuthData();
         return rejectWithValue(
           'Authentication error: ' + (refreshError.message || 'Token refresh failed')
         );
       }
 
       // If we got here without a new token, validation failed
+      localStorage.setItem('token_verification_failed', 'true');
+      authService.clearAuthData();
       return rejectWithValue('Authentication validation failed');
     } catch (error) {
       console.error('validateAndRefreshToken error:', error);
+      localStorage.setItem('token_verification_failed', 'true');
+      authService.clearAuthData();
       return rejectWithValue(handleError(error));
     }
   }

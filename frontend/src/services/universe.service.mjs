@@ -3,19 +3,151 @@
  * Handles operations related to universes in the application
  */
 
-import { universeEndpoints } from './endpoints';
-import { httpClient } from './http-client';
-import { responseHandler } from './response-handler';
+import { demoService } from './demo.service.mjs';
+import { universeEndpoints } from './endpoints.mjs';
+import { httpClient } from './http-client.mjs';
+import { responseHandler } from './response-handler.mjs';
+
 
 /**
- * Get all universes
+ * Get all universes by user Id
+ * @params{number/string} userId - User Id
  * @returns {Promise<object>} - Universes response
+
  */
-export const getAllUniverses = async () => {
+
+export const getAllUniverses = async (id) => {
   try {
+    // Check if this is a demo session
+    if (demoService.isDemoSession()) {
+      console.log('Fetching universes for demo user');
+      // Use the same endpoint but with demo-specific headers
+      const response = await httpClient.get(universeEndpoints.list, {
+        headers: {
+          'X-Demo-User': 'true',
+        },
+      });
+
+      // Handle server error responses
+      if (response && response.serverError) {
+        console.error('Server error in demo universe loading:', response);
+        return responseHandler.handleError(new Error(response.message || 'Server error occurred'));
+      }
+
+      // Check if response exists and has the expected structure
+      if (!response || typeof response !== 'object') {
+        console.error('Invalid response format from demo universe loading:', response);
+        return responseHandler.handleError(new Error('Invalid response format from server'));
+      }
+
+
+
+
+
+      // For demo mode, if no universes property, create empty array
+      if (!response.universes) {
+        console.log('No universes property in demo response, creating empty array');
+        response.universes = [];
+      }
+
+      // Ensure universes is an array
+      if (!Array.isArray(response.universes)) {
+        console.error('Response universes is not an array:', response.universes);
+        response.universes = [];
+      }
+
+      return responseHandler.handleSuccess(response);
+    }
+
+    // Regular user flow
+    console.log('Fetching universes for regular user');
     const response = await httpClient.get(universeEndpoints.list);
+
+    console.log('Universe service response:', response);
+
+    // Handle server error responses
+    if (response && response.serverError) {
+      console.error('Server error in universe loading:', response);
+
+      // Check if it's a database error
+      if (response.data && response.data.error && response.data.error.includes('psycopg2')) {
+        console.error('Database error detected:', response.data.error);
+        return responseHandler.handleError(new Error('Database connection error. Please try again later.'));
+      }
+
+      return responseHandler.handleError(new Error(response.message || 'Server error occurred'));
+    }
+
+    // Check if response exists and has the expected structure
+    if (!response || typeof response !== 'object') {
+      console.error('Invalid response format from universe loading:', response);
+      return responseHandler.handleError(new Error('Invalid response format from server'));
+    }
+
+
+
+
+
+    // Handle case where backend returns error in response body
+    if (response.error) {
+      console.error('Error in response body:', response.error);
+      return responseHandler.handleError(new Error(response.message || response.error));
+    }
+
+    // For regular mode, if no universes property, create empty array
+    if (!response.universes) {
+      console.log('No universes property in response, creating empty array');
+      response.universes = [];
+    }
+
+    // Ensure universes is an array
+    if (!Array.isArray(response.universes)) {
+      console.error('Response universes is not an array:', response.universes);
+      response.universes = [];
+    }
+
     return responseHandler.handleSuccess(response);
   } catch (error) {
+    console.error('Error loading universes:', error);
+
+    // Handle specific error types
+    if (error.response) {
+      const status = error.response.status;
+      const errorData = error.response.data;
+
+      console.error('HTTP Error Response:', {
+        status,
+        data: errorData,
+        message: error.message
+      });
+
+      // Handle specific status codes
+      switch (status) {
+        case 500:
+          if (errorData && errorData.error && errorData.error.includes('psycopg2')) {
+            return responseHandler.handleError(new Error('Database connection error. Please check your database configuration.'));
+          }
+          return responseHandler.handleError(new Error('Internal server error. Please try again later.'));
+
+        case 401:
+          return responseHandler.handleError(new Error('Authentication required. Please log in again.'));
+
+        case 403:
+          return responseHandler.handleError(new Error('Access denied. You do not have permission to view universes.'));
+
+        case 404:
+          return responseHandler.handleError(new Error('Universes endpoint not found. Please check your API configuration.'));
+
+        default:
+          return responseHandler.handleError(new Error(`Server error (${status}): ${errorData?.message || error.message}`));
+      }
+    }
+
+    // Handle network errors
+    if (error.code === 'ERR_NETWORK') {
+      return responseHandler.handleError(new Error('Network error. Please check your internet connection and server status.'));
+    }
+
     return responseHandler.handleError(error);
   }
 };
@@ -84,10 +216,19 @@ export const getUniverseById = async (id) => {
  */
 export const createUniverse = async (universeData) => {
   try {
-    const response = await httpClient.post(universeEndpoints.create, universeData);
+    // Check if this is a demo session
+    const isDemo = demoService.isDemoSession();
+
+    const response = await httpClient.post(universeEndpoints.create, universeData, {
+      headers: {
+        'X-Demo-User': isDemo ? 'true' : undefined,
+      },
+    });
+
     console.log('universe', 'Universe created successfully', { id: response.id });
     return responseHandler.handleSuccess(response);
   } catch (error) {
+    console.error('Error creating universe:', error);
     return responseHandler.handleError(error);
   }
 };

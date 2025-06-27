@@ -5,37 +5,6 @@ from ....extensions import db
 
 from . import universes_bp
 
-@universes_bp.route('/demo-universe-1/', methods=['GET'], endpoint='get_demo_universe')
-@universes_bp.route('/demo-universe-1', methods=['GET'], endpoint='get_demo_universe_no_slash')
-@jwt_required()
-def get_demo_universe():
-    """Special handler for demo universe requests"""
-    try:
-        # Return the demo universe data
-        demo_universe = {
-            'id': 'demo-universe-1',
-            'name': 'Demo Universe',
-            'description': 'This is a demo universe for testing purposes',
-            'user_id': 'demo-user',
-            'created_at': '2025-01-01T00:00:00Z',
-            'updated_at': '2025-01-01T00:00:00Z',
-            'is_public': True,
-            'tags': ['demo', 'test'],
-            'scene_count': 5,
-            'is_owner': True
-        }
-
-        return jsonify({
-            'message': 'Universe retrieved successfully',
-            'universe': demo_universe
-        }), 200
-    except Exception as e:
-        current_app.logger.error(f"Error retrieving demo universe: {str(e)}")
-        return jsonify({
-            'message': 'Error retrieving demo universe',
-            'error': str(e)
-        }), 500
-
 @universes_bp.route('/<int:universe_id>/', methods=['GET'])
 @jwt_required()
 def get_universe(universe_id):

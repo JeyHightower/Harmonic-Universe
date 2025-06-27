@@ -15,20 +15,18 @@ const REFRESH_TOKEN_KEY = API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY;
 const USER_KEY = API_SERVICE_CONFIG.AUTH.USER_KEY;
 const TOKEN_VERIFICATION_FAILED = 'token_verification_failed';
 
-// Token validation cache
-const tokenValidationCache = {
-  lastValidation: null,
-  isValid: false,
-  validationPromise: null,
-  cooldown: 5000, // 5 seconds cooldown between validations
-};
-
 class AuthService {
   constructor() {
     this.httpClient = httpClient;
-    this.token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    this.refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-    this.user = this.getUserFromStorage();
+    this.token = null;
+    this.refreshToken = null;
+    this.user = null;
+    this.validationCache = {
+      lastValidation: null,
+      isValid: false,
+      validationPromise: null,
+      cooldown: 5000, // 5 seconds cooldown between validations
+    };
   }
 
   getUserFromStorage() {
@@ -43,21 +41,85 @@ class AuthService {
 
   async validateToken() {
     try {
-      // For demo users, just return success
-      if (this.isDemoUser()) {
-        return {
-          success: true,
-          user: JSON.parse(localStorage.getItem(AUTH_CONFIG.USER_KEY)),
-          token: localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
-        };
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        console.log('No token available for validation');
+        return false;
       }
 
-      // Regular token validation
-      const response = await this.httpClient.post(authEndpoints.validate);
-      return response.data;
+      // Check if token is valid locally first
+      if (!this.isTokenValid(token)) {
+        console.log('Token failed local validation');
+        this.clearAuthData();
+        localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
+        return false;
+      }
+
+      // Check cache first
+      if (this.validationCache.lastValidation) {
+        const timeSinceLastValidation = Date.now() - this.validationCache.lastValidation;
+        if (timeSinceLastValidation < this.validationCache.cooldown) {
+          return this.validationCache.isValid;
+        }
+      }
+
+      // If there's an ongoing validation, return its promise
+      if (this.validationCache.validationPromise) {
+        return this.validationCache.validationPromise;
+      }
+
+      // Create new validation promise
+      this.validationCache.validationPromise = httpClient
+        .post(authEndpoints.validate)
+        .then((response) => {
+          // Check if response exists and has the expected structure
+          if (!response || typeof response !== 'object') {
+            console.error('Invalid response format from token validation:', response);
+            this.validationCache.isValid = false;
+            localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
+            this.clearAuthData();
+            return false;
+          }
+
+          // Check if the response has the valid property
+          if (typeof response.valid !== 'boolean') {
+            console.error('Response missing valid property:', response);
+            this.validationCache.isValid = false;
+            localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
+            this.clearAuthData();
+            return false;
+          }
+
+          this.validationCache.lastValidation = Date.now();
+          this.validationCache.isValid = response.valid;
+
+          // Clear token verification failed flag if validation succeeds
+          if (response.valid) {
+            localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+          } else {
+            // Set token verification failed flag if validation fails
+            localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
+            this.clearAuthData();
+          }
+
+          return response.valid;
+        })
+        .catch((error) => {
+          console.error('Token validation error:', error);
+          localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
+          this.clearAuthData();
+          return false;
+        })
+        .finally(() => {
+          this.validationCache.validationPromise = null;
+        });
+
+      return this.validationCache.validationPromise;
     } catch (error) {
-      console.error('Token validation failed:', error);
-      throw error;
+      console.error('Error validating token:', error);
+      localStorage.setItem(TOKEN_VERIFICATION_FAILED, 'true');
+      this.clearAuthData();
+      return false;
     }
   }
 
@@ -137,20 +199,29 @@ class AuthService {
       localStorage.setItem(AUTH_CONFIG.USER_KEY, JSON.stringify(data.user));
     }
     // Reset validation cache
-    tokenValidationCache.lastValidation = null;
-    tokenValidationCache.isValid = false;
+    this.validationCache.lastValidation = null;
+    this.validationCache.isValid = false;
   }
 
   clearAuthData() {
+    // Clear all auth-related data
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_VERIFICATION_FAILED);
+
+    // Reset instance variables
     this.token = null;
     this.refreshToken = null;
     this.user = null;
-    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+
     // Reset validation cache
-    tokenValidationCache.lastValidation = null;
-    tokenValidationCache.isValid = false;
+    this.validationCache = {
+      lastValidation: null,
+      isValid: false,
+      validationPromise: null,
+      cooldown: 5000,
+    };
 
     if (this.httpClient?.defaults?.headers?.common) {
       delete this.httpClient.defaults.headers.common['Authorization'];
@@ -162,7 +233,7 @@ class AuthService {
   }
 
   isDemoUser() {
-    return demoService.isDemoSession();
+    return demoService.isValidDemoSession();
   }
 
   /**
@@ -208,6 +279,43 @@ class AuthService {
     } catch (error) {
       console.error('Token refresh failed:', error);
       throw error;
+    }
+  }
+
+  // Check if a token is valid locally
+  isTokenValid(token) {
+    if (!token) return false;
+
+    try {
+      // Split the token into its parts
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.error('Invalid token format - not a JWT');
+        return false;
+      }
+
+      // Decode the payload (second part)
+      const payload = JSON.parse(atob(parts[1]));
+
+      // Check if token is expired
+      if (payload.exp) {
+        const expiryDate = new Date(payload.exp * 1000); // Convert to milliseconds
+        const now = new Date();
+
+        if (now > expiryDate) {
+          console.log('Token is expired', {
+            expiry: expiryDate.toISOString(),
+            now: now.toISOString(),
+            expired: true,
+          });
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking token validity:', error);
+      return false;
     }
   }
 }
@@ -379,3 +487,44 @@ export function hasValidToken() {
     return false;
   }
 }
+
+/**
+ * Check if a token is valid and not expired
+ * @param {string} token - The token to check
+ * @returns {boolean} - True if token is valid and not expired
+ */
+export const isTokenValid = (token) => {
+  if (!token) return false;
+
+  try {
+    // Split the token into its parts
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.error('Invalid token format - not a JWT');
+      return false;
+    }
+
+    // Decode the payload (second part)
+    const payload = JSON.parse(atob(parts[1]));
+
+    // Check if token is expired
+    if (payload.exp) {
+      const expiryDate = new Date(payload.exp * 1000); // Convert to milliseconds
+      const now = new Date();
+
+      if (now > expiryDate) {
+        console.log('Token is expired', {
+          expiry: expiryDate.toISOString(),
+          now: now.toISOString(),
+          expired: true,
+        });
+        return false;
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error checking token validity:', error);
+    return false;
+  }
+};

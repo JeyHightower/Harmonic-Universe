@@ -128,18 +128,8 @@ class DevelopmentConfig(Config):
     }
     # In development, create tables automatically by default
     AUTO_CREATE_TABLES = os.environ.get('AUTO_CREATE_TABLES', 'True').lower() == 'true'
-    CORS_CONFIG = {
-        'ORIGINS': [
-            'http://localhost:5173',
-            'http://127.0.0.1:5173',
-            'http://localhost:5174',
-            'http://127.0.0.1:5174',
-            'http://localhost:3000',
-            'http://127.0.0.1:3000'
-        ],
-    }
 
-    # Override CORS settings for development - include both 5173 and 5174 for Vite flexibility
+    # CORS settings for development
     CORS_ORIGINS = [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
@@ -147,6 +137,20 @@ class DevelopmentConfig(Config):
         'http://127.0.0.1:5174'
     ]
     CORS_SUPPORTS_CREDENTIALS = True
+    CORS_HEADERS = [
+        'Content-Type',
+        'Authorization',
+        'Accept',
+        'Origin',
+        'X-Requested-With',
+        'X-CSRF-Token',
+        'X-Request-Attempt',
+        'X-Demo-User'
+    ]
+    CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
+    CORS_EXPOSE_HEADERS = ['Content-Length', 'Content-Type', 'Authorization']
+    CORS_MAX_AGE = 86400
+    CORS_RESOURCES = {r"/api/*": {"origins": CORS_ORIGINS}}
 
     # More permissive rate limiting for development
     RATELIMIT_DEFAULT = "1000 per day, 100 per hour"

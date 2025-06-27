@@ -86,7 +86,7 @@ const Dashboard = () => {
     lastDashboardLoadAttempt = Date.now();
 
     // FIRST: Check if this is a demo session before any other operations
-    const isDemoSession = demoService.isDemoSession();
+    const isDemoSession = demoService.isValidDemoSession();
     console.log('Dashboard - loadUniverses: isDemoSession check =', isDemoSession);
 
     if (isDemoSession) {
@@ -174,7 +174,7 @@ const Dashboard = () => {
   // Check for authentication and load data on component mount
   useEffect(() => {
     // First check if this is a demo session
-    const isDemoSession = demoService.isDemoSession();
+    const isDemoSession = demoService.isValidDemoSession();
 
     if (isDemoSession) {
       console.log('Dashboard - Demo session detected');
@@ -269,7 +269,7 @@ const Dashboard = () => {
     });
 
     // Check if this is a demo session first
-    const isDemoSession = demoService.isDemoSession();
+    const isDemoSession = demoService.isValidDemoSession();
     console.log('Debug - isDemoSession result:', isDemoSession);
 
     // Add detailed demo session debugging
@@ -611,7 +611,7 @@ const Dashboard = () => {
       </div>
     );
   }
-
+// Beginning of Return for this Jsx. 
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">

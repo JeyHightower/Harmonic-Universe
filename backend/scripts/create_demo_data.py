@@ -76,24 +76,7 @@ def create_demo_data():
             else:
                 print(f"Using existing demo user: {demo_user.username}, {demo_user.email}")
 
-            # Check if test universe exists
-            test_universe = Universe.query.filter_by(name='Test Universe').first()
-
-            if not test_universe:
-                # Create a test universe
-                test_universe = Universe(
-                    name='Test Universe',
-                    description='A test universe for demo user',
-                    user_id=demo_user.id,
-                    is_public=True
-                )
-
-                # Add and commit universe
-                db.session.add(test_universe)
-                db.session.commit()
-                print(f"Test universe created: {test_universe.name}, owned by {test_universe.user_id}")
-            else:
-                print(f"Using existing test universe: {test_universe.name}, owned by {test_universe.user_id}")
+            # Removed test universe creation for demo user
 
     except Exception as e:
         print(f"Error: {str(e)}")

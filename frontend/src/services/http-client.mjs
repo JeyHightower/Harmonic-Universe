@@ -4,13 +4,21 @@
  */
 
 import axios from 'axios';
-import { API_CONFIG } from '../utils/config';
+import { API_CONFIG, AUTH_CONFIG } from '../utils/config.mjs';
 import { log } from '../utils/logger.mjs';
-import { authService } from './auth.service.mjs';
 import { API_SERVICE_CONFIG } from './config.mjs';
 
 let isRefreshing = false;
 let refreshPromise = null;
+
+/**
+ * Get the current auth token from localStorage
+ * @return { string|null } - Auth token or null
+ **/
+
+const getToken = () => {
+  return localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+};
 
 // Debug helper for API operations
 const logApiOperation = (operation, data = {}) => {
@@ -138,12 +146,11 @@ const getBaseUrl = () => {
 const axiosInstance = axios.create({
   baseURL: getBaseUrl(),
   timeout: API_CONFIG.TIMEOUT,
+  withCredentials: true, // Enable credentials for CORS
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    // Remove Origin header as it's a protected header that can't be set manually
   },
-  withCredentials: true, // Important for CORS with credentials
   xsrfCookieName: 'csrf_token',
   xsrfHeaderName: 'X-CSRFToken',
 });
@@ -246,389 +253,48 @@ const clearCacheForUrl = (url) => {
   }
 };
 
-// Request interceptor for authentication and retry handling
+// Add request interceptor for auth headers
 axiosInstance.interceptors.request.use(
-  async (config) => {
-    logApiOperation('request-interceptor', {
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-    });
-
-    // Store original timeout for potential retries
-    config._originalTimeout = config.timeout || API_CONFIG.TIMEOUT;
-
-    // Add custom header for tracking request attempts
-    config.headers = config.headers || {};
-    config.headers['X-Request-Attempt'] = config.headers['X-Request-Attempt']
-      ? parseInt(config.headers['X-Request-Attempt']) + 1
-      : 1;
-
-    // Log attempt count if retrying
-    const attemptCount = parseInt(config.headers['X-Request-Attempt']);
-    if (attemptCount > 1) {
-      logApiOperation('request-retry', {
-        attemptCount,
-        url: config.url,
-      });
+  (config) => {
+    // Add auth token if available
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Retry configuration
-    const maxRetries = config._retryMax || API_SERVICE_CONFIG.MAX_RETRIES;
-
-    // Add token from local storage if available and not already present
-    try {
-      // Only add auth token if not previously set
-      const token = getToken();
-      if (token && !config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${token}`;
-        logApiOperation('auth-token-added', { token: `${token.substring(0, 5)}...` });
-      }
-    } catch (error) {
-      logApiOperation('auth-token-error', { message: error.message });
-      // Continue with request even if token can't be added
-    }
-
-    // Add CORS proxy if needed
-    if (config.url && shouldUseCorsProxy()) {
-      config.url = getCorsProxyUrl(config.url);
-      logApiOperation('request-proxied', { url: config.url });
+    // Handle demo user
+    if (localStorage.getItem(AUTH_CONFIG.USER_KEY)?.includes('demo@example.com')) {
+      config.headers['X-Demo-User'] = 'true';
     }
 
     return config;
   },
   (error) => {
-    logApiOperation('request-error', {
-      message: error.message,
-      code: error.code,
-    });
-
-    // For retryable errors, set up retry logic
-    if (error.message.includes('timeout') || error.message.includes('Network Error')) {
-      return Promise.reject(error);
-    }
-
-    // For server errors (500), track and improve error details
-    if (error.response && error.response.status >= 500) {
-      logApiOperation('server-error', {
-        status: error.response.status,
-        url: error.config?.url,
-        data: error.response.data,
-      });
-
-      // Add better error message
-      error.message = `Server Error (${error.response.status}): ${error.response.data?.message || 'Internal Server Error'}`;
-    }
-
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for error handling and token refresh
+// Add response interceptor for CORS errors
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Log success response
-    logApiOperation('response-success', {
-      url: response.config.url,
-      status: response.status,
-      size: response.data ? JSON.stringify(response.data).length : 0,
-    });
-
-    // For successful responses, we can consider caching if it's a GET request
-    if (response.config.method.toLowerCase() === 'get' && response.config.cache !== false) {
-      const cacheKey = response.config.url;
-      cache.set(cacheKey, {
-        data: response.data,
-        timestamp: Date.now(),
-        status: response.status,
-        headers: response.headers,
-      });
-      logApiOperation('response-cached', { url: cacheKey });
-    }
-
     return response;
   },
   async (error) => {
-    // Log response error
-    logApiOperation('response-error', {
-      url: error.config?.url,
-      status: error.response?.status,
-      message: error.message,
-    });
+    if (error.message?.includes('CORS') || error.message?.includes('Network Error')) {
+      console.log('CORS error detected, attempting to use proxy...');
 
-    // Handle server errors (500) better
-    if (error.response && error.response.status >= 500) {
-      logApiOperation('server-error', {
-        status: error.response.status,
-        url: error.config?.url,
-        data: error.response.data,
-      });
+      // Try to use CORS proxy
+      if (shouldUseCorsProxy()) {
+        const originalConfig = error.config;
+        originalConfig.url = getCorsProxyUrl(originalConfig.url);
 
-      // Add better error message
-      error.message = `Server Error (${error.response.status}): ${error.response.data?.message || 'Internal Server Error'}`;
-
-      // Ensure the error has proper response details
-      error.serverError = true;
-
-      // Dispatch an event to notify the app about server error
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('server-error', {
-            detail: {
-              status: error.response.status,
-              url: error.config?.url,
-              message: error.message,
-            },
-          })
-        );
-      }
-
-      return Promise.reject(error);
-    }
-
-    // Original error handling logic for non-500 errors
-    const originalRequest = error.config;
-    if (!originalRequest) {
-      return Promise.reject(error);
-    }
-
-    // Handle server errors (500s) with retry logic
-    const maxRetries = 2;
-    const isServerError = error.response && error.response.status >= 500;
-    const safeToRetry =
-      !originalRequest.method ||
-      ['get', 'options', 'head'].includes(originalRequest.method.toLowerCase());
-    const attemptsMade = originalRequest.headers['X-Request-Attempt']
-      ? parseInt(originalRequest.headers['X-Request-Attempt'])
-      : 1;
-
-    if (isServerError && originalRequest && attemptsMade <= maxRetries && safeToRetry) {
-      logApiOperation('server-error-retry', {
-        status: error.response.status,
-        url: originalRequest.url,
-        attempt: attemptsMade,
-        maxRetries,
-      });
-
-      // Add a small delay before retrying to give the server time to recover
-      await new Promise((resolve) => setTimeout(resolve, 1000 * attemptsMade));
-
-      // Retry the request with updated headers
-      return axiosInstance(originalRequest);
-    }
-
-    // If it's a server error but we won't retry, log it specially
-    if (isServerError) {
-      logApiOperation('server-error-no-retry', {
-        status: error.response.status,
-        url: originalRequest?.url,
-        method: originalRequest?.method,
-        reason:
-          attemptsMade > maxRetries
-            ? 'max-retries-exceeded'
-            : !safeToRetry
-              ? 'unsafe-method'
-              : 'unknown',
-      });
-
-      // Add clearer error message
-      error.message = `Server error (${error.response.status}): ${error.message}`;
-    }
-
-    // Handle Method Not Allowed (405) errors
-    if (error.response?.status === 405) {
-      logApiOperation('method-not-allowed', {
-        url: originalRequest.url,
-        method: originalRequest.method,
-      });
-
-      // Check if this is an API endpoint that might be misconfigured
-      if (originalRequest.url.includes('/api/')) {
-        console.error(
-          `Method Not Allowed (405) for ${originalRequest.method} ${originalRequest.url}`
-        );
-        console.log(
-          'This may indicate a mismatch between frontend and backend endpoint configuration.'
-        );
-
-        // Try to modify the URL by adding or removing trailing slash
-        const modifiedUrl = originalRequest.url.endsWith('/')
-          ? originalRequest.url.slice(0, -1)
-          : originalRequest.url + '/';
-
-        console.log(`Attempting to retry with modified URL: ${modifiedUrl}`);
-
-        // Create a new request with the modified URL
-        const retryRequest = { ...originalRequest };
-        retryRequest.url = modifiedUrl;
-        retryRequest._methodNotAllowedRetry = true;
-
-        return axiosInstance(retryRequest).catch((retryError) => {
-          console.error('Modified URL retry also failed:', retryError.message);
-          return Promise.reject(error); // Return the original error if retry fails
-        });
-      }
-    }
-
-    // Handle rate limiting (429)
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.headers['retry-after'];
-      const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
-
-      logApiOperation('rate-limit-hit', { waitTime, retryAfter });
-
-      // Wait for the specified time then retry
-      await new Promise((resolve) => setTimeout(resolve, waitTime));
-
-      // Retry the request
-      return axiosInstance(originalRequest);
-    }
-
-    // Handle 401 Unauthorized errors with token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // Prevent infinite retry loops
-      originalRequest._retry = true;
-      logApiOperation('token-refresh-attempt');
-
-      try {
-        // Check if we have a token to refresh
-        const currentToken = localStorage.getItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-        if (!currentToken) {
-          logApiOperation('token-refresh-failed', { reason: 'No token available to refresh' });
-          // Clear auth data and redirect to login
-          authService.clearAuthData();
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
-          }
-          return Promise.reject(new Error('Authentication required - no token available'));
-        }
-
-        // Get refresh token and validate format
-        const refreshTokenValue = localStorage.getItem(API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY);
-        if (!refreshTokenValue) {
-          logApiOperation('token-refresh-failed', { reason: 'No refresh token available' });
-
-          // Set token verification failed flag
-          localStorage.setItem('token_verification_failed', 'true');
-
-          // Only clear the main token, don't redirect if we're on a public route
-          localStorage.removeItem(API_SERVICE_CONFIG.AUTH.TOKEN_KEY);
-
-          // Only redirect to login if we're not already on a public route
-          const publicRoutes = ['/login', '/signup', '/reset-password', '/'];
-          const isPublicRoute = publicRoutes.some((route) =>
-            window.location.pathname.includes(route)
-          );
-
-          if (!isPublicRoute && !window.location.pathname.includes('/login')) {
-            console.log('Redirecting to login due to missing refresh token');
-            window.location.href = '/?modal=login';
-          }
-
-          return Promise.reject(new Error('Authentication required - no refresh token available'));
-        }
-
-        // Validate refresh token format before attempting to use it
-        const tokenParts = refreshTokenValue.split('.');
-        if (tokenParts.length !== 3) {
-          logApiOperation('token-refresh-failed', { reason: 'Invalid refresh token format' });
-          authService.clearAuthData();
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
-          }
-          return Promise.reject(new Error('Invalid refresh token format'));
-        }
-
-        // Check if we're already refreshing to prevent multiple refresh calls
-        if (!isRefreshing) {
-          isRefreshing = true;
-          refreshPromise = refreshToken();
-        }
-
-        // Wait for the refresh to complete
-        const newToken = await refreshPromise;
-
-        // Reset refresh state
-        isRefreshing = false;
-        refreshPromise = null;
-
-        if (newToken) {
-          // Update Authorization header
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-
-          // Retry the original request
-          return axiosInstance(originalRequest);
-        } else {
-          // If no new token was returned, clear auth and redirect
-          authService.clearAuthData();
-          window.location.href = '/login';
-          return Promise.reject(new Error('Token refresh failed - no new token'));
-        }
-      } catch (refreshError) {
-        logApiOperation('token-refresh-failed', {
-          error: refreshError.message,
-        });
-
-        // Reset refresh state
-        isRefreshing = false;
-        refreshPromise = null;
-
-        // Clear auth data and redirect to login on refresh failure
-        authService.clearAuthData();
-
-        // Only redirect to login if not already on login page
-        const currentPath = window.location.pathname;
-        if (!currentPath.includes('/login')) {
-          window.location.href = '/login';
-        }
-
-        return Promise.reject(refreshError);
-      }
-    }
-
-    // Handle CORS errors
-    if (error.message?.includes('Network Error') || error.message?.includes('CORS')) {
-      logApiOperation('cors-error', {
-        url: error.config?.url,
-        headers: error.config?.headers,
-      });
-
-      // For debugging purposes
-      console.warn('CORS error detected for URL:', error.config?.url);
-      console.warn('Request details:', {
-        method: error.config?.method,
-        withCredentials: error.config?.withCredentials,
-        headers: error.config?.headers,
-      });
-
-      // Try to automatically enable CORS proxy if the error persists
-      const corsErrorCount = window.apiDebug?.corsErrors?.length || 0;
-      if (corsErrorCount > 3 && !localStorage.getItem('use_cors_proxy')) {
-        console.log(
-          '%c Automatically enabling CORS proxy after multiple errors ',
-          'background: #f39c12; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;'
-        );
-        localStorage.setItem('use_cors_proxy', 'true');
-
-        // Show a notification to the user
-        if (typeof window !== 'undefined' && !window.corsproxy_notification_shown) {
-          window.corsproxy_notification_shown = true;
-          alert(
-            'Network connectivity issues detected. Enabling CORS proxy to improve connectivity. Please refresh the page.'
-          );
+        try {
+          return await axios(originalConfig);
+        } catch (proxyError) {
+          console.error('Proxy request failed:', proxyError);
         }
       }
-
-      // Try using CORS proxy if enabled
-      if (shouldUseCorsProxy() && !error.config?.url?.includes('cors-anywhere')) {
-        const proxyUrl = getCorsProxyUrl(error.config.url);
-        error.config.url = proxyUrl;
-        console.log('Retrying request with CORS proxy:', proxyUrl);
-        return axiosInstance(error.config);
-      }
     }
-
     return Promise.reject(error);
   }
 );
@@ -1421,6 +1087,7 @@ export {
   del,
   get,
   getCorsProxyUrl,
+  getToken,
   logApiOperation,
   post,
   put,

@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api.adapter';
 import { demoService } from '../../services/demo.service.mjs';
+import { universeService } from '../../services/universe.service.mjs';
 import { logoutThunk, validateAndRefreshToken } from '../thunks/authThunks';
 
 const handleError = (error) => {
@@ -43,18 +44,53 @@ const isDemoSession = () => demoService.isDemoSession();
 
 // Fetch all universes
 export const fetchUniverses = createAsyncThunk(
-  'universes/fetchUniverses',
-  async (_, { rejectWithValue }) => {
+  'universe/fetchUniverses',
+  async (params = {}, { rejectWithValue }) => {
     try {
-      if (isDemoSession()) {
-        // Return demo data directly
-        return [];
+      console.log('Fetching universes with params:', params);
+      const response = await universeService.getAllUniverses();
+      console.log('Got universes response:', {
+        status: response.status,
+        data: response.data,
+        hasUniverses: !!response.data?.universes,
+        universesCount: response.data?.universes?.length || 0,
+        headers: response.headers,
+      });
+
+      // Extract and normalize the data
+      let universes = [];
+
+      // Handle our mock response from development mode
+      if (response.data && Array.isArray(response.data.universes)) {
+        console.log('Found universes array in response.data.universes');
+        universes = normalizeUniverses(response.data.universes);
+      }
+      // Handle other response formats
+      else if (Array.isArray(response.data)) {
+        console.log('Response.data is an array of universes');
+        universes = normalizeUniverses(response.data);
+      } else if (response.universes && Array.isArray(response.universes)) {
+        console.log('Found universes array in response.universes');
+        universes = normalizeUniverses(response.universes);
+      } else if (
+        response.data &&
+        response.data.data &&
+        Array.isArray(response.data.data.universes)
+      ) {
+        console.log('Found universes array in response.data.data.universes');
+        universes = normalizeUniverses(response.data.data.universes);
+      } else if (Array.isArray(response)) {
+        console.log('Response itself is an array of universes');
+        universes = normalizeUniverses(response);
+      } else {
+        console.error('Unexpected universes response format:', response);
+        return rejectWithValue('Invalid universe data format');
       }
 
-      const response = await universeService.getAllUniverses();
-      return response.data;
+      return universes;
     } catch (error) {
-      return rejectWithValue(handleError(error));
+      console.error('Error fetching universes:', error);
+      return rejectWithValue(error.message || 'Failed to fetch universes');
     }
   }
 );

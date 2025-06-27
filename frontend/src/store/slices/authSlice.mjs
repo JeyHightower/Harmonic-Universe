@@ -99,6 +99,7 @@ export const handleAuthTokens = createAsyncThunk(
       return tokens;
     } catch (error) {
       console.error('Error handling auth tokens:', error);
+      localStorage.setItem('token_verification_failed', 'true');
       dispatch(loginFailure(error.message));
       return null;
     }
@@ -109,9 +110,11 @@ export const handleAuthTokens = createAsyncThunk(
 const initialState = {
   user: null,
   token: null,
+  refreshToken: null,
   isAuthenticated: false,
-  isLoading: false,
+  loading: false,
   error: null,
+  tokenVerificationFailed: false,
   loginRedirect: '/',
   offlineMode: false,
 };
@@ -121,36 +124,49 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loginStart: (state) => {
-      state.isLoading = true;
+      state.loading = true;
       state.error = null;
+      state.tokenVerificationFailed = false;
     },
     loginSuccess: (state, action) => {
-      state.isLoading = false;
+      state.loading = false;
       state.isAuthenticated = true;
       state.user = action.payload.user;
-      state.token = action.payload.token;
+      state.token = action.payload.token || action.payload.access_token;
+      state.refreshToken = action.payload.refresh_token;
       state.error = null;
+      state.tokenVerificationFailed = false;
     },
     loginFailure: (state, action) => {
-      state.isLoading = false;
+      state.loading = false;
       state.isAuthenticated = false;
       state.user = null;
       state.token = null;
+      state.refreshToken = null;
       state.error = action.payload;
+      state.tokenVerificationFailed = true;
+    },
+    logout: (state) => {
+      state.user = null;
+      state.token = null;
+      state.refreshToken = null;
+      state.isAuthenticated = false;
+      state.loading = false;
+      state.error = null;
+      state.tokenVerificationFailed = false;
     },
     logoutSuccess: (state) => {
       console.debug('Logout success');
       state.user = null;
-      state.isLoading = false;
-      state.error = null;
       state.isAuthenticated = false;
+      state.error = null;
     },
     logoutFailure: (state, action) => {
       state.isLoading = false;
       state.error = action.payload;
     },
     updateUser: (state, action) => {
-      state.user = action.payload;
+      state.user = { ...state.user, ...action.payload };
     },
     clearError: (state) => {
       state.error = null;
@@ -175,6 +191,9 @@ const authSlice = createSlice({
     },
     setLoginRedirect: (state, action) => {
       state.loginRedirect = action.payload;
+    },
+    setTokenVerificationFailed: (state, action) => {
+      state.tokenVerificationFailed = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -262,6 +281,24 @@ const authSlice = createSlice({
         state.token = null;
         state.error = action.error.message;
       })
+      .addCase(handleAuthTokens.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.token = action.payload.token || action.payload.access_token;
+        state.refreshToken = action.payload.refresh_token;
+        state.error = null;
+        state.tokenVerificationFailed = false;
+      })
+      .addCase(handleAuthTokens.rejected, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        state.refreshToken = null;
+        state.error = action.payload;
+        state.tokenVerificationFailed = true;
+      })
       .addMatcher(
         (action) => action.type === AUTH_ACTION_TYPES.TOKEN_REFRESHED,
         (state, action) => {
@@ -300,6 +337,7 @@ export const {
   setOfflineMode,
   logout,
   setLoginRedirect,
+  setTokenVerificationFailed,
 } = authSlice.actions;
 
 // Additional action exports for compatibility
