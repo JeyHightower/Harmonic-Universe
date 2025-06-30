@@ -1,13 +1,20 @@
 from flask import jsonify, request, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, set_refresh_cookies
+from flask_cors import cross_origin
 from ...models.user import User
 from ....extensions import db
 import uuid
 
 from . import auth_bp
 
-@auth_bp.route('/demo-login/', methods=['POST'])
+@auth_bp.route('/demo-login/', methods=['POST', 'OPTIONS'])
+@cross_origin(supports_credentials=True)
 def demo_login():
+    """Login as demo user."""
+    # Handle OPTIONS requests for CORS preflight
+    if request.method == 'OPTIONS':
+        return current_app.make_default_options_response()
+
     try:
         # Use a single, persistent demo user account
         demo_email = "demo@example.com"
@@ -22,6 +29,7 @@ def demo_login():
                 username=demo_username,
                 email=demo_email
             )
+            demo_user.set_password('demo123')  # Simple password for demo
             # Save the user to the database
             db.session.add(demo_user)
             db.session.commit()

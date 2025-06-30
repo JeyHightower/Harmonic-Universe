@@ -1,13 +1,13 @@
 /**
  * @deprecated - This file is deprecated and will be removed in a future version.
  * Please use httpClient from services/http-client.mjs instead.
- * 
+ *
  * This client implementation has functionality duplicated in http-client.mjs, which is
  * the preferred implementation used throughout the services layer.
- * 
+ *
  * Example usage:
  * import { httpClient } from './services/http-client.mjs';
- * 
+ *
  * // Then use the httpClient methods
  * const getData = async () => {
  *   const response = await httpClient.get('/endpoint');
@@ -461,6 +461,8 @@ const apiClient = {
       logApiOperation("put-success", { url });
       return response;
     } catch (error) {
+
+
       logApiOperation("put-error", {
         url,
         message: error.message,

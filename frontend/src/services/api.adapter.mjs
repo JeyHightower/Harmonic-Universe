@@ -31,6 +31,7 @@ export const auth = {
   register: authService.register,
   logout: authService.logout,
   validateToken: authService.validateToken,
+  refreshToken: authService.refreshTokenIfNeeded,
   clearAuthData: authService.clearAuthData,
   isAuthenticated: authService.isAuthenticated,
   isDemoUser: authService.isDemoUser || (() => false),

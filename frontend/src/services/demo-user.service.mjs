@@ -142,7 +142,7 @@ export const isDemoSession = () => {
       // Decoding failed, continue to legacy check
       console.log('Debug - isDemoSession: JWT parsing failed, trying legacy check:', e.message);
     }
-
+ 
     // Legacy check for backward compatibility
     const isLegacyDemo =
       token.startsWith('demo-') || token.includes('demo_token_') || token.includes('demo-token-');

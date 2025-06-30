@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-import click
+
 from pathlib import Path
 from typing import Optional, Union, cast, Any, Dict, List, Tuple
 from logging.handlers import RotatingFileHandler
