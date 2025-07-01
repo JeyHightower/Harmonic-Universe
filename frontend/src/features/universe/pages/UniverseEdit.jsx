@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import Spinner from '../../../components/common/Spinner';
-import { ModalSystem } from '../../../components/modals/index.mjs';
 import apiClient from '../../../services/api';
 import { endpoints } from '../../../services/endpoints';
 import { fetchUniverses, updateUniverse } from '../../../store/thunks/universeThunks';
 import { validateDescription, validateUniverseName } from '../../../utils/validation';
 import { PhysicsPanel } from '../../physics';
 import '../styles/Universe.css';
+const ModalSystem = lazy(() => import('../../../components/modals/ModalSystem.jsx'));
 
 function UniverseEdit() {
   const navigate = useNavigate();
@@ -67,7 +67,7 @@ function UniverseEdit() {
 
   useEffect(() => {
     fetchUniverseData();
-  }, [id, fetchUniverseData]);
+  }, [id]);
 
   // Add effect to refresh data when component gains focus
   useEffect(() => {
@@ -77,10 +77,9 @@ function UniverseEdit() {
         fetchUniverseData();
       }
     };
-
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [lastFetchTime, fetchUniverseData]);
+  }, [lastFetchTime]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -262,23 +261,25 @@ function UniverseEdit() {
         </div>
       </form>
 
-      <ModalSystem
-        isOpen={showCancelModal}
-        onClose={handleCancelModalClose}
-        title="Discard Changes"
-      >
-        <div>
-          <p>You have unsaved changes. Are you sure you want to discard them?</p>
-          <div className="modal-actions">
-            <Button variant="secondary" onClick={handleCancelModalClose}>
-              Keep Editing
-            </Button>
-            <Button variant="danger" onClick={handleCancelConfirm}>
-              Discard Changes
-            </Button>
+      <Suspense fallback={<div>Loading modal...</div>}>
+        <ModalSystem
+          isOpen={showCancelModal}
+          onClose={handleCancelModalClose}
+          title="Discard Changes"
+        >
+          <div>
+            <p>You have unsaved changes. Are you sure you want to discard them?</p>
+            <div className="modal-actions">
+              <Button variant="secondary" onClick={handleCancelModalClose}>
+                Keep Editing
+              </Button>
+              <Button variant="danger" onClick={handleCancelConfirm}>
+                Discard Changes
+              </Button>
+            </div>
           </div>
-        </div>
-      </ModalSystem>
+        </ModalSystem>
+      </Suspense>
     </div>
   );
 }

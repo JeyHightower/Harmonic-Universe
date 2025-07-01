@@ -3,6 +3,7 @@
  * Handles operations related to scenes in the application
  */
 
+import apiAdapter from './api.adapter.mjs';
 import { sceneEndpoints } from './endpoints';
 import { httpClient } from './http-client';
 import { responseHandler } from './response-handler';
@@ -58,9 +59,6 @@ export const getScenesByUniverse = async (universeId) => {
 
     // First check if the universe exists
     try {
-      // Import universeService using dynamic import to avoid circular dependency
-      const { default: apiAdapter } = await import(/* @vite-ignore */ './api.adapter.mjs');
-
       console.log('scenes.service: Checking if universe exists:', validatedId);
       const universeResponse = await apiAdapter.universes.getUniverse(validatedId);
 

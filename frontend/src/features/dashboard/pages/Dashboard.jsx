@@ -14,12 +14,13 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-// Import the UniverseModal and UniverseCard from features/universe
-import { UniverseCard, UniverseModal } from '../../universe';
+// Import the UniverseCard from features/universe
+import { UniverseCard } from '../../universe';
+const UniverseModal = lazy(() => import('../../universe/modals/UniverseModal'));
 
 import { authService } from '../../../services/auth.service.mjs';
 import { demoService } from '../../../services/demo.service.mjs';
@@ -601,17 +602,19 @@ const Dashboard = () => {
           </Button>
         </div>
         {isCreateModalOpen && (
-          <UniverseModal
-            isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-            onSuccess={handleCreateSuccess}
-            mode="create"
-          />
+          <Suspense fallback={<div>Loading Universe Modal...</div>}>
+            <UniverseModal
+              isOpen={isCreateModalOpen}
+              onClose={() => setIsCreateModalOpen(false)}
+              onSuccess={handleCreateSuccess}
+              mode="create"
+            />
+          </Suspense>
         )}
       </div>
     );
   }
-// Beginning of Return for this Jsx. 
+  // Beginning of Return for this Jsx.
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
@@ -714,12 +717,14 @@ const Dashboard = () => {
   function renderModals() {
     return (
       <>
-        <UniverseModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={handleCreateSuccess}
-          mode="create"
-        />
+        <Suspense fallback={<div>Loading Universe Modal...</div>}>
+          <UniverseModal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onSuccess={handleCreateSuccess}
+            mode="create"
+          />
+        </Suspense>
 
         <UniverseModal
           isOpen={isEditModalOpen}

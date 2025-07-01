@@ -1,17 +1,17 @@
-import React, { useEffect } from 'react';
+import { Add as AddIcon } from '@mui/icons-material';
+import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
+import { lazy, Suspense, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, Button, CircularProgress, Grid } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
-import {
-  fetchUniverseNotes,
-  fetchSceneNotes,
-  fetchCharacterNotes,
-} from '../../../store/thunks/noteThunks';
 import { openModal } from '../../../store/slices/noteSlice';
-import NoteFormModal from '../modals/NoteFormModal';
-import NoteCard from './NoteCard';
+import {
+  fetchCharacterNotes,
+  fetchSceneNotes,
+  fetchUniverseNotes,
+} from '../../../store/thunks/noteThunks';
 import '../styles/NoteList.css';
+import NoteCard from './NoteCard';
+const NoteFormModal = lazy(() => import('../modals/NoteFormModal'));
 
 const NoteList = () => {
   const dispatch = useDispatch();
@@ -89,16 +89,18 @@ const NoteList = () => {
         ))}
       </Grid>
       {modalOpen && (
-        <NoteFormModal
-          isOpen={modalOpen}
-          onClose={handleCloseModal}
-          noteId={selectedNote?.id}
-          universeId={universeId}
-          sceneId={sceneId}
-          characterId={characterId}
-          type={modalType}
-          onSuccess={handleSuccess}
-        />
+        <Suspense fallback={<div>Loading...</div>}>
+          <NoteFormModal
+            isOpen={modalOpen}
+            onClose={handleCloseModal}
+            noteId={selectedNote?.id}
+            universeId={universeId}
+            sceneId={sceneId}
+            characterId={characterId}
+            type={modalType}
+            onSuccess={handleSuccess}
+          />
+        </Suspense>
       )}
     </Box>
   );

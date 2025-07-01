@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { ConfirmationModal } from '../modals/index.mjs';
 import { deleteScene } from '../../store/thunks/consolidated/scenesThunks';
 
 // Global state to prevent modal from unmounting
@@ -10,6 +9,8 @@ let savedEntityId = null;
 let savedEntityName = null;
 let currentOnCloseFn = null;
 let currentOnConfirmFn = null;
+
+const ConfirmationModal = lazy(() => import('../modals/ConfirmationModal'));
 
 const ConfirmDeleteWrapper = ({
   entityType,
@@ -171,15 +172,17 @@ const ConfirmDeleteWrapper = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <ConfirmationModal
-          title={`Delete ${displayEntityType}`}
-          message={`Are you sure you want to delete ${displayEntityName || `this ${displayEntityType}`}? This action cannot be undone. All associated data will be permanently removed.`}
-          confirmText="Delete"
-          cancelText="Cancel"
-          onConfirm={handleConfirm}
-          onClose={handleModalClose}
-          isOpen={true}
-        />
+        <Suspense fallback={<div>Loading Confirmation Modal...</div>}>
+          <ConfirmationModal
+            title={`Delete ${displayEntityType}`}
+            message={`Are you sure you want to delete ${displayEntityName || `this ${displayEntityType}`}? This action cannot be undone. All associated data will be permanently removed.`}
+            confirmText="Delete"
+            cancelText="Cancel"
+            onConfirm={handleConfirm}
+            onClose={handleModalClose}
+            isOpen={true}
+          />
+        </Suspense>
       </div>
     </div>
   );

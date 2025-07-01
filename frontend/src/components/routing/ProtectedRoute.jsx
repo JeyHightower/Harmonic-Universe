@@ -2,12 +2,9 @@ import { Suspense, useEffect, useState, useTransition } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 import { authService } from '../../services/auth.service.mjs';
+import { demoService } from '../../services/demo.service.mjs';
 import { demoLogin } from '../../store/thunks/authThunks';
 import { AUTH_CONFIG, ROUTES } from '../../utils';
-
-
-
-
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
@@ -21,7 +18,7 @@ const ProtectedRoute = ({ children }) => {
   const hasAccessToken = !!token;
   const hasRefreshToken = !!localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
   const hasStoredUser = !!localStorage.getItem(AUTH_CONFIG.USER_KEY);
-  const isDemoToken = token && (token.startsWith('demo-') || token.includes('demo'));
+  const isDemoSession = demoService.isDemoSession();
   const tokenVerificationFailed = localStorage.getItem('token_verification_failed') === 'true';
 
   console.debug('ProtectedRoute check:', {
@@ -34,14 +31,14 @@ const ProtectedRoute = ({ children }) => {
     hasStoredUser,
     hasUser: !!user,
     userId: user?.id,
-    isDemoToken,
+    isDemoSession,
     tokenVerificationFailed,
   });
 
   // Check token validity on mount and when token changes
   useEffect(() => {
     const validateToken = async () => {
-      if (token && !isDemoToken) {
+      if (token && !isDemoSession) {
         try {
           const isValid = await authService.validateToken();
           if (!isValid) {
@@ -58,15 +55,15 @@ const ProtectedRoute = ({ children }) => {
     };
 
     validateToken();
-  }, [token, isDemoToken]);
+  }, [token, isDemoSession]);
 
-  // If we have a demo token but aren't authenticated, try to auto-login as demo
+  // If we have a demo session but aren't authenticated, try to auto-login as demo
   useEffect(() => {
-    if (!isAuthenticated && !loading && isDemoToken) {
-      console.log('Demo token found but not authenticated, trying demo login');
+    if (!isAuthenticated && !loading && isDemoSession) {
+      console.log('Demo session found but not authenticated, trying demo login');
       dispatch(demoLogin());
     }
-  }, [isAuthenticated, isDemoToken, loading, dispatch]);
+  }, [isAuthenticated, isDemoSession, loading, dispatch]);
 
   // Update content with startTransition when authentication state changes
   useEffect(() => {

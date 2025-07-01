@@ -1,6 +1,6 @@
-import { Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { SceneModal } from '../features/scene/index.mjs';
+const SceneModal = lazy(() => import('../features/scene/modals/SceneModal'));
 
 // Shared loading component
 export function LoadingFallback({ message = 'Loading...' }) {

@@ -7,7 +7,7 @@ import { AUTH_CONFIG } from '../utils/config';
 import { API_SERVICE_CONFIG } from './config.mjs';
 import { demoService } from './demo.service.mjs';
 import { authEndpoints } from './endpoints.mjs';
-import { httpClient } from './http-client.mjs';
+import httpClient from './http-client.mjs';
 
 // Constants for token storage
 const TOKEN_KEY = API_SERVICE_CONFIG.AUTH.TOKEN_KEY;
@@ -274,7 +274,20 @@ class AuthService {
       }
 
       // Regular token refresh
-      const response = await this.httpClient.post(authEndpoints.refresh);
+      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await this.httpClient.post(
+        authEndpoints.refresh,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${refreshToken}`,
+          },
+        }
+      );
       return response.data;
     } catch (error) {
       console.error('Token refresh failed:', error);

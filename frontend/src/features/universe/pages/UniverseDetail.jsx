@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../components/common/Button';
@@ -8,9 +8,12 @@ import {
   fetchScenesForUniverse,
 } from '../../../store/thunks/consolidated/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
-import { SceneCard, SceneModal } from '../../scene/index.mjs';
-import { UniverseDeleteModal, UniverseModal } from '../index.mjs';
+import { SceneCard } from '../../scene/index.mjs';
+// import { UniverseDeleteModal } from '../index.mjs';
 import '../styles/Universe.css';
+const UniverseModal = lazy(() => import('../modals/UniverseModal'));
+const UniverseDeleteModal = lazy(() => import('../modals/UniverseDeleteModal.jsx'));
+const SceneModal = lazy(() => import('../../scene/modals/SceneModal.jsx'));
 
 const UniverseDetail = () => {
   const { id } = useParams();
@@ -369,13 +372,15 @@ const UniverseDetail = () => {
 
       {/* Edit Universe Modal */}
       {isEditModalOpen && currentUniverse && (
-        <UniverseModal
-          isOpen={isEditModalOpen}
-          onClose={handleEditModalClose}
-          onSuccess={handleEditSuccess}
-          universe={currentUniverse}
-          isEdit={true}
-        />
+        <Suspense fallback={<div>Loading Universe Modal...</div>}>
+          <UniverseModal
+            isOpen={isEditModalOpen}
+            onClose={handleEditModalClose}
+            onSuccess={handleEditSuccess}
+            universe={currentUniverse}
+            isEdit={true}
+          />
+        </Suspense>
       )}
 
       {/* Delete Universe Modal */}

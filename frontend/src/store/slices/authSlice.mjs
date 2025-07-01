@@ -24,42 +24,6 @@ const logAuthError = (operation, error) => {
   }
 };
 
-// Helper to create a demo user
-const createDemoUser = () => ({
-  id: 'demo-user',
-  email: 'demo@example.com',
-  username: 'Demo User',
-  role: 'user',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-});
-
-// Helper to check if a token is a demo token
-const isDemoToken = (token) => {
-  if (!token) return false;
-
-  try {
-    // First check if it's a JWT
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      // Try to decode the payload
-      const payload = JSON.parse(atob(parts[1]));
-      return (
-        payload.sub &&
-        (payload.sub.includes('demo-') ||
-          payload.sub.includes('demo_') ||
-          payload.sub === 'demo-user')
-      );
-    }
-  } catch (e) {
-    // If JWT parsing fails, check for legacy demo tokens
-    return (
-      token.startsWith('demo-') || token.includes('demo_token_') || token.includes('demo-token-')
-    );
-  }
-  return false;
-};
-
 // Helper to setup demo mode when needed
 const setupDemoMode = async () => {
   console.debug('Setting up demo mode');

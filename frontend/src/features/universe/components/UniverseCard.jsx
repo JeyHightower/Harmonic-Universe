@@ -44,7 +44,7 @@ const UniverseCard = ({ universe, isNew = false, onEdit, onDelete, onView }) => 
           <Button
             size="small"
             startIcon={<Visibility />}
-            onClick={onView}
+            onClick={() => onView(universe)}
             className="universe-card-button"
           >
             View
@@ -52,7 +52,7 @@ const UniverseCard = ({ universe, isNew = false, onEdit, onDelete, onView }) => 
           <Button
             size="small"
             startIcon={<Edit />}
-            onClick={onEdit}
+            onClick={() => onEdit(universe)}
             className="universe-card-button"
           >
             Edit
@@ -61,7 +61,7 @@ const UniverseCard = ({ universe, isNew = false, onEdit, onDelete, onView }) => 
             size="small"
             color="error"
             startIcon={<Delete />}
-            onClick={onDelete}
+            onClick={() => onDelete(universe)}
             className="universe-card-button"
           >
             Delete

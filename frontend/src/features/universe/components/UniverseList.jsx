@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import Button from '../../../components/common/Button';
 import { fetchUniverses } from '../../../store/thunks/universeThunks';
-import { UniverseDeleteModal, UniverseModal } from '../index.mjs';
 import '../styles/UniverseList.css';
 import UniverseCard from './UniverseCard';
+const UniverseModal = lazy(() => import('../modals/UniverseModal'));
+const UniverseDeleteModal = lazy(() => import('../modals/UniverseDeleteModal.jsx'));
 
 const UniverseList = () => {
   const dispatch = useDispatch();
@@ -172,12 +173,14 @@ const UniverseList = () => {
       )}
 
       {isCreateModalOpen && (
-        <UniverseModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={handleCreateSuccess}
-          isEdit={false}
-        />
+        <Suspense fallback={<div>Loading Universe Modal...</div>}>
+          <UniverseModal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onSuccess={handleCreateSuccess}
+            isEdit={false}
+          />
+        </Suspense>
       )}
 
       {universeToDelete && (

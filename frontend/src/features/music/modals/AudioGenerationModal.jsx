@@ -1,15 +1,16 @@
 import PropTypes from 'prop-types';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import Select from '../../../components/common/Select';
 import Slider from '../../../components/common/Slider';
 import Spinner from '../../../components/common/Spinner';
-import { ModalSystem } from '../../../components/modals/index.mjs';
 import { audioService } from '../../../services';
 import '../../../styles/Modal.css';
 import { initializeAudioContext } from '../../../utils/audioManager';
+
+const ModalSystem = lazy(() => import('../../../components/modals/ModalSystem'));
 
 /**
  * Modal for generating audio based on the physics of a universe and scene.
@@ -571,169 +572,171 @@ const AudioGenerationModal = ({
   };
 
   return (
-    <ModalSystem
-      title={initialData ? 'Edit Audio' : 'Generate Audio'}
-      onClose={onClose}
-      {...modalProps}
-    >
-      {error && <div className="error-message">{error}</div>}
+    <Suspense fallback={<div>Loading...</div>}>
+      <ModalSystem
+        title={initialData ? 'Edit Audio' : 'Generate Audio'}
+        onClose={onClose}
+        {...modalProps}
+      >
+        {error && <div className="error-message">{error}</div>}
 
-      <div className="form-group">
-        <label htmlFor="name">Name</label>
-        <Input
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          placeholder="Enter a name for this audio"
-          required
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="description">Description</label>
-        <Input
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleInputChange}
-          placeholder="Describe this audio (optional)"
-          multiline
-          rows={3}
-        />
-      </div>
-
-      <div className="form-row">
         <div className="form-group">
-          <label htmlFor="algorithm">Algorithm</label>
-          <Select
-            id="algorithm"
-            value={formData.algorithm}
-            onChange={handleAlgorithmChange}
-            options={[
-              { value: 'harmonic_synthesis', label: 'Harmonic Synthesis' },
-              { value: 'granular_synthesis', label: 'Granular Synthesis' },
-              { value: 'physical_modeling', label: 'Physical Modeling' },
-            ]}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="duration">Duration (seconds)</label>
+          <label htmlFor="name">Name</label>
           <Input
-            id="duration"
-            name="duration"
-            type="number"
-            min={1}
-            max={60}
-            value={formData.duration}
+            id="name"
+            name="name"
+            value={formData.name}
             onChange={handleInputChange}
+            placeholder="Enter a name for this audio"
+            required
           />
         </div>
-      </div>
 
-      <div className="form-row">
         <div className="form-group">
-          <label htmlFor="key">Key</label>
-          <Select
-            id="key"
-            name="key"
-            value={formData.key}
+          <label htmlFor="description">Description</label>
+          <Input
+            id="description"
+            name="description"
+            value={formData.description}
             onChange={handleInputChange}
-            options={[
-              { value: 'C', label: 'C' },
-              { value: 'C#', label: 'C#' },
-              { value: 'D', label: 'D' },
-              { value: 'D#', label: 'D#' },
-              { value: 'E', label: 'E' },
-              { value: 'F', label: 'F' },
-              { value: 'F#', label: 'F#' },
-              { value: 'G', label: 'G' },
-              { value: 'G#', label: 'G#' },
-              { value: 'A', label: 'A' },
-              { value: 'A#', label: 'A#' },
-              { value: 'B', label: 'B' },
-            ]}
+            placeholder="Describe this audio (optional)"
+            multiline
+            rows={3}
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="scale">Scale</label>
-          <Select
-            id="scale"
-            name="scale"
-            value={formData.scale}
-            onChange={handleInputChange}
-            options={[
-              { value: 'major', label: 'Major' },
-              { value: 'minor', label: 'Minor' },
-              { value: 'harmonic_minor', label: 'Harmonic Minor' },
-              { value: 'melodic_minor', label: 'Melodic Minor' },
-              { value: 'pentatonic', label: 'Pentatonic' },
-              { value: 'blues', label: 'Blues' },
-              { value: 'dorian', label: 'Dorian' },
-              { value: 'phrygian', label: 'Phrygian' },
-              { value: 'lydian', label: 'Lydian' },
-              { value: 'mixolydian', label: 'Mixolydian' },
-              { value: 'locrian', label: 'Locrian' },
-            ]}
-          />
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="algorithm">Algorithm</label>
+            <Select
+              id="algorithm"
+              value={formData.algorithm}
+              onChange={handleAlgorithmChange}
+              options={[
+                { value: 'harmonic_synthesis', label: 'Harmonic Synthesis' },
+                { value: 'granular_synthesis', label: 'Granular Synthesis' },
+                { value: 'physical_modeling', label: 'Physical Modeling' },
+              ]}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="duration">Duration (seconds)</label>
+            <Input
+              id="duration"
+              name="duration"
+              type="number"
+              min={1}
+              max={60}
+              value={formData.duration}
+              onChange={handleInputChange}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Render algorithm-specific parameters */}
-      {renderAlgorithmParameters()}
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="key">Key</label>
+            <Select
+              id="key"
+              name="key"
+              value={formData.key}
+              onChange={handleInputChange}
+              options={[
+                { value: 'C', label: 'C' },
+                { value: 'C#', label: 'C#' },
+                { value: 'D', label: 'D' },
+                { value: 'D#', label: 'D#' },
+                { value: 'E', label: 'E' },
+                { value: 'F', label: 'F' },
+                { value: 'F#', label: 'F#' },
+                { value: 'G', label: 'G' },
+                { value: 'G#', label: 'G#' },
+                { value: 'A', label: 'A' },
+                { value: 'A#', label: 'A#' },
+                { value: 'B', label: 'B' },
+              ]}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="scale">Scale</label>
+            <Select
+              id="scale"
+              name="scale"
+              value={formData.scale}
+              onChange={handleInputChange}
+              options={[
+                { value: 'major', label: 'Major' },
+                { value: 'minor', label: 'Minor' },
+                { value: 'harmonic_minor', label: 'Harmonic Minor' },
+                { value: 'melodic_minor', label: 'Melodic Minor' },
+                { value: 'pentatonic', label: 'Pentatonic' },
+                { value: 'blues', label: 'Blues' },
+                { value: 'dorian', label: 'Dorian' },
+                { value: 'phrygian', label: 'Phrygian' },
+                { value: 'lydian', label: 'Lydian' },
+                { value: 'mixolydian', label: 'Mixolydian' },
+                { value: 'locrian', label: 'Locrian' },
+              ]}
+            />
+          </div>
+        </div>
 
-      {/* Audio player */}
-      {audioUrl && (
-        <div className="audio-preview">
-          <h3>Preview</h3>
-          <audio
-            ref={audioPlayer}
-            src={audioUrl}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onEnded={() => setIsPlaying(false)}
-          />
-          <div className="audio-controls">
-            <Button onClick={handlePlayPause} variant="outlined" color="primary">
-              {isPlaying ? 'Pause' : 'Play'}
+        {/* Render algorithm-specific parameters */}
+        {renderAlgorithmParameters()}
+
+        {/* Audio player */}
+        {audioUrl && (
+          <div className="audio-preview">
+            <h3>Preview</h3>
+            <audio
+              ref={audioPlayer}
+              src={audioUrl}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
+            />
+            <div className="audio-controls">
+              <Button onClick={handlePlayPause} variant="outlined" color="primary">
+                {isPlaying ? 'Pause' : 'Play'}
+              </Button>
+              <Button onClick={() => window.open(audioUrl, '_blank')} variant="outlined">
+                Download
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Success message */}
+        {successMessage && <div className="success-message">{successMessage}</div>}
+
+        {/* Action buttons */}
+        <div className="modal-footer">
+          <Button onClick={onClose} variant="outlined">
+            Cancel
+          </Button>
+
+          <div className="button-group">
+            <Button
+              onClick={handleGenerate}
+              variant="outlined"
+              color="primary"
+              disabled={isGenerating || isSaving}
+            >
+              {isGenerating ? <Spinner size="small" /> : 'Generate'}
             </Button>
-            <Button onClick={() => window.open(audioUrl, '_blank')} variant="outlined">
-              Download
+
+            <Button
+              onClick={handleSave}
+              variant="contained"
+              color="primary"
+              disabled={!audioUrl || isGenerating || isSaving}
+            >
+              {isSaving ? <Spinner size="small" /> : 'Save'}
             </Button>
           </div>
         </div>
-      )}
-
-      {/* Success message */}
-      {successMessage && <div className="success-message">{successMessage}</div>}
-
-      {/* Action buttons */}
-      <div className="modal-footer">
-        <Button onClick={onClose} variant="outlined">
-          Cancel
-        </Button>
-
-        <div className="button-group">
-          <Button
-            onClick={handleGenerate}
-            variant="outlined"
-            color="primary"
-            disabled={isGenerating || isSaving}
-          >
-            {isGenerating ? <Spinner size="small" /> : 'Generate'}
-          </Button>
-
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            color="primary"
-            disabled={!audioUrl || isGenerating || isSaving}
-          >
-            {isSaving ? <Spinner size="small" /> : 'Save'}
-          </Button>
-        </div>
-      </div>
-    </ModalSystem>
+      </ModalSystem>
+    </Suspense>
   );
 };
 

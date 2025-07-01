@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { SceneModal } from '../../features/scene/index.mjs';
+const SceneModal = lazy(() => import('../../features/scene/modals/SceneModal'));
 
 /**
  * SceneEditRedirect - Handles direct URLs to /scenes/:sceneId/edit
@@ -165,15 +165,17 @@ const SceneEditRedirect = () => {
   return (
     <div>
       {showModal && scene && universeId && (
-        <SceneModal
-          isOpen={showModal}
-          onClose={handleClose}
-          onSuccess={handleEditSuccess}
-          initialData={scene}
-          universeId={universeId}
-          mode="edit"
-          sceneId={sceneId}
-        />
+        <Suspense fallback={<div>Loading Scene Modal...</div>}>
+          <SceneModal
+            isOpen={showModal}
+            onClose={handleClose}
+            onSuccess={handleEditSuccess}
+            initialData={scene}
+            universeId={universeId}
+            mode="edit"
+            sceneId={sceneId}
+          />
+        </Suspense>
       )}
     </div>
   );

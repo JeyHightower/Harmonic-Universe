@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { sceneService } from '../../../services';
+import { apiClient } from '../../../services/api.adapter.mjs';
 
 /**
  * Error handler function for API errors
@@ -68,10 +69,6 @@ export const fetchScenes = createAsyncThunk(
       // First, check if the universe exists to avoid unnecessary API calls for non-existent universes
       try {
         console.log(`[${timestamp}] REDUX-THUNK: Checking if universe ${numericUniverseId} exists`);
-
-        // Import apiClient dynamically to avoid circular imports
-        const apiServices = await import(/* @vite-ignore */ '../../../services/api.adapter.mjs');
-        const apiClient = apiServices.default;
 
         const universeResponse = await apiClient.universes.getUniverse(numericUniverseId);
         console.log(`[${timestamp}] REDUX-THUNK: Universe check response:`, universeResponse);

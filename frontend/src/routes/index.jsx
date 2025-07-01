@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import ProtectedRoute from '../components/routing/ProtectedRoute';
-import { SceneModal } from '../features/scene/index.mjs';
 import { ROUTES } from '../utils/routes';
 
 // Shared loading component
@@ -47,6 +46,7 @@ const SceneDetail = lazy(() => import('../features/scene/pages/SceneDetail'));
 const SceneEditPage = lazy(() => import('../features/scene/pages/SceneEditPage'));
 const SceneEditRedirect = lazy(() => import('../components/routing/SceneEditRedirect'));
 const PhysicsPage = lazy(() => import('../features/physics/pages/PhysicsPage'));
+const SceneModal = lazy(() => import('../features/scene/modals/SceneModal'));
 
 // Create a wrapper component for SceneModal in routes
 const SceneCreateRoute = () => {
@@ -293,7 +293,12 @@ const AppRoutes = () => {
       {routes.map((route, index) => (
         <Route key={index} path={route.path} element={route.element}>
           {route.children?.map((child, childIndex) => (
-            <Route key={`${index}-${childIndex}`} path={child.path} index={child.index} element={child.element} />
+            <Route
+              key={`${index}-${childIndex}`}
+              path={child.path}
+              index={child.index}
+              element={child.element}
+            />
           ))}
         </Route>
       ))}

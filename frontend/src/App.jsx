@@ -10,8 +10,9 @@ import { cleanupAllPortals, ensurePortalRoot } from './utils/portalUtils.mjs';
 // Import modal debugging utilities in development
 import { setupModalDebugging } from './utils/modalDebug.mjs';
 // Import the safer interaction fixes
-import { ModalManager } from './components/modals';
 import { applyEssentialFixes, setupAutoFix } from './utils/interactionFixes.mjs';
+
+const ModalManager = lazy(() => import('./components/modals/ModalManager.jsx'));
 
 // Loading component for Suspense fallback
 const LoadingPage = () => (
@@ -310,7 +311,9 @@ const App = () => {
         <Suspense fallback={<LoadingPage />}>
           <AudioProvider>
             <AppContent />
-            <ModalManager />
+            <Suspense fallback={<div>Loading modal manager...</div>}>
+              <ModalManager />
+            </Suspense>
           </AudioProvider>
         </Suspense>
       </NetworkErrorHandler>

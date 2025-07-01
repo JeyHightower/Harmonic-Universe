@@ -1,11 +1,12 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button';
-import { ModalSystem } from '../../../components/modals/index.mjs';
 import Spinner from '../../../components/common/Spinner';
-import '../../../styles/Modal.css';
 import { audioService } from '../../../services';
+import '../../../styles/Modal.css';
+
+const ModalSystem = lazy(() => import('../../../components/modals/ModalSystem'));
 
 /**
  * Modal for displaying and playing audio tracks.
@@ -170,106 +171,108 @@ const AudioDetailsModal = ({
   };
 
   return (
-    <ModalSystem {...modalProps} onClose={onClose} className="audio-details-modal">
-      <div className="modal-header">
-        <h2>{modalProps.title || (audio ? `Audio: ${audio.name}` : 'Audio Details')}</h2>
-      </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <ModalSystem {...modalProps} onClose={onClose} className="audio-details-modal">
+        <div className="modal-header">
+          <h2>{modalProps.title || (audio ? `Audio: ${audio.name}` : 'Audio Details')}</h2>
+        </div>
 
-      <div className="modal-body">
-        {loading ? (
-          <div className="loading-container">
-            <Spinner size="medium" />
-            <p>Loading audio data...</p>
-          </div>
-        ) : error ? (
-          <div className="error-message">{error}</div>
-        ) : audio ? (
-          <div className="audio-details">
-            <div className="audio-info">
-              <p>
-                <strong>Name:</strong> {audio.name}
-              </p>
-              <p>
-                <strong>Description:</strong> {audio.description || 'No description provided'}
-              </p>
-              <p>
-                <strong>Algorithm:</strong> {audio.algorithm?.replace(/_/g, ' ') || 'Unknown'}
-              </p>
-              <p>
-                <strong>Duration:</strong> {formatTime(audio.duration || 0)}
-              </p>
-              <p>
-                <strong>Key:</strong> {audio.key || 'C'}
-              </p>
-              <p>
-                <strong>Scale:</strong> {audio.scale?.replace(/_/g, ' ') || 'major'}
-              </p>
-
-              <div className="parameters-section">
-                <h3>Parameters</h3>
-                {renderParameters(audio.parameters)}
-              </div>
+        <div className="modal-body">
+          {loading ? (
+            <div className="loading-container">
+              <Spinner size="medium" />
+              <p>Loading audio data...</p>
             </div>
+          ) : error ? (
+            <div className="error-message">{error}</div>
+          ) : audio ? (
+            <div className="audio-details">
+              <div className="audio-info">
+                <p>
+                  <strong>Name:</strong> {audio.name}
+                </p>
+                <p>
+                  <strong>Description:</strong> {audio.description || 'No description provided'}
+                </p>
+                <p>
+                  <strong>Algorithm:</strong> {audio.algorithm?.replace(/_/g, ' ') || 'Unknown'}
+                </p>
+                <p>
+                  <strong>Duration:</strong> {formatTime(audio.duration || 0)}
+                </p>
+                <p>
+                  <strong>Key:</strong> {audio.key || 'C'}
+                </p>
+                <p>
+                  <strong>Scale:</strong> {audio.scale?.replace(/_/g, ' ') || 'major'}
+                </p>
 
-            <div className="audio-player">
-              <h3>Audio Player</h3>
-              <audio
-                ref={audioRef}
-                onTimeUpdate={handleTimeUpdate}
-                onDurationChange={handleDurationChange}
-                onEnded={handleEnded}
-                src={audio.audio_url}
-              />
-              <div className="player-controls">
-                <button
-                  className="play-button"
-                  onClick={handlePlayPause}
-                  aria-label={isPlaying ? 'Pause' : 'Play'}
-                >
-                  {isPlaying ? '⏸' : '▶'}
-                </button>
-                <div className="progress-container" onClick={handleProgressClick}>
-                  <div className="progress-bar">
-                    <div ref={progressRef} className="progress"></div>
-                  </div>
-                  <div className="time-display">
-                    {formatTime(currentTime)} / {formatTime(duration)}
+                <div className="parameters-section">
+                  <h3>Parameters</h3>
+                  {renderParameters(audio.parameters)}
+                </div>
+              </div>
+
+              <div className="audio-player">
+                <h3>Audio Player</h3>
+                <audio
+                  ref={audioRef}
+                  onTimeUpdate={handleTimeUpdate}
+                  onDurationChange={handleDurationChange}
+                  onEnded={handleEnded}
+                  src={audio.audio_url}
+                />
+                <div className="player-controls">
+                  <button
+                    className="play-button"
+                    onClick={handlePlayPause}
+                    aria-label={isPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isPlaying ? '⏸' : '▶'}
+                  </button>
+                  <div className="progress-container" onClick={handleProgressClick}>
+                    <div className="progress-bar">
+                      <div ref={progressRef} className="progress"></div>
+                    </div>
+                    <div className="time-display">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="error-message">Audio not found</div>
-        )}
-      </div>
-
-      <div className="modal-footer">
-        <div className="button-group">
-          <Button onClick={onClose} variant="outlined">
-            Close
-          </Button>
-
-          {audio && (
-            <>
-              <Button onClick={handleEdit} variant="outlined" color="primary">
-                Edit
-              </Button>
-              <Button onClick={handleDelete} variant="outlined" color="error">
-                Delete
-              </Button>
-              <Button
-                onClick={() => window.open(audio.audio_url, '_blank')}
-                variant="contained"
-                color="primary"
-              >
-                Download
-              </Button>
-            </>
+          ) : (
+            <div className="error-message">Audio not found</div>
           )}
         </div>
-      </div>
-    </ModalSystem>
+
+        <div className="modal-footer">
+          <div className="button-group">
+            <Button onClick={onClose} variant="outlined">
+              Close
+            </Button>
+
+            {audio && (
+              <>
+                <Button onClick={handleEdit} variant="outlined" color="primary">
+                  Edit
+                </Button>
+                <Button onClick={handleDelete} variant="outlined" color="error">
+                  Delete
+                </Button>
+                <Button
+                  onClick={() => window.open(audio.audio_url, '_blank')}
+                  variant="contained"
+                  color="primary"
+                >
+                  Download
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </ModalSystem>
+    </Suspense>
   );
 };
 
