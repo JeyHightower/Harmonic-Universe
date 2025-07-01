@@ -8,12 +8,13 @@ import {
   fetchScenesForUniverse,
 } from '../../../store/thunks/consolidated/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
-import { SceneCard } from '../../scene/index.mjs';
-// import { UniverseDeleteModal } from '../index.mjs';
+// import { SceneCard } from '../../scene/index.mjs';
 import '../styles/Universe.css';
 const UniverseModal = lazy(() => import('../modals/UniverseModal'));
 const UniverseDeleteModal = lazy(() => import('../modals/UniverseDeleteModal.jsx'));
 const SceneModal = lazy(() => import('../../scene/modals/SceneModal.jsx'));
+
+const SceneCard = lazy(() => import('../../scene/components/SceneCard.jsx'));
 
 const UniverseDetail = () => {
   const { id } = useParams();
@@ -335,13 +336,14 @@ const UniverseDetail = () => {
             ) : filteredScenes.length > 0 ? (
               <div className="scene-grid">
                 {filteredScenes.map((scene) => (
-                  <SceneCard
-                    key={scene.id}
-                    scene={scene}
-                    onEdit={handleEditScene}
-                    onDelete={handleDeleteScene}
-                    onView={handleViewScene}
-                  />
+                  <Suspense key={scene.id} fallback={<div>Loading scene card...</div>}>
+                    <SceneCard
+                      scene={scene}
+                      onEdit={handleEditScene}
+                      onDelete={handleDeleteScene}
+                      onView={handleViewScene}
+                    />
+                  </Suspense>
                 ))}
               </div>
             ) : (

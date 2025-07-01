@@ -1,33 +1,25 @@
-import PropTypes from "prop-types";
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  Suspense,
-  useRef,
-  useState,
-} from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { MODAL_TYPES } from "../constants/modalTypes";
-import { ensurePortalRoot } from "../utils/portalUtils";
+import PropTypes from 'prop-types';
+import { Suspense, createContext, useContext, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   MODAL_CONFIG,
-  getModalSizeStyles,
-  getModalTypeStyles,
   getModalAnimationStyles,
   getModalPositionStyles,
-} from "../utils/config";
-import modalRegistry from "../utils/modalRegistry";
+  getModalSizeStyles,
+  getModalTypeStyles,
+} from '../utils/config';
+import { ensurePortalRoot } from '../utils/portalUtils';
+// import modalRegistry from "../utils/modalRegistry";
 import {
-  selectModalState,
-  selectIsModalOpen,
-  selectModalType,
-  selectModalProps,
-  selectIsModalTransitioning,
-  openModal,
   closeModal,
+  openModal,
+  selectIsModalOpen,
+  selectIsModalTransitioning,
+  selectModalProps,
+  selectModalState,
+  selectModalType,
   updateModalProps,
-} from "../store/slices/modalSlice";
+} from '../store/slices/modalSlice';
 
 // Create the context
 const ModalContext = createContext();
@@ -36,7 +28,7 @@ const ModalContext = createContext();
 export const useModal = () => {
   const context = useContext(ModalContext);
   if (!context) {
-    throw new Error("useModal must be used within a ModalProvider");
+    throw new Error('useModal must be used within a ModalProvider');
   }
   return context;
 };
@@ -46,35 +38,22 @@ const ModalRenderer = ({ type, props, onClose }) => {
   const [ModalComponent, setModalComponent] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  console.log(
-    "ModalRenderer: Rendering modal of type:",
-    type,
-    "with props:",
-    props
-  );
+  console.log('ModalRenderer: Rendering modal of type:', type, 'with props:', props);
 
   useEffect(() => {
     const loadModalComponent = async () => {
-      console.log("ModalRenderer: Loading component for modal type:", type);
+      console.log('ModalRenderer: Loading component for modal type:', type);
       try {
-        const component = await modalRegistry.getModalComponent(type);
+        const { getModalComponent } = await import('../utils/modalRegistry');
+        const component = await getModalComponent(type);
         if (component) {
-          console.log(
-            "ModalRenderer: Successfully loaded component for type:",
-            type
-          );
+          console.log('ModalRenderer: Successfully loaded component for type:', type);
           setModalComponent(() => component);
         } else {
-          console.error(
-            "ModalRenderer: Component loader returned null for type:",
-            type
-          );
+          console.error('ModalRenderer: Component loader returned null for type:', type);
         }
       } catch (error) {
-        console.error(
-          `ModalRenderer: Error loading modal component for type ${type}:`,
-          error
-        );
+        console.error(`ModalRenderer: Error loading modal component for type ${type}:`, error);
       } finally {
         setLoading(false);
       }
@@ -84,7 +63,7 @@ const ModalRenderer = ({ type, props, onClose }) => {
   }, [type]);
 
   if (loading) {
-    console.log("ModalRenderer: Still loading component for type:", type);
+    console.log('ModalRenderer: Still loading component for type:', type);
     return <div>Loading modal...</div>;
   }
 
@@ -94,21 +73,21 @@ const ModalRenderer = ({ type, props, onClose }) => {
   }
 
   console.log(
-    "ModalRenderer: Rendering component for type:",
+    'ModalRenderer: Rendering component for type:',
     type,
-    "Component:",
-    ModalComponent.name || "Unknown"
+    'Component:',
+    ModalComponent.name || 'Unknown'
   );
 
   // Check if this is a SceneModal and ensure modalType is passed
   const modalProps = {
     ...props,
     // If this is a SceneModal (SCENE_FORM type), pass modalType
-    ...(type === "SCENE_FORM" && { 
-      modalType: props.modalType || "create",
+    ...(type === 'SCENE_FORM' && {
+      modalType: props.modalType || 'create',
       // For consolidated component - map to its expected prop names
-      mode: props.modalType || "create",
-      open: true
+      mode: props.modalType || 'create',
+      open: true,
     }),
   };
 
@@ -121,12 +100,8 @@ const ModalRenderer = ({ type, props, onClose }) => {
       style={{
         ...getModalSizeStyles(props.size || MODAL_CONFIG.SIZES.MEDIUM),
         ...getModalTypeStyles(type),
-        ...getModalAnimationStyles(
-          props.animation || MODAL_CONFIG.ANIMATIONS.FADE
-        ),
-        ...getModalPositionStyles(
-          props.position || MODAL_CONFIG.POSITIONS.CENTER
-        ),
+        ...getModalAnimationStyles(props.animation || MODAL_CONFIG.ANIMATIONS.FADE),
+        ...getModalPositionStyles(props.position || MODAL_CONFIG.POSITIONS.CENTER),
         ...props.style,
       }}
     />

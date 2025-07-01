@@ -6,7 +6,6 @@ import {
   selectModalProps,
   selectModalType,
 } from '../../store/slices/newModalSlice';
-import { getModalComponentSync } from '../../utils/modalRegistry.js';
 import Modal from './Modal';
 
 /**
@@ -48,14 +47,6 @@ const ModalManager = () => {
       return;
     }
 
-    // First try to get the component synchronously
-    const syncComponent = getModalComponentSync(type);
-    if (syncComponent) {
-      setModalComponent(() => syncComponent);
-      return;
-    }
-
-    // If not available synchronously, load it asynchronously
     const loadAsyncComponent = async () => {
       try {
         const { getModalComponent } = await import(
