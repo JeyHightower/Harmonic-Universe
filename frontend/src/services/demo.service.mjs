@@ -38,7 +38,8 @@ class DemoService {
     if (!userStr || !token) return false;
     try {
       const user = JSON.parse(userStr);
-      if (!user?.email?.startsWith('demo_')) return false;
+      // Check for demo@example.com (backend demo user email)
+      if (!user?.email || user.email !== 'demo@example.com') return false;
       if (isTokenExpired(token)) return false;
       return true;
     } catch (e) {
@@ -51,9 +52,19 @@ class DemoService {
    */
   async setupDemoSession() {
     try {
+      // First, check if there's an invalid token and clear it
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      if (token && token.split('.').length !== 3) {
+        console.log('Demo Service - Invalid token format detected, clearing auth data');
+        this.clearAuthData();
+      }
+
       if (this.isValidDemoSession()) {
+        console.log('Demo Service - Valid demo session already exists');
         return { success: true };
       }
+
+      console.log('Demo Service - No valid demo session, performing demo login');
       // Otherwise, perform demo login
       return await this.login();
     } catch (error) {
@@ -72,11 +83,17 @@ class DemoService {
       // Call the backend demo login endpoint with POST
       const response = await httpClient.post(authEndpoints.demoLogin);
 
+      // Log the raw response for debugging
+      console.log('DemoService login response:', response);
+
       if (!response?.user) {
         throw new Error('Invalid response from demo login endpoint');
       }
 
       const { token, refresh_token, user } = response;
+
+      // Log the token value before storing
+      console.log('DemoService storing token:', token);
 
       // Store auth data
       localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, token);

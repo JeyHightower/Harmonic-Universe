@@ -86,7 +86,6 @@ export const handleError = (error) => {
     return {
       message: 'Network error: No response received from server',
       networkError: true,
-      request: error.request,
     };
   }
 

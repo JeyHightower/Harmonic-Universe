@@ -44,8 +44,8 @@ except ImportError:
 
 # Import fixes modules
 try:
-    from fixes.mime_override import apply_all_mime_fixes
-    from fixes.render import apply_render_fixes
+    from .fixes.mime_override import apply_all_mime_fixes
+    from .fixes.render import apply_render_fixes
     FIXES_AVAILABLE = True
 except ImportError:
     print("WARNING: fixes modules not found, continuing without fixes")

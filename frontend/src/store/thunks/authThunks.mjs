@@ -90,6 +90,9 @@ export const demoLogin = createAsyncThunk(
         const response = await demoService.login();
         console.log('Thunk - Demo login successful:', response);
 
+        // Log the token value after demoService.login
+        console.log('Thunk - Demo login token:', response?.token);
+
         if (!response?.success || !response?.token || !response?.user) {
           throw new Error('Invalid response from demo login');
         }
@@ -370,12 +373,12 @@ export const refreshToken = createAsyncThunk(
       const response = await api.auth.refreshToken();
       console.debug('Token refresh response:', response);
 
-      if (response.success === false) {
-        throw new Error(response.message || 'Token refresh failed');
+      if (!response || response.success === false) {
+        throw new Error((response && response.message) || 'Token refresh failed');
       }
 
-      const newToken = response.data?.token || response.token || response.access_token;
-      const newRefreshToken = response.data?.refresh_token || response.refresh_token;
+      const newToken = response.token || response.access_token;
+      const newRefreshToken = response.refresh_token;
 
       if (newToken) {
         localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, newToken);
@@ -457,13 +460,13 @@ export const validateAndRefreshToken = createAsyncThunk(
         // Force token refresh
         const response = await api.auth.refreshToken();
 
-        if (!response.success && !response.token && !response.data?.token) {
+        if (!response || (!response.success && !response.token)) {
           throw new Error('Token refresh failed');
         }
 
         // Extract the new token
-        const newToken = response.data?.token || response.token;
-        const newRefreshToken = response.data?.refresh_token || response.refresh_token;
+        const newToken = response.token || response.access_token;
+        const newRefreshToken = response.refresh_token;
 
         if (newToken) {
           // Update token in localStorage

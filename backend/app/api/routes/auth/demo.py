@@ -2,13 +2,14 @@ from flask import jsonify, request, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, set_refresh_cookies
 from flask_cors import cross_origin
 from ...models.user import User
-from ....extensions import db
+from ....extensions import db, limiter
 import uuid
 
 from . import auth_bp
 
 @auth_bp.route('/demo-login/', methods=['POST', 'OPTIONS'])
 @cross_origin(supports_credentials=True)
+@limiter.limit("1000 per hour")  # Higher rate limit for demo login
 def demo_login():
     """Login as demo user."""
     # Handle OPTIONS requests for CORS preflight

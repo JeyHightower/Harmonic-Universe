@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import { apiClient } from '../../services/api.adapter.mjs';
 import { API_MODAL_ROUTES } from '../../utils/routes';
-import apiClient from '../../services/api';
 
 const handleError = (error) => {
   console.error('API Error:', error);

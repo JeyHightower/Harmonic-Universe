@@ -6,11 +6,14 @@ import { demoService } from '../../services/demo.service.mjs';
 import { demoLogin } from '../../store/thunks/authThunks';
 import { AUTH_CONFIG, ROUTES } from '../../utils';
 
+const DEMO_LOGIN_FAILED_KEY = 'demo_login_failed';
+
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, user, loginInProgress } = useSelector((state) => state.auth);
   const location = useLocation();
   const [isPending, startTransition] = useTransition();
   const [content, setContent] = useState(null);
+  const [demoLoginError, setDemoLoginError] = useState(false);
   const dispatch = useDispatch();
 
   // Get tokens directly from localStorage for comparison
@@ -20,6 +23,7 @@ const ProtectedRoute = ({ children }) => {
   const hasStoredUser = !!localStorage.getItem(AUTH_CONFIG.USER_KEY);
   const isDemoSession = demoService.isDemoSession();
   const tokenVerificationFailed = localStorage.getItem('token_verification_failed') === 'true';
+  const demoLoginFailed = localStorage.getItem(DEMO_LOGIN_FAILED_KEY) === 'true';
 
   console.debug('ProtectedRoute check:', {
     isAuthenticated,
@@ -33,6 +37,7 @@ const ProtectedRoute = ({ children }) => {
     userId: user?.id,
     isDemoSession,
     tokenVerificationFailed,
+    demoLoginFailed,
   });
 
   // Check token validity on mount and when token changes
@@ -59,11 +64,21 @@ const ProtectedRoute = ({ children }) => {
 
   // If we have a demo session but aren't authenticated, try to auto-login as demo
   useEffect(() => {
-    if (!isAuthenticated && !loading && isDemoSession) {
+    if (!isAuthenticated && !loading && isDemoSession && !demoLoginFailed) {
       console.log('Demo session found but not authenticated, trying demo login');
-      dispatch(demoLogin());
+      dispatch(demoLogin())
+        .unwrap()
+        .then(() => {
+          localStorage.removeItem(DEMO_LOGIN_FAILED_KEY);
+          setDemoLoginError(false);
+        })
+        .catch((err) => {
+          console.error('Demo login failed in ProtectedRoute:', err);
+          localStorage.setItem(DEMO_LOGIN_FAILED_KEY, 'true');
+          setDemoLoginError(true);
+        });
     }
-  }, [isAuthenticated, isDemoSession, loading, dispatch]);
+  }, [isAuthenticated, isDemoSession, loading, dispatch, demoLoginFailed]);
 
   // Update content with startTransition when authentication state changes
   useEffect(() => {
@@ -74,10 +89,34 @@ const ProtectedRoute = ({ children }) => {
     }
   }, [loading, isAuthenticated, children, startTransition]);
 
+  // If login is in progress, show loading spinner and block all logic
+  if (loginInProgress) {
+    return <div>Logging in...</div>;
+  }
+
   // If still loading, show loading state
   if (loading) {
     console.debug('Auth state is loading, showing loading state');
     return <div>Loading...</div>;
+  }
+
+  // If demo login failed, show error and require user action to retry
+  if (demoLoginFailed || demoLoginError) {
+    return (
+      <div style={{ padding: 32, textAlign: 'center', color: 'red' }}>
+        <h2>Demo Login Failed</h2>
+        <p>Unable to log in as demo user. This may be due to rate limiting or a network error.</p>
+        <button
+          onClick={() => {
+            localStorage.removeItem(DEMO_LOGIN_FAILED_KEY);
+            setDemoLoginError(false);
+            window.location.reload();
+          }}
+        >
+          Retry Demo Login
+        </button>
+      </div>
+    );
   }
 
   // If token verification failed, redirect to login

@@ -1,27 +1,26 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import apiClient from '../../services/api';
+import { apiClient } from '../../services/api.adapter.mjs';
+import { demoService } from '../../services/demo.service.mjs';
 import { requestWithRetry } from '../../utils/apiUtils';
-import { IS_PRODUCTION, AUTH_CONFIG } from '../../utils/config.mjs';
+import { IS_PRODUCTION } from '../../utils/config.mjs';
 
 // Storage key for character cache
 const CHARACTER_CACHE_KEY = 'harmonic_universe_character_cache';
 
 // Helper function for error handling
 const handleError = (error) => {
-  console.error("API Error:", error);
+  console.error('API Error:', error);
   return {
-    message:
-      error.response?.data?.message || error.message || "An error occurred",
+    message: error.response?.data?.message || error.message || 'An error occurred',
     status: error.response?.status,
     data: error.response?.data,
   };
 };
 
-// Helper function to check if we're using a demo token in production
+// Helper function to check if we're using a demo session in production
 const isDemoMode = () => {
   if (!IS_PRODUCTION) return false;
-  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-  return token && token.startsWith('demo-');
+  return demoService.isValidDemoSession();
 };
 
 // Helper to save characters to local storage cache
@@ -36,7 +35,7 @@ const saveCharactersToCache = (universeId, characters) => {
     // Update cache for this universe
     cache[universeId] = {
       characters,
-      timestamp: Date.now() // Add timestamp for potential cache expiration
+      timestamp: Date.now(), // Add timestamp for potential cache expiration
     };
 
     // Save updated cache
@@ -58,8 +57,14 @@ const getCharactersFromCache = (universeId) => {
     const universeCache = cache[universeId];
 
     // Check if cache exists and is not too old (24 hours)
-    if (universeCache && universeCache.characters && (Date.now() - universeCache.timestamp < 24 * 60 * 60 * 1000)) {
-      console.log(`Using cached ${universeCache.characters.length} characters for universe ${universeId}`);
+    if (
+      universeCache &&
+      universeCache.characters &&
+      Date.now() - universeCache.timestamp < 24 * 60 * 60 * 1000
+    ) {
+      console.log(
+        `Using cached ${universeCache.characters.length} characters for universe ${universeId}`
+      );
       return universeCache.characters;
     }
 
@@ -110,7 +115,7 @@ export const fetchCharacters = createAsyncThunk(
             method: 'get',
             url: `${apiClient.defaults.baseURL}/api/characters/scene/${sceneId}`,
             headers: apiClient.defaults.headers,
-            withCredentials: true
+            withCredentials: true,
           });
           return response.data.characters;
         } catch (retryError) {
@@ -151,7 +156,12 @@ export const fetchCharactersByUniverse = createAsyncThunk(
       }
 
       // Validate universeId before making any API requests
-      if (!universeId || universeId === undefined || universeId === 'undefined' || universeId === 'null') {
+      if (
+        !universeId ||
+        universeId === undefined ||
+        universeId === 'undefined' ||
+        universeId === 'null'
+      ) {
         console.error(`Redux: Invalid universe ID for fetching characters: ${universeId}`);
         // In production, return empty array instead of failing
         if (IS_PRODUCTION) {
@@ -161,9 +171,7 @@ export const fetchCharactersByUniverse = createAsyncThunk(
       }
 
       // Ensure universeId is a number
-      const parsedId = typeof universeId === 'string'
-        ? parseInt(universeId, 10)
-        : universeId;
+      const parsedId = typeof universeId === 'string' ? parseInt(universeId, 10) : universeId;
 
       if (isNaN(parsedId) || parsedId <= 0) {
         console.error(`Redux: Invalid parsed universe ID: ${parsedId}`);
@@ -196,22 +204,22 @@ export const fetchCharactersByUniverse = createAsyncThunk(
     } catch (error) {
       // If we get rate limited, try with retry logic
       if (error.response?.status === 429) {
-        console.log('Rate limited when fetching characters by universe, trying with retry logic...');
+        console.log(
+          'Rate limited when fetching characters by universe, trying with retry logic...'
+        );
         try {
           // Ensure universeId is properly parsed here too
-          const parsedId = typeof universeId === 'string'
-            ? parseInt(universeId, 10)
-            : universeId;
-            
+          const parsedId = typeof universeId === 'string' ? parseInt(universeId, 10) : universeId;
+
           // Use the same endpoint format as our API client - simple and direct
           const url = `${apiClient.defaults.baseURL}/api/universes/${parsedId}/characters`;
-          console.log("Retry request URL:", url);
+          console.log('Retry request URL:', url);
 
           const response = await requestWithRetry({
             method: 'get',
             url: url,
             headers: apiClient.defaults.headers,
-            withCredentials: true
+            withCredentials: true,
           });
 
           let characters = [];
@@ -244,7 +252,8 @@ export const fetchCharactersByUniverse = createAsyncThunk(
           return rejectWithValue(handleError(retryError));
         }
       }
-      const errorMessage = error.response?.data?.message || `Error fetching characters for universe ${universeId}`;
+      const errorMessage =
+        error.response?.data?.message || `Error fetching characters for universe ${universeId}`;
       console.error(errorMessage, error);
 
       // Try cache as fallback
@@ -277,7 +286,7 @@ export const fetchCharacter = createAsyncThunk(
           name: 'Demo Character',
           description: 'This is a demo character',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
       }
 
@@ -292,7 +301,7 @@ export const fetchCharacter = createAsyncThunk(
             method: 'get',
             url: `${apiClient.defaults.baseURL}/api/characters/${characterId}`,
             headers: apiClient.defaults.headers,
-            withCredentials: true
+            withCredentials: true,
           });
           return response.data.character;
         } catch (retryError) {
@@ -304,7 +313,7 @@ export const fetchCharacter = createAsyncThunk(
               name: 'Mock Character',
               description: 'This character could not be loaded',
               created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             };
           }
           return rejectWithValue(handleError(retryError));
@@ -319,7 +328,7 @@ export const fetchCharacter = createAsyncThunk(
           name: 'Mock Character',
           description: 'This character could not be loaded',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
       }
       return rejectWithValue(handleError(error));
@@ -339,13 +348,14 @@ export const createCharacter = createAsyncThunk(
           id: 'demo-char-' + Math.random().toString(36).substring(2, 10),
           ...characterData,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
 
         // Update cache with the new character
         if (characterData.universe_id) {
           const state = getState();
-          const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
+          const existingCharacters =
+            state.characters.universeCharacters[characterData.universe_id] || [];
           saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
         }
 
@@ -363,7 +373,8 @@ export const createCharacter = createAsyncThunk(
       // Update cache with the new character
       if (characterData.universe_id) {
         const state = getState();
-        const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
+        const existingCharacters =
+          state.characters.universeCharacters[characterData.universe_id] || [];
         saveCharactersToCache(characterData.universe_id, [...existingCharacters, newCharacter]);
       }
 
@@ -383,7 +394,7 @@ export const createCharacter = createAsyncThunk(
             url: `${apiClient.defaults.baseURL}/api/characters`,
             data: characterData,
             headers: apiClient.defaults.headers,
-            withCredentials: true
+            withCredentials: true,
           });
 
           const newCharacter = response.data.character;
@@ -391,7 +402,8 @@ export const createCharacter = createAsyncThunk(
           // Update cache
           if (characterData.universe_id) {
             const state = getState();
-            const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
+            const existingCharacters =
+              state.characters.universeCharacters[characterData.universe_id] || [];
             saveCharactersToCache(characterData.universe_id, [...existingCharacters, newCharacter]);
           }
 
@@ -409,14 +421,18 @@ export const createCharacter = createAsyncThunk(
               id: 'mock-char-' + Math.random().toString(36).substring(2, 10),
               ...characterData,
               created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             };
 
             // Update cache
             if (characterData.universe_id) {
               const state = getState();
-              const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-              saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
+              const existingCharacters =
+                state.characters.universeCharacters[characterData.universe_id] || [];
+              saveCharactersToCache(characterData.universe_id, [
+                ...existingCharacters,
+                mockCharacter,
+              ]);
             }
 
             // Clear cache for this universe to force refresh
@@ -437,13 +453,14 @@ export const createCharacter = createAsyncThunk(
           id: 'mock-char-' + Math.random().toString(36).substring(2, 10),
           ...characterData,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
 
         // Update cache
         if (characterData.universe_id) {
           const state = getState();
-          const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
+          const existingCharacters =
+            state.characters.universeCharacters[characterData.universe_id] || [];
           saveCharactersToCache(characterData.universe_id, [...existingCharacters, mockCharacter]);
         }
 
@@ -470,14 +487,15 @@ export const updateCharacter = createAsyncThunk(
         const updatedCharacter = {
           id: characterId,
           ...characterData,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
 
         // Update character in cache
         if (characterData.universe_id) {
           const state = getState();
-          const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-          const updatedCharacters = existingCharacters.map(char =>
+          const existingCharacters =
+            state.characters.universeCharacters[characterData.universe_id] || [];
+          const updatedCharacters = existingCharacters.map((char) =>
             char.id === characterId ? updatedCharacter : char
           );
           saveCharactersToCache(characterData.universe_id, updatedCharacters);
@@ -497,8 +515,9 @@ export const updateCharacter = createAsyncThunk(
       // Update character in cache
       if (characterData.universe_id) {
         const state = getState();
-        const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-        const updatedCharacters = existingCharacters.map(char =>
+        const existingCharacters =
+          state.characters.universeCharacters[characterData.universe_id] || [];
+        const updatedCharacters = existingCharacters.map((char) =>
           char.id === characterId ? updatedCharacter : char
         );
         saveCharactersToCache(characterData.universe_id, updatedCharacters);
@@ -520,7 +539,7 @@ export const updateCharacter = createAsyncThunk(
             url: `${apiClient.defaults.baseURL}/api/characters/${characterId}`,
             data: characterData,
             headers: apiClient.defaults.headers,
-            withCredentials: true
+            withCredentials: true,
           });
 
           const updatedCharacter = response.data.character;
@@ -528,8 +547,9 @@ export const updateCharacter = createAsyncThunk(
           // Update cache
           if (characterData.universe_id) {
             const state = getState();
-            const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-            const updatedCharacters = existingCharacters.map(char =>
+            const existingCharacters =
+              state.characters.universeCharacters[characterData.universe_id] || [];
+            const updatedCharacters = existingCharacters.map((char) =>
               char.id === characterId ? updatedCharacter : char
             );
             saveCharactersToCache(characterData.universe_id, updatedCharacters);
@@ -548,14 +568,15 @@ export const updateCharacter = createAsyncThunk(
             const updatedCharacter = {
               id: characterId,
               ...characterData,
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             };
 
             // Update cache
             if (characterData.universe_id) {
               const state = getState();
-              const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-              const updatedCharacters = existingCharacters.map(char =>
+              const existingCharacters =
+                state.characters.universeCharacters[characterData.universe_id] || [];
+              const updatedCharacters = existingCharacters.map((char) =>
                 char.id === characterId ? updatedCharacter : char
               );
               saveCharactersToCache(characterData.universe_id, updatedCharacters);
@@ -578,14 +599,15 @@ export const updateCharacter = createAsyncThunk(
         const updatedCharacter = {
           id: characterId,
           ...characterData,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         };
 
         // Update cache
         if (characterData.universe_id) {
           const state = getState();
-          const existingCharacters = state.characters.universeCharacters[characterData.universe_id] || [];
-          const updatedCharacters = existingCharacters.map(char =>
+          const existingCharacters =
+            state.characters.universeCharacters[characterData.universe_id] || [];
+          const updatedCharacters = existingCharacters.map((char) =>
             char.id === characterId ? updatedCharacter : char
           );
           saveCharactersToCache(characterData.universe_id, updatedCharacters);
@@ -615,10 +637,10 @@ export const deleteCharacter = createAsyncThunk(
         // Update character caches
         const state = getState();
         // Need to update all universe caches that might contain this character
-        Object.keys(state.characters.universeCharacters).forEach(universeId => {
+        Object.keys(state.characters.universeCharacters).forEach((universeId) => {
           const existingCharacters = state.characters.universeCharacters[universeId] || [];
-          if (existingCharacters.some(char => char.id === characterId)) {
-            const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
+          if (existingCharacters.some((char) => char.id === characterId)) {
+            const filteredCharacters = existingCharacters.filter((char) => char.id !== characterId);
             saveCharactersToCache(universeId, filteredCharacters);
           }
         });
@@ -631,10 +653,10 @@ export const deleteCharacter = createAsyncThunk(
       // Update character caches
       const state = getState();
       // Need to update all universe caches that might contain this character
-      Object.keys(state.characters.universeCharacters).forEach(universeId => {
+      Object.keys(state.characters.universeCharacters).forEach((universeId) => {
         const existingCharacters = state.characters.universeCharacters[universeId] || [];
-        if (existingCharacters.some(char => char.id === characterId)) {
-          const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
+        if (existingCharacters.some((char) => char.id === characterId)) {
+          const filteredCharacters = existingCharacters.filter((char) => char.id !== characterId);
           saveCharactersToCache(universeId, filteredCharacters);
         }
       });
@@ -649,15 +671,17 @@ export const deleteCharacter = createAsyncThunk(
             method: 'delete',
             url: `${apiClient.defaults.baseURL}/api/characters/${characterId}`,
             headers: apiClient.defaults.headers,
-            withCredentials: true
+            withCredentials: true,
           });
 
           // Update character caches
           const state = getState();
-          Object.keys(state.characters.universeCharacters).forEach(universeId => {
+          Object.keys(state.characters.universeCharacters).forEach((universeId) => {
             const existingCharacters = state.characters.universeCharacters[universeId] || [];
-            if (existingCharacters.some(char => char.id === characterId)) {
-              const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
+            if (existingCharacters.some((char) => char.id === characterId)) {
+              const filteredCharacters = existingCharacters.filter(
+                (char) => char.id !== characterId
+              );
               saveCharactersToCache(universeId, filteredCharacters);
             }
           });
@@ -666,14 +690,18 @@ export const deleteCharacter = createAsyncThunk(
         } catch (retryError) {
           // In production, return characterId (success) instead of failing
           if (IS_PRODUCTION) {
-            console.log('Production mode: Simulating successful character deletion after retry failure');
+            console.log(
+              'Production mode: Simulating successful character deletion after retry failure'
+            );
 
             // Update character caches despite error
             const state = getState();
-            Object.keys(state.characters.universeCharacters).forEach(universeId => {
+            Object.keys(state.characters.universeCharacters).forEach((universeId) => {
               const existingCharacters = state.characters.universeCharacters[universeId] || [];
-              if (existingCharacters.some(char => char.id === characterId)) {
-                const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
+              if (existingCharacters.some((char) => char.id === characterId)) {
+                const filteredCharacters = existingCharacters.filter(
+                  (char) => char.id !== characterId
+                );
                 saveCharactersToCache(universeId, filteredCharacters);
               }
             });
@@ -690,10 +718,10 @@ export const deleteCharacter = createAsyncThunk(
 
         // Update character caches despite error
         const state = getState();
-        Object.keys(state.characters.universeCharacters).forEach(universeId => {
+        Object.keys(state.characters.universeCharacters).forEach((universeId) => {
           const existingCharacters = state.characters.universeCharacters[universeId] || [];
-          if (existingCharacters.some(char => char.id === characterId)) {
-            const filteredCharacters = existingCharacters.filter(char => char.id !== characterId);
+          if (existingCharacters.some((char) => char.id === characterId)) {
+            const filteredCharacters = existingCharacters.filter((char) => char.id !== characterId);
             saveCharactersToCache(universeId, filteredCharacters);
           }
         });
@@ -703,4 +731,4 @@ export const deleteCharacter = createAsyncThunk(
       return rejectWithValue(handleError(error));
     }
   }
-); 
+);

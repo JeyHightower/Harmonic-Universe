@@ -1,7 +1,8 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import apiClient from '../../services/api';
+import { apiClient } from '../../services/api.adapter.mjs';
+import { demoService } from '../../services/demo.service.mjs';
 import { requestWithRetry } from '../../utils/apiUtils';
-import { AUTH_CONFIG, IS_PRODUCTION } from '../../utils/config';
+import { IS_PRODUCTION } from '../../utils/config';
 
 // Storage key for character cache
 const CHARACTER_CACHE_KEY = 'harmonic_universe_character_cache';
@@ -16,11 +17,10 @@ const handleError = (error) => {
   };
 };
 
-// Helper function to check if we're using a demo token in production
+// Helper function to check if we're using a demo session in production
 const isDemoMode = () => {
   if (!IS_PRODUCTION) return false;
-  const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-  return token && token.startsWith('demo-');
+  return demoService.isValidDemoSession();
 };
 
 // Helper to save characters to local storage cache

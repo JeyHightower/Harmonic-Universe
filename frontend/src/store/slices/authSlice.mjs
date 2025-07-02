@@ -81,6 +81,7 @@ const initialState = {
   tokenVerificationFailed: false,
   loginRedirect: '/',
   offlineMode: false,
+  loginInProgress: false,
 };
 
 const authSlice = createSlice({
@@ -91,6 +92,7 @@ const authSlice = createSlice({
       state.loading = true;
       state.error = null;
       state.tokenVerificationFailed = false;
+      state.loginInProgress = true;
     },
     loginSuccess: (state, action) => {
       state.loading = false;
@@ -100,6 +102,7 @@ const authSlice = createSlice({
       state.refreshToken = action.payload.refresh_token;
       state.error = null;
       state.tokenVerificationFailed = false;
+      state.loginInProgress = false;
     },
     loginFailure: (state, action) => {
       state.loading = false;
@@ -109,15 +112,19 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.error = action.payload;
       state.tokenVerificationFailed = true;
+      state.loginInProgress = false;
     },
     logout: (state) => {
+      // Clean up demo session if needed
+      if (demoService.isDemoSession()) {
+        demoService.cleanup();
+      }
+      state.isAuthenticated = false;
       state.user = null;
       state.token = null;
-      state.refreshToken = null;
-      state.isAuthenticated = false;
-      state.loading = false;
       state.error = null;
-      state.tokenVerificationFailed = false;
+      state.isLoading = false;
+      state.loginInProgress = false;
     },
     logoutSuccess: (state) => {
       console.debug('Logout success');
@@ -140,18 +147,6 @@ const authSlice = createSlice({
     },
     setOfflineMode: (state, action) => {
       state.offlineMode = action.payload;
-    },
-    logout: (state) => {
-      // Clean up demo session if needed
-      if (demoService.isDemoSession()) {
-        demoService.cleanup();
-      }
-
-      state.isAuthenticated = false;
-      state.user = null;
-      state.token = null;
-      state.error = null;
-      state.isLoading = false;
     },
     setLoginRedirect: (state, action) => {
       state.loginRedirect = action.payload;

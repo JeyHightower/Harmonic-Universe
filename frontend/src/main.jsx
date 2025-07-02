@@ -7,6 +7,7 @@ import store, { persistor } from './store/store.mjs';
 // CSS imports in correct order to prevent conflicts
 import 'antd/dist/reset.css'; // Import Ant Design styles first
 import { startTransition, StrictMode } from 'react';
+import httpClient from './services/http-client.mjs';
 import { resetModalState } from './store/slices/newModalSlice';
 import './styles/App.css'; // Last: App-specific styles
 import './styles/buttons.css'; // Sixth: Button styles
@@ -19,10 +20,13 @@ import './styles/variables.css'; // Second: Define CSS variables
 import { AUTH_CONFIG, ensurePortalRoot } from './utils';
 import { ROUTER_FUTURE_FLAGS } from './utils/ensure-router-provider.mjs';
 import {
-    applyModalFixes,
-    fixModalFormElements,
-    forceModalInteractivity,
+  applyModalFixes,
+  fixModalFormElements,
+  forceModalInteractivity,
 } from './utils/portalUtils';
+
+// Import test auth flow for debugging
+import './test-auth-flow.js';
 
 // Ensure modal system is properly initialized
 const initModalSystem = () => {
@@ -137,18 +141,24 @@ const router = createBrowserRouter(
   [
     {
       path: '*',
-      element: <App />
+      element: <App />,
     },
   ],
   {
     // Apply future flags at the router level to prevent warnings
-    future: ROUTER_FUTURE_FLAGS
+    future: ROUTER_FUTURE_FLAGS,
   }
 );
 
 // Logs React Router configuration in development mode
 if (isDevelopment) {
   console.log('React Router configuration:', router.routes[0].future);
+}
+
+// Set Authorization header from localStorage token on app startup
+const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+if (token && httpClient?.defaults?.headers?.common) {
+  httpClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
 // Render application with improved error handling
@@ -165,10 +175,7 @@ const renderApp = () => {
         <StrictMode>
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
-              <RouterProvider
-                router={router}
-                future={ROUTER_FUTURE_FLAGS}
-              />
+              <RouterProvider router={router} future={ROUTER_FUTURE_FLAGS} />
             </PersistGate>
           </Provider>
         </StrictMode>

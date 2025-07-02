@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import apiClient from '../../../services/api';
+import { apiClient } from '../../../services/api.adapter.mjs';
 import { addLocallyCreatedScene } from '../../slices/scenesSlice';
 
 /**

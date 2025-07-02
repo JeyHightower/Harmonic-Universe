@@ -283,136 +283,45 @@ def get_refresh_token_from_request():
 @auth_bp.route('/refresh', methods=['POST'])
 @auth_bp.route('/refresh/', methods=['POST'])
 @cross_origin(supports_credentials=True)
+@jwt_required(refresh=True)
 def refresh():
     """
-    Endpoint to refresh the access token using a valid refresh token.
-
-    Returns:
-        Response: A JSON response with the new access token or an error message.
+    Standard JWT refresh endpoint. Expects refresh token in Authorization header.
+    Returns a new access token (and optionally a new refresh token).
     """
     try:
-        refresh_token = get_refresh_token_from_request()
-
-        if not refresh_token:
-            logger.warning("Refresh token missing from request")
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        if not user:
+            current_app.logger.warning(f"Refresh token used for non-existent user: {current_user_id}")
             return jsonify({
-                'success': False,
-                'message': 'Refresh token is required'
-            }), 400
+                'message': 'User not found',
+                'error': 'user_not_found'
+            }), 401
 
-        # First decode without verification to check claims and expiration
-        try:
-            unverified_payload = decode_token_without_verification(refresh_token)
+        # Create new access token
+        new_access_token = create_access_token(
+            identity=current_user_id,
+            expires_delta=timedelta(hours=1)
+        )
 
-            # Check if it's a refresh token
-            token_type = unverified_payload.get('type')
-            if token_type != 'refresh':
-                logger.warning(f"Invalid token type for refresh: {token_type}")
-                return jsonify({
-                    'success': False,
-                    'message': 'Invalid token type'
-                }), 401
+        current_app.logger.info(f"Token refreshed for user: {current_user_id}")
 
-            # Check if token is expired
-            if is_token_expired(refresh_token):
-                logger.warning("Refresh token has expired")
-                return jsonify({
-                    'success': False,
-                    'message': 'Refresh token has expired'
-                }), 401
-
-            # Get refresh token secret key
-            refresh_secret_key = get_jwt_refresh_secret_key()
-
-            # Verify token signature
-            if not verify_token_signature(refresh_token, refresh_secret_key):
-                logger.warning("Refresh token signature verification failed")
-                return jsonify({
-                    'success': False,
-                    'message': 'Invalid refresh token'
-                }), 401
-
-            # Get fully verified payload
-            payload = decode_token(refresh_token, refresh_secret_key)
-
-            # Create new access token
-            user_id = payload.get('sub')
-
-            if not user_id:
-                logger.error("User ID missing in refresh token payload")
-                return jsonify({
-                    'success': False,
-                    'message': 'Invalid token payload'
-                }), 401
-
-            # Create new access token
-            access_token_payload = {
-                'sub': user_id,
-                'type': 'access',
-                'iat': datetime.now(timezone.utc)
-            }
-
-            access_secret_key = get_jwt_secret_key()
-            access_token = create_token(
-                payload=access_token_payload,
-                secret_key=access_secret_key,
-                expires_delta=timedelta(minutes=30)
-            )
-
-            # Create new refresh token for token rotation security
-            refresh_token_payload = {
-                'sub': user_id,
-                'type': 'refresh',
-                'iat': datetime.now(timezone.utc)
-            }
-
-            refresh_secret_key = get_jwt_refresh_secret_key()
-            new_refresh_token = create_token(
-                payload=refresh_token_payload,
-                secret_key=refresh_secret_key,
-                expires_delta=timedelta(days=7)  # 7 days for refresh token
-            )
-
-            # Create response
-            response = make_response(jsonify({
-                'success': True,
-                'message': 'Token refreshed successfully',
-                'access_token': access_token,
-                'token': access_token,  # Also include 'token' for frontend compatibility
-                'refresh_token': new_refresh_token
-            }))
-
-            # Set cookies for cookie-based auth
-            max_age = 30 * 60  # 30 minutes in seconds
-            response.set_cookie(
-                'access_token',
-                access_token,
-                max_age=max_age,
-                httponly=True,
-                secure=current_app.config.get('JWT_COOKIE_SECURE', False),
-                samesite=current_app.config.get('JWT_COOKIE_SAMESITE', 'Lax')
-            )
-
-            return response
-        except Exception as e:
-            logger.error(f"Error processing refresh token: {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': 'Error processing refresh token'
-            }), 400
-
-    except jwt.InvalidTokenError as e:
-        logger.error(f"Invalid refresh token: {str(e)}")
         return jsonify({
-            'success': False,
-            'message': 'Invalid refresh token'
-        }), 401
+            'access_token': new_access_token,
+            'token_type': 'Bearer',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email
+            }
+        }), 200
     except Exception as e:
-        logger.error(f"Error refreshing token: {str(e)}")
+        current_app.logger.error(f"Error refreshing token: {str(e)}")
         return jsonify({
-            'success': False,
-            'message': 'An error occurred while refreshing the token'
-        }), 500
+            'message': 'Token refresh failed',
+            'error': str(e)
+        }), 401
 
 @auth_bp.route('/me/', methods=['GET'])
 @jwt_required(optional=True)  # Make JWT optional so we can handle errors better

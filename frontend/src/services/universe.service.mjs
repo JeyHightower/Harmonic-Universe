@@ -3,11 +3,11 @@
  * Handles operations related to universes in the application
  */
 
+import { AUTH_CONFIG } from '../utils/config.mjs';
 import { demoService } from './demo.service.mjs';
 import { universeEndpoints } from './endpoints.mjs';
 import { httpClient } from './http-client.mjs';
 import { responseHandler } from './response-handler.mjs';
-
 
 /**
  * Get all universes by user Id
@@ -40,10 +40,6 @@ export const getAllUniverses = async (id) => {
         return responseHandler.handleError(new Error('Invalid response format from server'));
       }
 
-
-
-
-
       // For demo mode, if no universes property, create empty array
       if (!response.universes) {
         console.log('No universes property in demo response, creating empty array');
@@ -72,7 +68,9 @@ export const getAllUniverses = async (id) => {
       // Check if it's a database error
       if (response.data && response.data.error && response.data.error.includes('psycopg2')) {
         console.error('Database error detected:', response.data.error);
-        return responseHandler.handleError(new Error('Database connection error. Please try again later.'));
+        return responseHandler.handleError(
+          new Error('Database connection error. Please try again later.')
+        );
       }
 
       return responseHandler.handleError(new Error(response.message || 'Server error occurred'));
@@ -83,10 +81,6 @@ export const getAllUniverses = async (id) => {
       console.error('Invalid response format from universe loading:', response);
       return responseHandler.handleError(new Error('Invalid response format from server'));
     }
-
-
-
-
 
     // Handle case where backend returns error in response body
     if (response.error) {
@@ -118,34 +112,48 @@ export const getAllUniverses = async (id) => {
       console.error('HTTP Error Response:', {
         status,
         data: errorData,
-        message: error.message
+        message: error.message,
       });
 
       // Handle specific status codes
       switch (status) {
         case 500:
           if (errorData && errorData.error && errorData.error.includes('psycopg2')) {
-            return responseHandler.handleError(new Error('Database connection error. Please check your database configuration.'));
+            return responseHandler.handleError(
+              new Error('Database connection error. Please check your database configuration.')
+            );
           }
-          return responseHandler.handleError(new Error('Internal server error. Please try again later.'));
+          return responseHandler.handleError(
+            new Error('Internal server error. Please try again later.')
+          );
 
         case 401:
-          return responseHandler.handleError(new Error('Authentication required. Please log in again.'));
+          return responseHandler.handleError(
+            new Error('Authentication required. Please log in again.')
+          );
 
         case 403:
-          return responseHandler.handleError(new Error('Access denied. You do not have permission to view universes.'));
+          return responseHandler.handleError(
+            new Error('Access denied. You do not have permission to view universes.')
+          );
 
         case 404:
-          return responseHandler.handleError(new Error('Universes endpoint not found. Please check your API configuration.'));
+          return responseHandler.handleError(
+            new Error('Universes endpoint not found. Please check your API configuration.')
+          );
 
         default:
-          return responseHandler.handleError(new Error(`Server error (${status}): ${errorData?.message || error.message}`));
+          return responseHandler.handleError(
+            new Error(`Server error (${status}): ${errorData?.message || error.message}`)
+          );
       }
     }
 
     // Handle network errors
     if (error.code === 'ERR_NETWORK') {
-      return responseHandler.handleError(new Error('Network error. Please check your internet connection and server status.'));
+      return responseHandler.handleError(
+        new Error('Network error. Please check your internet connection and server status.')
+      );
     }
 
     return responseHandler.handleError(error);
@@ -167,7 +175,7 @@ export const getUniverseById = async (id) => {
     console.log(`Fetching universe with ID: ${id}`);
 
     // Get the auth token from localStorage
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
 
     // Make the request with explicit authorization header
     const response = await httpClient.get(universeEndpoints.get(id), {

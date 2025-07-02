@@ -6,11 +6,21 @@ from ..models.note import Note
 from ...extensions import db
 from sqlalchemy import text
 import traceback
+from functools import wraps
 
 # Import the route to reuse logic
 from .characters import get_characters_by_universe as get_characters_by_universe_func
 
 universes_bp = Blueprint('universes', __name__)
+
+def jwt_required_except_options(f):
+    """Decorator that applies JWT requirement except for OPTIONS requests"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
+        return jwt_required()(f)(*args, **kwargs)
+    return decorated_function
 
 @universes_bp.route('/', methods=['GET'])
 @jwt_required()
@@ -85,10 +95,14 @@ def get_universes():
             'error': str(e)
         }), 500
 
-@universes_bp.route('/<int:universe_id>', methods=['GET'])
-@universes_bp.route('/<int:universe_id>/', methods=['GET'])
-@jwt_required()
+@universes_bp.route('/<int:universe_id>', methods=['GET', 'OPTIONS'])
+@universes_bp.route('/<int:universe_id>/', methods=['GET', 'OPTIONS'])
+@jwt_required_except_options
 def get_universe(universe_id):
+    # Handle OPTIONS requests for CORS preflight
+    if request.method == 'OPTIONS':
+        return current_app.make_default_options_response()
+
     try:
         # Get the universe
         universe = Universe.query.filter_by(id=universe_id, is_deleted=False).first()

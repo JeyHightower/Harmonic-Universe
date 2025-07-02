@@ -5,7 +5,7 @@ import Icon from '../../../components/common/Icon';
 import Spinner from '../../../components/common/Spinner';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
 import { useModalState } from '../../../hooks/useModalState';
-import apiClient from '../../../services/api';
+import { apiClient } from '../../../services/api.adapter.mjs';
 import { endpoints } from '../../../services/endpoints';
 import '../styles/PhysicsParameters.css';
 

@@ -27,6 +27,37 @@ class AuthService {
       validationPromise: null,
       cooldown: 5000, // 5 seconds cooldown between validations
     };
+
+    // Run immediate token cleanup on service initialization
+    this.cleanupInvalidTokens();
+  }
+
+  /**
+   * Aggressively clean invalid tokens from localStorage
+   */
+  cleanupInvalidTokens() {
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const userStr = localStorage.getItem(USER_KEY);
+
+      console.log('AuthService - Checking for invalid tokens on initialization...');
+
+      // Check if token is valid JWT format
+      const isValidToken = token && token.split('.').length === 3;
+
+      if (token && !isValidToken) {
+        console.log(
+          'AuthService - Invalid token detected during initialization, clearing auth data'
+        );
+        this.clearAuthData();
+      } else if (isValidToken) {
+        console.log('AuthService - Valid token found during initialization');
+      } else {
+        console.log('AuthService - No token found during initialization');
+      }
+    } catch (error) {
+      console.error('AuthService - Error during token cleanup:', error);
+    }
   }
 
   getUserFromStorage() {
@@ -263,8 +294,11 @@ class AuthService {
    */
   async refreshTokenIfNeeded() {
     try {
+      console.log('Debug - refreshTokenIfNeeded: Starting token refresh');
+
       // For demo users, just return success with new demo data
       if (this.isDemoUser()) {
+        console.log('Debug - refreshTokenIfNeeded: Demo user detected, using demo service');
         const response = await demoService.login();
         return {
           success: true,
@@ -275,11 +309,57 @@ class AuthService {
 
       // Regular token refresh
       const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+      const accessToken = localStorage.getItem(TOKEN_KEY);
+
+      console.log('Debug - refreshTokenIfNeeded: Token check', {
+        hasRefreshToken: !!refreshToken,
+        hasAccessToken: !!accessToken,
+        refreshTokenLength: refreshToken?.length || 0,
+        accessTokenLength: accessToken?.length || 0,
+      });
+
       if (!refreshToken) {
+        console.error('Debug - refreshTokenIfNeeded: No refresh token available');
         throw new Error('No refresh token available');
       }
 
-      const response = await this.httpClient.post(
+      // Debug logging
+      console.log('Debug - refreshTokenIfNeeded:', {
+        hasRefreshToken: !!refreshToken,
+        refreshTokenLength: refreshToken.length,
+        refreshTokenPreview: refreshToken.substring(0, 50) + '...',
+        refreshTokenParts: refreshToken.split('.').length,
+      });
+
+      // Validate refresh token format
+      const tokenParts = refreshToken.split('.');
+      if (tokenParts.length !== 3) {
+        console.error('Invalid refresh token format - not a valid JWT');
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+        throw new Error('Invalid refresh token format');
+      }
+
+      // Try to decode the refresh token payload for debugging
+      try {
+        const payload = JSON.parse(atob(tokenParts[1]));
+        console.log('Debug - refreshTokenIfNeeded: Refresh token payload', {
+          sub: payload.sub,
+          exp: payload.exp,
+          iat: payload.iat,
+          type: payload.type,
+          expired: payload.exp ? new Date(payload.exp * 1000) < new Date() : false,
+        });
+      } catch (e) {
+        console.error('Debug - refreshTokenIfNeeded: Could not decode refresh token payload', e);
+      }
+
+      console.log(
+        'Debug - refreshTokenIfNeeded: Sending refresh request to',
+        authEndpoints.refresh
+      );
+
+      // Send refresh token in the Authorization header as required by backend
+      const response = await httpClient.post(
         authEndpoints.refresh,
         {},
         {
@@ -288,27 +368,63 @@ class AuthService {
           },
         }
       );
+
+      console.log('Debug - refreshTokenIfNeeded: Refresh response received', {
+        success: response.success,
+        hasAccessToken: !!response.access_token,
+        hasToken: !!response.token,
+        responseKeys: Object.keys(response || {}),
+      });
+
       return response.data;
     } catch (error) {
       console.error('Token refresh failed:', error);
+      console.error('Debug - refreshTokenIfNeeded: Error details', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
       throw error;
     }
   }
 
   // Check if a token is valid locally
   isTokenValid(token) {
-    if (!token) return false;
+    if (!token) {
+      console.log('isTokenValid: No token provided');
+      return false;
+    }
 
     try {
+      // Log the token value before validation
+      console.log('isTokenValid: Validating token:', token);
       // Split the token into its parts
       const parts = token.split('.');
       if (parts.length !== 3) {
         console.error('Invalid token format - not a JWT');
+        // Clear the invalid token immediately
+        this.clearAuthData();
         return false;
       }
 
       // Decode the payload (second part)
       const payload = JSON.parse(atob(parts[1]));
+
+      // DEMO TOKEN LOGIC: Check if this is a demo user by checking the user data in localStorage
+      // The backend creates a real user with a real ID, so we check the user email instead
+      try {
+        const userStr = localStorage.getItem(USER_KEY);
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (user?.email === 'demo@example.com') {
+            console.log('Demo user detected in isTokenValid, considering valid');
+            return true;
+          }
+        }
+      } catch (e) {
+        // If we can't parse user data, continue with regular validation
+      }
 
       // Check if token is expired
       if (payload.exp) {
@@ -321,6 +437,8 @@ class AuthService {
             now: now.toISOString(),
             expired: true,
           });
+          // Clear expired token
+          this.clearAuthData();
           return false;
         }
       }
@@ -328,6 +446,8 @@ class AuthService {
       return true;
     } catch (error) {
       console.error('Error checking token validity:', error);
+      // Clear invalid token
+      this.clearAuthData();
       return false;
     }
   }
@@ -462,24 +582,18 @@ export function hasValidToken() {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return false;
 
-    // Check if this is a demo session by examining the token format
+    // Check if this is a demo session by checking the user data in localStorage
     try {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        // Decode the payload to check if it's a demo token
-        const payload = JSON.parse(atob(parts[1]));
-        if (
-          payload.sub &&
-          (payload.sub.includes('demo-') ||
-            payload.sub.includes('demo_') ||
-            payload.sub === 'demo-user')
-        ) {
-          console.log('Demo token detected in hasValidToken, considering valid');
+      const userStr = localStorage.getItem(USER_KEY);
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user?.email === 'demo@example.com') {
+          console.log('Demo user detected in hasValidToken, considering valid');
           return true;
         }
       }
     } catch (e) {
-      // If token parsing fails, continue with regular validation
+      // If we can't parse user data, continue with regular validation
     }
 
     const decoded = decodeToken(token);

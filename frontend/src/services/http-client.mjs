@@ -258,15 +258,27 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // Add auth token if available
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+    const user = userStr ? JSON.parse(userStr) : null;
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     // Handle demo user
-    if (localStorage.getItem(AUTH_CONFIG.USER_KEY)?.includes('demo@example.com')) {
+    if (user?.email === 'demo@example.com') {
       config.headers['X-Demo-User'] = 'true';
     }
-
+    // Debug log for outgoing requests
+    console.log(
+      '[http-client] Outgoing request:',
+      config.url,
+      'Authorization:',
+      config.headers.Authorization ? `${config.headers.Authorization.substring(0, 20)}...` : 'none',
+      'User:',
+      user?.email || 'none',
+      'IsDemo:',
+      user?.email === 'demo@example.com'
+    );
     return config;
   },
   (error) => {
@@ -461,7 +473,7 @@ const getAlternativeUrl = (url, method, error) => {
 
 // Update the withRetry function to use getAlternativeUrl
 const withRetry = async (requestFn, options = {}) => {
-  const { maxRetries = API_CONFIG.MAX_RETRIES } = options;
+  const { maxRetries = 2 } = options; // Reduced from API_CONFIG.MAX_RETRIES to 2
 
   let retries = 0;
   let lastError = null;
@@ -471,6 +483,14 @@ const withRetry = async (requestFn, options = {}) => {
       return await requestFn();
     } catch (error) {
       lastError = error;
+
+      // Don't retry on 429 (Too Many Requests) or 401 (Unauthorized)
+      if (error.response?.status === 429 || error.response?.status === 401) {
+        console.log(
+          `Not retrying on status ${error.response.status}: ${error.response.statusText}`
+        );
+        throw error;
+      }
 
       // Log the error details
       logApiOperation('request-retry-error', {

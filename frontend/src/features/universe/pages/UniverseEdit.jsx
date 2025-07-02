@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import Spinner from '../../../components/common/Spinner';
-import apiClient from '../../../services/api';
+import { apiClient } from '../../../services/api.adapter.mjs';
 import { endpoints } from '../../../services/endpoints';
 import { fetchUniverses, updateUniverse } from '../../../store/thunks/universeThunks';
 import { validateDescription, validateUniverseName } from '../../../utils/validation';
