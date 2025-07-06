@@ -13,7 +13,7 @@ import { useModalState } from '../../hooks/useModalState';
 import { demoLogin } from '../../store/thunks/authThunks';
 
 // Import Navigation component
-import Navigation from '../navigation/Navigation';
+import Navigation from '../navigation/Navigation.jsx';
 
 // Import safe versions of hooks
 import { safeUseDispatch } from '../../utils/ensure-redux-provider';

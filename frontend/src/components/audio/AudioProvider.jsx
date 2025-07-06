@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useAudio } from '../../hooks';
-import AudioButton from './AudioButton';
+import AudioButton from './AudioButton.jsx';
 
 /**
  * AudioProvider component
@@ -13,13 +13,7 @@ import AudioButton from './AudioButton';
  */
 const AudioProvider = ({ children }) => {
   const dispatch = useDispatch();
-  const {
-    initAudio,
-    ready,
-    error,
-    contextState,
-    unlockButtonVisible
-  } = useAudio();
+  const { initAudio, ready, error, contextState, unlockButtonVisible } = useAudio();
 
   // Use a ref to track initialization attempts from this component
   const initAttemptedRef = useRef(false);
@@ -79,19 +73,27 @@ const AudioProvider = ({ children }) => {
         initInProgressRef.current = true;
 
         initAudio(false)
-          .then(success => {
+          .then((success) => {
             if (success) {
               initializedRef.current = true;
               console.debug('AudioProvider: Audio init successful');
             }
           })
-          .catch(err => {
+          .catch((err) => {
             // Only log unexpected errors
-            if (err && err.code !== 'INIT_IN_PROGRESS' && err.code !== 'INIT_DEBOUNCED' && err.code !== 'NO_USER_GESTURE') {
+            if (
+              err &&
+              err.code !== 'INIT_IN_PROGRESS' &&
+              err.code !== 'INIT_DEBOUNCED' &&
+              err.code !== 'NO_USER_GESTURE'
+            ) {
               console.debug('AudioProvider: Silent audio init error:', err);
             } else {
               // For expected errors, log them as debug info not errors
-              console.debug('AudioProvider: Expected audio init condition:', err?.code || 'unknown');
+              console.debug(
+                'AudioProvider: Expected audio init condition:',
+                err?.code || 'unknown'
+              );
             }
           })
           .finally(() => {
@@ -141,8 +143,8 @@ const AudioProvider = ({ children }) => {
           initialized: initializedRef.current,
           initInProgress: initInProgressRef.current,
           lastAttemptTime,
-          appReady: appReadyRef.current
-        }
+          appReady: appReadyRef.current,
+        },
       };
     }
   }, [ready, error, contextState, unlockButtonVisible, initAudio, lastAttemptTime]);
