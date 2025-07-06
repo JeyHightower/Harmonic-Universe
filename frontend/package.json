@@ -11,8 +11,8 @@
     "preview": "vite preview",
     "start": "vite --port 5173",
     "serve": "vite preview --port 5173",
-    "lint": "eslint --ignore-pattern 'src/assets/*' --ignore-pattern 'src/__tests__/*' --ignore-pattern 'public/*' --ignore-pattern 'scripts/*' --ignore-pattern '**/*.min.js' --ignore-pattern 'babel.config.js' --ignore-pattern '**/*-*.js' .",
-    "lint:fix": "eslint --ignore-pattern 'src/assets/*' --ignore-pattern 'src/__tests__/*' --ignore-pattern 'public/*' --ignore-pattern 'scripts/*' --ignore-pattern '**/*.min.js' --ignore-pattern 'babel.config.js' --ignore-pattern '**/*-*.js' . --fix",
+    "lint": "eslint --ignore-pattern 'src/assets/*' --ignore-pattern 'src/__tests__/*' --ignore-pattern 'public/*' --ignore-pattern 'scripts/*' --ignore-pattern '**/*.min.js' --ignore-pattern '**/*-*.js' .",
+    "lint:fix": "eslint --ignore-pattern 'src/assets/*' --ignore-pattern 'src/__tests__/*' --ignore-pattern 'public/*' --ignore-pattern 'scripts/*' --ignore-pattern '**/*.min.js' --ignore-pattern '**/*-*.js' . --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,scss,json}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,scss,json}\""
   },
@@ -43,13 +43,6 @@
     "tone": "^15.0.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.10",
-    "@babel/eslint-parser": "^7.23.3",
-    "@babel/plugin-transform-runtime": "^7.24.0",
-    "@babel/preset-env": "^7.26.9",
-    "@babel/preset-react": "^7.26.3",
-    "@babel/runtime": "^7.24.0",
-    "@emotion/babel-plugin": "^11.11.0",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.24.0",
     "eslint-import-resolver-alias": "^1.1.2",
