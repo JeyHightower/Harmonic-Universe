@@ -1,6 +1,5 @@
-import { useState, useCallback } from "react";
-import errorService from "../services/errorService";
-import { APP_CONFIG } from "../utils/config";
+import { useCallback, useState } from 'react';
+import errorService from '../services/error.service.mjs';
 
 /**
  * Custom hook for handling form validation errors consistently across the application
@@ -15,37 +14,29 @@ export function useFormValidation({ rules, onError, context }) {
       if (!fieldRules) return null;
 
       // Required field validation
-      if (fieldRules.required && (!value || value.trim() === "")) {
+      if (fieldRules.required && (!value || value.trim() === '')) {
         return {
           field,
           message: `${field} is required`,
-          code: "REQUIRED",
+          code: 'REQUIRED',
         };
       }
 
       // Min length validation
-      if (
-        fieldRules.minLength &&
-        value &&
-        value.length < fieldRules.minLength
-      ) {
+      if (fieldRules.minLength && value && value.length < fieldRules.minLength) {
         return {
           field,
           message: `${field} must be at least ${fieldRules.minLength} characters`,
-          code: "MIN_LENGTH",
+          code: 'MIN_LENGTH',
         };
       }
 
       // Max length validation
-      if (
-        fieldRules.maxLength &&
-        value &&
-        value.length > fieldRules.maxLength
-      ) {
+      if (fieldRules.maxLength && value && value.length > fieldRules.maxLength) {
         return {
           field,
           message: `${field} must be at most ${fieldRules.maxLength} characters`,
-          code: "MAX_LENGTH",
+          code: 'MAX_LENGTH',
         };
       }
 
@@ -54,25 +45,25 @@ export function useFormValidation({ rules, onError, context }) {
         return {
           field,
           message: `${field} has an invalid format`,
-          code: "INVALID_FORMAT",
+          code: 'INVALID_FORMAT',
         };
       }
 
       // Custom validation
       if (fieldRules.custom) {
         const result = fieldRules.custom(value);
-        if (typeof result === "string") {
+        if (typeof result === 'string') {
           return {
             field,
             message: result,
-            code: "CUSTOM",
+            code: 'CUSTOM',
           };
         }
         if (!result) {
           return {
             field,
             message: `${field} is invalid`,
-            code: "CUSTOM",
+            code: 'CUSTOM',
           };
         }
       }
@@ -100,7 +91,7 @@ export function useFormValidation({ rules, onError, context }) {
 
       // Log validation errors if any
       if (newErrors.length > 0) {
-        errorService.handleError(new Error("Form validation failed"), context, {
+        errorService.handleError(new Error('Form validation failed'), context, {
           errors: newErrors,
         });
       }

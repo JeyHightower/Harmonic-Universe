@@ -1,24 +1,16 @@
-import { useCallback } from "react";
-import errorService from "../services/errorService";
-import { APP_CONFIG } from "../utils/config";
+import { useCallback } from 'react';
+import errorService from '../services/error.service.mjs';
 
 /**
  * Custom hook for handling validation errors in API responses consistently across the application
  */
-export function useValidationError({
-  context,
-  onError,
-  onFieldError,
-  onGlobalError,
-}) {
+export function useValidationError({ context, onError, onFieldError, onGlobalError }) {
   const handleError = useCallback(
     (response) => {
       // Log the validation errors using our error service
-      errorService.handleError(
-        new Error(response.message || "Validation failed"),
-        context,
-        { errors: response.errors }
-      );
+      errorService.handleError(new Error(response.message || 'Validation failed'), context, {
+        errors: response.errors,
+      });
 
       // Handle field-specific errors
       response.errors.forEach((error) => {
@@ -42,11 +34,11 @@ export function useValidationError({
 
   const isValidationError = useCallback((error) => {
     return (
-      error.name === "ValidationError" ||
+      error.name === 'ValidationError' ||
       error.status === 400 ||
-      error.code?.startsWith("VALIDATION_") ||
-      error.message?.toLowerCase().includes("validation") ||
-      error.message?.toLowerCase().includes("invalid") ||
+      error.code?.startsWith('VALIDATION_') ||
+      error.message?.toLowerCase().includes('validation') ||
+      error.message?.toLowerCase().includes('invalid') ||
       Array.isArray(error.errors)
     );
   }, []);

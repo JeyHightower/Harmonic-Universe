@@ -1,6 +1,5 @@
-import { useCallback } from "react";
-import errorService from "../services/errorService";
-import { APP_CONFIG } from "../utils/config";
+import { useCallback } from 'react';
+import errorService from '../services/error.service.mjs';
 
 /**
  * Custom hook for handling geolocation errors consistently across the application
@@ -16,8 +15,8 @@ export function useGeolocationError({
     (error) => {
       // Create a standardized error object
       const geolocationError = {
-        name: error.name || "GeolocationError",
-        message: error.message || "A geolocation error occurred",
+        name: error.name || 'GeolocationError',
+        message: error.message || 'A geolocation error occurred',
         code: error.code,
         PERMISSION_DENIED: error.PERMISSION_DENIED,
         POSITION_UNAVAILABLE: error.POSITION_UNAVAILABLE,
@@ -65,47 +64,42 @@ export function useGeolocationError({
 
   const isGeolocationError = useCallback((error) => {
     return (
-      error.name === "GeolocationError" ||
+      error.name === 'GeolocationError' ||
       error.code === error.PERMISSION_DENIED ||
       error.code === error.POSITION_UNAVAILABLE ||
       error.code === error.TIMEOUT ||
-      error.message?.toLowerCase().includes("geolocation")
+      error.message?.toLowerCase().includes('geolocation')
     );
   }, []);
 
   const isPermissionError = useCallback((error) => {
     return (
       error.code === error.PERMISSION_DENIED ||
-      error.message?.toLowerCase().includes("permission denied")
+      error.message?.toLowerCase().includes('permission denied')
     );
   }, []);
 
   const isPositionError = useCallback((error) => {
     return (
       error.code === error.POSITION_UNAVAILABLE ||
-      error.message?.toLowerCase().includes("position unavailable")
+      error.message?.toLowerCase().includes('position unavailable')
     );
   }, []);
 
   const isTimeoutError = useCallback((error) => {
-    return (
-      error.code === error.TIMEOUT ||
-      error.message?.toLowerCase().includes("timeout")
-    );
+    return error.code === error.TIMEOUT || error.message?.toLowerCase().includes('timeout');
   }, []);
 
   const getErrorMessage = useCallback((error) => {
     switch (error.code) {
       case error.PERMISSION_DENIED:
-        return "Location access was denied. Please enable location services in your browser settings.";
+        return 'Location access was denied. Please enable location services in your browser settings.';
       case error.POSITION_UNAVAILABLE:
-        return "Location information is unavailable. Please check your device settings and try again.";
+        return 'Location information is unavailable. Please check your device settings and try again.';
       case error.TIMEOUT:
-        return "Location request timed out. Please check your internet connection and try again.";
+        return 'Location request timed out. Please check your internet connection and try again.';
       default:
-        return (
-          error.message || "An error occurred while getting your location."
-        );
+        return error.message || 'An error occurred while getting your location.';
     }
   }, []);
 
