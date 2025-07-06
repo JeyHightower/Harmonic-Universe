@@ -1,6 +1,5 @@
-import { useCallback } from "react";
-import errorService from "../services/errorService.mjs";
-import { APP_CONFIG } from "../utils/config";
+import { useCallback } from 'react';
+import errorService from '../services/error.service.mjs';
 
 // Define setTimeout for ESLint compatibility
 const { setTimeout } = window;
@@ -8,18 +7,13 @@ const { setTimeout } = window;
 /**
  * Custom hook for handling API errors consistently across the application
  */
-export function useApiError({
-  context,
-  onError,
-  retryCount = 3,
-  retryDelay = 1000,
-}) {
+export function useApiError({ context, onError, retryCount = 3, retryDelay = 1000 }) {
   const handleError = useCallback(
     async (error, retryFn) => {
       // Create a standardized error object
       const apiError = {
-        name: error.name || "ApiError",
-        message: error.message || "An unexpected error occurred",
+        name: error.name || 'ApiError',
+        message: error.message || 'An unexpected error occurred',
         status: error.status,
         code: error.code,
         details: error.details,
@@ -76,25 +70,23 @@ export function useApiError({
 
   const isNetworkError = useCallback((error) => {
     return (
-      error.name === "NetworkError" ||
-      error.message?.includes("network") ||
-      error.message?.includes("timeout")
+      error.name === 'NetworkError' ||
+      error.message?.includes('network') ||
+      error.message?.includes('timeout')
     );
   }, []);
 
   const isTimeoutError = useCallback((error) => {
     return (
-      error.name === "TimeoutError" ||
-      error.message?.includes("timeout") ||
-      error.status === 408
+      error.name === 'TimeoutError' || error.message?.includes('timeout') || error.status === 408
     );
   }, []);
 
   const isValidationError = useCallback((error) => {
     return (
-      error.name === "ValidationError" ||
+      error.name === 'ValidationError' ||
       error.status === 400 ||
-      error.message?.includes("validation")
+      error.message?.includes('validation')
     );
   }, []);
 

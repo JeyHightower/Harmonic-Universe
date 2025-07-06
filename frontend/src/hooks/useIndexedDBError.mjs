@@ -1,6 +1,5 @@
-import { useCallback } from "react";
-import errorService from "../services/errorService.mjs";
-import { APP_CONFIG } from "../utils/config";
+import { useCallback } from 'react';
+import errorService from '../services/error.service.mjs';
 
 /**
  * Custom hook for handling IndexedDB errors consistently across the application
@@ -16,8 +15,8 @@ export function useIndexedDBError({
     (error) => {
       // Create a standardized error object
       const idbError = {
-        name: error.name || "IndexedDBError",
-        message: error.message || "An IndexedDB error occurred",
+        name: error.name || 'IndexedDBError',
+        message: error.message || 'An IndexedDB error occurred',
         code: error.code,
         type: error.type,
         details: error.details,
@@ -32,7 +31,7 @@ export function useIndexedDBError({
       });
 
       // Handle specific IndexedDB error cases
-      if (idbError.type === "database") {
+      if (idbError.type === 'database') {
         // Handle database errors
         if (onDatabaseError) {
           onDatabaseError(idbError);
@@ -40,7 +39,7 @@ export function useIndexedDBError({
         return;
       }
 
-      if (idbError.type === "transaction") {
+      if (idbError.type === 'transaction') {
         // Handle transaction errors
         if (onTransactionError) {
           onTransactionError(idbError);
@@ -48,7 +47,7 @@ export function useIndexedDBError({
         return;
       }
 
-      if (idbError.type === "storage") {
+      if (idbError.type === 'storage') {
         // Handle storage errors
         if (onStorageError) {
           onStorageError(idbError);
@@ -66,65 +65,54 @@ export function useIndexedDBError({
 
   const isIndexedDBError = useCallback((error) => {
     return (
-      error.name === "IndexedDBError" ||
-      error.type === "database" ||
-      error.type === "transaction" ||
-      error.type === "storage" ||
-      error.message?.toLowerCase().includes("indexeddb")
+      error.name === 'IndexedDBError' ||
+      error.type === 'database' ||
+      error.type === 'transaction' ||
+      error.type === 'storage' ||
+      error.message?.toLowerCase().includes('indexeddb')
     );
   }, []);
 
   const isDatabaseError = useCallback((error) => {
-    return (
-      error.type === "database" ||
-      error.message?.toLowerCase().includes("database")
-    );
+    return error.type === 'database' || error.message?.toLowerCase().includes('database');
   }, []);
 
   const isTransactionError = useCallback((error) => {
-    return (
-      error.type === "transaction" ||
-      error.message?.toLowerCase().includes("transaction")
-    );
+    return error.type === 'transaction' || error.message?.toLowerCase().includes('transaction');
   }, []);
 
   const isStorageError = useCallback((error) => {
-    return (
-      error.type === "storage" ||
-      error.message?.toLowerCase().includes("storage")
-    );
+    return error.type === 'storage' || error.message?.toLowerCase().includes('storage');
   }, []);
 
   const getErrorMessage = useCallback((error) => {
     switch (error.code) {
       case 1:
-        return "Database not found.";
+        return 'Database not found.';
       case 2:
-        return "Database version mismatch.";
+        return 'Database version mismatch.';
       case 3:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 4:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 5:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 6:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 7:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 8:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 9:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 10:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 11:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       case 12:
-        return "Database is blocked.";
+        return 'Database is blocked.';
       default:
-        return (
-          error.message || "An error occurred with the IndexedDB operation."
-        );
+        return error.message || 'An error occurred with the IndexedDB operation.';
     }
   }, []);
 
@@ -140,7 +128,7 @@ export function useIndexedDBError({
       }
       return null;
     } catch (error) {
-      console.error("Error getting storage quota:", error);
+      console.error('Error getting storage quota:', error);
       return null;
     }
   }, []);
