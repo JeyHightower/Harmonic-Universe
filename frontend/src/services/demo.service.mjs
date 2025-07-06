@@ -158,17 +158,6 @@ class DemoService {
   isDemoSession() {
     return this.isValidDemoSession();
   }
-
-  async checkAndCreateDemoUniverse() {
-    try {
-      const response = await httpClient.get('/api/universes/debug/check-universes');
-      console.log('Debug universe check response:', response);
-      return response;
-    } catch (error) {
-      console.error('Error checking demo universes:', error);
-      throw error;
-    }
-  }
 }
 
 // Export singleton instance

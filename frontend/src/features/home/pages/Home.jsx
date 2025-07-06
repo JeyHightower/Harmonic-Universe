@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { demoService } from '../../../services/demo.service.mjs';
 import { checkAuthState, demoLogin } from '../../../store/thunks/authThunks';
 import '../../../styles/Home.css';
 import { AUTH_CONFIG } from '../../../utils/config';
@@ -73,17 +72,7 @@ function Home() {
     window.location.reload();
   };
 
-  const handleDemoUniverseCheck = async () => {
-    try {
-      console.log('Checking demo universe...');
-      const result = await demoService.checkAndCreateDemoUniverse();
-      console.log('Demo universe check result:', result);
-      alert(`Demo universe check completed. Check console for details.`);
-    } catch (error) {
-      console.error('Error checking demo universe:', error);
-      alert(`Error: ${error.message}`);
-    }
-  };
+  // Removed handleDemoUniverseCheck and related debug button
 
   console.debug('Rendering Home component:', { isAuthenticated, loading });
 
@@ -136,11 +125,7 @@ function Home() {
             <button onClick={handleLogout} className="btn btn-secondary">
               Logout
             </button>
-            {isDemoUser && (
-              <button onClick={handleDemoUniverseCheck} className="btn btn-debug">
-                Debug: Check Demo Universe
-              </button>
-            )}
+            {isDemoUser && null}
           </div>
         )}
       </div>

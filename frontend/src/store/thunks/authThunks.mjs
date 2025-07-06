@@ -109,15 +109,7 @@ export const demoLogin = createAsyncThunk(
         // Dispatch a storage event to notify other components
         window.dispatchEvent(new CustomEvent('storage'));
 
-        // Check and create demo universe if needed
-        try {
-          console.log('Thunk - Checking for demo universe...');
-          const universeCheck = await demoService.checkAndCreateDemoUniverse();
-          console.log('Thunk - Demo universe check result:', universeCheck);
-        } catch (universeError) {
-          console.error('Thunk - Error checking demo universe:', universeError);
-          // Don't fail the login if universe check fails
-        }
+        // Removed demoService.checkAndCreateDemoUniverse call
 
         return response;
       } catch (error) {
