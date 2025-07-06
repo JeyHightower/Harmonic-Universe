@@ -1,70 +1,81 @@
 # Harmonic Universe .gitignore
 # Optimized and organized by sections
 
+# =============================================================================
 # Dependencies
+# =============================================================================
+
+# Node.js
 node_modules/
-/.pnp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.pnpm-store/
+.pnp
 .pnp.js
 .yarn/cache
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-.pnpm-store/
 
-# Python Dependencies
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-.Python
 *.so
 *.egg
 *.egg-info/
-*.pyd
+dist/
+build/
 eggs/
 .eggs/
 parts/
 sdist/
 var/
-develop-eggs/
+wheels/
+share/python-wheels/
+*.egg-info/
 .installed.cfg
+*.egg
+MANIFEST
+.Python
+*.pyd
 lib/
 lib64/
 
 # Virtual Environments
+.env
+.venv
 env/
 venv/
 ENV/
-.venv/
+env.bak/
+venv.bak/
 myenv/
-.env
-.env.sqlite
 
-# Environment Variables
-.env
-.env.*
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-!.env.example
-# Exceptions for environment template files
-!.env-backend
-!.env-frontend
-!backend/.env-backend
-!frontend/.env-frontend
-!backend/.env.example
-
+# =============================================================================
 # Build & Distribution
-/build/
-/dist/
-build/
+# =============================================================================
+
+# Frontend build
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
+frontend/.nuxt/
+frontend/.vercel/
+frontend/.netlify/
+
+# Backend build
+backend/dist/
+backend/build/
+backend/static/
+
+# General build
 dist/
-*.egg-info/
-.installed.cfg
+build/
 .next/
 out/
 .nuxt/
@@ -74,15 +85,35 @@ out/
 .dynamodb/
 .fusebox/
 
+# =============================================================================
 # Cache & Temporary files
+# =============================================================================
+
+# General cache
 .cache/
 .temp/
 .tmp/
 *.tmp
 *.temp
-.eslintcache
-.stylelintcache
-.parcel-cache
+
+# Frontend cache
+frontend/.eslintcache
+frontend/.stylelintcache
+frontend/.parcel-cache
+frontend/.vite/
+
+# Backend cache
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.tox/
+backend/.nox/
+backend/pytest.xml
+backend/coverage.xml
+backend/.webassets-cache
+backend/.hypothesis/
+
+# Python cache
 .pytest_cache/
 .webassets-cache
 .hypothesis/
@@ -94,25 +125,50 @@ htmlcov/
 pytest.xml
 coverage.xml
 
+# =============================================================================
 # IDE and Editor files
-.idea/
+# =============================================================================
+
+# VS Code
 .vscode/
-.qodo/
+.vscode-test/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Cursor
 .cursor/
+
+# Qodo
+.qodo/
+
+# Vim
 *.swp
 *.swo
 *~
+
+# Emacs
+.\#*
+.\#*
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Eclipse
 .project
 .classpath
 .settings/
-*.sublime-workspace
-*.sublime-project
-.tern-port
-.vscode-test
-.\#*
-*.code-workspace
 
+# =============================================================================
 # OS generated files
+# =============================================================================
+
+# macOS
 .DS_Store
 .DS_Store?
 ._*
@@ -121,7 +177,19 @@ coverage.xml
 ehthumbs.db
 Thumbs.db
 
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# =============================================================================
 # Log Files
+# =============================================================================
+
 logs/
 *.log
 npm-debug.log*
@@ -131,14 +199,34 @@ yarn-error.log*
 pip-log.txt
 pip-delete-this-directory.txt
 
+# =============================================================================
 # Database files
+# =============================================================================
+
 *.sqlite
 *.sqlite3
 *.db
 backend/instance/
 instance/
 
+# =============================================================================
+# Environment Variables
+# =============================================================================
+
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+!.env-backend
+!.env-frontend
+
+# =============================================================================
 # Media & Assets
+# =============================================================================
+
 /public/uploads/
 /uploads/
 /media/
@@ -149,26 +237,24 @@ instance/
 *.mov
 *.avi
 
+# =============================================================================
 # Backup & Duplicate files
-*.flaskenv 2
-*.env 2
-* 2.sh
-* 2.py
-*\ 2
-*\ copy*
-*\ (copy)*
-*\ (Finder\'s conflicted copy*
-*\~.*
-.\#*
-*~
+# =============================================================================
+
 *.bak
 *.orig
 *.old
 *.backup
 *_new
+*_copy
+* (copy)
+* (Finder's conflicted copy)
 .gitignore_new
 
+# =============================================================================
 # Secrets & Keys
+# =============================================================================
+
 *.pem
 *.key
 *.crt
@@ -184,82 +270,70 @@ instance/
 *.spc
 *.sst
 config/secrets.yml
+secrets.json
+.secrets
 
-# Other Config
-config/*
-!config/default.js
-!config/example.js
-
-# Special exceptions - Files to keep
-!backend/requirements.txt
-!backend/app.py
-!scripts/setup-env.sh
-
-# Python-specific
-.python-version
-.ipynb_checkpoints/
-
-# Project-specific ignore patterns
-backend/.dockerignore
-backend/.htaccess
-backend/config/
-backend/render.yaml
-backend/src/
-backend/static/
-
-# Documentation and temporary files
-*.md
-!README.md
-!CONTRIBUTING.md
-!LICENSE.md
-terminal.md
-MODAL_CONVERSION_SUMMARY.md
-DATABASE_RESTORATION_GUIDE.md
-README.Docker.md
-README_NEW.md
-
-# Development scripts and tools
-*.sh
-!render-build.sh
-!render-start.sh
-!docker-entrypoint.sh
-cleanupDockerContainers.sh
-dockerLocalPRR.sh
-restore-database.sh
-setup-env.sh
+# =============================================================================
+# Project-specific patterns
+# =============================================================================
 
 # Frontend specific
-frontend/.eslintrc.cjs
 frontend/debug-auth.js
-frontend/DOCKER_README.md
-frontend/start.sh
 frontend/src/**/*.backup
 frontend/src/**/*.bak
-frontend/src/**/*\ 2.*
-
-# Frontend source files to track
-!frontend/src/components/
-!frontend/src/features/
-!frontend/src/hooks/
-!frontend/src/routes/
-!frontend/src/store/
-!frontend/src/styles/
-!frontend/src/utils/
-!frontend/src/index.html
 
 # Backend specific
 backend/**/*.backup
 backend/**/*.bak
 backend/create_tables.py
-backend/scripts/create_demo_data.py
-backend/scripts/setup_demo.sh
 
-# Migration files
-backend/migrations/versions/*
-!backend/migrations/versions/562893e38854_merge_migration_branches.py
-!backend/migrations/versions/5da119559737_create_initial_tables.py
-!backend/migrations/versions/d212af8da78a_add_notes_table.py
-!backend/migrations/versions/fix_music_table.py
+# Documentation (keep important ones, ignore others)
+terminal.md
+README_NEW.md
 
-# Routes to track
-!backend/app/api/routes/characters/universe_routes.py
+# Development scripts (keep important ones, ignore others)
+cleanupDockerContainers
+dockerLocalPRR.sh
+
+# =============================================================================
+# Python-specific
+# =============================================================================
+
+.python-version
+.ipynb_checkpoints/
+
+# =============================================================================
+# Special exceptions - Files to keep
+# =============================================================================
+
+# Keep important configuration files
+!backend/requirements.txt
+!backend/app.py
+!scripts/setup-env.sh
+!render-build.sh
+!render-start.sh
+!docker-entrypoint.sh
+!restore-database.sh
+
+# Keep important documentation
+!README.md
+!CONTRIBUTING.md
+!LICENSE.md
+!DEVELOPMENT.md
+!DEPLOYMENT.md
+!SECURITY.md
+!README.Docker.md
+!DATABASE_RESTORATION_GUIDE.md
+!MODAL_CONVERSION_SUMMARY.md
+
+# Keep important configuration
+!frontend/package.json
+!frontend/vite.config.js
+!frontend/eslint.config.js
+!backend/pyproject.toml
+!backend/poetry.lock
+!docker-compose.yml
+!Dockerfile
+!render.yaml
+!.npmrc
+!pnpm-workspace.yaml
