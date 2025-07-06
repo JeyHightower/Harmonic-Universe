@@ -25,16 +25,13 @@ import {
   forceModalInteractivity,
 } from './utils/portalUtils';
 
-// Import test auth flow for debugging (development only)
+// Import utilities for development only
 if (import.meta.env.DEV) {
-  import('./test-auth-flow.mjs');
   import('./utils/clearUniverseCache.mjs');
 }
 
 // Ensure modal system is properly initialized
 const initModalSystem = () => {
-  console.log('Initializing modal system with Redux-based management');
-
   // Ensure portal root exists
   ensurePortalRoot();
 
@@ -49,15 +46,6 @@ const initModalSystem = () => {
   // Make the store available globally for debugging
   if (import.meta.env.DEV) {
     window.__REDUX_STORE = store;
-
-    // Add keyboard shortcut for debugging modals
-    console.log('Modal debug shortcut registered: Press Alt+Shift+M to force show all modals');
-
-    // Ensure forceShowAllModals is available if it exists
-    if (typeof window.__modalUtils?.forceShowAllModals === 'function') {
-      window.forceShowAllModals = window.__modalUtils.forceShowAllModals;
-      console.log('Added forceShowAllModals to window for debugging');
-    }
   }
 };
 
@@ -71,14 +59,8 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
 const isProduction = import.meta.env.PROD;
 const isDevelopment = import.meta.env.DEV;
 
-console.error('Before environment check - this should always show');
-
 // Basic environment configuration
-if (isDevelopment) {
-  console.info('Running in development mode');
-  console.error('Development mode - console.log should work normally');
-} else if (isProduction) {
-  console.error('Production mode detected - overriding console.log');
+if (isProduction) {
   // In production, silence console logs but keep errors
   const originalConsoleLog = console.log;
   const originalConsoleInfo = console.info;
@@ -96,8 +78,6 @@ if (isDevelopment) {
     }
   };
 }
-
-console.error('After environment check - this should show in dev mode');
 
 // Add polyfill for structuredClone if needed
 if (typeof window.structuredClone !== 'function') {
@@ -119,8 +99,6 @@ if (typeof window.CustomEvent !== 'function') {
 // Setup storage event listener for auth sync across tabs
 window.addEventListener('storage', (event) => {
   if (event.key === AUTH_CONFIG.TOKEN_KEY || event.key === AUTH_CONFIG.USER_KEY) {
-    console.log('Auth storage changed in another tab, syncing state');
-
     // Dispatch a custom event that our app can listen for
     window.dispatchEvent(
       new window.CustomEvent('auth-storage-changed', {
@@ -134,16 +112,12 @@ window.addEventListener('storage', (event) => {
 const getRootElement = () => {
   let rootElement = document.getElementById('root');
   if (!rootElement) {
-    console.error('Root element not found, creating one');
     rootElement = document.createElement('div');
     rootElement.id = 'root';
     document.body.appendChild(rootElement);
   }
   return rootElement;
 };
-
-// Add debugging info
-console.log('MODAL SYSTEM: Using Redux-based modal management exclusively');
 
 // Configure React Router with future flags at the router level
 const router = createBrowserRouter(
@@ -158,11 +132,6 @@ const router = createBrowserRouter(
     future: ROUTER_FUTURE_FLAGS,
   }
 );
-
-// Logs React Router configuration in development mode
-if (isDevelopment) {
-  console.log('React Router configuration:', router.routes[0].future);
-}
 
 // Set Authorization header from localStorage token on app startup
 const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);

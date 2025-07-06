@@ -160,8 +160,6 @@ const enableCorsDebugging = () => {
   if (typeof window !== 'undefined') {
     // Only enable in development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      console.log('CORS debugging enabled');
-
       // Monitor CORS-related console errors
       const originalConsoleError = console.error;
       console.error = function (...args) {
@@ -189,21 +187,6 @@ const enableCorsDebugging = () => {
         }
 
         if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
-          console.log(
-            '%c CORS ERROR DETECTED! ',
-            'background: #e74c3c; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;'
-          );
-          console.log('Request details:', {
-            baseURL: axiosInstance.defaults.baseURL,
-            withCredentials: axiosInstance.defaults.withCredentials,
-          });
-
-          // Suggest enabling CORS proxy
-          console.log(
-            '%c Try enabling CORS proxy: localStorage.setItem("use_cors_proxy", "true") and refresh ',
-            'background: #3498db; color: white; font-size: 12px; padding: 2px 5px; border-radius: 3px;'
-          );
-
           // Store info for debugging
           if (window.apiDebug) {
             window.apiDebug.corsErrors = window.apiDebug.corsErrors || [];
@@ -268,17 +251,7 @@ axiosInstance.interceptors.request.use(
     if (user?.email === 'demo@example.com') {
       config.headers['X-Demo-User'] = 'true';
     }
-    // Debug log for outgoing requests
-    console.log(
-      '[http-client] Outgoing request:',
-      config.url,
-      'Authorization:',
-      config.headers.Authorization ? `${config.headers.Authorization.substring(0, 20)}...` : 'none',
-      'User:',
-      user?.email || 'none',
-      'IsDemo:',
-      user?.email === 'demo@example.com'
-    );
+
     return config;
   },
   (error) => {
@@ -317,12 +290,8 @@ axiosInstance.interceptors.response.use(
  * @returns {string} - Formatted URL
  */
 const formatUrl = (url) => {
-  // Log the URL for debugging
-  console.log('Original URL:', url);
-
   // If URL already starts with http:// or https://, return it as is
   if (url.startsWith('http')) {
-    console.log('URL starts with http, using as is:', url);
     return url;
   }
 
@@ -345,8 +314,6 @@ const formatUrl = (url) => {
   const match = url.match(sceneIdPattern);
 
   if (match) {
-    const sceneId = match[1];
-    console.log(`Scene endpoint with numeric ID ${sceneId} detected, not adding trailing slash`);
     return url; // Return without trailing slash for scene endpoints with numeric IDs
   }
 
@@ -355,7 +322,6 @@ const formatUrl = (url) => {
     url = url + '/';
   }
 
-  console.log(`Formatted URL: ${url}`);
   return url;
 };
 

@@ -1,4 +1,3 @@
-console.log('APP.JSX LOADED');
 import React, { lazy, Suspense, useEffect, useState, useTransition } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AudioProvider, ErrorBoundary, NetworkErrorHandler } from './components';
@@ -33,7 +32,6 @@ const ErrorFallback = () => (
 
 // Modal system initialization - ensures the modal system is in a clean state
 const initModalSystem = () => {
-  console.log('Initializing modal system');
   // Clean up any lingering modals from previous sessions
   cleanupAllPortals();
   // Make sure portal root exists
@@ -221,7 +219,6 @@ const DebugPanel = () => {
     const newValue = !useProxy;
     setUseProxy(newValue);
     localStorage.setItem('use_proxy_for_auth', String(newValue));
-    console.log(`CORS proxy for auth ${newValue ? 'enabled' : 'disabled'}`);
   };
 
   // Secret key combo to show/hide debug panel: Shift+Alt+D
