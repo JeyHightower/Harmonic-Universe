@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Spinner from '../../../components/common/Spinner.jsx';
-import StableModalWrapper from '../../../components/modals/StableModalWrapper';
+import StableModalWrapper from '../../../components/modals/StableModalWrapper.jsx';
 import '../../../styles/SceneFormModal.css';
 import SceneViewer from '../components/SceneViewer';
 import SceneForm from '../pages/SceneForm';

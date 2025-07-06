@@ -1,5 +1,4 @@
-import React from 'react';
-import ThemeSelector from '../../../components/theme/ThemeSelector';
+import ThemeSelector from '../../../components/theme/ThemeSelector.jsx';
 import '../styles/SettingsPage.css';
 
 const SettingsPage = () => {

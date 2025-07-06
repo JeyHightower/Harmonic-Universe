@@ -5,4 +5,4 @@
 // Remove static exports of modal components
 
 // Export modal helpers
-export * from './modalHelpers';
+export * from './modalHelpers.jsx';
