@@ -6,7 +6,7 @@ This document provides guidelines and best practices for developing the Harmonic
 
 ### Code Quality
 
-1. **ESLint & Prettier**: All code must pass ESLint checks. Run `npm run lint` before committing.
+1. **ESLint & Prettier**: All code must pass ESLint checks. Run `pnpm run lint` before committing.
 2. **TypeScript**: Use proper typing for all components and functions.
 3. **Testing**: Write tests for critical components and business logic.
 4. **Documentation**: Document complex components with JSDoc comments.
@@ -46,6 +46,7 @@ This document provides guidelines and best practices for developing the Harmonic
 ### Redux Guidelines
 
 1. **Store Structure**:
+
    ```
    {
      universes: { ... },
@@ -139,7 +140,7 @@ This document provides guidelines and best practices for developing the Harmonic
 
 ### Build Process
 
-1. Run `npm run build` to create a production build
+1. Run `pnpm run build` to create a production build
 2. Verify that the build is successful
 3. Test the production build locally
 
@@ -148,4 +149,4 @@ This document provides guidelines and best practices for developing the Harmonic
 1. CI pipeline runs on every pull request
 2. Ensures code quality standards are met
 3. Runs the test suite
-4. Creates a preview deployment 
+4. Creates a preview deployment

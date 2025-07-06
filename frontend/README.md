@@ -60,16 +60,16 @@ feature-name/
 ### Prerequisites
 
 - Node.js 18+
-- npm or pnpm
+- pnpm (recommended) or npm
 
 ### Setup
 
 1. Install dependencies:
 
 ```bash
-npm install
-# or if using pnpm
 pnpm install
+# or if using npm
+npm install
 ```
 
 2. Set up environment variables:
@@ -82,9 +82,9 @@ cp .env.example .env
 ### Running the Application
 
 ```bash
-npm run dev
-# or
 pnpm run dev
+# or
+npm run dev
 ```
 
 The application will be available at http://localhost:5173
@@ -92,9 +92,9 @@ The application will be available at http://localhost:5173
 ### Building for Production
 
 ```bash
-npm run build
-# or
 pnpm run build
+# or
+npm run build
 ```
 
 The built files will be in the `dist` directory.
@@ -130,7 +130,7 @@ The built files will be in the `dist` directory.
 
 ## Connecting to the Backend
 
-API services are located in `src/services/` and handle all communication with the backend API. 
+API services are located in `src/services/` and handle all communication with the backend API.
 
 Example usage:
 
@@ -146,4 +146,4 @@ const fetchData = async () => {
     // Handle error
   }
 };
-``` 
+```
