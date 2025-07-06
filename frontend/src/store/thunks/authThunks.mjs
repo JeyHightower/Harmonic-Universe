@@ -3,7 +3,7 @@ import api from '../../services/api.adapter';
 import { authService } from '../../services/auth.service.mjs';
 import { demoService } from '../../services/demo.service.mjs';
 import { AUTH_CONFIG } from '../../utils/config.mjs';
-import { handleError } from '../../utils/error';
+import { handleError } from '../../utils/error.mjs';
 import {
   loginFailure,
   loginStart,
