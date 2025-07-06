@@ -1,13 +1,3 @@
-alert('MAIN.JSX IS LOADING');
-console.error('MAIN.JSX ERROR TEST - THIS SHOULD SHOW');
-console.log('MAIN.JSX LOADED');
-
-// Debug environment detection
-console.error('Environment check:', {
-  isProduction: import.meta.env.PROD,
-  isDevelopment: import.meta.env.DEV,
-  mode: import.meta.env.MODE,
-});
 
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';

@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import LoginModal from '../../features/auth/modals/LoginModal';
 import SignupModal from '../../features/auth/modals/SignupModal';
-import HarmonyParametersModal from '../../features/harmony/modals/HarmonyParametersModal.js';
+import HarmonyParametersModal from '../../features/harmony/modals/HarmonyParametersModal.jsx';
 import { MODAL_CONFIG } from '../../utils/config';
 import { ModalSystem } from '../modals';
 

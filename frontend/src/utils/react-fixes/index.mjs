@@ -4,21 +4,21 @@
  */
 
 // Re-export individual fixes
-export * from './utils.js';
 export * from './extensionState.js';
 export * from './heuristicsRedefinitions.js';
+export * from './utils.js';
 
 // Export the react-fix-loader functionality for direct imports
-import './react-fix-loader.js'; 
+import './react-fix-loader.mjs';
 
 // Export a function to initialize all fixes
 export function applyReactFixes() {
   console.log('Applying React compatibility fixes');
-  
+
   // Check if React is available globally
   if (typeof window.React === 'undefined') {
     console.warn('React not found, implementing basic polyfill');
-    
+
     // This implements the same polyfill from react-fix-loader.js
     window.React = {
       createElement: function () {
@@ -26,18 +26,22 @@ export function applyReactFixes() {
       },
       createContext: function () {
         return {
-          Provider: function (props) { return props.children; },
-          Consumer: function (props) { return props.children; }
+          Provider: function (props) {
+            return props.children;
+          },
+          Consumer: function (props) {
+            return props.children;
+          },
         };
       },
-      Fragment: Symbol('React.Fragment')
+      Fragment: Symbol('React.Fragment'),
     };
-    
+
     window.jsx = window.React.createElement;
     window.jsxs = window.React.createElement;
   }
-  
+
   return true;
 }
 
-export default applyReactFixes; 
+export default applyReactFixes;
