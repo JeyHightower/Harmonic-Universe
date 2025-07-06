@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button.jsx';
 import Input from '../../../components/common/Input.jsx';
 import { createUniverse } from '../../../store/thunks/universeThunks';
-import { validateDescription, validateUniverseName } from '../../../utils/validation';
 import '../styles/Universe.css';
 
 function UniverseCreate({ onClose, onSuccess }) {

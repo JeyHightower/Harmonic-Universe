@@ -13,4 +13,3 @@ export { default as UniverseManager } from './components/UniverseManager';
 // Page exports
 export { default as UniverseCreate } from './pages/UniverseCreate';
 export { default as UniverseDetail } from './pages/UniverseDetail';
-export { default as UniverseEdit } from './pages/UniverseEdit';

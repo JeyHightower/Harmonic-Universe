@@ -16,9 +16,6 @@ export { log, logError, logInfo, logWarning } from './logger';
 // Date and Time Utilities
 export { formatDate, getDaysDifference, parseDate } from './dateUtils';
 
-// Validation Utilities
-export * from './validation';
-
 // UI Utilities
 export * from './browserUtils';
 export { default as classNames } from './classnames-shim';

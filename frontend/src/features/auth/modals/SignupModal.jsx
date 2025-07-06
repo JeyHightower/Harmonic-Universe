@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../../../components/common/Button.jsx';
 import { register } from '../../../store/thunks/authThunks';
 import { log } from '../../../utils/logger';
-import { validateEmail, validatePassword, validateUsername } from '../../../utils/validation';
 import '../styles/Auth.css';
 
 const SignupModal = ({ onClose }) => {
