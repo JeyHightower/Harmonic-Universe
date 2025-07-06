@@ -4,39 +4,38 @@
  */
 
 // Configuration
-export { AUTH_CONFIG, API_CONFIG, IS_PRODUCTION, FORCE_DEMO_MODE } from './config';
-export { MODAL_CONFIG } from './config';
-export { ROUTES } from './routes';
 export { CACHE_CONFIG } from './cacheConfig';
+export { API_CONFIG, AUTH_CONFIG, FORCE_DEMO_MODE, IS_PRODUCTION, MODAL_CONFIG } from './config';
+export { ROUTES } from './routes';
 
 // API and Data Utilities
-export { cache, clearCache, invalidateCache } from './cache';
 export { apiUtils } from './apiUtils';
-export { log, logError, logWarning, logInfo } from './logger';
+export { cache, clearCache, invalidateCache } from './cache';
+export { log, logError, logInfo, logWarning } from './logger';
 
 // Date and Time Utilities
-export { formatDate, parseDate, getDaysDifference } from './dateUtils';
+export { formatDate, getDaysDifference, parseDate } from './dateUtils';
 
 // Validation Utilities
 export * from './validation';
-export * from './errorHandling';
 
 // UI Utilities
-export { ensurePortalRoot } from './portalUtils';
+export * from './browserUtils';
+export { default as classNames } from './classnames-shim';
 export { ensureReduxProvider } from './ensure-redux-provider.jsx';
 export { ensureRouterProvider } from './ensure-router-provider';
-export * from './browserUtils';
+export { ensurePortalRoot } from './portalUtils';
 export * from './themeUtils';
-export { default as classNames } from './classnames-shim';
 
 // Modal Registry
-export { registerModalComponent as registerModal, unregisterModalComponent as unregisterModal, getModalComponent } from './modalRegistry';
+export {
+  getModalComponent,
+  registerModalComponent as registerModal,
+  unregisterModalComponent as unregisterModal,
+} from './modalRegistry';
 
 // Visualization Utilities
 export * from './visualizerUtils';
 
 // Dynamic Import Helper
 export { loadComponent } from './dynamic-import.jsx';
-
-// Versioning
-export { version } from './version';

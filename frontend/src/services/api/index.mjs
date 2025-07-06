@@ -3,12 +3,10 @@
  * Provides access to legacy API adapters
  */
 
-import audioApi from './audioApi';
+import { audioApi } from '../audio.adapter.mjs';
 
-export {
-  audioApi
-};
+export { audioApi };
 
 export default {
-  audioApi
-}; 
+  audioApi,
+};
