@@ -3,7 +3,7 @@ import { Card, Col, Empty, Image, Row, Spin, Tabs, Tag } from 'antd';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import Button from '../../../components/common/Button';
+import Button from '../../../components/common/Button.jsx';
 import { useModalState } from '../../../hooks/useModalState';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import '../../../styles/VisualPage.css';

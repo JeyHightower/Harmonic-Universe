@@ -1,10 +1,9 @@
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../../components/common/Button';
-import Input from '../../../components/common/Input';
-import Spinner from '../../../components/common/Spinner';
-import { ModalSystem } from '../../../components/modals/index.mjs';
+import Button from '../../../components/common/Button.jsx';
+import Input from '../../../components/common/Input.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
 import '../../../styles/Modal.css';
 
 /**

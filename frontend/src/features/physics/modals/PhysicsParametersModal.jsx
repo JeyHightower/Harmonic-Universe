@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
-import Button from '../../../components/common/Button';
-import Icon from '../../../components/common/Icon';
-import Input from '../../../components/common/Input';
-import Spinner from '../../../components/common/Spinner';
+import Button from '../../../components/common/Button.jsx';
+import Icon from '../../../components/common/Icon.jsx';
+import Input from '../../../components/common/Input.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { endpoints } from '../../../services/endpoints';
 import '../styles/PhysicsParameters.css';

@@ -1,8 +1,8 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
-import Button from '../../../components/common/Button';
-import Icon from '../../../components/common/Icon';
-import Spinner from '../../../components/common/Spinner';
+import Button from '../../../components/common/Button.jsx';
+import Icon from '../../../components/common/Icon.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
 import { useModalState } from '../../../hooks/useModalState';
 import { apiClient } from '../../../services/api.adapter.mjs';

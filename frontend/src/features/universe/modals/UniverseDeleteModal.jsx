@@ -2,7 +2,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import Button from '../../../components/common/Button';
+import Button from '../../../components/common/Button.jsx';
 import { deleteUniverse } from '../../../store/thunks/universeThunks';
 import '../styles/UniverseFormModal.css';
 

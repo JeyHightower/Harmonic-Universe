@@ -1,11 +1,11 @@
 import PropTypes from 'prop-types';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../../components/common/Button';
-import Input from '../../../components/common/Input';
-import Select from '../../../components/common/Select';
-import Slider from '../../../components/common/Slider';
-import Spinner from '../../../components/common/Spinner';
+import Button from '../../../components/common/Button.jsx';
+import Input from '../../../components/common/Input.jsx';
+import Select from '../../../components/common/Select.jsx';
+import Slider from '../../../components/common/Slider.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
 import { audioService } from '../../../services';
 import '../../../styles/Modal.css';
 import { initializeAudioContext } from '../../../utils/audioManager';

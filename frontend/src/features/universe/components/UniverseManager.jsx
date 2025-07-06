@@ -8,9 +8,9 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../../components/common/Button';
-import Icon from '../../../components/common/Icon';
-import Spinner from '../../../components/common/Spinner';
+import Button from '../../../components/common/Button.jsx';
+import Icon from '../../../components/common/Icon.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
 import { useModalState } from '../../../hooks/useModalState';
 import api from '../../../services/api.adapter';

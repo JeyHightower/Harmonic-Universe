@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useEffect, useId, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../../components/common/Button';
+import Button from '../../../components/common/Button.jsx';
 import { register } from '../../../store/thunks/authThunks';
 import { log } from '../../../utils/logger';
 import { validateEmail, validatePassword, validateUsername } from '../../../utils/validation';

@@ -2,19 +2,19 @@ import { Dialog, DialogContent, DialogTitle } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import Button from '../../../components/common/Button';
-import Input from '../../../components/common/Input';
+import Button from '../../../components/common/Button.jsx';
+import Input from '../../../components/common/Input.jsx';
 import {
-    applyInteractionFixes,
-    selectInteractionFixes,
-    selectInteractionFixesApplied,
-    selectModalZIndexLevels,
+  applyInteractionFixes,
+  selectInteractionFixes,
+  selectInteractionFixesApplied,
+  selectModalZIndexLevels,
 } from '../../../store/slices/newModalSlice';
 import { createUniverse, updateUniverse } from '../../../store/thunks/universeThunks';
 import {
-    applyModalFixes,
-    ensurePortalRoot,
-    forceModalInteractivity,
+  applyModalFixes,
+  ensurePortalRoot,
+  forceModalInteractivity,
 } from '../../../utils/portalUtils';
 import '../styles/UniverseFormModal.css';
 

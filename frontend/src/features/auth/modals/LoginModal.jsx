@@ -2,7 +2,7 @@ import { Form, Input, message } from 'antd';
 import PropTypes from 'prop-types';
 import React, { useId, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import Button from '../../../components/common/Button';
+import Button from '../../../components/common/Button.jsx';
 import { login } from '../../../store/thunks/authThunks';
 import { log } from '../../../utils/logger';
 import '../styles/Auth.css';

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import Button from '../../../components/common/Button';
+import Button from '../../../components/common/Button.jsx';
 import { fetchUniverses } from '../../../store/thunks/universeThunks';
 import '../styles/UniverseList.css';
 import UniverseCard from './UniverseCard';

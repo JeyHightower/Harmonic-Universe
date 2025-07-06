@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import Button from '../../../components/common/Button';
+import Button from '../../../components/common/Button.jsx';
 import { demoService } from '../../../services/demo.service.mjs';
 import {
   createSceneAndRefresh,

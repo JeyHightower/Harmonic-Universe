@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
-import '../styles/PhysicsObjects.css';
-import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
-import Button from '../../../components/common/Button';
-import Icon from '../../../components/common/Icon';
-import Spinner from '../../../components/common/Spinner';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import Button from '../../../components/common/Button.jsx';
+import Icon from '../../../components/common/Icon.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
 import { setCurrentPhysicsObject } from '../../../store/slices/physicsObjectsSlice';
+import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';
+import '../styles/PhysicsObjects.css';
 
 const PhysicsObjectsList = ({
   sceneId,

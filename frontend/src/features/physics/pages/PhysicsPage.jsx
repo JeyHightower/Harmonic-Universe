@@ -2,7 +2,7 @@ import { Card, Empty, Spin, Tabs } from 'antd';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import Button from '../../../components/common/Button';
+import Button from '../../../components/common/Button.jsx';
 import { useModalState } from '../../../hooks/useModalState';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks.mjs';
 import '../../../styles/PhysicsPage.css';

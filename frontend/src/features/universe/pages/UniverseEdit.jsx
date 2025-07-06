@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import Button from '../../../components/common/Button';
-import Input from '../../../components/common/Input';
-import Spinner from '../../../components/common/Spinner';
+import Button from '../../../components/common/Button.jsx';
+import Input from '../../../components/common/Input.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { endpoints } from '../../../services/endpoints';
 import { fetchUniverses, updateUniverse } from '../../../store/thunks/universeThunks';

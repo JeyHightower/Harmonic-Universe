@@ -2,7 +2,7 @@ import { Form } from 'antd';
 import PropTypes from 'prop-types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import Spinner from '../../../components/common/Spinner';
+import Spinner from '../../../components/common/Spinner.jsx';
 import StableModalWrapper from '../../../components/modals/StableModalWrapper';
 import '../../../styles/SceneFormModal.css';
 import SceneViewer from '../components/SceneViewer';

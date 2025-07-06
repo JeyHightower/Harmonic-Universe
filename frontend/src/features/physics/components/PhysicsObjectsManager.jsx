@@ -1,8 +1,8 @@
 import PropTypes from 'prop-types';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import Button from '../../../components/common/Button';
-import Icon from '../../../components/common/Icon';
+import Button from '../../../components/common/Button.jsx';
+import Icon from '../../../components/common/Icon.jsx';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
 import { useModalState } from '../../../hooks/useModalState';
 import { fetchPhysicsObjects } from '../../../store/thunks/physicsObjectsThunks';

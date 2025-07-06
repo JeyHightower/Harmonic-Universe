@@ -1,8 +1,8 @@
 import PropTypes from 'prop-types';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../../components/common/Button';
-import Spinner from '../../../components/common/Spinner';
+import Button from '../../../components/common/Button.jsx';
+import Spinner from '../../../components/common/Spinner.jsx';
 import { audioService } from '../../../services';
 import '../../../styles/Modal.css';
 

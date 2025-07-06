@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import Button from '../../../components/common/Button';
+import Button from '../../../components/common/Button.jsx';
 import { useModalState } from '../../../hooks/useModalState';
 import { updatePhysicsParams } from '../../../store/thunks/universeThunks';
 import '../styles/PhysicsPanel.css';
