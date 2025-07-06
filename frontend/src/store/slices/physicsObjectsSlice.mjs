@@ -1,10 +1,10 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from '@reduxjs/toolkit';
 import {
-  fetchPhysicsObjects,
   createPhysicsObject,
-  updatePhysicsObject,
   deletePhysicsObject,
-} from "../thunks/physicsObjectsThunks";
+  fetchPhysicsObjects,
+  updatePhysicsObject,
+} from '../thunks/physicsObjectsThunks.mjs';
 
 const initialState = {
   physicsObjects: [],
@@ -14,7 +14,7 @@ const initialState = {
 };
 
 const physicsObjectsSlice = createSlice({
-  name: "physicsObjects",
+  name: 'physicsObjects',
   initialState,
   reducers: {
     setCurrentPhysicsObject: (state, action) => {
@@ -68,9 +68,7 @@ const physicsObjectsSlice = createSlice({
       })
       .addCase(updatePhysicsObject.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.physicsObjects.findIndex(
-          (obj) => obj.id === action.payload.id
-        );
+        const index = state.physicsObjects.findIndex((obj) => obj.id === action.payload.id);
         if (index !== -1) {
           state.physicsObjects[index] = action.payload;
         }
@@ -91,9 +89,7 @@ const physicsObjectsSlice = createSlice({
       })
       .addCase(deletePhysicsObject.fulfilled, (state, action) => {
         state.loading = false;
-        state.physicsObjects = state.physicsObjects.filter(
-          (obj) => obj.id !== action.payload
-        );
+        state.physicsObjects = state.physicsObjects.filter((obj) => obj.id !== action.payload);
         if (state.currentPhysicsObject?.id === action.payload) {
           state.currentPhysicsObject = null;
         }
@@ -107,14 +103,9 @@ const physicsObjectsSlice = createSlice({
 });
 
 // Selectors
-export const selectPhysicsObjects = (state) =>
-  state.physicsObjects.physicsObjects;
+export const selectPhysicsObjects = (state) => state.physicsObjects.physicsObjects;
 
-export const {
-  setCurrentPhysicsObject,
-  clearCurrentPhysicsObject,
-  clearError,
-  resetState,
-} = physicsObjectsSlice.actions;
+export const { setCurrentPhysicsObject, clearCurrentPhysicsObject, clearError, resetState } =
+  physicsObjectsSlice.actions;
 
 export default physicsObjectsSlice.reducer;

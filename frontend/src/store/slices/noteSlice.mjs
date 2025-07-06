@@ -1,15 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 import {
-  fetchUniverseNotes,
-  fetchSceneNotes,
+  archiveNote,
+  createNote,
+  deleteNote,
   fetchCharacterNotes,
   fetchNote,
-  createNote,
+  fetchSceneNotes,
+  fetchUniverseNotes,
+  unarchiveNote,
   updateNote,
-  deleteNote,
-  archiveNote,
-  unarchiveNote
-} from '../thunks/noteThunks';
+} from '../thunks/noteThunks.mjs';
 
 const initialState = {
   notes: [],
@@ -38,7 +38,7 @@ const noteSlice = createSlice({
       state.notes.push(action.payload);
     },
     updateNoteAction: (state, action) => {
-      const index = state.notes.findIndex(note => note.id === action.payload.id);
+      const index = state.notes.findIndex((note) => note.id === action.payload.id);
       if (index !== -1) {
         state.notes[index] = action.payload;
         if (state.currentNote?.id === action.payload.id) {
@@ -50,7 +50,7 @@ const noteSlice = createSlice({
       }
     },
     deleteNoteAction: (state, action) => {
-      state.notes = state.notes.filter(note => note.id !== action.payload);
+      state.notes = state.notes.filter((note) => note.id !== action.payload);
       if (state.currentNote?.id === action.payload) {
         state.currentNote = null;
       }
@@ -95,7 +95,7 @@ const noteSlice = createSlice({
       })
       .addCase(fetchUniverseNotes.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to fetch universe notes";
+        state.error = action.payload?.message || 'Failed to fetch universe notes';
       })
 
       // Fetch scene notes
@@ -109,7 +109,7 @@ const noteSlice = createSlice({
       })
       .addCase(fetchSceneNotes.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to fetch scene notes";
+        state.error = action.payload?.message || 'Failed to fetch scene notes';
       })
 
       // Fetch character notes
@@ -123,7 +123,7 @@ const noteSlice = createSlice({
       })
       .addCase(fetchCharacterNotes.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to fetch character notes";
+        state.error = action.payload?.message || 'Failed to fetch character notes';
       })
 
       // Fetch single note
@@ -137,7 +137,7 @@ const noteSlice = createSlice({
       })
       .addCase(fetchNote.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to fetch note";
+        state.error = action.payload?.message || 'Failed to fetch note';
       })
 
       // Create note
@@ -154,7 +154,7 @@ const noteSlice = createSlice({
       })
       .addCase(createNote.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to create note";
+        state.error = action.payload?.message || 'Failed to create note';
         state.success = false;
       })
 
@@ -166,7 +166,7 @@ const noteSlice = createSlice({
       })
       .addCase(updateNote.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.notes.findIndex(note => note.id === action.payload.id);
+        const index = state.notes.findIndex((note) => note.id === action.payload.id);
         if (index !== -1) {
           state.notes[index] = action.payload;
           if (state.currentNote?.id === action.payload.id) {
@@ -181,7 +181,7 @@ const noteSlice = createSlice({
       })
       .addCase(updateNote.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to update note";
+        state.error = action.payload?.message || 'Failed to update note';
         state.success = false;
       })
 
@@ -193,7 +193,7 @@ const noteSlice = createSlice({
       })
       .addCase(deleteNote.fulfilled, (state, action) => {
         state.loading = false;
-        state.notes = state.notes.filter(note => note.id !== action.payload);
+        state.notes = state.notes.filter((note) => note.id !== action.payload);
         if (state.currentNote?.id === action.payload) {
           state.currentNote = null;
         }
@@ -204,7 +204,7 @@ const noteSlice = createSlice({
       })
       .addCase(deleteNote.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to delete note";
+        state.error = action.payload?.message || 'Failed to delete note';
         state.success = false;
       })
 
@@ -215,7 +215,7 @@ const noteSlice = createSlice({
       })
       .addCase(archiveNote.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.notes.findIndex(note => note.id === action.payload.id);
+        const index = state.notes.findIndex((note) => note.id === action.payload.id);
         if (index !== -1) {
           state.notes[index] = action.payload;
           if (state.currentNote?.id === action.payload.id) {
@@ -229,7 +229,7 @@ const noteSlice = createSlice({
       })
       .addCase(archiveNote.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to archive note";
+        state.error = action.payload?.message || 'Failed to archive note';
       })
 
       // Unarchive note
@@ -239,7 +239,7 @@ const noteSlice = createSlice({
       })
       .addCase(unarchiveNote.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.notes.findIndex(note => note.id === action.payload.id);
+        const index = state.notes.findIndex((note) => note.id === action.payload.id);
         if (index !== -1) {
           state.notes[index] = action.payload;
           if (state.currentNote?.id === action.payload.id) {
@@ -253,9 +253,9 @@ const noteSlice = createSlice({
       })
       .addCase(unarchiveNote.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to unarchive note";
+        state.error = action.payload?.message || 'Failed to unarchive note';
       });
-  }
+  },
 });
 
 export const {

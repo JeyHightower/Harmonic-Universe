@@ -1,19 +1,19 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { IS_PRODUCTION } from '../../utils/config.mjs';
 import {
+  createCharacter,
+  deleteCharacter,
+  fetchCharacter,
   fetchCharacters,
   fetchCharactersByUniverse,
-  fetchCharacter,
-  createCharacter,
   updateCharacter,
-  deleteCharacter
-} from '../thunks/characterThunks';
-import { IS_PRODUCTION } from '../../utils/config.mjs';
+} from '../thunks/characterThunks.mjs';
 
 const initialState = {
   characters: [],
   currentCharacter: null,
   universeCharacters: {},
-  status: "idle",
+  status: 'idle',
   error: null,
   isLoading: false,
   success: false,
@@ -38,7 +38,7 @@ const characterSlice = createSlice({
       state.error = null;
     },
     updateCharacterAction: (state, action) => {
-      const index = state.characters.findIndex(char => char.id === action.payload.id);
+      const index = state.characters.findIndex((char) => char.id === action.payload.id);
       if (index !== -1) {
         state.characters[index] = action.payload;
       }
@@ -48,7 +48,7 @@ const characterSlice = createSlice({
       state.error = null;
     },
     deleteCharacterAction: (state, action) => {
-      state.characters = state.characters.filter(char => char.id !== action.payload);
+      state.characters = state.characters.filter((char) => char.id !== action.payload);
       if (state.currentCharacter?.id === action.payload) {
         state.currentCharacter = null;
       }
@@ -80,33 +80,33 @@ const characterSlice = createSlice({
     // fetchCharacters
     builder
       .addCase(fetchCharacters.pending, (state) => {
-        state.status = "loading";
+        state.status = 'loading';
         state.isLoading = true;
       })
       .addCase(fetchCharacters.fulfilled, (state, action) => {
-        state.status = "succeeded";
+        state.status = 'succeeded';
         state.isLoading = false;
         state.characters = action.payload || [];
       })
       .addCase(fetchCharacters.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = 'failed';
         state.isLoading = false;
         state.error = action.payload;
 
         // In production, use empty array instead of failing
         if (IS_PRODUCTION) {
-          console.log("Using empty characters array in production after fetch failure");
+          console.log('Using empty characters array in production after fetch failure');
           state.characters = [];
         }
       })
 
       // fetchCharactersByUniverse
       .addCase(fetchCharactersByUniverse.pending, (state) => {
-        state.status = "loading";
+        state.status = 'loading';
         state.isLoading = true;
       })
       .addCase(fetchCharactersByUniverse.fulfilled, (state, action) => {
-        state.status = "succeeded";
+        state.status = 'succeeded';
         state.isLoading = false;
 
         // Store characters by universe ID
@@ -116,7 +116,7 @@ const characterSlice = createSlice({
         }
       })
       .addCase(fetchCharactersByUniverse.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = 'failed';
         state.isLoading = false;
         state.error = action.payload;
 
@@ -124,7 +124,9 @@ const characterSlice = createSlice({
         if (IS_PRODUCTION) {
           const universeId = action.meta.arg;
           if (universeId) {
-            console.log(`Using empty characters array for universe ${universeId} in production after fetch failure`);
+            console.log(
+              `Using empty characters array for universe ${universeId} in production after fetch failure`
+            );
             state.universeCharacters[universeId] = [];
           }
         }
@@ -132,33 +134,33 @@ const characterSlice = createSlice({
 
       // fetchCharacter
       .addCase(fetchCharacter.pending, (state) => {
-        state.status = "loading";
+        state.status = 'loading';
         state.isLoading = true;
       })
       .addCase(fetchCharacter.fulfilled, (state, action) => {
-        state.status = "succeeded";
+        state.status = 'succeeded';
         state.isLoading = false;
         state.currentCharacter = action.payload;
       })
       .addCase(fetchCharacter.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = 'failed';
         state.isLoading = false;
         state.error = action.payload;
 
         // In production, reset current character instead of showing error
         if (IS_PRODUCTION) {
-          console.log("Resetting current character in production after fetch failure");
+          console.log('Resetting current character in production after fetch failure');
           state.currentCharacter = null;
         }
       })
 
       // createCharacter
       .addCase(createCharacter.pending, (state) => {
-        state.status = "loading";
+        state.status = 'loading';
         state.isLoading = true;
       })
       .addCase(createCharacter.fulfilled, (state, action) => {
-        state.status = "succeeded";
+        state.status = 'succeeded';
         state.isLoading = false;
         state.characters.push(action.payload);
 
@@ -174,19 +176,19 @@ const characterSlice = createSlice({
         state.currentCharacter = action.payload;
       })
       .addCase(createCharacter.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = 'failed';
         state.isLoading = false;
         state.error = action.payload;
 
         // In production, create mock character instead of failing
         if (IS_PRODUCTION) {
-          console.log("Creating mock character in production after create failure");
+          console.log('Creating mock character in production after create failure');
           const mockCharacter = {
             id: 'demo-char-' + Math.random().toString(36).substring(2, 10),
             name: action.meta.arg.name || 'Mock Character',
             universe_id: action.meta.arg.universe_id,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           };
 
           state.characters.push(mockCharacter);
@@ -201,18 +203,18 @@ const characterSlice = createSlice({
           }
 
           // Reset error state
-          state.status = "succeeded";
+          state.status = 'succeeded';
           state.error = null;
         }
       })
 
       // updateCharacter
       .addCase(updateCharacter.pending, (state) => {
-        state.status = "loading";
+        state.status = 'loading';
         state.isLoading = true;
       })
       .addCase(updateCharacter.fulfilled, (state, action) => {
-        state.status = "succeeded";
+        state.status = 'succeeded';
         state.isLoading = false;
 
         // Update in characters array
@@ -237,13 +239,13 @@ const characterSlice = createSlice({
         state.currentCharacter = action.payload;
       })
       .addCase(updateCharacter.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = 'failed';
         state.isLoading = false;
         state.error = action.payload;
 
         // In production, simulate success with the character data
         if (IS_PRODUCTION) {
-          console.log("Simulating successful character update in production after update failure");
+          console.log('Simulating successful character update in production after update failure');
           const characterData = action.meta.arg.characterData;
           const characterId = action.meta.arg.characterId;
 
@@ -251,7 +253,7 @@ const characterSlice = createSlice({
             const updatedCharacter = {
               ...characterData,
               id: characterId,
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             };
 
             // Update in characters array
@@ -276,7 +278,7 @@ const characterSlice = createSlice({
             state.currentCharacter = updatedCharacter;
 
             // Reset error state
-            state.status = "succeeded";
+            state.status = 'succeeded';
             state.error = null;
           }
         }
@@ -284,11 +286,11 @@ const characterSlice = createSlice({
 
       // deleteCharacter
       .addCase(deleteCharacter.pending, (state) => {
-        state.status = "loading";
+        state.status = 'loading';
         state.isLoading = true;
       })
       .addCase(deleteCharacter.fulfilled, (state, action) => {
-        state.status = "succeeded";
+        state.status = 'succeeded';
         state.isLoading = false;
 
         // Remove from characters array
@@ -306,13 +308,15 @@ const characterSlice = createSlice({
         }
       })
       .addCase(deleteCharacter.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = 'failed';
         state.isLoading = false;
         state.error = action.payload;
 
         // In production, simulate successful deletion
         if (IS_PRODUCTION) {
-          console.log("Simulating successful character deletion in production after delete failure");
+          console.log(
+            'Simulating successful character deletion in production after delete failure'
+          );
           const characterId = action.meta.arg;
 
           if (characterId) {
@@ -331,12 +335,12 @@ const characterSlice = createSlice({
             }
 
             // Reset error state
-            state.status = "succeeded";
+            state.status = 'succeeded';
             state.error = null;
           }
         }
       });
-  }
+  },
 });
 
 export const {
@@ -353,4 +357,4 @@ export const {
   clearCurrentCharacter,
 } = characterSlice.actions;
 
-export default characterSlice.reducer; 
+export default characterSlice.reducer;

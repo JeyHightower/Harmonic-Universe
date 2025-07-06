@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { demoService } from '../../services/demo.service.mjs';
 import { AUTH_CONFIG, log } from '../../utils';
 import { AUTH_ACTION_TYPES } from '../actions/authActions.mjs';
-import { checkAuthState, demoLogin, login, logoutThunk, register } from '../thunks/authThunks';
+import { checkAuthState, demoLogin, login, logoutThunk, register } from '../thunks/authThunks.mjs';
 
 // Debug logging for all authentication operations
 const logAuthOperation = (operation, data = {}) => {

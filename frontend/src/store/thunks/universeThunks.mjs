@@ -2,7 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api.adapter';
 import { demoService } from '../../services/demo.service.mjs';
 import { universeService } from '../../services/universe.service.mjs';
-import { logoutThunk, validateAndRefreshToken } from '../thunks/authThunks';
+import { logoutThunk, validateAndRefreshToken } from '../thunks/authThunks.mjs';
 
 const handleError = (error) => {
   console.error('API Error:', error);
