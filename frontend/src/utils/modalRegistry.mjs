@@ -26,8 +26,6 @@ async function initializeRegistry() {
       /* @vite-ignore */ '../components/modals/ConfirmationModal'
     );
     const ConfirmationModal = ConfirmationModalModule.default;
-    const TestModalModule = await import(/* @vite-ignore */ '../components/modals/TestModal');
-    const TestModal = TestModalModule.default;
     const LoginModalModule = await import(/* @vite-ignore */ '../features/auth/modals/LoginModal');
     const LoginModal = LoginModalModule.default;
     const SignupModalModule = await import(
@@ -82,8 +80,6 @@ async function initializeRegistry() {
       component: UniverseModal,
       hasBuiltInModal: true,
     });
-
-    modalRegistry.set('TEST_MODAL', { component: TestModal, hasBuiltInModal: false });
 
     modalRegistry.set('SCENE_FORM', { component: SceneModal, hasBuiltInModal: false });
 
@@ -141,7 +137,6 @@ export const getModalComponent = async (type) => {
     'PHYSICS_OBJECT',
     'PHYSICS_PARAMETERS',
     'PHYSICS_CONSTRAINT',
-    'TEST_MODAL',
   ];
 
   if (!validTypes.includes(type)) {
@@ -271,8 +266,6 @@ export const getModalDisplayName = (type) => {
     'audio-generate': 'Generate Audio',
     [MODAL_TYPES.MUSIC_DETAILS]: 'Music Details',
     'audio-details': 'Audio Details',
-    [MODAL_TYPES.TEST_MODAL]: 'Test Modal',
-    TEST_MODAL: 'Test Modal',
   };
 
   return displayNames[type] || type;
@@ -479,7 +472,6 @@ export const getModalComponentSync = (type) => {
     'PHYSICS_OBJECT',
     'PHYSICS_PARAMETERS',
     'PHYSICS_CONSTRAINT',
-    'TEST_MODAL',
   ];
 
   if (!validTypes.includes(type)) {

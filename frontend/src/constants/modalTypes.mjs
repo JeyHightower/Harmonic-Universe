@@ -6,7 +6,6 @@ export const MODAL_TYPES = {
   ALERT: 'ALERT',
   CONFIRMATION: 'CONFIRMATION',
   FORM: 'FORM',
-  TEST_MODAL: 'TEST_MODAL',
 
   // Auth modals
   LOGIN: 'LOGIN',
@@ -63,7 +62,6 @@ export const getModalDisplayName = (type) => {
     [MODAL_TYPES.MUSIC_DELETE]: 'Delete Music',
     [MODAL_TYPES.MUSIC_GENERATE]: 'Generate Music',
     [MODAL_TYPES.MUSIC_DETAILS]: 'Music Details',
-    [MODAL_TYPES.TEST_MODAL]: 'Test Modal',
   };
 
   return displayNames[type] || type;
@@ -94,7 +92,6 @@ export const getModalIcon = (type) => {
     [MODAL_TYPES.MUSIC_DELETE]: 'delete',
     [MODAL_TYPES.MUSIC_GENERATE]: 'music-note-plus',
     [MODAL_TYPES.MUSIC_DETAILS]: 'music-note',
-    [MODAL_TYPES.TEST_MODAL]: 'test',
   };
 
   return icons[type] || 'question-circle';
@@ -125,7 +122,6 @@ export const getModalDescription = (type) => {
     [MODAL_TYPES.MUSIC_DELETE]: 'Delete music from your universe',
     [MODAL_TYPES.MUSIC_GENERATE]: 'Generate new music using AI',
     [MODAL_TYPES.MUSIC_DETAILS]: 'View detailed information about music',
-    [MODAL_TYPES.TEST_MODAL]: 'Test modal for debugging modal interactions',
   };
 
   return descriptions[type] || '';
