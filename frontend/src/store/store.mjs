@@ -15,7 +15,7 @@ import modalMiddleware from './middleware/newModalMiddleware';
 import audioReducer from './slices/audioSlice.mjs';
 import authReducer from './slices/authSlice.mjs';
 import characterReducer from './slices/characterSlice.mjs';
-import modalReducer from './slices/newModalSlice.js';
+import modalReducer from './slices/newModalSlice.mjs';
 import noteReducer from './slices/noteSlice.mjs';
 import scenesReducer from './slices/scenesSlice.mjs';
 import universeReducer from './slices/universeSlice.mjs';

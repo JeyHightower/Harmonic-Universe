@@ -4,9 +4,9 @@
  */
 
 // Re-export individual fixes
-export * from './extensionState.js';
-export * from './heuristicsRedefinitions.js';
-export * from './utils.js';
+export * from './extensionState.mjs';
+export * from './heuristicsRedefinitions.mjs';
+export * from './utils.mjs';
 
 // Export the react-fix-loader functionality for direct imports
 import './react-fix-loader.mjs';

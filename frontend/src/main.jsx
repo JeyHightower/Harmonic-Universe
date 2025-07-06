@@ -1,4 +1,3 @@
-
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -28,8 +27,8 @@ import {
 
 // Import test auth flow for debugging (development only)
 if (import.meta.env.DEV) {
-  import('./test-auth-flow.js');
-  import('./utils/clearUniverseCache.js');
+  import('./test-auth-flow.mjs');
+  import('./utils/clearUniverseCache.mjs');
 }
 
 // Ensure modal system is properly initialized
