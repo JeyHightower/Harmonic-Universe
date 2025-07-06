@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { hideUnlockButton, initializeAudio, setContextState, showUnlockButton, unlockAttempted } from '../store/slices/audioSlice.mjs';
-import audioManager, { AudioErrorCode } from '../utils/audioManager';
+import {
+  hideUnlockButton,
+  initializeAudio,
+  setContextState,
+  showUnlockButton,
+  unlockAttempted,
+} from '../store/slices/audioSlice.mjs';
+import audioManager, { AudioErrorCode } from '../utils/audioManager.mjs';
 
 // Create a shared initialization tracker across hook instances
 let globalInitAttemptInProgress = false;
@@ -17,7 +23,7 @@ if (typeof window !== 'undefined' && !window.__GLOBAL_AUDIO_STATE) {
     initializing: false,
     initPromise: null,
     lastAttempt: 0,
-    attemptCount: 0
+    attemptCount: 0,
   };
 }
 
@@ -27,7 +33,7 @@ if (typeof window !== 'undefined' && !window.__GLOBAL_AUDIO_STATE) {
  */
 const useAudio = () => {
   const dispatch = useDispatch();
-  const audio = useSelector(state => state.audio);
+  const audio = useSelector((state) => state.audio);
   const [globalEvents, setGlobalEvents] = useState(null);
   const initAttemptRef = useRef(false); // Track if this hook already attempted initialization
   const {
@@ -37,170 +43,176 @@ const useAudio = () => {
     error,
     contextState,
     unlockButtonVisible,
-    unlockAttempted: audioUnlockAttempted
+    unlockAttempted: audioUnlockAttempted,
   } = audio;
 
   /**
    * Attempt to initialize the audio context
    * @returns {Promise<boolean>} True if successful
    */
-  const initAudio = useCallback(async (showButtonOnFailure = true) => {
-    // If audio is already ready, return true immediately
-    if (ready) return true;
+  const initAudio = useCallback(
+    async (showButtonOnFailure = true) => {
+      // If audio is already ready, return true immediately
+      if (ready) return true;
 
-    // Check if the app is ready for audio initialization
-    if (!audioManager.isAppReady()) {
-      console.debug('[useAudio] App not ready for audio initialization');
-      // Don't show an error for this, just wait
-      return false;
-    }
-
-    // CRITICAL: Check for existing initialization
-    // First check audioManager (for cross-component tracking)
-    if (audioManager.isInitializing() && audioManager.pendingPromise) {
-      console.debug('[useAudio] Using existing global initialization from audioManager');
-      return audioManager.pendingPromise;
-    }
-
-    // Then check module-level shared promise
-    if (pendingInitPromise) {
-      console.debug('[useAudio] Reusing existing module-level initialization promise');
-      return pendingInitPromise;
-    }
-
-    // Finally check Redux state
-    if (initializing) {
-      console.debug('[useAudio] Audio initialization already in progress in Redux');
-      // Create a deferred promise that will resolve when initialization completes
-      const deferredPromise = new Promise((resolve) => {
-        // Set up a polling interval to check when initialization is done
-        const checkInterval = setInterval(() => {
-          if (ready || audio.error) {
-            clearInterval(checkInterval);
-            resolve(ready);
-          }
-        }, 300);
-
-        // Set a timeout to avoid infinite polling
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          resolve(false);
-        }, 5000);
-      });
-
-      return deferredPromise;
-    }
-
-    // Prevent multiple attempts from the same hook instance
-    if (initAttemptRef.current) {
-      console.debug('[useAudio] Skipping repeated init attempt from same hook instance');
-      return false;
-    }
-
-    // Check initialization preconditions
-    const preconditionError = audioManager.checkInitPreconditions();
-    if (preconditionError) {
-      console.debug(`[useAudio] Initialization precondition failed: ${preconditionError.code}`);
-
-      // If the error is that we need a user gesture, and we have an explicit unlock attempt,
-      // we'll treat that as having a user gesture
-      if (preconditionError.code === AudioErrorCode.NO_USER_GESTURE && audioUnlockAttempted) {
-        console.debug('[useAudio] Proceeding anyway due to explicit unlock attempt');
-      } else {
-        // For other precondition errors, don't continue
-        return Promise.reject(preconditionError);
+      // Check if the app is ready for audio initialization
+      if (!audioManager.isAppReady()) {
+        console.debug('[useAudio] App not ready for audio initialization');
+        // Don't show an error for this, just wait
+        return false;
       }
-    }
 
-    // Mark this hook instance as having attempted initialization
-    initAttemptRef.current = true;
+      // CRITICAL: Check for existing initialization
+      // First check audioManager (for cross-component tracking)
+      if (audioManager.isInitializing() && audioManager.pendingPromise) {
+        console.debug('[useAudio] Using existing global initialization from audioManager');
+        return audioManager.pendingPromise;
+      }
 
-    // Record the attempt in the audio manager
-    audioManager.recordAttempt();
-    audioManager.setState('INITIALIZING');
+      // Then check module-level shared promise
+      if (pendingInitPromise) {
+        console.debug('[useAudio] Reusing existing module-level initialization promise');
+        return pendingInitPromise;
+      }
 
-    // Set global flags
-    globalInitAttemptInProgress = true;
-    lastAttemptTimestamp = Date.now();
-    window.__LAST_AUDIO_HOOK_ATTEMPT = Date.now();
+      // Finally check Redux state
+      if (initializing) {
+        console.debug('[useAudio] Audio initialization already in progress in Redux');
+        // Create a deferred promise that will resolve when initialization completes
+        const deferredPromise = new Promise((resolve) => {
+          // Set up a polling interval to check when initialization is done
+          const checkInterval = setInterval(() => {
+            if (ready || audio.error) {
+              clearInterval(checkInterval);
+              resolve(ready);
+            }
+          }, 300);
 
-    // Create the initialization promise and store it globally
-    pendingInitPromise = (async () => {
-      try {
-        // Update global tracking state
-        if (window.__AUDIO_EVENT_SYSTEM) {
-          window.__AUDIO_EVENT_SYSTEM.STATE.initializing = true;
+          // Set a timeout to avoid infinite polling
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            resolve(false);
+          }, 5000);
+        });
+
+        return deferredPromise;
+      }
+
+      // Prevent multiple attempts from the same hook instance
+      if (initAttemptRef.current) {
+        console.debug('[useAudio] Skipping repeated init attempt from same hook instance');
+        return false;
+      }
+
+      // Check initialization preconditions
+      const preconditionError = audioManager.checkInitPreconditions();
+      if (preconditionError) {
+        console.debug(`[useAudio] Initialization precondition failed: ${preconditionError.code}`);
+
+        // If the error is that we need a user gesture, and we have an explicit unlock attempt,
+        // we'll treat that as having a user gesture
+        if (preconditionError.code === AudioErrorCode.NO_USER_GESTURE && audioUnlockAttempted) {
+          console.debug('[useAudio] Proceeding anyway due to explicit unlock attempt');
+        } else {
+          // For other precondition errors, don't continue
+          return Promise.reject(preconditionError);
         }
+      }
 
-        // Actually attempt to initialize audio via Redux
-        const result = await dispatch(initializeAudio()).unwrap();
+      // Mark this hook instance as having attempted initialization
+      initAttemptRef.current = true;
 
-        // Update global state tracking
-        if (window.__AUDIO_EVENT_SYSTEM) {
-          window.__AUDIO_EVENT_SYSTEM.STATE.initializing = false;
-          window.__AUDIO_EVENT_SYSTEM.STATE.initialized = true;
-        }
+      // Record the attempt in the audio manager
+      audioManager.recordAttempt();
+      audioManager.setState('INITIALIZING');
 
-        // Dispatch global event
-        if (globalEvents) {
-          globalEvents.dispatchEvent('redux-init-success', result);
-        }
+      // Set global flags
+      globalInitAttemptInProgress = true;
+      lastAttemptTimestamp = Date.now();
+      window.__LAST_AUDIO_HOOK_ATTEMPT = Date.now();
 
-        // Update audio manager state
-        audioManager.setState('INITIALIZED');
+      // Create the initialization promise and store it globally
+      pendingInitPromise = (async () => {
+        try {
+          // Update global tracking state
+          if (window.__AUDIO_EVENT_SYSTEM) {
+            window.__AUDIO_EVENT_SYSTEM.STATE.initializing = true;
+          }
 
-        return result.contextState === 'running';
-      } catch (err) {
-        // Record the error in the audio manager
-        audioManager.recordError(err);
+          // Actually attempt to initialize audio via Redux
+          const result = await dispatch(initializeAudio()).unwrap();
 
-        // Only show error UI for real failures
-        if (err && err.code !== AudioErrorCode.DEBOUNCED &&
-            err.code !== AudioErrorCode.IN_PROGRESS &&
-            err.code !== AudioErrorCode.APP_LOADING) {
-          if (showButtonOnFailure) {
-            dispatch(showUnlockButton());
-            // Mark an explicit unlock attempt needed
-            dispatch(unlockAttempted());
+          // Update global state tracking
+          if (window.__AUDIO_EVENT_SYSTEM) {
+            window.__AUDIO_EVENT_SYSTEM.STATE.initializing = false;
+            window.__AUDIO_EVENT_SYSTEM.STATE.initialized = true;
           }
 
           // Dispatch global event
           if (globalEvents) {
-            globalEvents.dispatchEvent('redux-init-error', err);
+            globalEvents.dispatchEvent('redux-init-success', result);
           }
 
           // Update audio manager state
-          audioManager.setState('FAILED');
+          audioManager.setState('INITIALIZED');
+
+          return result.contextState === 'running';
+        } catch (err) {
+          // Record the error in the audio manager
+          audioManager.recordError(err);
+
+          // Only show error UI for real failures
+          if (
+            err &&
+            err.code !== AudioErrorCode.DEBOUNCED &&
+            err.code !== AudioErrorCode.IN_PROGRESS &&
+            err.code !== AudioErrorCode.APP_LOADING
+          ) {
+            if (showButtonOnFailure) {
+              dispatch(showUnlockButton());
+              // Mark an explicit unlock attempt needed
+              dispatch(unlockAttempted());
+            }
+
+            // Dispatch global event
+            if (globalEvents) {
+              globalEvents.dispatchEvent('redux-init-error', err);
+            }
+
+            // Update audio manager state
+            audioManager.setState('FAILED');
+          }
+
+          throw err; // Propagate the error
+        } finally {
+          // Always clean up global flags when done, regardless of success or failure
+          globalInitAttemptInProgress = false;
+
+          // Clear the pending promise after a short delay to prevent immediate retries
+          setTimeout(() => {
+            pendingInitPromise = null;
+
+            // Clean up global state
+            if (window.__AUDIO_EVENT_SYSTEM) {
+              window.__AUDIO_EVENT_SYSTEM.STATE.initializing = false;
+            }
+
+            // Also clear the pending promise from the audio manager
+            if (audioManager.pendingPromise === pendingInitPromise) {
+              audioManager.pendingPromise = null;
+            }
+          }, 1000);
         }
+      })();
 
-        throw err; // Propagate the error
-      } finally {
-        // Always clean up global flags when done, regardless of success or failure
-        globalInitAttemptInProgress = false;
+      // Store the promise in the audio manager
+      audioManager.pendingPromise = pendingInitPromise;
 
-        // Clear the pending promise after a short delay to prevent immediate retries
-        setTimeout(() => {
-          pendingInitPromise = null;
-
-          // Clean up global state
-          if (window.__AUDIO_EVENT_SYSTEM) {
-            window.__AUDIO_EVENT_SYSTEM.STATE.initializing = false;
-          }
-
-          // Also clear the pending promise from the audio manager
-          if (audioManager.pendingPromise === pendingInitPromise) {
-            audioManager.pendingPromise = null;
-          }
-        }, 1000);
-      }
-    })();
-
-    // Store the promise in the audio manager
-    audioManager.pendingPromise = pendingInitPromise;
-
-    // Return the pending promise
-    return pendingInitPromise;
-  }, [dispatch, ready, initializing, globalEvents, audioUnlockAttempted, audio.error]);
+      // Return the pending promise
+      return pendingInitPromise;
+    },
+    [dispatch, ready, initializing, globalEvents, audioUnlockAttempted, audio.error]
+  );
 
   /**
    * Show the audio unlock button
@@ -233,10 +245,10 @@ const useAudio = () => {
 
     // Track gestures on various interactions
     const gestureEvents = ['mousedown', 'touchstart', 'keydown', 'click'];
-    gestureEvents.forEach(eventType => {
+    gestureEvents.forEach((eventType) => {
       document.addEventListener(eventType, trackUserGesture, {
         passive: true,
-        capture: false
+        capture: false,
       });
     });
 
@@ -251,46 +263,48 @@ const useAudio = () => {
       // but only if we aren't already trying to initialize
       setTimeout(() => {
         if (!ready && !initializing && !globalInitAttemptInProgress) {
-          initAudio(false).then(success => {
-            if (!success) {
-              // Only show the button after a delay if initialization failed
-              setTimeout(() => {
-                if (!ready && !initializing) {
-                  dispatch(showUnlockButton());
-                }
-              }, 2000);
-            }
-          }).catch(err => {
-            // Suppress specific initialization errors that are expected
-            if (err && err.code !== 'INIT_IN_PROGRESS' && err.code !== 'INIT_DEBOUNCED') {
-              console.debug('Audio init error on user interaction:', err);
-            }
-          });
+          initAudio(false)
+            .then((success) => {
+              if (!success) {
+                // Only show the button after a delay if initialization failed
+                setTimeout(() => {
+                  if (!ready && !initializing) {
+                    dispatch(showUnlockButton());
+                  }
+                }, 2000);
+              }
+            })
+            .catch((err) => {
+              // Suppress specific initialization errors that are expected
+              if (err && err.code !== 'INIT_IN_PROGRESS' && err.code !== 'INIT_DEBOUNCED') {
+                console.debug('Audio init error on user interaction:', err);
+              }
+            });
         }
       }, 100);
 
       // Remove first interaction listeners
-      ['mousedown', 'touchstart', 'keydown'].forEach(eventType => {
+      ['mousedown', 'touchstart', 'keydown'].forEach((eventType) => {
         document.removeEventListener(eventType, handleFirstInteraction, { capture: true });
       });
     };
 
     // Add listeners for first interaction
-    ['mousedown', 'touchstart', 'keydown'].forEach(eventType => {
+    ['mousedown', 'touchstart', 'keydown'].forEach((eventType) => {
       document.addEventListener(eventType, handleFirstInteraction, {
         capture: true,
         passive: true,
-        once: true
+        once: true,
       });
     });
 
     return () => {
       // Cleanup all listeners
-      gestureEvents.forEach(eventType => {
+      gestureEvents.forEach((eventType) => {
         document.removeEventListener(eventType, trackUserGesture, { capture: false });
       });
 
-      ['mousedown', 'touchstart', 'keydown'].forEach(eventType => {
+      ['mousedown', 'touchstart', 'keydown'].forEach((eventType) => {
         document.removeEventListener(eventType, handleFirstInteraction, { capture: true });
       });
     };
@@ -315,8 +329,8 @@ const useAudio = () => {
             lastInitTime: 0,
             initialized: false,
             initializing: false,
-            attempts: 0
-          }
+            attempts: 0,
+          },
         };
       }
 
@@ -353,7 +367,7 @@ const useAudio = () => {
     showAudioButton,
     hideAudioButton,
     isReady: ready && contextState === 'running',
-    needsUserAction: !ready && (contextState === 'suspended' || error)
+    needsUserAction: !ready && (contextState === 'suspended' || error),
   };
 };
 

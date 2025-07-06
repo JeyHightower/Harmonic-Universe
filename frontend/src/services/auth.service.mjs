@@ -3,7 +3,7 @@
  * Handles authentication operations like login, register, token validation
  */
 
-import { AUTH_CONFIG } from '../utils/config';
+import { AUTH_CONFIG } from '../utils/config.mjs';
 import { API_SERVICE_CONFIG } from './config.mjs';
 import { demoService } from './demo.service.mjs';
 import { authEndpoints } from './endpoints.mjs';

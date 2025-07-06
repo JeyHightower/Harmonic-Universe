@@ -1,10 +1,10 @@
 /**
  * API Configuration
- * 
+ *
  * This file exports configuration settings for API services
  */
 
-import { API_CONFIG, AUTH_CONFIG, IS_PRODUCTION } from '../utils/config';
+import { AUTH_CONFIG, IS_PRODUCTION } from '../utils/config.mjs';
 
 // API Base URL determination
 const getApiBaseUrl = () => {
@@ -19,7 +19,7 @@ const getApiBaseUrl = () => {
   // In development, use the full URL from config or environment
   // Don't include /api as it will be added by formatUrl
   const baseUrl = 'http://localhost:5001';
-  
+
   console.log(`Using development API URL: ${baseUrl}`);
   return baseUrl;
 };
@@ -27,19 +27,19 @@ const getApiBaseUrl = () => {
 export const API_SERVICE_CONFIG = {
   // Base URL for API requests
   BASE_URL: getApiBaseUrl(),
-  
+
   // API version prefix
-  API_PREFIX: '/api',  // Will be added to BASE_URL if not already included
-  
+  API_PREFIX: '/api', // Will be added to BASE_URL if not already included
+
   // Default request timeout in milliseconds
   TIMEOUT: 30000,
-  
+
   // Cache configuration
   CACHE: {
     ENABLED: true,
     DURATION: 5 * 60 * 1000, // 5 minutes
   },
-  
+
   // Authentication configuration - critical to use same keys as AUTH_CONFIG
   AUTH: {
     // Must use the exact same TOKEN_KEY from AUTH_CONFIG to maintain consistency
@@ -48,7 +48,7 @@ export const API_SERVICE_CONFIG = {
     USER_KEY: AUTH_CONFIG.USER_KEY,
     TOKEN_TYPE: 'Bearer',
   },
-  
+
   // Retry configuration
   RETRY: {
     MAX_RETRIES: 3,
@@ -62,9 +62,9 @@ export const API_SERVICE_CONFIG = {
       // Whether to respect the Retry-After header
       RESPECT_RETRY_AFTER: true,
       // Default delay if no Retry-After header (in ms)
-      DEFAULT_RETRY_AFTER: 5000
-    }
+      DEFAULT_RETRY_AFTER: 5000,
+    },
   },
 };
 
-export default API_SERVICE_CONFIG; 
+export default API_SERVICE_CONFIG;

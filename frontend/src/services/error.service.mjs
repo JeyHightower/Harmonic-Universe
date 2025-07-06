@@ -3,7 +3,7 @@
  * Centralized error handling and reporting service
  */
 
-import { API_CONFIG } from '../utils/config';
+import { API_CONFIG } from '../utils/config.mjs';
 
 /**
  * Log an error to the console and optionally to a remote service
@@ -13,7 +13,7 @@ import { API_CONFIG } from '../utils/config';
  */
 export const logError = (error, source = 'unknown', context = {}) => {
   console.error(`Error in ${source}:`, error, context);
-  
+
   // In production, we might want to send this to a remote logging service
   if (API_CONFIG.ERROR_LOGGING_ENABLED) {
     // Implementation for remote error logging would go here
@@ -28,11 +28,11 @@ export const logError = (error, source = 'unknown', context = {}) => {
  */
 export const formatErrorMessage = (error, fallback = 'An unexpected error occurred') => {
   if (!error) return fallback;
-  
+
   if (typeof error === 'string') return error;
-  
+
   if (error.message) return error.message;
-  
+
   return fallback;
 };
 
@@ -44,22 +44,22 @@ export const formatErrorMessage = (error, fallback = 'An unexpected error occurr
  */
 export const handleApiError = (error, options = {}) => {
   const { showNotification = true, throwError = false } = options;
-  
+
   const errorMessage = formatErrorMessage(error);
-  
+
   if (showNotification) {
     // Implementation for showing notification would go here
     // This would typically integrate with your notification system
   }
-  
+
   if (throwError) {
     throw new Error(errorMessage);
   }
-  
+
   return {
     error: true,
     message: errorMessage,
-    details: error
+    details: error,
   };
 };
 
@@ -79,5 +79,5 @@ export default {
   logError,
   formatErrorMessage,
   handleApiError,
-  createErrorHandler
-}; 
+  createErrorHandler,
+};
