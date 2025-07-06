@@ -1,3 +1,14 @@
+alert('MAIN.JSX IS LOADING');
+console.error('MAIN.JSX ERROR TEST - THIS SHOULD SHOW');
+console.log('MAIN.JSX LOADED');
+
+// Debug environment detection
+console.error('Environment check:', {
+  isProduction: import.meta.env.PROD,
+  isDevelopment: import.meta.env.DEV,
+  mode: import.meta.env.MODE,
+});
+
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -25,8 +36,11 @@ import {
   forceModalInteractivity,
 } from './utils/portalUtils';
 
-// Import test auth flow for debugging
-import './test-auth-flow.js';
+// Import test auth flow for debugging (development only)
+if (import.meta.env.DEV) {
+  import('./test-auth-flow.js');
+  import('./utils/clearUniverseCache.js');
+}
 
 // Ensure modal system is properly initialized
 const initModalSystem = () => {
@@ -68,10 +82,14 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
 const isProduction = import.meta.env.PROD;
 const isDevelopment = import.meta.env.DEV;
 
+console.error('Before environment check - this should always show');
+
 // Basic environment configuration
 if (isDevelopment) {
   console.info('Running in development mode');
+  console.error('Development mode - console.log should work normally');
 } else if (isProduction) {
+  console.error('Production mode detected - overriding console.log');
   // In production, silence console logs but keep errors
   const originalConsoleLog = console.log;
   const originalConsoleInfo = console.info;
@@ -89,6 +107,8 @@ if (isDevelopment) {
     }
   };
 }
+
+console.error('After environment check - this should show in dev mode');
 
 // Add polyfill for structuredClone if needed
 if (typeof window.structuredClone !== 'function') {

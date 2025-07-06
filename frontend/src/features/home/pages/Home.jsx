@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../../components/common/Button';
+import { demoService } from '../../../services/demo.service.mjs';
 import { checkAuthState, demoLogin } from '../../../store/thunks/authThunks';
 import '../../../styles/Home.css';
 import { AUTH_CONFIG } from '../../../utils/config';
@@ -12,7 +12,7 @@ const { setTimeout } = window;
 function Home() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, isDemoUser } = useSelector((state) => state.auth);
 
   useEffect(() => {
     console.debug('Home component mounted');
@@ -32,18 +32,56 @@ function Home() {
   }, [isAuthenticated, loading, navigate]);
 
   const handleDemoLogin = async () => {
+    console.error('Home - handleDemoLogin called');
+    console.log('starting demo login');
     try {
       console.debug('[Home] Starting demo login process');
+      console.error('Home - About to dispatch demoLogin');
       const result = await dispatch(demoLogin()).unwrap();
+      console.error('Home - demoLogin result:', result);
 
       if (result?.success) {
         console.debug('[Home] Demo login successful');
+        console.error('Home - Demo login successful, navigating to dashboard');
         navigate('/dashboard', { replace: true });
       } else {
         throw new Error('Demo login failed');
       }
     } catch (error) {
       console.error('[Home] Demo login process failed:', error);
+      console.error('Home - Demo login error:', error);
+    }
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
+  const handleRegister = () => {
+    navigate('/register');
+  };
+
+  const handleDashboard = () => {
+    navigate('/dashboard');
+  };
+
+  const handleLogout = () => {
+    // Clear auth state and redirect to home
+    localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
+    localStorage.removeItem(AUTH_CONFIG.USER_KEY);
+    localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+    window.location.reload();
+  };
+
+  const handleDemoUniverseCheck = async () => {
+    try {
+      console.log('Checking demo universe...');
+      const result = await demoService.checkAndCreateDemoUniverse();
+      console.log('Demo universe check result:', result);
+      alert(`Demo universe check completed. Check console for details.`);
+    } catch (error) {
+      console.error('Error checking demo universe:', error);
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -76,12 +114,35 @@ function Home() {
     <div className="home-container">
       <div className="home-content">
         <h1>Welcome to Harmonic Universe</h1>
-        <p>Create and manage your story universes with ease.</p>
-        <div className="auth-buttons">
-          <Button onClick={handleDemoLogin} variant="primary">
-            Try Demo
-          </Button>
-        </div>
+        <p>Create, explore, and manage your creative universes</p>
+
+        {!isAuthenticated ? (
+          <div className="auth-buttons">
+            <button onClick={handleLogin} className="btn btn-primary">
+              Login
+            </button>
+            <button onClick={handleRegister} className="btn btn-secondary">
+              Register
+            </button>
+            <button onClick={handleDemoLogin} className="btn btn-demo">
+              Try Demo
+            </button>
+          </div>
+        ) : (
+          <div className="user-actions">
+            <button onClick={handleDashboard} className="btn btn-primary">
+              Go to Dashboard
+            </button>
+            <button onClick={handleLogout} className="btn btn-secondary">
+              Logout
+            </button>
+            {isDemoUser && (
+              <button onClick={handleDemoUniverseCheck} className="btn btn-debug">
+                Debug: Check Demo Universe
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <div className="features-grid">
         <div className="feature-card">

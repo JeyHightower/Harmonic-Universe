@@ -8,9 +8,6 @@ from sqlalchemy import text
 import traceback
 from functools import wraps
 
-# Import the route to reuse logic
-from .characters import get_characters_by_universe as get_characters_by_universe_func
-
 universes_bp = Blueprint('universes', __name__)
 
 def jwt_required_except_options(f):
@@ -319,8 +316,34 @@ def delete_universe(universe_id):
 @jwt_required()
 def get_universe_characters(universe_id):
     """Get all characters in a universe"""
-    # Reuse the existing function logic
-    return get_characters_by_universe_func(universe_id)
+    try:
+        universe = Universe.query.get_or_404(universe_id)
+        user_id = get_jwt_identity()
+
+        # Check access permissions
+        if not universe.is_public and universe.user_id != user_id:
+            return jsonify({
+                'message': 'Access denied',
+                'error': 'You do not have permission to access this universe'
+            }), 403
+
+        # Get characters for the universe
+        characters = Character.query.filter_by(
+            universe_id=universe_id,
+            is_deleted=False
+        ).all()
+
+        return jsonify({
+            'message': 'Characters retrieved successfully',
+            'characters': [char.to_dict() for char in characters]
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving characters for universe {universe_id}: {str(e)}")
+        return jsonify({
+            'message': 'Error retrieving characters',
+            'error': str(e)
+        }), 500
 
 @universes_bp.route('/<int:universe_id>/scenes', methods=['GET'])
 @universes_bp.route('/<int:universe_id>/scenes/', methods=['GET'])
@@ -476,3 +499,59 @@ def debug_jwt_identity():
         'identity_type': type(user_id).__name__,
         'user_data': user_data
     }), 200
+
+# Debug endpoint to check universe ownership and create demo universe
+@universes_bp.route('/debug/check-universes', methods=['GET'])
+@jwt_required()
+def debug_check_universes():
+    try:
+        user_id = get_jwt_identity()
+
+        # Get user details
+        from ..models.user import User
+        user = User.query.get(user_id)
+
+        # Check what universes the user owns
+        user_universes = Universe.query.filter_by(user_id=user_id, is_deleted=False).all()
+
+        # Check all universes in the database
+        all_universes = Universe.query.filter_by(is_deleted=False).all()
+
+        # Create a demo universe if the user doesn't have any
+        created_universe = None
+        if not user_universes:
+            demo_universe = Universe(
+                name='Demo Universe',
+                description='A sample universe created for the demo user',
+                user_id=user_id,
+                is_public=False
+            )
+
+            db.session.add(demo_universe)
+            db.session.commit()
+            created_universe = demo_universe.to_dict()
+
+        # Format response
+        user_universes_data = [u.to_dict() for u in user_universes]
+        all_universes_data = []
+
+        for universe in all_universes:
+            universe_data = universe.to_dict()
+            owner = User.query.get(universe.user_id)
+            universe_data['owner_email'] = owner.email if owner else 'Unknown'
+            all_universes_data.append(universe_data)
+
+        return jsonify({
+            'user_id': user_id,
+            'user_email': user.email if user else 'Unknown',
+            'user_universes': user_universes_data,
+            'all_universes': all_universes_data,
+            'created_universe': created_universe
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f'Error in debug_check_universes: {str(e)}')
+        return jsonify({
+            'message': 'Error checking universes',
+            'error': str(e)
+        }), 500

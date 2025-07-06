@@ -52,19 +52,37 @@ class DemoService {
    */
   async setupDemoSession() {
     try {
+      console.error('Demo Service - setupDemoSession called');
+
       // First, check if there's an invalid token and clear it
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      console.error(
+        'Demo Service - Current token:',
+        token ? `${token.substring(0, 20)}...` : 'none'
+      );
+
       if (token && token.split('.').length !== 3) {
-        console.log('Demo Service - Invalid token format detected, clearing auth data');
+        console.error('Demo Service - Invalid token format detected, clearing auth data');
         this.clearAuthData();
       }
 
       if (this.isValidDemoSession()) {
-        console.log('Demo Service - Valid demo session already exists');
-        return { success: true };
+        console.error('Demo Service - Valid demo session already exists');
+        // Return the current tokens for consistency
+        const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+        const refresh_token = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+        const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+        const user = userStr ? JSON.parse(userStr) : null;
+
+        return {
+          success: true,
+          token,
+          refresh_token,
+          user,
+        };
       }
 
-      console.log('Demo Service - No valid demo session, performing demo login');
+      console.error('Demo Service - No valid demo session, performing demo login');
       // Otherwise, perform demo login
       return await this.login();
     } catch (error) {
@@ -139,6 +157,17 @@ class DemoService {
    */
   isDemoSession() {
     return this.isValidDemoSession();
+  }
+
+  async checkAndCreateDemoUniverse() {
+    try {
+      const response = await httpClient.get('/api/universes/debug/check-universes');
+      console.log('Debug universe check response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error checking demo universes:', error);
+      throw error;
+    }
   }
 }
 

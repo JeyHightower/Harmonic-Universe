@@ -109,6 +109,16 @@ export const demoLogin = createAsyncThunk(
         // Dispatch a storage event to notify other components
         window.dispatchEvent(new CustomEvent('storage'));
 
+        // Check and create demo universe if needed
+        try {
+          console.log('Thunk - Checking for demo universe...');
+          const universeCheck = await demoService.checkAndCreateDemoUniverse();
+          console.log('Thunk - Demo universe check result:', universeCheck);
+        } catch (universeError) {
+          console.error('Thunk - Error checking demo universe:', universeError);
+          // Don't fail the login if universe check fails
+        }
+
         return response;
       } catch (error) {
         console.error('Thunk - Demo login failed:', error);
@@ -407,37 +417,54 @@ export const validateAndRefreshToken = createAsyncThunk(
   'auth/validateAndRefreshToken',
   async (_, { dispatch, rejectWithValue }) => {
     try {
+      console.error('validateAndRefreshToken - Function called');
       console.debug('Validating and refreshing token if needed');
 
       // Get the current token
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       const refreshTokenValue = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
-      console.log('Debug - validateAndRefreshToken:', {
+      console.error('validateAndRefreshToken - Token check:', {
         hasToken: !!token,
         hasRefreshToken: !!refreshTokenValue,
         tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+        tokenLength: token ? token.length : 0,
+        tokenParts: token ? token.split('.').length : 0,
       });
 
       if (!token) {
-        console.log('Debug - validateAndRefreshToken: No token found');
+        console.error('validateAndRefreshToken - No token found');
         return rejectWithValue('No authentication token found');
       }
 
       // For demo tokens, regenerate a fresh token
       const isDemoSession = demoService.isDemoSession();
-      console.log('Debug - validateAndRefreshToken: isDemoSession =', isDemoSession);
+      console.error('validateAndRefreshToken - isDemoSession =', isDemoSession);
 
       if (isDemoSession) {
+        console.error('validateAndRefreshToken - Demo session detected, calling setupDemoSession');
         console.log('Demo session detected in validateAndRefreshToken, regenerating demo tokens');
         try {
           const demoData = await demoService.setupDemoSession();
-          // Ensure both tokens are stored
-          localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
-          localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, demoData.refresh_token);
+          console.error('validateAndRefreshToken - setupDemoSession result:', demoData);
+          // Ensure both tokens are stored only if defined
+          if (demoData.token) {
+            localStorage.setItem(AUTH_CONFIG.TOKEN_KEY, demoData.token);
+          } else {
+            console.error(
+              'validateAndRefreshToken - WARNING: demoData.token is undefined! Not setting token.'
+            );
+          }
+          if (demoData.refresh_token) {
+            localStorage.setItem(AUTH_CONFIG.REFRESH_TOKEN_KEY, demoData.refresh_token);
+          } else {
+            console.error(
+              'validateAndRefreshToken - WARNING: demoData.refresh_token is undefined! Not setting refresh token.'
+            );
+          }
           return { valid: true, token: demoData.token };
         } catch (demoError) {
-          console.error('Error setting up demo session:', demoError);
+          console.error('validateAndRefreshToken - Error setting up demo session:', demoError);
           return rejectWithValue({
             message: 'Failed to set up demo session',
             status: 500,

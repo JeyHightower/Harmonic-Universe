@@ -83,7 +83,6 @@ const initialState = {
   offlineMode: false,
   loginInProgress: false,
 };
-
 const authSlice = createSlice({
   name: 'auth',
   initialState,

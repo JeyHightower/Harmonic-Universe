@@ -1,3 +1,4 @@
+console.log('APP.JSX LOADED');
 import React, { lazy, Suspense, useEffect, useState, useTransition } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AudioProvider, ErrorBoundary, NetworkErrorHandler } from './components';

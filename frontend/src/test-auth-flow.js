@@ -101,10 +101,10 @@ const testDemoLogin = async () => {
   }
 };
 
-const testCorsPreflight = async () => {
+const testCorsPreflight = async (universeId = 1) => {
   try {
-    console.log('Testing CORS preflight for universe endpoint...');
-    const response = await fetch('http://localhost:5001/api/universes/19/', {
+    console.log(`Testing CORS preflight for universe endpoint (ID: ${universeId})...`);
+    const response = await fetch(`http://localhost:5001/api/universes/${universeId}/`, {
       method: 'OPTIONS',
       headers: {
         Origin: 'http://localhost:5174',
@@ -126,7 +126,7 @@ const testCorsPreflight = async () => {
   }
 };
 
-const testUniverseRequest = async () => {
+const testUniverseRequest = async (universeId = 1) => {
   try {
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
     console.log(
@@ -134,7 +134,7 @@ const testUniverseRequest = async () => {
       token ? `${token.substring(0, 20)}...` : 'none'
     );
 
-    const response = await fetch('http://localhost:5001/api/universes/19/', {
+    const response = await fetch(`http://localhost:5001/api/universes/${universeId}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ const testUniverseRequest = async () => {
   }
 };
 
-const debugAuthFlow = async () => {
+const debugAuthFlow = async (universeId = 1) => {
   console.log('=== DEBUG AUTH FLOW START ===');
 
   // Step 1: Clear all auth data
@@ -195,11 +195,11 @@ const debugAuthFlow = async () => {
 
   // Step 5: Test CORS preflight
   console.log('Step 5: Testing CORS preflight...');
-  const corsResult = await testCorsPreflight();
+  const corsResult = await testCorsPreflight(universeId);
 
   // Step 6: Test universe request
   console.log('Step 6: Testing universe request...');
-  const universeResult = await testUniverseRequest();
+  const universeResult = await testUniverseRequest(universeId);
 
   console.log('=== DEBUG AUTH FLOW END ===');
   console.log('Results:', {

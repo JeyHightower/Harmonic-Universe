@@ -1,7 +1,7 @@
 from flask import jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request
 from ...models.universe import Universe
-from ....extensions import db
+from ....extensions import db, limiter
 import traceback
 import jwt as pyjwt
 import os
@@ -38,6 +38,7 @@ def get_debug_jwt_info():
         return f"Token invalid: {str(e)}"
 
 @universes_bp.route('/', methods=['GET'])
+@limiter.limit("1000 per hour")  # Higher rate limit for universes endpoint
 @jwt_required(optional=True)
 def get_universes():
     try:
@@ -111,6 +112,7 @@ def get_universes():
 
 # Public fallback endpoint for debugging
 @universes_bp.route('/public-only/', methods=['GET'])
+@limiter.limit("1000 per hour")  # Higher rate limit for public universes endpoint
 def get_public_universes():
     """Public endpoint to fetch public universes only without JWT verification."""
     try:

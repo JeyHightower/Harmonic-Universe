@@ -327,6 +327,11 @@ const ScenesPageContent = ({ universeId }) => {
       console.error(`Universe with ID ${safeUniverseId} does not exist in the database.`);
       setLoading(false);
       setError(`Universe with ID ${safeUniverseId} not found.`);
+
+      // Clear the cached universe ID from localStorage since it doesn't exist
+      localStorage.removeItem('lastViewedUniverseId');
+      console.log('Cleared lastViewedUniverseId from localStorage due to universe not existing');
+
       // Redirect to dashboard after a short delay
       window.setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
       return;

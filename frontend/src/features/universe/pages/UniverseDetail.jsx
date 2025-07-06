@@ -163,10 +163,10 @@ const UniverseDetail = () => {
   };
 
   // Test function to verify CORS preflight
-  const testCorsPreflight = async () => {
+  const testCorsPreflight = async (universeId = 1) => {
     try {
-      console.log('Testing CORS preflight for universe endpoint...');
-      const response = await fetch('http://localhost:5001/api/universes/19/', {
+      console.log(`Testing CORS preflight for universe endpoint (ID: ${universeId})...`);
+      const response = await fetch(`http://localhost:5001/api/universes/${universeId}/`, {
         method: 'OPTIONS',
         headers: {
           Origin: 'http://localhost:5173',
@@ -189,7 +189,7 @@ const UniverseDetail = () => {
   };
 
   // Comprehensive debug function to test entire auth flow
-  const debugAuthFlow = async () => {
+  const debugAuthFlow = async (universeId = 1) => {
     console.log('=== DEBUG AUTH FLOW START ===');
 
     // Step 1: Clear all auth data
@@ -225,12 +225,12 @@ const UniverseDetail = () => {
 
     // Step 5: Test CORS preflight
     console.log('Step 5: Testing CORS preflight...');
-    const corsResult = await testCorsPreflight();
+    const corsResult = await testCorsPreflight(universeId);
 
     // Step 6: Test universe request
     console.log('Step 6: Testing universe request...');
     try {
-      const response = await fetch('http://localhost:5001/api/universes/19/', {
+      const response = await fetch(`http://localhost:5001/api/universes/${universeId}/`, {
         headers: {
           Authorization: `Bearer ${afterToken}`,
           'Content-Type': 'application/json',
