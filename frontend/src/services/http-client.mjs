@@ -395,14 +395,11 @@ const getAlternativeUrl = (url, method, error) => {
 
   if (sceneMatch) {
     const sceneId = sceneMatch[1];
-    console.log(`Special handling for scene ID endpoint: ${sceneId}`);
 
     // Try without trailing slash first (higher priority for scenes)
     if (url.endsWith('/')) {
-      console.log(`Removing trailing slash from scene endpoint: ${url}`);
       return url.slice(0, -1); // Remove trailing slash
     } else {
-      console.log(`Adding trailing slash to scene endpoint: ${url}`);
       return url + '/'; // Add trailing slash
     }
   }
@@ -553,17 +550,6 @@ const get = async (url, config = {}) => {
 const post = async (url, data = {}, options = {}) => {
   const formattedUrl = formatUrl(url);
 
-  // Extra debugging for scene creation
-  if (formattedUrl.includes('/api/scenes')) {
-    console.log('HTTP Client: Scene-related POST request detected:', {
-      url: formattedUrl,
-      data: data,
-      hasToken: !!getToken(),
-      tokenLength: getToken()?.length || 0,
-      options: { ...options, headers: options.headers || {} },
-    });
-  }
-
   // Clear cache for this URL if it exists
   clearCacheForUrl(formattedUrl);
 
@@ -631,36 +617,12 @@ const post = async (url, data = {}, options = {}) => {
       }
 
       // Make the request with retry logic for scene-related endpoints with enhanced logging
-      console.log('HTTP Client: Sending scene POST request');
       const response = await withRetry(async () => {
         const resp = await axiosInstance.post(formattedUrl, data, options);
-        console.log('HTTP Client: Scene POST successful', {
-          status: resp.status,
-          statusText: resp.statusText,
-          dataKeys: Object.keys(resp.data || {}),
-        });
-
-        // Enhanced logging for scene IDs
-        if (resp.data && resp.data.scene && resp.data.scene.id) {
-          console.log(
-            'HTTP Client: Scene created with ID:',
-            resp.data.scene.id,
-            'Type:',
-            typeof resp.data.scene.id
-          );
-        }
-
         return resp;
       }, options);
       return response.data;
     } catch (error) {
-      console.error('HTTP Client: Scene POST request failed', {
-        url: formattedUrl,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        errorData: error.response?.data,
-        errorMessage: error.message,
-      });
       throw error;
     }
   } else {
@@ -779,17 +741,6 @@ export const httpClient = {
   post: async (url, data = {}, options = {}) => {
     const formattedUrl = formatUrl(url);
 
-    // Extra debugging for scene creation
-    if (formattedUrl.includes('/api/scenes')) {
-      console.log('HTTP Client: Scene-related POST request detected:', {
-        url: formattedUrl,
-        data: data,
-        hasToken: !!getToken(),
-        tokenLength: getToken()?.length || 0,
-        options: { ...options, headers: options.headers || {} },
-      });
-    }
-
     // Clear cache for this URL if it exists
     clearCacheForUrl(formattedUrl);
 
@@ -814,20 +765,16 @@ export const httpClient = {
     if (isAuthEndpoint && formattedUrl.includes('/auth/refresh')) {
       // Try to handle both potential endpoint formats (with and without trailing slash)
       try {
-        console.log('Attempting token refresh with primary endpoint:', formattedUrl);
         const response = await axiosInstance.post(formattedUrl, data, options);
         return response.data;
       } catch (error) {
         // If we get a 405 Method Not Allowed, try the alternate endpoint format
         if (error.response && error.response.status === 405) {
-          console.log('Method not allowed on primary endpoint, trying alternate format');
-
           // Toggle the trailing slash
           const alternateEndpoint = formattedUrl.endsWith('/')
             ? formattedUrl.slice(0, -1)
             : formattedUrl + '/';
 
-          console.log('Attempting with alternate endpoint:', alternateEndpoint);
           const altResponse = await axiosInstance.post(alternateEndpoint, data, options);
           return altResponse.data;
         }

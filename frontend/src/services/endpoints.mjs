@@ -20,7 +20,6 @@ const endpoint = (path) => {
   const pathWithTrailingSlash = formattedPath.endsWith('/') ? formattedPath : `${formattedPath}/`;
 
   // Don't add API_PREFIX here as it will be added by formatUrl in http-client.mjs
-  console.log(`Endpoint: ${path} -> ${pathWithTrailingSlash}`);
   return pathWithTrailingSlash;
 };
 
@@ -33,7 +32,6 @@ const endpointNoSlash = (path) => {
   const formattedPath = path.startsWith('/') ? path : `/${path}`;
 
   // Don't add API_PREFIX here as it will be added by formatUrl in http-client.mjs
-  console.log(`Endpoint (no slash): ${path} -> ${formattedPath}`);
   return formattedPath;
 };
 
@@ -53,7 +51,6 @@ export const safeId = (id) => {
   if (typeof id === 'object' && id !== null) {
     // If the object has an 'id' property, use that
     if ('id' in id) {
-      console.warn('Object passed instead of ID, extracting id property:', id);
       return safeId(id.id); // Recursively process the extracted ID
     }
 
@@ -73,10 +70,8 @@ export const safeId = (id) => {
       const parsedId = parseInt(id, 10);
       // Ensure it's a positive number
       if (parsedId > 0) {
-        console.log(`Converted string ID "${id}" to number: ${parsedId}`);
         return parsedId;
       } else {
-        console.error(`Invalid numeric ID (not positive): ${id}`);
         return null;
       }
     }

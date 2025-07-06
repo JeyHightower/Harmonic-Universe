@@ -73,10 +73,8 @@ const SceneCreateRoute = () => {
 // Create a special route handler for characters to validate the universeId
 const CharactersRouteHandler = () => {
   const { universeId } = useParams();
-  console.log(`CharactersRouteHandler: Received universeId=${universeId}`);
 
   if (!validateUniverseId(universeId)) {
-    console.log(`Invalid universeId in route params (${universeId}), redirecting to dashboard`);
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -90,12 +88,8 @@ const CharactersRouteHandler = () => {
 // Create a special route handler for notes to validate the universeId
 const NotesRouteHandler = () => {
   const { universeId } = useParams();
-  console.log(`NotesRouteHandler: Received universeId=${universeId}`);
 
   if (!validateUniverseId(universeId)) {
-    console.log(
-      `Invalid universeId in route params (${universeId}) for notes, redirecting to dashboard`
-    );
     return <Navigate to="/dashboard" replace />;
   }
 
