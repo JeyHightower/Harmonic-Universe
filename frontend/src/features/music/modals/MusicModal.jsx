@@ -1,29 +1,29 @@
-import React, { useEffect, useState, useRef } from 'react';
-import PropTypes from 'prop-types';
+import { Pause, PlayArrow } from '@mui/icons-material';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import {
-  Modal,
+  Alert,
   Box,
-  Typography,
-  TextField,
   Button,
   CircularProgress,
+  Divider,
   FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   FormHelperText,
   Grid,
-  Divider,
-  Alert,
-  Slider,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Modal,
+  Select,
+  Slider,
+  TextField,
+  Typography,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import DeleteIcon from '@mui/icons-material/Delete';
+import PropTypes from 'prop-types';
+import { useEffect, useRef, useState } from 'react';
+import { audioApi } from '../../../services/audio.adapter.mjs';
 import '../styles/Music.css';
-import { Pause, PlayArrow } from '@mui/icons-material';
-import { audioApi } from '../../../services/api';
 
 // Define window globals to fix ESLint errors
 const { requestAnimationFrame, cancelAnimationFrame, setTimeout } = window;

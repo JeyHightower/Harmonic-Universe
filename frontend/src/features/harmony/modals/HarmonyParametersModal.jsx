@@ -1,9 +1,9 @@
 import { Button, Col, Divider, Form, Input, InputNumber, message, Row, Select, Slider } from 'antd';
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { apiClient } from '../../../services/api.adapter.mjs';
 import '../styles/HarmonyParametersModal.css';
-import apiClient from '../../../services/api';
 
 const { Option } = Select;
 
