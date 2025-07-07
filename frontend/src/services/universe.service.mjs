@@ -174,14 +174,27 @@ export const getUniverseById = async (id) => {
     // Log this request for debugging
     console.log(`Fetching universe with ID: ${id}`);
 
+    // Check if this is a demo session
+    const isDemo = demoService.isDemoSession();
+    console.log(`getUniverseById: isDemo = ${isDemo}`);
+
     // Get the auth token from localStorage
     const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
 
+    // Prepare headers
+    const headers = {
+      Authorization: token ? `Bearer ${token}` : undefined,
+    };
+
+    // Add demo user header if this is a demo session
+    if (isDemo) {
+      headers['X-Demo-User'] = 'true';
+      console.log('getUniverseById: Added X-Demo-User header for demo session');
+    }
+
     // Make the request with explicit authorization header
     const response = await httpClient.get(universeEndpoints.get(id), {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : undefined,
-      },
+      headers,
       withCredentials: true,
     });
 

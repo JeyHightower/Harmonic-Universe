@@ -248,8 +248,10 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     // Handle demo user
-    if (user?.email === 'demo@example.com') {
+    // Always send the demo user email if user is a demo user
+    if (user?.email && /^demo(-[a-zA-Z0-9]+)?@example.com$/.test(user.email)) {
       config.headers['X-Demo-User'] = 'true';
+      config.headers['X-Demo-User-Email'] = user.email;
     }
 
     return config;

@@ -123,6 +123,7 @@ def setup_cors(app):
                 "Accept",
                 "Origin",
                 "X-Demo-User",
+                "X-Demo-User-Email",
                 "X-Request-Attempt"
             ],
             "supports_credentials": True,
@@ -141,7 +142,7 @@ def setup_cors(app):
 
             # Set CORS headers
             response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,X-Demo-User,X-Request-Attempt')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,X-Demo-User,X-Demo-User-Email,X-Request-Attempt')
             response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH')
             response.headers.add('Access-Control-Allow-Credentials', 'true')
             response.headers.add('Access-Control-Max-Age', '86400')

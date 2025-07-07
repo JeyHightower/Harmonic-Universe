@@ -38,8 +38,8 @@ class DemoService {
     if (!userStr || !token) return false;
     try {
       const user = JSON.parse(userStr);
-      // Check for demo@example.com (backend demo user email)
-      if (!user?.email || user.email !== 'demo@example.com') return false;
+      // Check for demo@example.com or demo-*@example.com (backend demo user email)
+      if (!user?.email || !/^demo(-[a-zA-Z0-9]+)?@example.com$/.test(user.email)) return false;
       if (isTokenExpired(token)) return false;
       return true;
     } catch (e) {

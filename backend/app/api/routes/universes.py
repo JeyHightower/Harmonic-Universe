@@ -3,10 +3,12 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..models.universe import Universe, Scene
 from ..models.character import Character
 from ..models.note import Note
+from ..models.user import User
 from ...extensions import db
 from sqlalchemy import text
 import traceback
 from functools import wraps
+from ...utils.decorators import get_demo_user_email, is_valid_demo_email
 
 universes_bp = Blueprint('universes', __name__)
 
@@ -17,6 +19,28 @@ def jwt_required_except_options(f):
         if request.method == 'OPTIONS':
             return f(*args, **kwargs)
         return jwt_required()(f)(*args, **kwargs)
+    return decorated_function
+
+def jwt_required_or_demo(f):
+    """Decorator that applies JWT requirement or allows demo users"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
+
+        # Check if this is a demo user request
+        is_demo_user = request.headers.get('X-Demo-User') == 'true'
+
+        current_app.logger.info(f'Demo user decorator: is_demo_user={is_demo_user}, headers={dict(request.headers)}')
+
+        if is_demo_user:
+            # For demo users, skip JWT validation entirely
+            current_app.logger.info('Demo user detected, bypassing JWT validation')
+            return f(*args, **kwargs)
+        else:
+            # For regular users, require JWT
+            current_app.logger.info('Regular user detected, applying JWT validation')
+            return jwt_required()(f)(*args, **kwargs)
     return decorated_function
 
 @universes_bp.route('/', methods=['GET'])
@@ -94,13 +118,29 @@ def get_universes():
 
 @universes_bp.route('/<int:universe_id>', methods=['GET', 'OPTIONS'])
 @universes_bp.route('/<int:universe_id>/', methods=['GET', 'OPTIONS'])
-@jwt_required_except_options
 def get_universe(universe_id):
     # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
         return current_app.make_default_options_response()
 
     try:
+        # Check if this is a demo user request first
+        is_demo_user = request.headers.get('X-Demo-User') == 'true'
+        demo_user_email = get_demo_user_email() if is_demo_user else None
+        current_app.logger.info(f'Universe access request: universe_id={universe_id}, is_demo={is_demo_user}, demo_user_email={demo_user_email}')
+
+        # For non-demo users, require JWT
+        if not is_demo_user:
+            try:
+                user_id = get_jwt_identity()
+                current_app.logger.info(f'Regular user {user_id} accessing universe {universe_id}')
+            except Exception as jwt_error:
+                current_app.logger.warning(f'JWT validation failed for universe {universe_id}: {str(jwt_error)}')
+                return jsonify({
+                    'message': 'Authorization required',
+                    'error': 'Request does not contain an access token'
+                }), 401
+
         # Get the universe
         universe = Universe.query.filter_by(id=universe_id, is_deleted=False).first()
 
@@ -112,16 +152,29 @@ def get_universe(universe_id):
                 'error': 'The requested universe does not exist or has been deleted'
             }), 404
 
-        # Get user ID from JWT
-        user_id = get_jwt_identity()
-
-        # Convert user_id and universe.user_id to integers for consistent comparison
+        # Convert universe.user_id to integer for consistent comparison
         try:
-            # Ensure both user IDs are treated as integers for comparison
-            jwt_user_id = int(user_id) if user_id is not None else None
             universe_user_id = int(universe.user_id) if universe.user_id is not None else None
 
-            # Check if user has access to this universe
+            # For demo users, check if the universe belongs to the correct demo user
+            if is_demo_user:
+                # Use the demo user email from the header (or fallback)
+                demo_user = User.query.filter_by(email=demo_user_email).first()
+                if demo_user and universe_user_id == demo_user.id:
+                    current_app.logger.info(f'Demo user {demo_user_email} accessing their own universe {universe_id}')
+                    return jsonify({
+                        'message': 'Universe retrieved successfully',
+                        'universe': universe.to_dict()
+                    }), 200
+                else:
+                    current_app.logger.warning(f'Demo user {demo_user_email} denied access to universe {universe_id} (not owned by demo user)')
+                    return jsonify({
+                        'message': 'Access denied',
+                        'error': 'You do not have permission to access this universe'
+                    }), 403
+
+            # For regular users, check if user has access to this universe
+            jwt_user_id = int(user_id) if user_id is not None else None
             if not universe.is_public and universe_user_id != jwt_user_id:
                 current_app.logger.warning(f'User {jwt_user_id} denied access to universe {universe_id}')
                 return jsonify({

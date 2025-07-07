@@ -426,7 +426,7 @@ class AuthService {
         const userStr = localStorage.getItem(USER_KEY);
         if (userStr) {
           const user = JSON.parse(userStr);
-          if (user?.email === 'demo@example.com') {
+          if (user?.email && /^demo(-[a-zA-Z0-9]+)?@example.com$/.test(user.email)) {
             console.log('Demo user detected in isTokenValid, considering valid');
             return true;
           }
@@ -596,7 +596,7 @@ export function hasValidToken() {
       const userStr = localStorage.getItem(USER_KEY);
       if (userStr) {
         const user = JSON.parse(userStr);
-        if (user?.email === 'demo@example.com') {
+        if (user?.email && /^demo(-[a-zA-Z0-9]+)?@example.com$/.test(user.email)) {
           console.log('Demo user detected in hasValidToken, considering valid');
           return true;
         }
