@@ -741,6 +741,7 @@ const Dashboard = () => {
             disableEnforceFocus
             disableAutoFocus
             style={{ zIndex: 1050 }}
+            hideBackdrop={true}
           >
             <DialogTitle>Confirm Delete</DialogTitle>
             <DialogContent>

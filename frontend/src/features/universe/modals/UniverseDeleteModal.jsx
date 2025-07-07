@@ -66,6 +66,7 @@ const UniverseDeleteModal = ({ isOpen, onClose, onSuccess, universe }) => {
         className: 'universe-delete-modal-paper',
         elevation: 24,
       }}
+      hideBackdrop={true}
     >
       <DialogTitle id="delete-dialog-title" className="universe-delete-modal-title">
         Delete Universe

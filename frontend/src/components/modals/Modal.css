@@ -460,3 +460,49 @@ button,
   position: relative;
   z-index: 1001;
 }
+
+/* Ensure MUI modal content is always above the backdrop */
+.MuiDialog-paper,
+.MuiPaper-root,
+.MuiDialogContent-root,
+.MuiDialogTitle-root {
+  z-index: 1055 !important;
+  position: relative;
+}
+
+/* Ensure all modal content areas are scrollable and fit within the viewport */
+.MuiDialogContent-root,
+.modal-body,
+.universe-form-modal .MuiDialogContent-root,
+.note-detail-content,
+.universe-delete-modal-content {
+  max-height: 70vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Ensure modal dialog itself does not exceed viewport */
+.MuiDialog-paper,
+.universe-form-modal .MuiDialog-paper {
+  max-width: 95vw;
+  width: 100%;
+  max-height: 90vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 600px) {
+  .MuiDialog-paper,
+  .universe-form-modal .MuiDialog-paper {
+    max-width: 98vw;
+    width: 98vw;
+    max-height: 98vh;
+    padding: 0;
+  }
+  .MuiDialogContent-root,
+  .modal-body {
+    max-height: 60vh;
+  }
+}

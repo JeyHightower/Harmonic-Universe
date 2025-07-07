@@ -1,28 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Alert,
+  Box,
   Button,
-  Tabs,
-  Tab,
-  TextField,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
   FormControlLabel,
-  Switch,
   FormHelperText,
   Grid,
-  Typography,
-  CircularProgress,
-  Box,
-  Select,
-  MenuItem,
   InputLabel,
-  FormControl,
-  Alert,
+  MenuItem,
+  Select,
+  Switch,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
+import { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   createPhysicsObject,
   deletePhysicsObject,
@@ -703,7 +703,13 @@ const PhysicsObjectModal = ({
   );
 
   return (
-    <Dialog open={open} onClose={() => !loading && onClose()} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={() => !loading && onClose()}
+      maxWidth="md"
+      fullWidth
+      hideBackdrop={true}
+    >
       <DialogTitle>{modalTitle}</DialogTitle>
 
       <DialogContent dividers>

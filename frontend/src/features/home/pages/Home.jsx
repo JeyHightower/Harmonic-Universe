@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { useModalState } from '../../../hooks/useModalState';
 import { checkAuthState, demoLogin } from '../../../store/thunks/authThunks';
 import '../../../styles/Home.css';
 import { AUTH_CONFIG } from '../../../utils/config';
@@ -12,6 +14,7 @@ function Home() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, loading, isDemoUser } = useSelector((state) => state.auth);
+  const { openModal } = useModalState();
 
   useEffect(() => {
     console.debug('Home component mounted');
@@ -29,6 +32,31 @@ function Home() {
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, loading, navigate]);
+
+  useEffect(() => {
+    // Handle URL parameters for modals and demo login
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const modalParam = searchParams.get('modal');
+      const demoParam = searchParams.get('demo');
+
+      // Handle modal parameter
+      if (modalParam && openModal) {
+        if (modalParam === 'login') {
+          openModal(MODAL_TYPES.LOGIN);
+        } else if (modalParam === 'signup') {
+          openModal(MODAL_TYPES.SIGNUP);
+        }
+      }
+
+      // Handle demo parameter
+      if (demoParam === 'true') {
+        handleDemoLogin();
+      }
+    } catch (error) {
+      console.error('[Home] Error handling URL parameters:', error);
+    }
+  }, []);
 
   const handleDemoLogin = async () => {
     console.error('Home - handleDemoLogin called');

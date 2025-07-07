@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
   Box,
-  Typography,
+  Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Typography,
 } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { closeModal } from '../../../store/slices/characterSlice';
 import {
   createCharacter,
-  updateCharacter,
   deleteCharacter,
   fetchCharacter,
+  updateCharacter,
 } from '../../../store/thunks/characterThunks';
-import { closeModal } from '../../../store/slices/characterSlice';
 import '../styles/Character.css';
 
 const CharacterForm = ({ open, type, sceneId, characterId }) => {
@@ -93,7 +93,12 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
 
   if (loading && (type === 'edit' || type === 'view')) {
     return (
-      <Dialog open={open} onClose={handleClose} className="character-form-modal">
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        className="character-form-modal"
+        hideBackdrop={true}
+      >
         <DialogContent>
           <Box display="flex" justifyContent="center" p={3}>
             <CircularProgress />
@@ -110,6 +115,7 @@ const CharacterForm = ({ open, type, sceneId, characterId }) => {
       maxWidth="sm"
       fullWidth
       className="character-form-modal"
+      hideBackdrop={true}
     >
       <DialogTitle>{getTitle()}</DialogTitle>
       <form onSubmit={handleSubmit}>

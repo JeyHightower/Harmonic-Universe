@@ -8,7 +8,6 @@ import React, {
   useTransition,
 } from 'react';
 import { Outlet } from 'react-router-dom';
-import { MODAL_TYPES } from '../../constants/modalTypes';
 import { useModalState } from '../../hooks/useModalState';
 import { demoLogin } from '../../store/thunks/authThunks';
 
@@ -166,41 +165,6 @@ function Layout() {
       });
     }
   }, [initialized, location.pathname]);
-
-  // Handle URL parameters for modals and demo login
-  useEffect(() => {
-    if (!dispatch || hasHandledParams.current) {
-      return; // Exit early if dependencies aren't available or we've already handled params
-    }
-
-    try {
-      const searchParams = new URLSearchParams(location.search);
-      const modalParam = searchParams.get('modal');
-      const demoParam = searchParams.get('demo');
-
-      // Handle modal parameter
-      if (modalParam && openModal) {
-        console.log('[Layout] Detected modal parameter:', modalParam);
-        if (modalParam === 'login') {
-          openModal(MODAL_TYPES.LOGIN);
-        } else if (modalParam === 'signup') {
-          openModal(MODAL_TYPES.SIGNUP);
-        }
-      }
-
-      // Handle demo parameter
-      if (demoParam === 'true') {
-        console.log('[Layout] Detected demo parameter');
-        handleDemoLogin();
-      }
-
-      // Mark parameters as handled
-      hasHandledParams.current = true;
-    } catch (error) {
-      console.error('[Layout] Error handling URL parameters:', error);
-      setError(error);
-    }
-  }, [location, dispatch, handleDemoLogin, openModal]);
 
   // Render loading state
   if (!initialized) {

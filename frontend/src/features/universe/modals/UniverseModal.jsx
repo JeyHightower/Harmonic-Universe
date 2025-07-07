@@ -338,6 +338,7 @@ const UniverseModal = ({
           }
         },
       }}
+      hideBackdrop={true}
     >
       <DialogTitle
         onClick={(e) => e.stopPropagation()}

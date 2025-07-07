@@ -591,7 +591,13 @@ const CharacterModal = ({
   };
 
   return (
-    <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={loading ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+      hideBackdrop={true}
+    >
       <DialogTitle>{getModalTitle()}</DialogTitle>
 
       <DialogContent>

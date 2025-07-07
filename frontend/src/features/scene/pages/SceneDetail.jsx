@@ -440,6 +440,7 @@ const SceneDetail = ({ isEdit = false }) => {
         aria-labelledby="delete-dialog-title"
         maxWidth="xs"
         fullWidth
+        hideBackdrop={true}
       >
         <DialogTitle id="delete-dialog-title">Delete Scene</DialogTitle>
         <DialogContent dividers>
@@ -466,6 +467,7 @@ const SceneDetail = ({ isEdit = false }) => {
           disableRestoreFocus
           closeAfterTransition
           aria-labelledby="edit-dialog-title"
+          hideBackdrop={true}
         >
           <DialogTitle id="edit-dialog-title">Edit Scene</DialogTitle>
           <DialogContent dividers>

@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
-import PropTypes from 'prop-types';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-  Chip,
-  IconButton,
-} from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
+import {
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Typography,
+} from '@mui/material';
+import PropTypes from 'prop-types';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { fetchNote } from '../../../store/thunks/noteThunks';
 import '../styles/NoteDetail.css';
 
@@ -28,7 +28,11 @@ const NoteDetail = ({ noteId }) => {
 
   if (loading) {
     return (
-      <Dialog open={true} onClose={() => dispatch({ type: 'notes/closeModal' })}>
+      <Dialog
+        open={true}
+        onClose={() => dispatch({ type: 'notes/closeModal' })}
+        hideBackdrop={true}
+      >
         <DialogContent>
           <Typography>Loading...</Typography>
         </DialogContent>
@@ -38,7 +42,11 @@ const NoteDetail = ({ noteId }) => {
 
   if (error) {
     return (
-      <Dialog open={true} onClose={() => dispatch({ type: 'notes/closeModal' })}>
+      <Dialog
+        open={true}
+        onClose={() => dispatch({ type: 'notes/closeModal' })}
+        hideBackdrop={true}
+      >
         <DialogContent>
           <Typography color="error">{error}</Typography>
         </DialogContent>
@@ -57,6 +65,7 @@ const NoteDetail = ({ noteId }) => {
       maxWidth="md"
       fullWidth
       className="note-detail-modal"
+      hideBackdrop={true}
     >
       <DialogTitle>
         {currentNote.title}

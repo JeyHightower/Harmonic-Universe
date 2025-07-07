@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
   Box,
-  FormControlLabel,
-  Switch,
+  Button,
   Chip,
-  InputAdornment,
-  IconButton,
-  Typography,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
+  Switch,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { Close as CloseIcon, Add as AddIcon } from '@mui/icons-material';
 import PropTypes from 'prop-types';
+import { useEffect, useState } from 'react';
 import apiClient from '../../../services/api.adapter';
 import '../styles/NoteFormModal.css';
 
@@ -158,7 +158,7 @@ const NoteFormModal = ({
 
   if (loading && (type === 'edit' || type === 'view') && !note) {
     return (
-      <Dialog open={isOpen} onClose={onClose} className="note-form-modal">
+      <Dialog open={isOpen} onClose={onClose} className="note-form-modal" hideBackdrop={true}>
         <DialogContent>
           <Box display="flex" justifyContent="center" p={3}>
             <CircularProgress />
@@ -182,6 +182,7 @@ const NoteFormModal = ({
       BackdropProps={{
         'aria-hidden': null,
       }}
+      hideBackdrop={true}
     >
       <DialogTitle id="note-form-title">
         {getTitle()}

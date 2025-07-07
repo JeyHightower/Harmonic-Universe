@@ -218,6 +218,7 @@ const SceneFormModal = ({
       onClose={handleCancel}
       maxWidth="md"
       fullWidth
+      hideBackdrop={true}
       PaperProps={{
         elevation: 5,
         sx: {
