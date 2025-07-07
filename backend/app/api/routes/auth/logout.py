@@ -3,12 +3,13 @@ from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 from flask_cors import cross_origin
 
 from . import auth_bp
-from ....extensions import add_token_to_blocklist
+from ....extensions import add_token_to_blocklist, limiter
 from app.utils.jwt.config import get_jwt_secret_key
 import jwt
 
 @auth_bp.route('/logout/', methods=['POST', 'OPTIONS'])
 @cross_origin(supports_credentials=True)
+@limiter.limit("1000 per hour")  # Increased rate limit for logout
 def logout():
     """Logout the current user."""
     # Handle OPTIONS requests for CORS preflight
