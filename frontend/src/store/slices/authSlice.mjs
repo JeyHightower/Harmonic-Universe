@@ -94,24 +94,21 @@ const authSlice = createSlice({
       state.loginInProgress = true;
     },
     loginSuccess: (state, action) => {
-      state.loading = false;
       state.isAuthenticated = true;
-      state.user = action.payload.user;
-      state.token = action.payload.token || action.payload.access_token;
-      state.refreshToken = action.payload.refresh_token;
+      state.loading = false;
+      state.user = action.payload.user || action.payload;
+      state.token = action.payload.token;
+      state.refresh_token = action.payload.refresh_token;
       state.error = null;
-      state.tokenVerificationFailed = false;
       state.loginInProgress = false;
+      console.log('[authSlice] loginSuccess', { state, payload: action.payload });
     },
     loginFailure: (state, action) => {
-      state.loading = false;
       state.isAuthenticated = false;
-      state.user = null;
-      state.token = null;
-      state.refreshToken = null;
+      state.loading = false;
       state.error = action.payload;
-      state.tokenVerificationFailed = true;
       state.loginInProgress = false;
+      console.log('[authSlice] loginFailure', { state, payload: action.payload });
     },
     logout: (state) => {
       // Clean up demo session if needed
@@ -226,18 +223,21 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(demoLogin.fulfilled, (state, action) => {
-        state.isLoading = false;
         state.isAuthenticated = true;
+        state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.refresh_token = action.payload.refresh_token;
         state.error = null;
+        state.loginInProgress = false;
+        console.log('[authSlice] demoLogin.fulfilled', { state, payload: action.payload });
       })
       .addCase(demoLogin.rejected, (state, action) => {
-        state.isLoading = false;
         state.isAuthenticated = false;
-        state.user = null;
-        state.token = null;
-        state.error = action.error.message;
+        state.loading = false;
+        state.error = action.payload;
+        state.loginInProgress = false;
+        console.log('[authSlice] demoLogin.rejected', { state, payload: action.payload });
       })
       .addCase(handleAuthTokens.fulfilled, (state, action) => {
         state.loading = false;

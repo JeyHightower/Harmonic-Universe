@@ -14,7 +14,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -60,6 +60,9 @@ const Dashboard = () => {
   let lastDashboardLoadAttempt = 0;
   const DASHBOARD_LOGOUT_COOLDOWN = 2000; // 2 seconds
 
+  // Use ref to track retry attempts without causing re-renders
+  const retryCountRef = useRef(0);
+
   // Initialize modal portal and apply fixes on component mount
   useEffect(() => {
     console.log('Dashboard - Initializing modal portal');
@@ -83,6 +86,12 @@ const Dashboard = () => {
 
   // Create a memoized function to load universes
   const loadUniverses = useCallback(async () => {
+    console.log('Dashboard - loadUniverses called', {
+      retryCount: retryCountRef.current,
+      maxRetries,
+      isDemoSession: demoService.isValidDemoSession(),
+    });
+
     // Update the timestamp to prevent duplicate calls
     lastDashboardLoadAttempt = Date.now();
 
@@ -109,8 +118,9 @@ const Dashboard = () => {
 
       // Continue to load universes using dispatch for demo sessions
       try {
+        console.log('Dashboard - Dispatching fetchUniverses for demo user');
         const result = await dispatch(fetchUniverses()).unwrap();
-        console.log('Dashboard - Successfully loaded universes in demo mode');
+        console.log('Dashboard - Successfully loaded universes in demo mode', result);
         return result;
       } catch (error) {
         console.error('Dashboard - Error loading universes in demo mode:', error);
@@ -121,13 +131,18 @@ const Dashboard = () => {
           setConnectionError(true);
 
           // Schedule an automatic retry if we haven't exceeded the limit
-          if (retryCount < maxRetries) {
+          if (retryCountRef.current < maxRetries) {
             console.log(
-              `Dashboard - Scheduling automatic retry ${retryCount + 1} of ${maxRetries}`
+              `Dashboard - Scheduling automatic retry ${retryCountRef.current + 1} of ${maxRetries}`
             );
+            retryCountRef.current += 1;
             setTimeout(() => {
-              setRetryCount((prev) => prev + 1);
+              // Call loadUniverses again without changing dependencies
+              console.log('Dashboard - Executing scheduled retry');
+              loadUniverses();
             }, 3000); // Wait 3 seconds before retrying
+          } else {
+            console.log('Dashboard - Maximum retries reached, not scheduling more retries');
           }
         }
 
@@ -138,18 +153,22 @@ const Dashboard = () => {
 
     // Not in demo mode, proceed with normal universe loading
     try {
+      console.log('Dashboard - Dispatching fetchUniverses for regular user');
       const result = await dispatch(fetchUniverses()).unwrap();
-      console.log('Dashboard - Successfully loaded universes');
+      console.log('Dashboard - Successfully loaded universes', result);
       return result;
     } catch (error) {
       console.error('Dashboard - Error loading universes:', error);
       throw error;
     }
-  }, [dispatch, retryCount, maxRetries]);
+  }, [dispatch]); // Removed retryCount and maxRetries from dependencies
 
   // Load universes on component mount
   useEffect(() => {
-    console.log('Dashboard - Component mounted, loading universes');
+    console.log('Dashboard - Component mounted, loading universes', {
+      loadUniversesFunction: !!loadUniverses,
+      isDemoSession: demoService.isValidDemoSession(),
+    });
 
     // Add proper error handling to prevent uncaught promise rejections
     loadUniverses().catch((error) => {
@@ -400,15 +419,14 @@ const Dashboard = () => {
 
   const handleRetry = () => {
     setIsRetrying(true);
-    setRetryCount((count) => count + 1);
+    retryCountRef.current = 0; // Reset retry count for manual retry
 
     // Clear any errors in Redux store
     dispatch(clearError());
 
     // Small delay before retry
     setTimeout(() => {
-      dispatch(fetchUniverses())
-        .unwrap()
+      loadUniverses()
         .then((result) => {
           console.log('Dashboard - Successfully retried loading universes');
           setConnectionError(false);
@@ -445,7 +463,7 @@ const Dashboard = () => {
               </p>
             </div>
           )}
-          {retryCount >= maxRetries && (
+          {retryCountRef.current >= maxRetries && (
             <div style={{ color: 'red', marginTop: '10px' }}>
               Maximum retry attempts reached. You may need to refresh the page or login again.
             </div>
@@ -458,7 +476,7 @@ const Dashboard = () => {
           <Button
             onClick={handleRetry}
             color="primary"
-            disabled={isRetrying || retryCount >= maxRetries}
+            disabled={isRetrying || retryCountRef.current >= maxRetries}
           >
             {isRetrying ? <CircularProgress size={24} /> : 'Retry'}
           </Button>

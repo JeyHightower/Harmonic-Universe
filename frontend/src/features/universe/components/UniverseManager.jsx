@@ -20,15 +20,30 @@ import '../styles/Universe.css';
 const UniverseManager = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { universes, loading, error } = useSelector((state) => state.universes);
+  const { universes, loading, error, lastFetched } = useSelector((state) => state.universes);
 
   // Use Redux modal system
   const { open: openModal } = useModalState();
 
-  // Fetch universes when component mounts
+  // Fetch universes when component mounts, with guard and logging
   useEffect(() => {
-    dispatch(fetchUniverses());
-  }, [dispatch]);
+    const now = Date.now();
+    const lastFetchedTime = lastFetched ? new Date(lastFetched).getTime() : 0;
+    const recentlyFetched = now - lastFetchedTime < 10000; // 10 seconds
+    console.log('[UniverseManager] useEffect called', {
+      loading,
+      lastFetched,
+      recentlyFetched,
+      universesCount: universes?.length,
+      dependencies: { dispatch: !!dispatch, loading, lastFetched: !!lastFetched },
+    });
+    if (!loading && (!recentlyFetched || !universes || universes.length === 0)) {
+      console.log('[UniverseManager] Dispatching fetchUniverses');
+      dispatch(fetchUniverses());
+    } else {
+      console.log('[UniverseManager] Skipping fetch: already loading or recently fetched.');
+    }
+  }, [dispatch, loading, lastFetched]); // Removed 'universes' from dependencies
 
   const handleRefresh = () => {
     dispatch(fetchUniverses());

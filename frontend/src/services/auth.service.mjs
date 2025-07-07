@@ -15,6 +15,9 @@ const REFRESH_TOKEN_KEY = API_SERVICE_CONFIG.AUTH.REFRESH_TOKEN_KEY;
 const USER_KEY = API_SERVICE_CONFIG.AUTH.USER_KEY;
 const TOKEN_VERIFICATION_FAILED = 'token_verification_failed';
 
+let lastLogoutAttempt = 0;
+const LOGOUT_COOLDOWN_MS = 5000;
+
 class AuthService {
   constructor() {
     this.httpClient = httpClient;
@@ -198,6 +201,12 @@ class AuthService {
   }
 
   async logout() {
+    const now = Date.now();
+    if (now - lastLogoutAttempt < LOGOUT_COOLDOWN_MS) {
+      console.warn('Logout throttled: attempted too soon after previous logout.');
+      return;
+    }
+    lastLogoutAttempt = now;
     try {
       // If demo user, just clean up local data
       if (this.isDemoUser()) {

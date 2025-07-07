@@ -101,6 +101,7 @@ const AppContent = () => {
   const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
   const [isPending, startTransition] = useTransition();
   const [authChecked, setAuthChecked] = useState(false);
+  const [logoutDispatched, setLogoutDispatched] = useState(false);
 
   // Import AppRoutes instead of trying to use routes directly
   const AppRoutes = React.lazy(() => import('./routes/index'));
@@ -193,7 +194,10 @@ const AppContent = () => {
             // Use centralized auth cleanup
             authService.clearAuthData();
             localStorage.setItem('token_verification_failed', 'true');
-            dispatch(logoutThunk());
+            if (!logoutDispatched) {
+              dispatch(logoutThunk());
+              setLogoutDispatched(true);
+            }
           }}
         >
           Return to Login

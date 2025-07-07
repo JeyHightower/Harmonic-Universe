@@ -33,6 +33,9 @@ const Modal = forwardRef(
     // Save previous focus and handle body scroll
     useEffect(() => {
       if (isOpen) {
+        // Set inert on #root to hide from assistive tech and prevent focus
+        const root = document.getElementById('root');
+        if (root) root.inert = true;
         // Save previous focus for restoring later
         previousFocus.current = document.activeElement;
 
@@ -54,6 +57,9 @@ const Modal = forwardRef(
       return () => {
         // Cleanup if component unmounts
         if (isOpen) {
+          // Remove inert from #root
+          const root = document.getElementById('root');
+          if (root) root.inert = false;
           document.body.classList.remove('modal-open');
           document.body.style.top = '';
           document.body.style.position = '';

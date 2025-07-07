@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, useTransition } from 'react';
+import { Suspense, useEffect, useRef, useState, useTransition } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 import { authService } from '../../services/auth.service.mjs';
@@ -15,6 +15,10 @@ const ProtectedRoute = ({ children }) => {
   const [content, setContent] = useState(null);
   const [demoLoginError, setDemoLoginError] = useState(false);
   const dispatch = useDispatch();
+  const demoLoginInProgress = useRef(false);
+  const demoLoginAttempted = useRef(false); // Track if we've already attempted demo login
+
+  console.log('[ProtectedRoute] render', { isAuthenticated, loading, user, loginInProgress });
 
   // Get tokens directly from localStorage for comparison
   const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
@@ -64,21 +68,66 @@ const ProtectedRoute = ({ children }) => {
 
   // If we have a demo session but aren't authenticated, try to auto-login as demo
   useEffect(() => {
-    if (!isAuthenticated && !loading && isDemoSession && !demoLoginFailed) {
-      console.log('Demo session found but not authenticated, trying demo login');
+    console.log('[ProtectedRoute] Demo login effect:', {
+      isAuthenticated,
+      loading,
+      isDemoSession,
+      demoLoginFailed,
+      demoLoginInProgress: demoLoginInProgress.current,
+    });
+
+    // Only attempt demo login if:
+    // 1. Not authenticated
+    // 2. Not loading
+    // 3. Is a demo session
+    // 4. Demo login hasn't failed
+    // 5. Demo login is not already in progress
+    // 6. We haven't already attempted demo login
+    // 7. We have a valid demo session (tokens exist)
+    if (
+      !isAuthenticated &&
+      !loading &&
+      isDemoSession &&
+      !demoLoginFailed &&
+      !demoLoginInProgress.current &&
+      !demoLoginAttempted.current
+    ) {
+      // Additional check: ensure we have the required tokens
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+
+      if (token && refreshToken && userStr) {
+        console.log('[ProtectedRoute] Valid demo session detected, skipping demo login');
+        return; // We already have a valid demo session, no need to login again
+      }
+
+      demoLoginInProgress.current = true;
+      demoLoginAttempted.current = true; // Mark that we've attempted demo login
+      console.log('[ProtectedRoute] Dispatching demoLogin');
       dispatch(demoLogin())
         .unwrap()
         .then(() => {
           localStorage.removeItem(DEMO_LOGIN_FAILED_KEY);
           setDemoLoginError(false);
+          demoLoginInProgress.current = false;
         })
         .catch((err) => {
           console.error('Demo login failed in ProtectedRoute:', err);
           localStorage.setItem(DEMO_LOGIN_FAILED_KEY, 'true');
           setDemoLoginError(true);
+          demoLoginInProgress.current = false;
         });
     }
   }, [isAuthenticated, isDemoSession, loading, dispatch, demoLoginFailed]);
+
+  // Reset demo login attempt when auth state changes to authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      demoLoginAttempted.current = false;
+      demoLoginInProgress.current = false;
+    }
+  }, [isAuthenticated]);
 
   // Update content with startTransition when authentication state changes
   useEffect(() => {

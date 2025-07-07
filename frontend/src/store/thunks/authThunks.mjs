@@ -12,6 +12,12 @@ import {
   updateUser,
 } from '../actions/authActions.mjs';
 
+let lastLogoutDispatch = 0;
+const LOGOUT_DISPATCH_COOLDOWN_MS = 5000;
+let lastDemoLoginAttempt = 0;
+const DEMO_LOGIN_COOLDOWN_MS = 5000;
+const DEMO_LOGIN_LAST_ATTEMPT_KEY = 'demo_login_last_attempt';
+
 // Function to cleanup all authentication state when logging out
 const cleanupAuthState = () => {
   // Remove the token
@@ -94,6 +100,22 @@ export const demoLogin = createAsyncThunk(
         console.log('Thunk - Demo login token:', response?.token);
 
         if (!response?.success || !response?.token || !response?.user) {
+          // Fallback: try to get from localStorage
+          const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+          const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+          const refresh_token = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+          const user = userStr ? JSON.parse(userStr) : null;
+          if (user && token) {
+            dispatch(
+              loginSuccess({
+                user,
+                token,
+                refresh_token,
+              })
+            );
+            window.dispatchEvent(new CustomEvent('storage'));
+            return { success: true, user, token, refresh_token };
+          }
           throw new Error('Invalid response from demo login');
         }
 
@@ -109,9 +131,12 @@ export const demoLogin = createAsyncThunk(
         // Dispatch a storage event to notify other components
         window.dispatchEvent(new CustomEvent('storage'));
 
-        // Removed demoService.checkAndCreateDemoUniverse call
-
-        return response;
+        return {
+          success: true,
+          user: response.user,
+          token: response.token,
+          refresh_token: response.refresh_token,
+        };
       } catch (error) {
         console.error('Thunk - Demo login failed:', error);
         dispatch(loginFailure(handleError(error)));
@@ -257,7 +282,13 @@ export const checkAuthState = createAsyncThunk('auth/checkAuthState', async (_, 
 });
 
 // Logout thunk
-export const logoutThunk = createAsyncThunk('auth/logout', async (_, { dispatch }) => {
+export const logoutThunk = createAsyncThunk('auth/logout', async (_, { dispatch, getState }) => {
+  const now = Date.now();
+  if (now - lastLogoutDispatch < LOGOUT_DISPATCH_COOLDOWN_MS) {
+    console.warn('logoutThunk throttled: attempted too soon after previous dispatch.');
+    return;
+  }
+  lastLogoutDispatch = now;
   try {
     // Clean up demo session if needed
     if (demoService.isDemoSession()) {
