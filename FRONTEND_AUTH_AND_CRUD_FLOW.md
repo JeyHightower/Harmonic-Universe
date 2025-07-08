@@ -169,6 +169,68 @@
 
 ---
 
+## Modal Data Flow
+
+**Key Files:**
+
+- **Manager:** `components/modals/ModalManager.jsx`
+- **Redux Slice:** `store/slices/newModalSlice.mjs`
+- **Hook:** `hooks/useModalState.mjs`
+- **Registry:** `utils/modalRegistry.mjs`
+- **Helpers:** `components/modals/modalHelpers.jsx`
+- **Modal Components:** `features/*/modals/*.jsx`, `components/modals/*.jsx`
+
+**Flow Pattern:**
+
+1. **Open Modal:**
+
+   - Any component calls `useModalState().open(type, props)` to open a modal.
+   - This dispatches the `openModal` action to Redux, setting `isOpen`, `type`, and `props` in `newModalSlice`.
+   - If a modal is already open or transitioning, the request is queued.
+
+2. **Render Modal:**
+
+   - `ModalManager.jsx` listens to Redux state (`isOpen`, `type`, `props`).
+   - When a modal is open, it dynamically loads the correct modal component from `modalRegistry.mjs` based on `type`.
+   - The modal is rendered inside a generic `Modal` wrapper, which handles animation, focus, scroll locking, and accessibility.
+   - Modal-specific props are passed from Redux state to the modal component.
+
+3. **Modal Interaction:**
+
+   - The modal component receives its data via `props` and can call `useModalState().close()` to close itself.
+   - Callbacks (e.g., `onConfirm`, `onSubmit`) are passed in `props` and invoked by the modal as needed.
+   - The modal system supports updating modal props via `useModalState().update(newProps)`.
+
+4. **Close Modal:**
+
+   - When the modal closes (via close button, escape key, backdrop, or programmatically), `closeModal` is dispatched.
+   - The modal state is reset; if there are queued modals, the next one is shown.
+   - Body scroll and focus are restored.
+
+5. **Helpers and Utilities:**
+   - `modalHelpers.jsx` provides patterns for common modals (confirmation, form, etc.).
+   - `modalUtils.mjs` offers utilities for resetting and debugging the modal system.
+   - The modal system is initialized and cleaned up in `App.jsx`.
+
+**Debugging Checklist:**
+
+- Check the component for correct usage of `useModalState` (open, close, update).
+- Verify `newModalSlice.mjs` handles modal state and queueing correctly.
+- Ensure the modal type is registered in `modalRegistry.mjs`.
+- Check that modal props are passed and handled as expected.
+- Inspect `ModalManager.jsx` for correct dynamic loading and rendering.
+- Use `modalUtils.mjs` for debugging and resetting the modal system.
+
+**Best Practices:**
+
+- Pass all modal-specific data via the `props` object when opening a modal.
+- Use callbacks in `props` for returning data or handling user actions.
+- For complex flows, dispatch additional Redux actions or thunks from within the modal.
+- Register new modal types in the registry for dynamic loading.
+- Use the provided helpers for common modal patterns to ensure consistency.
+
+---
+
 ## Debugging Guide: Major Files to Check
 
 | Layer        | Major Files/Dirs                  | What to Check For              |
