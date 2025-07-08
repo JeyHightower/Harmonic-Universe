@@ -3,7 +3,6 @@
  * Handles operations related to scenes in the application
  */
 
-import apiAdapter from './api.adapter.mjs';
 import { sceneEndpoints } from './endpoints';
 import { httpClient } from './http-client';
 import { responseHandler } from './response-handler';
@@ -57,46 +56,13 @@ export const getScenesByUniverse = async (universeId) => {
 
     console.log('scenes.service: Making API call to get scenes for universe:', validatedId);
 
-    // First check if the universe exists
-    try {
-      console.log('scenes.service: Checking if universe exists:', validatedId);
-      const universeResponse = await apiAdapter.universes.getUniverse(validatedId);
-
-      if (!universeResponse || !universeResponse.data || !universeResponse.data.universe) {
-        console.error(`Universe with ID ${validatedId} does not exist or is not accessible`);
-        return responseHandler.handleSuccess({
-          data: { scenes: [] },
-          status: 200,
-          statusText: 'OK (universe not found but returning empty array for graceful handling)',
-        });
-      }
-
-      // Check if universe is deleted
-      if (universeResponse.data.universe.is_deleted) {
-        console.error(`Universe with ID ${validatedId} has been deleted`);
-        return responseHandler.handleSuccess({
-          data: { scenes: [] },
-          status: 200,
-          statusText: 'OK (universe is deleted but returning empty array for graceful handling)',
-        });
-      }
-
-      console.log(
-        `Universe with ID ${validatedId} exists and is accessible, proceeding to fetch scenes`
-      );
-    } catch (universeError) {
-      // If we can't verify the universe, log but continue to try fetching scenes
-      console.warn(`Could not verify if universe ${validatedId} exists:`, universeError);
-      // If we got a 404, that means the universe doesn't exist
-      if (universeError.response && universeError.response.status === 404) {
-        console.error(`Universe with ID ${validatedId} does not exist (404 from universe API)`);
-        return responseHandler.handleSuccess({
-          data: { scenes: [] },
-          status: 200,
-          statusText: 'OK (universe not found but returning empty array for graceful handling)',
-        });
-      }
-    }
+    // Skip universe existence check for now since it's causing authentication issues
+    // and the user can access the universe successfully
+    console.log(
+      'scenes.service: Skipping universe existence check for',
+      validatedId,
+      ', proceeding directly to scene fetch'
+    );
 
     // Try the primary endpoint first (byUniverse)
     try {

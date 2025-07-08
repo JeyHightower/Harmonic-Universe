@@ -13,19 +13,9 @@ from . import scenes_bp  # import the Blueprint instance
 @exempt_options_requests()
 @jwt_required(optional=True)
 def get_scenes(universe_id):
-    # Handle OPTIONS requests explicitly
+    # Handle OPTIONS requests - let Flask-CORS handle this automatically
     if request.method == 'OPTIONS':
-        response = jsonify({'success': True})
-        # Get the origin from the request headers or use a safe default
-        origin = request.headers.get('Origin', 'http://localhost:5173')
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,OPTIONS')
-        if 'Access-Control-Allow-Credentials' in response.headers:
-            del response.headers['Access-Control-Allow-Credentials']
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        response.headers.add('Access-Control-Max-Age', '86400')
-        return response, 200
+        return current_app.make_default_options_response()
 
     try:
         current_app.logger.info(f"Fetching scenes for universe ID: {universe_id}")
@@ -68,9 +58,22 @@ def get_scenes(universe_id):
 
         # Check permissions
         user_id = get_jwt_identity()
-        current_app.logger.info(f"User {user_id} accessing universe {universe_id} (owner: {universe.user_id})")
+        current_app.logger.info(f"User {user_id} (type: {type(user_id)}) accessing universe {universe_id} (owner: {universe.user_id} (type: {type(universe.user_id)}))")
+        current_app.logger.info(f"Universe is_public: {universe.is_public} (type: {type(universe.is_public)})")
+        current_app.logger.info(f"Permission check: not universe.is_public = {not universe.is_public}, user_id is None = {user_id is None}, universe.user_id != user_id = {universe.user_id != user_id}")
 
-        if not universe.is_public and (user_id is None or universe.user_id != user_id):
+        # Cast both IDs to int for comparison
+        try:
+            user_id_int = int(user_id) if user_id is not None else None
+            universe_user_id_int = int(universe.user_id) if universe.user_id is not None else None
+        except Exception as e:
+            current_app.logger.error(f"Error casting user IDs to int: {e}")
+            return jsonify({
+                'message': 'Internal server error',
+                'scenes': []
+            }), 500
+
+        if not universe.is_public and (user_id_int is None or universe_user_id_int != user_id_int):
             current_app.logger.warning(f"Access denied: User {user_id} attempting to access private universe {universe_id}")
             return jsonify({
                 'message': 'Access denied',

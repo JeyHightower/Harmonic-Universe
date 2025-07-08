@@ -132,22 +132,7 @@ def setup_cors(app):
         }
     })
 
-    # Add global response handler for CORS headers
-    @app.after_request
-    def after_request(response):
-        # Only add CORS headers if they haven't been set by Flask-CORS
-        if 'Access-Control-Allow-Origin' not in response.headers:
-            # Get the origin from the request headers or use a safe default
-            origin = request.headers.get('Origin', 'http://localhost:5173')
-
-            # Set CORS headers
-            response.headers.add('Access-Control-Allow-Origin', origin)
-            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,X-Demo-User,X-Demo-User-Email,X-Request-Attempt')
-            response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH')
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            response.headers.add('Access-Control-Max-Age', '86400')
-
-        return response
+    # Remove the after_request CORS header logic, since Flask-CORS is now used globally
 
     return app
 
@@ -364,8 +349,22 @@ def create_app(config_name=None):
     except Exception as e:
         app.logger.warning(f"Failed to apply JWT monkey patches: {str(e)}")
 
-    # Set up CORS (before blueprints)
-    setup_cors(app)
+    # Enable Flask-CORS globally
+    CORS(app,
+         origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+         supports_credentials=True,
+         allow_headers=[
+             "Content-Type",
+             "Authorization",
+             "X-Requested-With",
+             "Accept",
+             "Origin",
+             "X-Demo-User",
+             "X-Demo-User-Email",
+             "X-Request-Attempt"
+         ],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+    )
 
     # Set up static folders
     setup_static_folders(app)
