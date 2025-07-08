@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useRef, useState } from 'react';
-import { audioApi } from '../../../services/audio.adapter.mjs';
+import { audioService } from '../../../services/audio.service.mjs';
 import '../styles/Music.css';
 
 // Define window globals to fix ESLint errors
@@ -87,11 +87,12 @@ const ROOT_NOTE_OPTIONS = [
 
 // Replace named imports with proper functions
 const generateMusic =
-  audioApi.generateAudio || (() => console.error('generateAudio function not available'));
-const saveMusic = audioApi.saveAudio || (() => console.error('saveAudio function not available'));
-const getMusic = audioApi.getAudio || (() => console.error('getAudio function not available'));
+  audioService.generateMusic || (() => console.error('generateMusic function not available'));
+const saveMusic =
+  audioService.saveAudio || (() => console.error('saveAudio function not available'));
+const getMusic = audioService.getAudio || (() => console.error('getAudio function not available'));
 const deleteMusic =
-  audioApi.deleteAudio || (() => console.error('deleteAudio function not available'));
+  audioService.deleteAudio || (() => console.error('deleteAudio function not available'));
 
 /**
  * Music Modal Component

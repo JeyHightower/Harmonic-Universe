@@ -4,19 +4,18 @@
  */
 
 // Core imports - all in one group to avoid empty lines
-import { httpClient } from './http-client.mjs';
-import { endpoints, getEndpoint } from './endpoints.mjs';
-import { API_SERVICE_CONFIG } from './config.mjs';
-import { responseHandler } from './response-handler.mjs';
-import { authService } from './auth.service.mjs';
-import { universeService } from './universe.service.mjs';
-import { sceneService } from './scene.service.mjs';
-import { characterService } from './character.service.mjs';
-import { noteService } from './note.service.mjs';
-import { userService } from './user.service.mjs';
 import { audioService } from './audio.service.mjs';
+import { authService } from './auth.service.mjs';
+import { characterService } from './character.service.mjs';
+import { API_SERVICE_CONFIG } from './config.mjs';
+import { endpoints, getEndpoint } from './endpoints.mjs';
+import { httpClient } from './http-client.mjs';
+import { noteService } from './note.service.mjs';
+import { responseHandler } from './response-handler.mjs';
+import { sceneService } from './scene.service.mjs';
 import { systemService } from './system.service.mjs';
-import { audioApi } from './audio.adapter.mjs';
+import { universeService } from './universe.service.mjs';
+import { userService } from './user.service.mjs';
 
 /**
  * Core API service object that consolidates all API-related functionality
@@ -27,7 +26,7 @@ const apiService = {
   endpoints,
   config: API_SERVICE_CONFIG,
   response: responseHandler,
-  
+
   // Domain-specific services
   auth: authService,
   universes: universeService,
@@ -37,10 +36,10 @@ const apiService = {
   users: userService,
   audio: audioService,
   system: systemService,
-  
+
   // Helper methods
   getEndpoint,
-  
+
   // Utility methods
   clearCache: httpClient.clearCache,
   formatUrl: httpClient.formatUrl,
@@ -48,20 +47,19 @@ const apiService = {
 
 // Export individual services for direct imports
 export {
-  httpClient,
-  endpoints,
   API_SERVICE_CONFIG,
-  responseHandler,
-  authService,
-  universeService,
-  sceneService,
-  characterService,
-  noteService,
-  userService,
   audioService,
+  authService,
+  characterService,
+  endpoints,
+  httpClient,
+  noteService,
+  responseHandler,
+  sceneService,
   systemService,
-  audioApi
+  universeService,
+  userService,
 };
 
 // Export the consolidated service
-export default apiService; 
+export default apiService;
