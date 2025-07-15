@@ -1,7 +1,9 @@
 from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ...models.universe import Scene, Universe
+from ...models.user import User
 from ....extensions import db
+from ....utils.decorators import get_demo_user_email
 import traceback
 
 from . import scenes_bp  # import the Blueprint instance
@@ -49,8 +51,26 @@ def delete_scene(scene_id):
             }), 500
 
         # Check permissions
-        user_id = get_jwt_identity()
-        current_app.logger.info(f"User {user_id} deleting scene {scene_id} in universe {scene.universe_id}")
+        # Check if this is a demo user request
+        is_demo_user = request.headers.get('X-Demo-User') == 'true'
+        demo_user_email = get_demo_user_email() if is_demo_user else None
+
+        # Get user identity from JWT (for regular users)
+        user_id = None
+        if not is_demo_user:
+            user_id = get_jwt_identity()
+        else:
+            # For demo users, get the demo user ID
+            demo_user = User.query.filter_by(email=demo_user_email).first()
+            if not demo_user:
+                current_app.logger.warning(f'Demo user {demo_user_email} not found')
+                return jsonify({
+                    'message': 'Demo user not found',
+                    'error': 'Invalid demo user'
+                }), 404
+            user_id = demo_user.id
+
+        current_app.logger.info(f"{'Demo' if is_demo_user else 'Regular'} user {user_id} deleting scene {scene_id} in universe {scene.universe_id}")
 
         # Get universe for permission check
         try:
@@ -64,7 +84,7 @@ def delete_scene(scene_id):
 
             # Check if user has access to this scene's universe
             if universe.user_id != user_id:  # For deletions, require full ownership
-                current_app.logger.warning(f"Access denied: User {user_id} attempting to delete scene {scene_id} in universe owned by {universe.user_id}")
+                current_app.logger.warning(f"Access denied: {'Demo' if is_demo_user else 'Regular'} user {user_id} attempting to delete scene {scene_id} in universe owned by {universe.user_id}")
 
                 # Special debug log to understand why ownership check is failing
                 current_app.logger.error(f"DEBUG - Ownership check: user_id={user_id} (type: {type(user_id)}), universe.user_id={universe.user_id} (type: {type(universe.user_id)})")

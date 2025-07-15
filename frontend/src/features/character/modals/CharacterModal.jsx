@@ -26,7 +26,7 @@ import {
   deleteCharacter,
   updateCharacter,
 } from '../../../store/thunks/characterThunks';
-import { fetchScenes } from '../../../store/thunks/consolidated/scenesThunks';
+import { fetchScenes } from '../../../store/thunks/scenesThunks';
 import { cache } from '../../../utils';
 import { getCharacterWithRetry } from '../../../utils/apiUtils';
 

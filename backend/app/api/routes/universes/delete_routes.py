@@ -1,7 +1,9 @@
-from flask import jsonify, current_app
+from flask import jsonify, current_app, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ...models.universe import Universe
+from ...models.user import User
 from ....extensions import db
+from ....utils.decorators import get_demo_user_email
 import traceback
 
 from . import universes_bp
@@ -12,22 +14,42 @@ from . import universes_bp
 def delete_universe(universe_id):
     try:
         universe = Universe.query.get_or_404(universe_id)
-        user_id = get_jwt_identity()
+
+        # Check if this is a demo user request
+        is_demo_user = request.headers.get('X-Demo-User') == 'true'
+        demo_user_email = get_demo_user_email() if is_demo_user else None
+
+        # Get user identity from JWT (for regular users)
+        user_id = None
+        if not is_demo_user:
+            user_id = get_jwt_identity()
 
         # Convert user_id and universe.user_id to integers for consistent comparison
         try:
             # Ensure both user IDs are treated as integers for comparison
-            jwt_user_id = int(user_id) if user_id is not None else None
+            if is_demo_user:
+                # For demo users, get the demo user ID
+                demo_user = User.query.filter_by(email=demo_user_email).first()
+                if not demo_user:
+                    current_app.logger.warning(f'Demo user {demo_user_email} not found')
+                    return jsonify({
+                        'message': 'Demo user not found',
+                        'error': 'Invalid demo user'
+                    }), 404
+                jwt_user_id = demo_user.id
+            else:
+                jwt_user_id = int(user_id) if user_id is not None else None
+
             universe_user_id = int(universe.user_id) if universe.user_id is not None else None
 
             current_app.logger.info(f"===== DELETE UNIVERSE DEBUG =====")
             current_app.logger.info(f"Universe ID: {universe_id}")
-            current_app.logger.info(f"JWT user_id: {jwt_user_id} (type: {type(jwt_user_id).__name__})")
+            current_app.logger.info(f"{'Demo' if is_demo_user else 'Regular'} user_id: {jwt_user_id} (type: {type(jwt_user_id).__name__})")
             current_app.logger.info(f"Universe user_id: {universe_user_id} (type: {type(universe_user_id).__name__})")
 
             # Check if user owns this universe
             if jwt_user_id != universe_user_id:
-                current_app.logger.warning(f"Access denied: User {jwt_user_id} attempted to delete universe {universe_id} owned by {universe_user_id}")
+                current_app.logger.warning(f"Access denied: {'Demo' if is_demo_user else 'Regular'} user {jwt_user_id} attempted to delete universe {universe_id} owned by {universe_user_id}")
                 return jsonify({
                     'message': 'Access denied',
                     'error': 'You do not have permission to delete this universe'

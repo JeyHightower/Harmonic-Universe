@@ -15,12 +15,12 @@ import {
   Spin,
   Typography,
   message,
-  notification,
 } from 'antd';
 import dayjs from 'dayjs';
 import moment from 'moment';
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useState } from 'react';
+import useUniverseCharacters from '../../../hooks/useUniverseCharacters.js';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { CharacterSelector } from '../../character';
 
@@ -84,7 +84,8 @@ const SceneForm = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [characters, setCharacters] = useState([]);
+  // Remove old characters state and fetch logic
+  // const [characters, setCharacters] = useState([]);
   const [error, setError] = useState(null);
 
   const isEditMode = !!sceneId;
@@ -176,46 +177,14 @@ const SceneForm = ({
     }
   }, [sceneId, initialData, form, universeId, initialValues]);
 
-  // Load characters for the universe
-  useEffect(() => {
-    const fetchCharacters = async () => {
-      if (!universeId) {
-        console.log('SceneForm - No universeId provided, skipping character fetch');
-        return;
-      }
-
-      // Check if we already have characters for this universe
-      if (characters.length > 0) {
-        console.log(
-          `SceneForm - Already have ${characters.length} characters loaded, skipping fetch`
-        );
-        return;
-      }
-
-      try {
-        console.log(`SceneForm - Fetching characters for universe ${universeId}`);
-        // Make sure API is properly imported
-        const response = await apiClient.universes.getUniverseCharacters(universeId);
-        const charactersData = response.data?.characters || response.data || [];
-        console.log(`SceneForm - Characters fetched for universe ${universeId}:`, charactersData);
-        setCharacters(charactersData);
-      } catch (error) {
-        console.error(`SceneForm - Error fetching characters for universe ${universeId}:`, error);
-        // Provide a fallback
-        setCharacters([]);
-        // Show user-friendly error notification
-        notification.error({
-          message: 'Failed to load characters',
-          description: 'Please try again or contact support if the issue persists.',
-        });
-      }
-    };
-
-    // Only fetch if we're mounted and have a universe ID
-    if (universeId) {
-      fetchCharacters();
-    }
-  }, [universeId, characters.length]);
+  // Use the new custom hook for lazy, permission-aware character fetching
+  const {
+    characters,
+    loading: charactersLoading,
+    error: charactersError,
+    fetchCharacters,
+    reset: resetCharacters,
+  } = useUniverseCharacters(universeId);
 
   // Register the submit function if the prop is provided
   useEffect(() => {
@@ -591,10 +560,27 @@ const SceneForm = ({
                   <CharacterSelector
                     universeId={universeId}
                     characters={characters}
-                    disabled={readOnly}
+                    disabled={readOnly || charactersLoading || !!charactersError}
+                    loading={charactersLoading}
+                    error={charactersError}
                     getPopupContainer={getPopupContainer}
+                    onFocus={fetchCharacters}
                     onBlur={handleSelectBlur}
+                    onRetry={resetCharacters}
                   />
+                  {charactersError && (
+                    <div style={{ color: 'red', marginTop: 4 }}>
+                      {charactersError}
+                      <Button
+                        type="link"
+                        size="small"
+                        onClick={resetCharacters}
+                        style={{ marginLeft: 8 }}
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  )}
                 </Form.Item>
               </Card>
             </Col>

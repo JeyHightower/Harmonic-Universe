@@ -28,10 +28,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { safeId } from '../../../services/endpoints.mjs';
-import {
-  deleteSceneAndRefresh,
-  fetchScenes,
-} from '../../../store/thunks/consolidated/scenesThunks';
+import { deleteSceneAndRefresh, fetchScenes } from '../../../store/thunks/scenesThunks';
 
 // Create a wrapper component that handles redirection logic
 const ScenesPageWrapper = () => {

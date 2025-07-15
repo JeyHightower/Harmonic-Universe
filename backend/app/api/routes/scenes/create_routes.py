@@ -2,7 +2,9 @@ from flask import Blueprint, jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ...models.universe import Scene, Universe
 from ...models.character import Character
+from ...models.user import User
 from ....extensions import db
+from ....utils.decorators import get_demo_user_email
 import traceback
 from datetime import datetime
 
@@ -14,9 +16,26 @@ def create_scene():
     try:
         current_app.logger.info("Creating new scene")
 
-        # Get user ID from JWT
-        user_id = get_jwt_identity()
-        current_app.logger.info(f"User {user_id} creating scene")
+        # Check if this is a demo user request
+        is_demo_user = request.headers.get('X-Demo-User') == 'true'
+        demo_user_email = get_demo_user_email() if is_demo_user else None
+
+        # Get user ID from JWT (for regular users)
+        user_id = None
+        if not is_demo_user:
+            user_id = get_jwt_identity()
+        else:
+            # For demo users, get the demo user ID
+            demo_user = User.query.filter_by(email=demo_user_email).first()
+            if not demo_user:
+                current_app.logger.warning(f'Demo user {demo_user_email} not found')
+                return jsonify({
+                    'message': 'Demo user not found',
+                    'error': 'Invalid demo user'
+                }), 404
+            user_id = demo_user.id
+
+        current_app.logger.info(f"{'Demo' if is_demo_user else 'Regular'} user {user_id} creating scene")
 
         # Parse the JSON request data
         try:
@@ -136,9 +155,10 @@ def create_scene():
                 try:
                     # Handle date parsing based on expected format
                     if isinstance(data['date_of_scene'], str):
-                        new_scene.date_of_scene = datetime.fromisoformat(data['date_of_scene'].replace('Z', '+00:00'))
+                        parsed_date = datetime.fromisoformat(data['date_of_scene'].replace('Z', '+00:00'))
+                        new_scene.date_of_scene = parsed_date.strftime('%Y-%m-%d')
                     else:
-                        new_scene.date_of_scene = data['date_of_scene']
+                        new_scene.date_of_scene = str(data['date_of_scene'])
                 except Exception as date_error:
                     current_app.logger.warning(f"Could not parse date_of_scene: {str(date_error)}")
                     # Continue without the date rather than rejecting the whole request

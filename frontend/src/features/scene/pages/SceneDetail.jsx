@@ -29,7 +29,7 @@ import {
   deleteSceneAndRefresh,
   fetchSceneById,
   updateSceneAndRefresh,
-} from '../../../store/thunks/consolidated/scenesThunks';
+} from '../../../store/thunks/scenesThunks';
 import { formatDate } from '../../../utils';
 import '../styles/SceneDetail.css';
 import SceneForm from './SceneForm';

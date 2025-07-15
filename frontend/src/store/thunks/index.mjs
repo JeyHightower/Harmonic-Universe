@@ -9,7 +9,7 @@ export * from './authThunks';
 export * from './universeThunks';
 
 // Scene thunks - Scene management operations
-export * from './consolidated/scenesThunks';
+export * from './scenesThunks';
 
 // Character thunks - Character management operations
 export * from './characterThunks';
@@ -21,4 +21,4 @@ export * from './noteThunks';
 export * from './physicsObjectsThunks';
 
 // Other consolidated thunks
-export * from './consolidated'; 
+export * from './consolidated';

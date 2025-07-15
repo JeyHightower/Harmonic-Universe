@@ -63,7 +63,7 @@ const SceneEditRedirect = () => {
 
         // Import and use Redux thunk instead of direct API call
         const { fetchSceneById } = await import(
-          /* @vite-ignore */ '../../store/thunks/consolidated/scenesThunks'
+          /* @vite-ignore */ '../../store/thunks/scenesThunks'
         );
 
         // Dispatch the action to fetch scene data

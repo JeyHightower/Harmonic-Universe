@@ -122,7 +122,7 @@ const SceneModal = React.forwardRef(
         const fetchSceneData = async () => {
           try {
             const { fetchSceneById } = await import(
-              /* @vite-ignore */ '../../../store/thunks/consolidated/scenesThunks'
+              /* @vite-ignore */ '../../../store/thunks/scenesThunks'
             );
             const result = await dispatch(fetchSceneById(sceneId)).unwrap();
             setLoading(false);
@@ -154,7 +154,7 @@ const SceneModal = React.forwardRef(
           console.log(`SceneModal [${requestId}] - Processing form submission`);
 
           const { createSceneAndRefresh, updateSceneAndRefresh } = await import(
-            /* @vite-ignore */ '../../../store/thunks/consolidated/scenesThunks'
+            /* @vite-ignore */ '../../../store/thunks/scenesThunks'
           );
 
           if (actualMode === 'create') {
@@ -280,7 +280,7 @@ const SceneModal = React.forwardRef(
         console.log('SceneModal - Deleting scene with ID:', formattedSceneId);
 
         const { deleteSceneAndRefresh } = await import(
-          /* @vite-ignore */ '../../../store/thunks/consolidated/scenesThunks'
+          /* @vite-ignore */ '../../../store/thunks/scenesThunks'
         );
 
         const resultAction = await dispatch(
@@ -316,7 +316,7 @@ const SceneModal = React.forwardRef(
         console.log(`SceneModal - Loading scene data for ID: ${formattedSceneId}`);
 
         const { fetchSceneById } = await import(
-          /* @vite-ignore */ '../../../store/thunks/consolidated/scenesThunks'
+          /* @vite-ignore */ '../../../store/thunks/scenesThunks'
         );
         const resultAction = await dispatch(fetchSceneById(formattedSceneId));
 

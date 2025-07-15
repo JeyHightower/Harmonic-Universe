@@ -8,201 +8,88 @@ from ...extensions import db
 from sqlalchemy import text
 import traceback
 from functools import wraps
-from ...utils.decorators import get_demo_user_email, is_valid_demo_email
+from ...utils.decorators import get_demo_user_email, is_valid_demo_email, jwt_required_or_demo, jwt_required_except_options
 
 universes_bp = Blueprint('universes', __name__)
 
-def jwt_required_except_options(f):
-    """Decorator that applies JWT requirement except for OPTIONS requests"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if request.method == 'OPTIONS':
-            return f(*args, **kwargs)
-        return jwt_required()(f)(*args, **kwargs)
-    return decorated_function
-
-def jwt_required_or_demo(f):
-    """Decorator that applies JWT requirement or allows demo users"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if request.method == 'OPTIONS':
-            return f(*args, **kwargs)
-
-        # Check if this is a demo user request
-        is_demo_user = request.headers.get('X-Demo-User') == 'true'
-
-        current_app.logger.info(f'Demo user decorator: is_demo_user={is_demo_user}, headers={dict(request.headers)}')
-
-        if is_demo_user:
-            # For demo users, skip JWT validation entirely
-            current_app.logger.info('Demo user detected, bypassing JWT validation')
-            return f(*args, **kwargs)
-        else:
-            # For regular users, require JWT
-            current_app.logger.info('Regular user detected, applying JWT validation')
-            return jwt_required()(f)(*args, **kwargs)
-    return decorated_function
-
 @universes_bp.route('/', methods=['GET'])
-@jwt_required()
+@jwt_required_or_demo
 def get_universes():
     try:
-        # Get query parameters
+        # Check if this is a demo user request
+        is_demo_user = request.headers.get('X-Demo-User') == 'true'
+        demo_user_email = get_demo_user_email() if is_demo_user else None
+        user_id = None
+        if not is_demo_user:
+            user_id = get_jwt_identity()
+        else:
+            demo_user = User.query.filter_by(email=demo_user_email).first()
+            if not demo_user:
+                current_app.logger.warning(f'Demo user {demo_user_email} not found')
+                return jsonify({'message': 'Demo user not found', 'error': 'Invalid demo user'}), 404
+            user_id = demo_user.id
+
         public_only = request.args.get('public', 'false').lower() == 'true'
         user_only = request.args.get('user_only', 'false').lower() == 'true'
-        user_id = get_jwt_identity()
-
-        current_app.logger.info(f"Fetching universes for user {user_id}, public_only: {public_only}, user_only: {user_only}")
+        current_app.logger.info(f"Fetching universes for user {user_id}, public_only: {public_only}, user_only: {user_only}, is_demo: {is_demo_user}")
 
         try:
-            # Build query
             query = Universe.query.filter_by(is_deleted=False)
-
-            current_app.logger.debug(f"Base query: {str(query)}")
-
-            if user_only:
-                # Only include user's own universes when user_only is true
-                current_app.logger.debug(f"Filtering by user_id: {user_id}")
+            if is_demo_user:
+                query = query.filter_by(user_id=user_id)
+            elif user_only:
                 query = query.filter_by(user_id=user_id)
             elif public_only:
-                current_app.logger.debug(f"Filtering by public only")
                 query = query.filter_by(is_public=True)
             else:
-                # Include user's own universes and public universes
-                current_app.logger.debug(f"Filtering by user_id: {user_id} OR public=True")
-                query = query.filter(
-                    (Universe.user_id == user_id) | (Universe.is_public == True)
-                )
-
-            # Execute query
-            current_app.logger.debug(f"Final query: {str(query)}")
+                query = query.filter((Universe.user_id == user_id) | (Universe.is_public == True))
             universes = query.all()
-            current_app.logger.info(f"Found {len(universes)} universes")
-
-            # Format response
-            universe_dicts = []
-            for universe in universes:
-                try:
-                    universe_dict = universe.to_dict()
-                    universe_dicts.append(universe_dict)
-                except Exception as e:
-                    current_app.logger.error(f"Error converting universe to dict: {str(e)}")
-                    current_app.logger.error(f"Universe ID: {universe.id}")
-                    # Skip this universe but continue processing
-                    continue
-
-            current_app.logger.info(f"Successfully formatted {len(universe_dicts)} universes")
-
-            return jsonify({
-                'message': 'Universes retrieved successfully',
-                'universes': universe_dicts
-            }), 200
-
+            universe_dicts = [u.to_dict() for u in universes]
+            return jsonify({'message': 'Universes retrieved successfully', 'universes': universe_dicts}), 200
         except Exception as inner_e:
             current_app.logger.error(f"Database error retrieving universes: {str(inner_e)}")
             current_app.logger.error(f"Traceback: {traceback.format_exc()}")
-            return jsonify({
-                'message': 'Database error retrieving universes',
-                'error': str(inner_e)
-            }), 500
-
+            return jsonify({'message': 'Database error retrieving universes', 'error': str(inner_e)}), 500
     except Exception as e:
         current_app.logger.error(f"Error retrieving universes: {str(e)}")
         current_app.logger.error(f"Traceback: {traceback.format_exc()}")
-        current_app.logger.error(f"Query parameters: public_only={request.args.get('public', 'false')}, user_only={request.args.get('user_only', 'false')}")
-
-        return jsonify({
-            'message': 'Error retrieving universes',
-            'error': str(e)
-        }), 500
+        return jsonify({'message': 'Error retrieving universes', 'error': str(e)}), 500
 
 @universes_bp.route('/<int:universe_id>', methods=['GET', 'OPTIONS'])
 @universes_bp.route('/<int:universe_id>/', methods=['GET', 'OPTIONS'])
+@jwt_required_or_demo
 def get_universe(universe_id):
-    # Handle OPTIONS requests for CORS preflight
     if request.method == 'OPTIONS':
         return current_app.make_default_options_response()
-
     try:
-        # Check if this is a demo user request first
         is_demo_user = request.headers.get('X-Demo-User') == 'true'
         demo_user_email = get_demo_user_email() if is_demo_user else None
-        current_app.logger.info(f'Universe access request: universe_id={universe_id}, is_demo={is_demo_user}, demo_user_email={demo_user_email}')
-
-        # For non-demo users, require JWT
+        user_id = None
         if not is_demo_user:
-            try:
-                user_id = get_jwt_identity()
-                current_app.logger.info(f'Regular user {user_id} accessing universe {universe_id}')
-            except Exception as jwt_error:
-                current_app.logger.warning(f'JWT validation failed for universe {universe_id}: {str(jwt_error)}')
-                return jsonify({
-                    'message': 'Authorization required',
-                    'error': 'Request does not contain an access token'
-                }), 401
-
-        # Get the universe
+            user_id = get_jwt_identity()
+        else:
+            demo_user = User.query.filter_by(email=demo_user_email).first()
+            if not demo_user:
+                current_app.logger.warning(f'Demo user {demo_user_email} not found')
+                return jsonify({'message': 'Demo user not found', 'error': 'Invalid demo user'}), 404
+            user_id = demo_user.id
         universe = Universe.query.filter_by(id=universe_id, is_deleted=False).first()
-
-        # If universe doesn't exist or is deleted
         if not universe:
             current_app.logger.warning(f'Universe {universe_id} not found or deleted')
-            return jsonify({
-                'message': 'Universe not found',
-                'error': 'The requested universe does not exist or has been deleted'
-            }), 404
-
-        # Convert universe.user_id to integer for consistent comparison
-        try:
-            universe_user_id = int(universe.user_id) if universe.user_id is not None else None
-
-            # For demo users, check if the universe belongs to the correct demo user
-            if is_demo_user:
-                # Use the demo user email from the header (or fallback)
-                demo_user = User.query.filter_by(email=demo_user_email).first()
-                if demo_user and universe_user_id == demo_user.id:
-                    current_app.logger.info(f'Demo user {demo_user_email} accessing their own universe {universe_id}')
-                    return jsonify({
-                        'message': 'Universe retrieved successfully',
-                        'universe': universe.to_dict()
-                    }), 200
-                else:
-                    current_app.logger.warning(f'Demo user {demo_user_email} denied access to universe {universe_id} (not owned by demo user)')
-                    return jsonify({
-                        'message': 'Access denied',
-                        'error': 'You do not have permission to access this universe'
-                    }), 403
-
-            # For regular users, check if user has access to this universe
-            jwt_user_id = int(user_id) if user_id is not None else None
-            if not universe.is_public and universe_user_id != jwt_user_id:
-                current_app.logger.warning(f'User {jwt_user_id} denied access to universe {universe_id}')
-                return jsonify({
-                    'message': 'Access denied',
-                    'error': 'You do not have permission to access this universe'
-                }), 403
-
-            # Log successful access
-            current_app.logger.info(f'User {jwt_user_id} accessed universe {universe_id}')
-
-            return jsonify({
-                'message': 'Universe retrieved successfully',
-                'universe': universe.to_dict()
-            }), 200
-
-        except ValueError as e:
-            current_app.logger.error(f"Type conversion error during access check: {str(e)}")
-            return jsonify({
-                'message': 'Access denied due to ID type mismatch',
-                'error': str(e)
-            }), 403
-
+            return jsonify({'message': 'Universe not found', 'error': 'The requested universe does not exist or has been deleted'}), 404
+        universe_user_id = int(universe.user_id) if universe.user_id is not None else None
+        if is_demo_user:
+            if user_id == universe_user_id:
+                return jsonify({'message': 'Universe retrieved successfully', 'universe': universe.to_dict()}), 200
+            else:
+                return jsonify({'message': 'Access denied', 'error': 'You do not have permission to access this universe'}), 403
+        jwt_user_id = int(user_id) if user_id is not None else None
+        if not universe.is_public and universe_user_id != jwt_user_id:
+            return jsonify({'message': 'Access denied', 'error': 'You do not have permission to access this universe'}), 403
+        return jsonify({'message': 'Universe retrieved successfully', 'universe': universe.to_dict()}), 200
     except Exception as e:
         current_app.logger.error(f'Error retrieving universe {universe_id}: {str(e)}')
-        return jsonify({
-            'message': 'Error retrieving universe',
-            'error': str(e)
-        }), 500
+        return jsonify({'message': 'Error retrieving universe', 'error': str(e)}), 500
 
 @universes_bp.route('/', methods=['POST'])
 @jwt_required()
@@ -272,26 +159,44 @@ def create_universe():
 
 @universes_bp.route('/<int:universe_id>', methods=['PUT'])
 @universes_bp.route('/<int:universe_id>/', methods=['PUT'])
-@jwt_required()
+@jwt_required_or_demo
 def update_universe(universe_id):
     try:
         # Get universe record
         universe = Universe.query.get_or_404(universe_id)
 
-        # Get user identity from JWT
-        user_id = get_jwt_identity()
+        # Check if this is a demo user request
+        is_demo_user = request.headers.get('X-Demo-User') == 'true'
+        demo_user_email = get_demo_user_email() if is_demo_user else None
+
+        # Get user identity from JWT (for regular users)
+        user_id = None
+        if not is_demo_user:
+            user_id = get_jwt_identity()
 
         # Always convert both IDs to integers for consistent comparison
         try:
             # Ensure both user IDs are treated as integers for comparison
-            jwt_user_id = int(user_id) if user_id is not None else None
+            if is_demo_user:
+                # For demo users, get the demo user ID
+                demo_user = User.query.filter_by(email=demo_user_email).first()
+                if not demo_user:
+                    current_app.logger.warning(f'Demo user {demo_user_email} not found')
+                    return jsonify({
+                        'message': 'Demo user not found',
+                        'error': 'Invalid demo user'
+                    }), 404
+                jwt_user_id = demo_user.id
+            else:
+                jwt_user_id = int(user_id) if user_id is not None else None
+
             universe_user_id = int(universe.user_id) if universe.user_id is not None else None
 
-            current_app.logger.info(f"UPDATE UNIVERSE: JWT user_id={jwt_user_id} (type {type(jwt_user_id)}), Universe user_id={universe_user_id} (type {type(universe_user_id)})")
+            current_app.logger.info(f"UPDATE UNIVERSE: {'Demo' if is_demo_user else 'Regular'} user_id={jwt_user_id} (type {type(jwt_user_id)}), Universe user_id={universe_user_id} (type {type(universe_user_id)})")
 
             # Simple integer comparison
             if jwt_user_id != universe_user_id:
-                current_app.logger.warning(f"Access denied: User {jwt_user_id} attempted to update universe {universe_id} owned by {universe_user_id}")
+                current_app.logger.warning(f"Access denied: {'Demo' if is_demo_user else 'Regular'} user {jwt_user_id} attempted to update universe {universe_id} owned by {universe_user_id}")
                 return jsonify({
                     'message': 'Access denied',
                     'error': 'You do not have permission to update this universe'
@@ -340,7 +245,7 @@ def update_universe(universe_id):
 
 @universes_bp.route('/<int:universe_id>', methods=['DELETE'])
 @universes_bp.route('/<int:universe_id>/', methods=['DELETE'])
-@jwt_required()
+@jwt_required_or_demo
 def delete_universe(universe_id):
     """Redirect to the primary delete implementation in universes/delete_routes.py.
 

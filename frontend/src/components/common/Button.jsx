@@ -30,6 +30,8 @@ const Button = React.forwardRef(
     },
     ref
   ) => {
+    // Debug log to confirm rendering and props
+    console.log('Button render', { Component, onClick, disabled, loading, children });
     const buttonClass = `
     button
     button-${variant}
@@ -57,6 +59,8 @@ const Button = React.forwardRef(
     const handleClick = (e) => {
       // Stop propagation to prevent modal close
       e.stopPropagation();
+      // Debug log
+      console.log('Button clicked');
       // Call original handler if provided
       onClick && onClick(e);
     };

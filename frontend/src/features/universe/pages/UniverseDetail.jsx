@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import Button from '../../../components/common/Button.jsx';
+import { Button as MyButton } from '../../../components/common/index.mjs';
 import { demoService } from '../../../services/demo.service.mjs';
 import {
   createSceneAndRefresh,
   deleteSceneAndRefresh,
   fetchScenesForUniverse,
-} from '../../../store/thunks/consolidated/scenesThunks';
+} from '../../../store/thunks/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { AUTH_CONFIG } from '../../../utils/config.mjs';
 // import { SceneCard } from '../../scene/index.mjs';
@@ -19,6 +19,9 @@ const SceneModal = lazy(() => import('../../scene/modals/SceneModal.jsx'));
 const SceneCard = lazy(() => import('../../scene/components/SceneCard.jsx'));
 
 const UniverseDetail = () => {
+  console.log(createSceneAndRefresh);
+  console.log(deleteSceneAndRefresh);
+  console.log(fetchScenesForUniverse,);
   const { id } = useParams();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -433,6 +436,10 @@ const UniverseDetail = () => {
   const handleCreateSceneSuccess = (newScene) => {
     console.log('UniverseDetail - handleCreateSceneSuccess called with:', newScene);
     setIsCreateSceneModalOpen(false);
+    // Log localStorage user/email before dispatch
+    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+    const user = userStr ? JSON.parse(userStr) : null;
+    console.log('UniverseDetail - Before createSceneAndRefresh dispatch, localStorage user:', user);
     // Dispatch action to create scene using Redux with auto-refresh
     dispatch(
       createSceneAndRefresh({
@@ -491,6 +498,13 @@ const UniverseDetail = () => {
         `Are you sure you want to delete "${scene.title || scene.name}"? This cannot be undone.`
       )
     ) {
+      // Log localStorage user/email before dispatch
+      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+      const user = userStr ? JSON.parse(userStr) : null;
+      console.log(
+        'UniverseDetail - Before deleteSceneAndRefresh dispatch, localStorage user:',
+        user
+      );
       dispatch(
         deleteSceneAndRefresh({
           sceneId: scene.id,
@@ -550,18 +564,32 @@ const UniverseDetail = () => {
         <h2>Error</h2>
         <p>{errorMessage}</p>
         <div style={{ marginTop: '20px' }}>
-          <Button onClick={() => navigate('/universes')} style={{ marginRight: '10px' }}>
+          <MyButton
+            as="button"
+            onClick={() => navigate('/universes')}
+            style={{ marginRight: '10px' }}
+          >
             Back to Universes
-          </Button>
-          <Button onClick={clearAuthData} variant="secondary" style={{ marginRight: '10px' }}>
+          </MyButton>
+          <MyButton
+            as="button"
+            onClick={clearAuthData}
+            variant="secondary"
+            style={{ marginRight: '10px' }}
+          >
             Clear Auth Data
-          </Button>
-          <Button onClick={debugAuthFlow} variant="secondary" style={{ marginRight: '10px' }}>
+          </MyButton>
+          <MyButton
+            as="button"
+            onClick={debugAuthFlow}
+            variant="secondary"
+            style={{ marginRight: '10px' }}
+          >
             Debug Auth Flow
-          </Button>
-          <Button onClick={() => window.location.reload()} variant="secondary">
+          </MyButton>
+          <MyButton as="button" onClick={() => window.location.reload()} variant="secondary">
             Reload Page
-          </Button>
+          </MyButton>
         </div>
       </div>
     );
@@ -575,7 +603,7 @@ const UniverseDetail = () => {
           The universe you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission
           to view it.
         </p>
-        <Button onClick={() => navigate('/universes')}>Back to Universes</Button>
+        <MyButton onClick={() => navigate('/universes')}>Back to Universes</MyButton>
       </div>
     );
   }
@@ -600,12 +628,19 @@ const UniverseDetail = () => {
           </div>
         </div>
         <div className="universe-actions">
-          <Button onClick={handleEditClick} variant="secondary">
+          <MyButton as="button" onClick={handleEditClick} variant="secondary">
             Edit Universe
-          </Button>
-          <Button onClick={handleDeleteClick} variant="danger">
+          </MyButton>
+          <MyButton as="button" onClick={handleDeleteClick} variant="danger">
             Delete Universe
-          </Button>
+          </MyButton>
+          {/* Native test button for debugging event handling */}
+          <button style={{ marginLeft: 8 }} onClick={() => alert('Native button works!')}>
+            Native Test Button
+          </button>
+          <MyButton as="button" onClick={() => alert('Minimal Button works!')}>
+            Minimal Test Button
+          </MyButton>
         </div>
       </div>
 
@@ -656,9 +691,9 @@ const UniverseDetail = () => {
           <>
             <div className="universe-scenes-header">
               <h2>Scenes</h2>
-              <Button onClick={handleCreateSceneClick} variant="primary">
+              <MyButton as="button" onClick={handleCreateSceneClick} variant="primary">
                 Create Scene
-              </Button>
+              </MyButton>
             </div>
 
             {scenesLoading ? (
@@ -682,9 +717,9 @@ const UniverseDetail = () => {
             ) : (
               <div className="empty-state">
                 <p>No scenes found in this universe</p>
-                <Button onClick={handleCreateSceneClick} variant="primary">
+                <MyButton as="button" onClick={handleCreateSceneClick} variant="primary">
                   Create Your First Scene
-                </Button>
+                </MyButton>
               </div>
             )}
           </>

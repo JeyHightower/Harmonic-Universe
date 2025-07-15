@@ -4,6 +4,7 @@
  */
 
 // Export scene-related thunks
-export * from './scenesThunks';
+// Note: scenesThunks.mjs has been moved to the main thunks directory
+// export * from './scenesThunks';
 
-// Add more consolidated thunks as they're created 
+// Add more consolidated thunks as they're created

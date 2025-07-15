@@ -5,7 +5,6 @@ import Button from '../../../components/common/Button.jsx';
 import Input from '../../../components/common/Input.jsx';
 import { createUniverse } from '../../../store/thunks/universeThunks';
 import '../styles/Universe.css';
-
 function UniverseCreate({ onClose, onSuccess }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -32,6 +31,20 @@ function UniverseCreate({ onClose, onSuccess }) {
       ...prev,
       [name]: '',
     }));
+  };
+
+  const validateUniverseName = (name) => {
+    if (!name.trim()) return 'Universe name is required';
+    if (name.length < 3) return 'Universe name must be at least 3 characters';
+    if (name.length > 50) return 'Universe name must be less than 50 characters';
+    return '';
+  };
+
+  const validateDescription = (description) => {
+    if (!description.trim()) return 'Description is required';
+    if (description.length < 10) return 'Description must be at least 10 characters';
+    if (description.length > 500) return 'Description must be less than 500 characters';
+    return '';
   };
 
   const validateForm = () => {
