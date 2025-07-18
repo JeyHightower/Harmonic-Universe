@@ -43,16 +43,11 @@ const SceneModal = React.forwardRef(
     });
 
     // For backward compatibility with both open and isOpen props
-    const isModalOpen = useMemo(() => {
-      const result = open || isOpen || false;
-      console.log('SceneModal - isModalOpen calculated:', result);
-      return result;
-    }, [open, isOpen]);
+    const isModalOpen = open;
 
     // Enhanced debugging
     console.log('SceneModal - Component initialized with props:', {
       open,
-      isOpen,
       isModalOpen,
       universeId,
       sceneId,
@@ -73,14 +68,12 @@ const SceneModal = React.forwardRef(
 
     // Add effect to log when modal should be visible
     useEffect(() => {
-      console.log('SceneModal - isModalOpen changed:', { isModalOpen });
-
-      if (isModalOpen) {
+      console.log('SceneModal - open changed:', { open });
+      if (open) {
         console.log('SceneModal - Modal should be visible now');
-        // Force a layout calculation by reading a property that causes reflow
         document.body.offsetHeight;
       }
-    }, [isModalOpen]);
+    }, [open]);
 
     // Memoize modal title to prevent re-renders
     const modalTitle = useMemo(() => {
@@ -595,12 +588,12 @@ const SceneModal = React.forwardRef(
     return (
       <StableModalWrapper
         title={modalTitle}
-        open={isModalOpen}
+        open={open}
         onClose={onClose}
         width={800}
         style={{
-          display: isModalOpen ? 'block' : 'none',
-          visibility: isModalOpen ? 'visible' : 'hidden',
+          display: open ? 'block' : 'none',
+          visibility: open ? 'visible' : 'hidden',
         }}
         footer={null}
       >
@@ -622,7 +615,6 @@ const SceneModal = React.forwardRef(
 SceneModal.propTypes = {
   // Support both open and isOpen props
   open: PropTypes.bool,
-  isOpen: PropTypes.bool,
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
   universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),

@@ -295,9 +295,9 @@ const SceneForm = ({
         console.log('SceneForm - Updating scene with ID:', sceneId);
         console.log('SceneForm - Update payload:', apiData);
 
-        // Call onSubmit with 'update' action
+        // Call onSubmit with only the apiData
         try {
-          const result = await onSubmit('update', apiData);
+          const result = await onSubmit(apiData);
           console.log('SceneForm - Update successful:', result);
           message.success('Scene updated successfully');
 
@@ -313,9 +313,9 @@ const SceneForm = ({
       } else {
         console.log('SceneForm - Creating new scene');
 
-        // Call onSubmit with 'create' action
+        // Call onSubmit with only the apiData
         try {
-          const result = await onSubmit('create', apiData);
+          const result = await onSubmit(apiData);
           console.log('SceneForm - Creation successful:', result);
           message.success('Scene created successfully');
 

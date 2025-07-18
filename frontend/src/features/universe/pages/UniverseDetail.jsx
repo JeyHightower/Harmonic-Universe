@@ -12,6 +12,7 @@ import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { AUTH_CONFIG } from '../../../utils/config.mjs';
 // import { SceneCard } from '../../scene/index.mjs';
 import '../styles/Universe.css';
+
 const UniverseModal = lazy(() => import('../modals/UniverseModal'));
 const UniverseDeleteModal = lazy(() => import('../modals/UniverseDeleteModal.jsx'));
 const SceneModal = lazy(() => import('../../scene/modals/SceneModal.jsx'));
@@ -21,7 +22,7 @@ const SceneCard = lazy(() => import('../../scene/components/SceneCard.jsx'));
 const UniverseDetail = () => {
   console.log(createSceneAndRefresh);
   console.log(deleteSceneAndRefresh);
-  console.log(fetchScenesForUniverse,);
+  console.log(fetchScenesForUniverse);
   const { id } = useParams();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -190,82 +191,6 @@ const UniverseDetail = () => {
       return false;
     }
   };
-
-  // Comprehensive debug function to test entire auth flow
-  const debugAuthFlow = async (universeId = 1) => {
-    console.log('=== DEBUG AUTH FLOW START ===');
-
-    // Step 1: Clear all auth data
-    console.log('Step 1: Clearing all auth data...');
-    clearAuthData();
-
-    // Step 2: Check initial state
-    console.log('Step 2: Checking initial state...');
-    const initialToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const initialUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-    console.log('Initial state:', {
-      hasToken: !!initialToken,
-      hasUser: !!initialUser,
-      token: initialToken,
-      user: initialUser,
-    });
-
-    // Step 3: Test demo login
-    console.log('Step 3: Testing demo login...');
-    const demoResult = await testDemoLogin();
-
-    // Step 4: Check state after demo login
-    console.log('Step 4: Checking state after demo login...');
-    const afterToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const afterUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-    console.log('After demo login:', {
-      hasToken: !!afterToken,
-      hasUser: !!afterUser,
-      tokenLength: afterToken?.length || 0,
-      tokenPreview: afterToken ? `${afterToken.substring(0, 20)}...` : 'none',
-      user: afterUser ? JSON.parse(afterUser) : null,
-    });
-
-    // Step 5: Test CORS preflight
-    console.log('Step 5: Testing CORS preflight...');
-    const corsResult = await testCorsPreflight(universeId);
-
-    // Step 6: Test universe request
-    console.log('Step 6: Testing universe request...');
-    try {
-      const response = await fetch(`http://localhost:5001/api/universes/${universeId}/`, {
-        headers: {
-          Authorization: `Bearer ${afterToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      console.log('Universe request result:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-      });
-    } catch (error) {
-      console.error('Universe request error:', error);
-    }
-
-    console.log('=== DEBUG AUTH FLOW END ===');
-    return { demoResult, corsResult };
-  };
-
-  // Expose test functions for debugging
-  useEffect(() => {
-    window.testDemoLogin = testDemoLogin;
-    window.testCorsPreflight = testCorsPreflight;
-    window.clearAuthData = clearAuthData;
-    window.debugAuthFlow = debugAuthFlow;
-    window.globalTokenCleanup = globalTokenCleanup;
-    console.log(
-      'Debug functions available: window.testDemoLogin(), window.testCorsPreflight(), window.clearAuthData(), window.debugAuthFlow(), window.globalTokenCleanup()'
-    );
-
-    // Run global token cleanup immediately
-    globalTokenCleanup();
-  }, []);
 
   // Fetch universe data when component mounts or id changes
   useEffect(() => {
@@ -764,42 +689,47 @@ const UniverseDetail = () => {
       )}
 
       {/* Scene Create Modal */}
-      <SceneModal
-        isOpen={isCreateSceneModalOpen}
-        open={isCreateSceneModalOpen}
-        onClose={() => {
-          console.log('UniverseDetail - SceneModal onClose called, closing modal');
-          setIsCreateSceneModalOpen(false);
-        }}
-        onSuccess={(newScene) => {
-          console.log('UniverseDetail - SceneModal onSuccess called with:', newScene);
-          handleCreateSceneSuccess(newScene);
-        }}
-        universeId={id}
-        mode="create"
-        modalType="create"
-      />
+      <Suspense fallback={<div>Loading Scene Modal...</div>}>
+        <SceneModal
+          open={isCreateSceneModalOpen}
+          onClose={() => {
+            console.log('UniverseDetail - SceneModal onClose called, closing modal');
+            setIsCreateSceneModalOpen(false);
+          }}
+          onSuccess={(newScene) => {
+            console.log('UniverseDetail - SceneModal onSuccess called with:', newScene);
+            handleCreateSceneSuccess(newScene);
+          }}
+          universeId={id}
+          mode="create"
+          modalType="create"
+        />
+      </Suspense>
 
       {isEditSceneModalOpen && sceneToEdit && (
-        <SceneModal
-          isOpen={isEditSceneModalOpen}
-          onClose={handleEditSceneClose}
-          onSuccess={handleEditSceneSuccess}
-          universeId={id}
-          sceneId={sceneToEdit}
-          mode="edit"
-        />
+        <Suspense fallback={<div>Loading Scene Modal...</div>}>
+          <SceneModal
+            open={isEditSceneModalOpen}
+            onClose={handleEditSceneClose}
+            onSuccess={handleEditSceneSuccess}
+            universeId={id}
+            sceneId={sceneToEdit}
+            mode="edit"
+          />
+        </Suspense>
       )}
 
       {isViewSceneModalOpen && sceneToView && (
-        <SceneModal
-          isOpen={isViewSceneModalOpen}
-          onClose={handleViewSceneClose}
-          universeId={id}
-          sceneId={typeof sceneToView === 'object' ? sceneToView.id : sceneToView}
-          initialData={typeof sceneToView === 'object' ? sceneToView : null}
-          mode="view"
-        />
+        <Suspense fallback={<div>Loading Scene Modal...</div>}>
+          <SceneModal
+            open={isViewSceneModalOpen}
+            onClose={handleViewSceneClose}
+            universeId={id}
+            sceneId={typeof sceneToView === 'object' ? sceneToView.id : sceneToView}
+            initialData={typeof sceneToView === 'object' ? sceneToView : null}
+            mode="view"
+          />
+        </Suspense>
       )}
     </div>
   );
