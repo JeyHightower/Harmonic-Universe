@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Button as MyButton } from '../../../components/common/index.mjs';
+import Button  from '../../../components/common/Button.jsx';
 import { demoService } from '../../../services/demo.service.mjs';
 import {
   createSceneAndRefresh,
@@ -57,140 +57,140 @@ const UniverseDetail = () => {
   };
 
   // Global token cleanup function
-  const globalTokenCleanup = () => {
-    console.log('=== GLOBAL TOKEN CLEANUP START ===');
+  // const globalTokenCleanup = () => {
+  //   console.log('=== GLOBAL TOKEN CLEANUP START ===');
 
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-    const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+  //   const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  //   const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+  //   const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
-    console.log('Before cleanup:', {
-      hasToken: !!token,
-      hasUser: !!userStr,
-      hasRefreshToken: !!refreshToken,
-      tokenLength: token?.length || 0,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-    });
+  //   console.log('Before cleanup:', {
+  //     hasToken: !!token,
+  //     hasUser: !!userStr,
+  //     hasRefreshToken: !!refreshToken,
+  //     tokenLength: token?.length || 0,
+  //     tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+  //   });
 
-    // Check if token is valid JWT format
-    const isValidToken = token && token.split('.').length === 3;
+  //   // Check if token is valid JWT format
+  //   const isValidToken = token && token.split('.').length === 3;
 
-    if (token && !isValidToken) {
-      console.log('Invalid token detected, clearing all auth data');
-      clearAuthData();
+  //   if (token && !isValidToken) {
+  //     console.log('Invalid token detected, clearing all auth data');
+  //     clearAuthData();
 
-      // Verify cleanup
-      setTimeout(() => {
-        const afterToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-        const afterUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-        const afterRefresh = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
+  //     // Verify cleanup
+  //     setTimeout(() => {
+  //       const afterToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  //       const afterUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+  //       const afterRefresh = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
-        console.log('After cleanup:', {
-          hasToken: !!afterToken,
-          hasUser: !!afterUser,
-          hasRefreshToken: !!afterRefresh,
-        });
-        console.log('=== GLOBAL TOKEN CLEANUP END ===');
-      }, 10);
-    } else if (isValidToken) {
-      console.log('Valid token found, no cleanup needed');
-      console.log('=== GLOBAL TOKEN CLEANUP END ===');
-    } else {
-      console.log('No token found, no cleanup needed');
-      console.log('=== GLOBAL TOKEN CLEANUP END ===');
-    }
-  };
+  //       console.log('After cleanup:', {
+  //         hasToken: !!afterToken,
+  //         hasUser: !!afterUser,
+  //         hasRefreshToken: !!afterRefresh,
+  //       });
+  //       console.log('=== GLOBAL TOKEN CLEANUP END ===');
+  //     }, 10);
+  //   } else if (isValidToken) {
+  //     console.log('Valid token found, no cleanup needed');
+  //     console.log('=== GLOBAL TOKEN CLEANUP END ===');
+  //   } else {
+  //     console.log('No token found, no cleanup needed');
+  //     console.log('=== GLOBAL TOKEN CLEANUP END ===');
+  //   }
+  // };
 
   // Immediate token cleanup - runs before any other logic
-  useEffect(() => {
-    console.log('UniverseDetail - Running immediate token cleanup...');
+  // useEffect(() => {
+  //   console.log('UniverseDetail - Running immediate token cleanup...');
 
-    // Check for invalid tokens immediately
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+  //   // Check for invalid tokens immediately
+  //   const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  //   const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
 
-    console.log('UniverseDetail - Current localStorage state:', {
-      hasToken: !!token,
-      hasUser: !!userStr,
-      tokenLength: token?.length || 0,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-    });
+  //   console.log('UniverseDetail - Current localStorage state:', {
+  //     hasToken: !!token,
+  //     hasUser: !!userStr,
+  //     tokenLength: token?.length || 0,
+  //     tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+  //   });
 
-    // Check if token is valid JWT format
-    const isValidToken = token && token.split('.').length === 3;
+  //   // Check if token is valid JWT format
+  //   const isValidToken = token && token.split('.').length === 3;
 
-    if (token && !isValidToken) {
-      console.log(
-        'UniverseDetail - Invalid token detected during immediate cleanup, clearing auth data'
-      );
-      clearAuthData();
+  //   if (token && !isValidToken) {
+  //     console.log(
+  //       'UniverseDetail - Invalid token detected during immediate cleanup, clearing auth data'
+  //     );
+  //     clearAuthData();
 
-      // Verify cleanup worked
-      setTimeout(() => {
-        const afterToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-        const afterUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-        console.log('UniverseDetail - After immediate cleanup:', {
-          hasToken: !!afterToken,
-          hasUser: !!afterUser,
-        });
-      }, 10);
-    } else if (isValidToken) {
-      console.log('UniverseDetail - Valid token found during immediate cleanup');
-    } else {
-      console.log('UniverseDetail - No token found during immediate cleanup');
-    }
-  }, []); // Empty dependency array - runs only once on mount
+  //     // Verify cleanup worked
+  //     setTimeout(() => {
+  //       const afterToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+  //       const afterUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+  //       console.log('UniverseDetail - After immediate cleanup:', {
+  //         hasToken: !!afterToken,
+  //         hasUser: !!afterUser,
+  //       });
+  //     }, 10);
+  //   } else if (isValidToken) {
+  //     console.log('UniverseDetail - Valid token found during immediate cleanup');
+  //   } else {
+  //     console.log('UniverseDetail - No token found during immediate cleanup');
+  //   }
+  // }, []); // Empty dependency array - runs only once on mount
 
   // Test function to verify demo login
-  const testDemoLogin = async () => {
-    try {
-      console.log('Testing demo login...');
-      const response = await fetch('http://localhost:5001/api/auth/demo-login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  // const testDemoLogin = async () => {
+  //   try {
+  //     console.log('Testing demo login...');
+  //     const response = await fetch('http://localhost:5001/api/auth/demo-login/', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //     });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Demo login successful:', data);
-        return data;
-      } else {
-        console.error('Demo login failed:', response.status, response.statusText);
-        return null;
-      }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      return null;
-    }
-  };
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       console.log('Demo login successful:', data);
+  //       return data;
+  //     } else {
+  //       console.error('Demo login failed:', response.status, response.statusText);
+  //       return null;
+  //     }
+  //   } catch (error) {
+  //     console.error('Demo login error:', error);
+  //     return null;
+  //   }
+  // };
 
-  // Test function to verify CORS preflight
-  const testCorsPreflight = async (universeId = 1) => {
-    try {
-      console.log(`Testing CORS preflight for universe endpoint (ID: ${universeId})...`);
-      const response = await fetch(`http://localhost:5001/api/universes/${universeId}/`, {
-        method: 'OPTIONS',
-        headers: {
-          Origin: 'http://localhost:5173',
-          'Access-Control-Request-Method': 'GET',
-          'Access-Control-Request-Headers': 'Authorization',
-        },
-      });
+  // // Test function to verify CORS preflight
+  // const testCorsPreflight = async (universeId = 1) => {
+  //   try {
+  //     console.log(`Testing CORS preflight for universe endpoint (ID: ${universeId})...`);
+  //     const response = await fetch(`http://localhost:5001/api/universes/${universeId}/`, {
+  //       method: 'OPTIONS',
+  //       headers: {
+  //         Origin: 'http://localhost:5173',
+  //         'Access-Control-Request-Method': 'GET',
+  //         'Access-Control-Request-Headers': 'Authorization',
+  //       },
+  //     });
 
-      console.log('CORS preflight response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-      });
+  //     console.log('CORS preflight response:', {
+  //       status: response.status,
+  //       statusText: response.statusText,
+  //       headers: Object.fromEntries(response.headers.entries()),
+  //     });
 
-      return response.ok;
-    } catch (error) {
-      console.error('CORS preflight error:', error);
-      return false;
-    }
-  };
+  //     return response.ok;
+  //   } catch (error) {
+  //     console.error('CORS preflight error:', error);
+  //     return false;
+  //   }
+  // };
 
   // Fetch universe data when component mounts or id changes
   useEffect(() => {
@@ -489,32 +489,32 @@ const UniverseDetail = () => {
         <h2>Error</h2>
         <p>{errorMessage}</p>
         <div style={{ marginTop: '20px' }}>
-          <MyButton
+          <Button
             as="button"
             onClick={() => navigate('/universes')}
             style={{ marginRight: '10px' }}
           >
             Back to Universes
-          </MyButton>
-          <MyButton
+          </Button>
+          <Button
             as="button"
             onClick={clearAuthData}
             variant="secondary"
             style={{ marginRight: '10px' }}
           >
             Clear Auth Data
-          </MyButton>
-          <MyButton
+          </Button>
+          <Button
             as="button"
             onClick={debugAuthFlow}
             variant="secondary"
             style={{ marginRight: '10px' }}
           >
             Debug Auth Flow
-          </MyButton>
-          <MyButton as="button" onClick={() => window.location.reload()} variant="secondary">
+          </Button>
+          <Button as="button" onClick={() => window.location.reload()} variant="secondary">
             Reload Page
-          </MyButton>
+          </Button>
         </div>
       </div>
     );
@@ -528,10 +528,13 @@ const UniverseDetail = () => {
           The universe you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission
           to view it.
         </p>
-        <MyButton onClick={() => navigate('/universes')}>Back to Universes</MyButton>
+        <Button onClick={() => navigate('/universes')}>Back to Universes</Button>
       </div>
     );
   }
+
+  // Debug log for modal open state
+  console.log('UniverseDetail render: isCreateSceneModalOpen =', isCreateSceneModalOpen);
 
   return (
     <div className="universe-detail-container">
@@ -553,19 +556,12 @@ const UniverseDetail = () => {
           </div>
         </div>
         <div className="universe-actions">
-          <MyButton as="button" onClick={handleEditClick} variant="secondary">
+          <button style={{backgroundColor: 'blue'}} onClick={handleEditClick} variant="secondary">
             Edit Universe
-          </MyButton>
-          <MyButton as="button" onClick={handleDeleteClick} variant="danger">
-            Delete Universe
-          </MyButton>
-          {/* Native test button for debugging event handling */}
-          <button style={{ marginLeft: 8 }} onClick={() => alert('Native button works!')}>
-            Native Test Button
           </button>
-          <MyButton as="button" onClick={() => alert('Minimal Button works!')}>
-            Minimal Test Button
-          </MyButton>
+          <button style={{backgroundColor: 'red'}} onClick={handleDeleteClick} variant="danger">
+            Delete Universe
+          </button>
         </div>
       </div>
 
@@ -616,9 +612,9 @@ const UniverseDetail = () => {
           <>
             <div className="universe-scenes-header">
               <h2>Scenes</h2>
-              <MyButton as="button" onClick={handleCreateSceneClick} variant="primary">
+              <button style={{backgroundColor:'green'}} onClick={handleCreateSceneClick} variant="primary">
                 Create Scene
-              </MyButton>
+              </button>
             </div>
 
             {scenesLoading ? (
@@ -642,9 +638,9 @@ const UniverseDetail = () => {
             ) : (
               <div className="empty-state">
                 <p>No scenes found in this universe</p>
-                <MyButton as="button" onClick={handleCreateSceneClick} variant="primary">
+                <button style={{backgroundColor: 'green'}} onClick={handleCreateSceneClick} variant="primary">
                   Create Your First Scene
-                </MyButton>
+                </button>
               </div>
             )}
           </>
