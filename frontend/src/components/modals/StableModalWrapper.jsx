@@ -19,6 +19,7 @@ const StableModalWrapper = ({
 }) => {
   // Debug log for modal open state
   console.log('StableModalWrapper render: open =', open);
+  console.log('🔍 StableModalWrapper DEBUG - All props:', { open, title, width, footer: !!footer });
   const [isVisible, setIsVisible] = useState(open);
   const modalRef = useRef(null);
   const instanceId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);
@@ -54,12 +55,13 @@ const StableModalWrapper = ({
   // Combined styles to ensure the modal is visible and interactive
   const combinedStyle = useMemo(
     () => ({
-      display: 'block',
-      visibility: 'visible',
+      display: isVisible ? 'block' : 'none',
+      visibility: isVisible ? 'visible' : 'hidden',
       pointerEvents: 'auto',
+      zIndex: 1060,
       ...style,
     }),
-    [style]
+    [style, isVisible]
   );
 
   // Handle clicks on the modal itself
@@ -113,7 +115,7 @@ const StableModalWrapper = ({
       onCancel={handleClose}
       footer={footer === null ? null : footer}
       width={width}
-      destroyOnHidden={true}
+      destroyOnClose={false}
       maskClosable={true}
       className={`stable-modal stable-modal-${instanceId.current}`}
       style={combinedStyle}

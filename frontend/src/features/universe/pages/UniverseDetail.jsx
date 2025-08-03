@@ -339,12 +339,11 @@ const UniverseDetail = () => {
 
   const handleCreateSceneClick = () => {
     console.log('UniverseDetail - BUTTON CLICKED - handleCreateSceneClick called');
+    console.log('UniverseDetail - Current state before:', { isCreateSceneModalOpen });
 
     // Set a flag to force the modal to open
     setIsCreateSceneModalOpen(true);
-
-    // Better logging to check state
-    console.log('UniverseDetail - State before update:', { isCreateSceneModalOpen });
+    console.log('UniverseDetail - setIsCreateSceneModalOpen(true) called');
 
     // Force a re-render with the dummy state update
     setDummyState({ timestamp: Date.now() });
@@ -352,10 +351,13 @@ const UniverseDetail = () => {
     // Add a timeout to check the state after the update
     setTimeout(() => {
       console.log('UniverseDetail - State after update (timeout):', {
-        isCreateSceneModalOpen: isCreateSceneModalOpen,
-        dummyState: dummyState,
+        isCreateSceneModalOpen,
+        dummyState,
       });
     }, 100);
+
+    // Also add a more aggressive debug
+    console.log('🚀 DEBUG: Modal should open now!');
   };
 
   const handleCreateSceneSuccess = (newScene) => {
@@ -535,6 +537,7 @@ const UniverseDetail = () => {
 
   // Debug log for modal open state
   console.log('UniverseDetail render: isCreateSceneModalOpen =', isCreateSceneModalOpen);
+  console.log('🔍 UniverseDetail DEBUG - Universe ID:', { id, type: typeof id });
 
   return (
     <div className="universe-detail-container">
@@ -685,22 +688,24 @@ const UniverseDetail = () => {
       )}
 
       {/* Scene Create Modal */}
-      <Suspense fallback={<div>Loading Scene Modal...</div>}>
-        <SceneModal
-          open={isCreateSceneModalOpen}
-          onClose={() => {
-            console.log('UniverseDetail - SceneModal onClose called, closing modal');
-            setIsCreateSceneModalOpen(false);
-          }}
-          onSuccess={(newScene) => {
-            console.log('UniverseDetail - SceneModal onSuccess called with:', newScene);
-            handleCreateSceneSuccess(newScene);
-          }}
-          universeId={id}
-          mode="create"
-          modalType="create"
-        />
-      </Suspense>
+      {isCreateSceneModalOpen && (
+        <Suspense fallback={<div>Loading Scene Modal...</div>}>
+          <SceneModal
+            open={isCreateSceneModalOpen}
+            onClose={() => {
+              console.log('UniverseDetail - SceneModal onClose called, closing modal');
+              setIsCreateSceneModalOpen(false);
+            }}
+            onSuccess={(newScene) => {
+              console.log('UniverseDetail - SceneModal onSuccess called with:', newScene);
+              handleCreateSceneSuccess(newScene);
+            }}
+            universeId={id}
+            mode="create"
+            modalType="create"
+          />
+        </Suspense>
+      )}
 
       {isEditSceneModalOpen && sceneToEdit && (
         <Suspense fallback={<div>Loading Scene Modal...</div>}>
