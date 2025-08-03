@@ -26,11 +26,10 @@ const SceneModal = React.forwardRef(
       modalType = 'scene',
       mode = 'create',
     },
-    ref
   ) => {
     console.log('SceneModal - COMPONENT INITIALIZED', { open, universeId, mode, modalType });
 
-    const isModalOpen = open;
+    const isModalOpen = open || false;
     const actualMode = mode || modalType;
 
     const [scene, setScene] = useState(null);
@@ -40,7 +39,6 @@ const SceneModal = React.forwardRef(
     const dispatch = useDispatch();
     const [form] = Form.useForm();
     const viewerData = scene || initialData;
-
 
     useEffect(() => {
       console.log('SceneModal - open changed:', { open });
@@ -86,8 +84,6 @@ const SceneModal = React.forwardRef(
     }, [dispatch, isModalOpen, sceneId, actualMode, formattedSceneId]);
 
     const handleSubmit = useCallback(
-      const deleteSceneData = scene ||
-      initialData || { id: formattedSceneId, name: 'Scene', universe_id: universeId };
       async (formData) => {
         try {
           if (loading) {
@@ -129,9 +125,7 @@ const SceneModal = React.forwardRef(
         } finally {
           setLoading(false);
         }
-      },
-      [actualMode, formattedSceneId, universeId, dispatch, loading, onClose, onSuccess]
-    );
+      }, [actualMode, formattedSceneId, universeId, dispatch, loading, onClose, onSuccess]);
 
     const handleDelete = useCallback(async () => {
       try {
@@ -244,7 +238,7 @@ const SceneModal = React.forwardRef(
         case 'delete':
           return (
             <SceneDeleteConfirmation
-              scene={deleteSceneData}
+              scene={scene}
               onDelete={handleDelete}
               onCancel={onClose}
               isLoading={loading}
@@ -253,26 +247,10 @@ const SceneModal = React.forwardRef(
         default:
           return <p>Invalid mode: {actualMode}</p>;
       }
-    }, [
-      actualMode,
-      scene,
-      initialData,
-      loading,
-      error,
-      isContentMounted,
-      formattedSceneId,
-      universeId,
-      onClose,
-      handleSubmit,
-      handleDelete,
-      deleteSceneData,
-      viewerData,
-      form,
-    ]);
+    }, [isContentMounted, loading, error, actualMode, form, universeId, formattedSceneId, scene, initialData, handleSubmit, onClose, viewerData, handleDelete]);
 
     return (
       <StableModalWrapper
-        title={modalTitle}
         open={open}
         onClose={onClose}
         width={800}
