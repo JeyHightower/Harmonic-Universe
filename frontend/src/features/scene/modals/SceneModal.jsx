@@ -17,7 +17,7 @@ import SceneDeleteConfirmation from './SceneDeleteConfirmation';
 const SceneModal = React.forwardRef(
   (
     {
-      open = true,
+      open = false, // Changed default to false for safety
       onClose,
       onSuccess,
       universeId,
@@ -29,7 +29,7 @@ const SceneModal = React.forwardRef(
   ) => {
     console.log('SceneModal - COMPONENT INITIALIZED', { open, universeId, mode, modalType });
 
-    const isModalOpen = open || false;
+    const isModalOpen = open; // Direct usage of the open prop
     const actualMode = mode || modalType;
 
     const [scene, setScene] = useState(null);
@@ -269,7 +269,7 @@ const SceneModal = React.forwardRef(
 );
 
 SceneModal.propTypes = {
-  open: PropTypes.bool,
+  open: PropTypes.bool, // No longer required, defaults to false
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
   universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
