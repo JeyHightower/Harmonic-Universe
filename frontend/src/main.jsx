@@ -3,6 +3,9 @@ import { Provider } from 'react-redux';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { PersistGate } from 'redux-persist/integration/react';
 import App from './App';
+
+// Basic test to verify JavaScript is loading
+console.log('🚀 MAIN.JSX LOADED - JavaScript is working!');
 import store, { persistor } from './store/store.mjs';
 // CSS imports in correct order to prevent conflicts
 import 'antd/dist/reset.css'; // Import Ant Design styles first

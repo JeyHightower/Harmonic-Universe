@@ -28,9 +28,19 @@ const SceneModal = React.forwardRef(
     },
   ) => {
     console.log('SceneModal - COMPONENT INITIALIZED', { open, universeId, mode, modalType });
+    console.log('🔍 SceneModal DEBUG - Props received:', { 
+      open, 
+      universeId, 
+      mode, 
+      modalType, 
+      onClose: !!onClose, 
+      onSuccess: !!onSuccess 
+    });
 
     const isModalOpen = open || false;
     const actualMode = mode || modalType;
+
+    console.log('🔍 SceneModal DEBUG - Computed values:', { isModalOpen, actualMode });
 
     const [scene, setScene] = useState(null);
     const [loading, setLoading] = useState(false);

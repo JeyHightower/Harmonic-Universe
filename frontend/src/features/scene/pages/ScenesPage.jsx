@@ -26,6 +26,8 @@ import PropTypes from 'prop-types';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useModalState } from '../../../hooks/useModalState';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { safeId } from '../../../services/endpoints.mjs';
 import { deleteSceneAndRefresh, fetchScenes } from '../../../store/thunks/scenesThunks';
@@ -681,7 +683,12 @@ const ScenesPageContent = ({ universeId }) => {
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
-              onClick={handleCreateScene}
+              onClick={() => {
+                console.log('🚨 BUTTON CLICKED - ScenesPage Create Scene');
+                handleCreateScene();
+              }}
+              id="scenes-page-create-button"
+              data-testid="scenes-page-create-button"
             >
               Create Scene
             </Button>

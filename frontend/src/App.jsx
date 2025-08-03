@@ -3,6 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AudioProvider, ErrorBoundary, NetworkErrorHandler } from './components';
 import { authService } from './services/auth.service.mjs';
 import { checkAuthState, logoutThunk } from './store/thunks/authThunks';
+
+// Debug log to verify React app is loading
+console.log('🚀 APP.JSX LOADED - React app is initializing!');
 import './styles'; // Import all styles
 import { AUTH_CONFIG } from './utils';
 import { fixModalZIndex, resetModalSystem } from './utils/modalUtils.mjs';
