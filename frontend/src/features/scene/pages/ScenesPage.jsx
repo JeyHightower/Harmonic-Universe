@@ -681,7 +681,12 @@ const ScenesPageContent = ({ universeId }) => {
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
-              onClick={handleCreateScene}
+              onClick={() => {
+                console.log('🚨 BUTTON CLICKED - ScenesPage Create Scene');
+                handleCreateScene();
+              }}
+              id="scenes-page-create-button"
+              data-testid="scenes-page-create-button"
             >
               Create Scene
             </Button>
