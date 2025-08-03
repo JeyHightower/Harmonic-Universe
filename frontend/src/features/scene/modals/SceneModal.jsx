@@ -251,6 +251,7 @@ const SceneModal = React.forwardRef(
 
     return (
       <StableModalWrapper
+        title={modalTitle}
         open={open}
         onClose={onClose}
         width={800}
