@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Spinner from '../../../components/common/Spinner.jsx';
 import StableModalWrapper from '../../../components/modals/StableModalWrapper.jsx';
-import SimpleModalTest from './SimpleModalTest.jsx';
 import '../../../styles/SceneFormModal.css';
 import SceneViewer from '../components/SceneViewer';
 import SceneForm from '../pages/SceneForm';
@@ -260,24 +259,6 @@ const SceneModal = React.forwardRef(
       }
     }, [isContentMounted, loading, error, actualMode, form, universeId, formattedSceneId, scene, initialData, handleSubmit, onClose, viewerData, handleDelete]);
 
-    // TEST: Use simple modal first to verify the issue
-    return (
-      <SimpleModalTest
-        open={open}
-        onClose={onClose}
-        title={modalTitle}
-      >
-        <div
-          className="scene-form-container scene-modal-content"
-          style={{ padding: '24px', maxHeight: 'calc(80vh - 130px)', overflow: 'auto' }}
-        >
-          {renderContent()}
-        </div>
-      </SimpleModalTest>
-    );
-
-    // Original implementation (commented out for testing)
-    /*
     return (
       <StableModalWrapper
         title={modalTitle}
@@ -294,7 +275,6 @@ const SceneModal = React.forwardRef(
         </div>
       </StableModalWrapper>
     );
-    */
   }
 );
 

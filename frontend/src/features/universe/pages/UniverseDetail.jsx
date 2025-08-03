@@ -20,6 +20,7 @@ const SceneModal = lazy(() => import('../../scene/modals/SceneModal.jsx'));
 const SceneCard = lazy(() => import('../../scene/components/SceneCard.jsx'));
 
 const UniverseDetail = () => {
+  console.log('🚀 UniverseDetail component rendering');
   console.log(createSceneAndRefresh);
   console.log(deleteSceneAndRefresh);
   console.log(fetchScenesForUniverse);
@@ -615,9 +616,17 @@ const UniverseDetail = () => {
           <>
             <div className="universe-scenes-header">
               <h2>Scenes</h2>
-              <button style={{backgroundColor:'green'}} onClick={handleCreateSceneClick} variant="primary">
-                Create Scene
-              </button>
+                              <button 
+                  style={{backgroundColor:'green', padding: '10px 20px', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'}} 
+                  onClick={() => {
+                    console.log('🚨 BUTTON CLICKED - Create Scene');
+                    handleCreateSceneClick();
+                  }}
+                  id="create-scene-button-1"
+                  data-testid="create-scene-button"
+                >
+                  Create Scene
+                </button>
             </div>
 
             {scenesLoading ? (
@@ -641,7 +650,15 @@ const UniverseDetail = () => {
             ) : (
               <div className="empty-state">
                 <p>No scenes found in this universe</p>
-                <button style={{backgroundColor: 'green'}} onClick={handleCreateSceneClick} variant="primary">
+                <button 
+                  style={{backgroundColor: 'green', padding: '10px 20px', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'}} 
+                  onClick={() => {
+                    console.log('🚨 BUTTON CLICKED - Create Your First Scene');
+                    handleCreateSceneClick();
+                  }}
+                  id="create-scene-button-2"
+                  data-testid="create-first-scene-button"
+                >
                   Create Your First Scene
                 </button>
               </div>
