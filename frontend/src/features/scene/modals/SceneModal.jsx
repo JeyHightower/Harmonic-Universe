@@ -17,7 +17,7 @@ import SceneDeleteConfirmation from './SceneDeleteConfirmation';
 const SceneModal = React.forwardRef(
   (
     {
-      open = false,
+      open = true,
       onClose,
       onSuccess,
       universeId,
@@ -251,6 +251,7 @@ const SceneModal = React.forwardRef(
 
     return (
       <StableModalWrapper
+        title={modalTitle}
         open={open}
         onClose={onClose}
         width={800}
