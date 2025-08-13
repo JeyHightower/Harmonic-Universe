@@ -1,7 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Button as MyButton } from '../../../components/common/index.mjs';
 import { demoService } from '../../../services/demo.service.mjs';
 import {
   createSceneAndRefresh,
@@ -44,9 +43,6 @@ const UniverseDetail = () => {
   // Add state for scene viewing
   const [isViewSceneModalOpen, setIsViewSceneModalOpen] = useState(false);
   const [sceneToView, setSceneToView] = useState(null);
-
-  // Add state for triggering a re-render
-  const [dummyState, setDummyState] = useState({});
 
   // Utility function to clear all auth data
   const clearAuthData = () => {
@@ -192,111 +188,114 @@ const UniverseDetail = () => {
     }
   };
 
+  const checkAuthAndFetch = useCallback(async () => {
+    try {
+      // First, aggressively check and clear any invalid tokens
+      const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+      const user = userStr ? JSON.parse(userStr) : null;
+
+      console.log('UniverseDetail - Initial auth check:', {
+        hasToken: !!token,
+        hasUser: !!user,
+        userEmail: user?.email,
+        tokenLength: token?.length || 0,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+      });
+
+      // Check if token is valid JWT format
+      const isValidToken = token && token.split('.').length === 3;
+      if (token && !isValidToken) {
+        console.log('UniverseDetail - Invalid token format detected, clearing auth data');
+        // Clear invalid auth data
+        clearAuthData();
+
+        // Force a small delay to ensure localStorage is cleared
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        console.log('UniverseDetail - Auth data cleared, localStorage state:', {
+          token: localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
+          user: localStorage.getItem(AUTH_CONFIG.USER_KEY),
+          refreshToken: localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
+        });
+        // Early return: do not proceed with fetches if token was invalid
+        return;
+      }
+
+      // Check if this is a demo session after cleanup
+      const isDemoSession = demoService.isValidDemoSession();
+
+      console.log('UniverseDetail - After cleanup:', {
+        isDemoSession,
+        hasToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
+        hasUser: !!localStorage.getItem(AUTH_CONFIG.USER_KEY),
+      });
+
+      // If no token and not a valid demo session, try to set up demo session
+      if ((!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY) || !isValidToken) && !isDemoSession) {
+        console.log('UniverseDetail - No valid session, attempting demo login');
+        try {
+          const demoResponse = await demoService.setupDemoSession();
+          console.log('UniverseDetail - Demo session setup result:', demoResponse);
+
+          // Verify the session was established
+          const newToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+          const newUserStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+          const newUser = newUserStr ? JSON.parse(newUserStr) : null;
+
+          console.log('UniverseDetail - After demo setup:', {
+            hasNewToken: !!newToken,
+            hasNewUser: !!newUser,
+            newUserEmail: newUser?.email,
+            newTokenPreview: newToken ? `${newToken.substring(0, 20)}...` : 'none',
+            newTokenLength: newToken?.length || 0,
+          });
+        } catch (demoError) {
+          console.error('UniverseDetail - Demo session setup failed:', demoError);
+          // Continue anyway, the request might still work
+        }
+      }
+
+      // Add a small delay to ensure localStorage is updated
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Final check before making requests
+      const finalToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
+      const finalUserStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
+      const finalUser = finalUserStr ? JSON.parse(finalUserStr) : null;
+
+      console.log('UniverseDetail - Final auth state before requests:', {
+        hasToken: !!finalToken,
+        hasUser: !!finalUser,
+        userEmail: finalUser?.email,
+        tokenLength: finalToken?.length || 0,
+        tokenPreview: finalToken ? `${finalToken.substring(0, 20)}...` : 'none',
+      });
+
+      // Now make the requests
+      console.log('UniverseDetail - Making universe requests for ID:', id);
+      dispatch(fetchUniverseById({ id }));
+      dispatch(fetchScenesForUniverse(id));
+    } catch (error) {
+      console.error('UniverseDetail - Error in auth check:', error);
+      // Still try to make the requests
+      dispatch(fetchUniverseById({ id }));
+      dispatch(fetchScenesForUniverse(id));
+    }
+  }, [dispatch, id]);
+
+  const debugAuthFlow = async () => {
+    console.log('--- DEBUG AUTH FLOW START ---');
+    await checkAuthAndFetch();
+    console.log('--- DEBUG AUTH FLOW END ---');
+  };
+
   // Fetch universe data when component mounts or id changes
   useEffect(() => {
     if (id) {
-      // Check authentication state before making requests
-      const checkAuthAndFetch = async () => {
-        try {
-          // First, aggressively check and clear any invalid tokens
-          const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-          const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-          const user = userStr ? JSON.parse(userStr) : null;
-
-          console.log('UniverseDetail - Initial auth check:', {
-            hasToken: !!token,
-            hasUser: !!user,
-            userEmail: user?.email,
-            tokenLength: token?.length || 0,
-            tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-          });
-
-          // Check if token is valid JWT format
-          const isValidToken = token && token.split('.').length === 3;
-          if (token && !isValidToken) {
-            console.log('UniverseDetail - Invalid token format detected, clearing auth data');
-            // Clear invalid auth data
-            localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-            localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-            localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-
-            // Force a small delay to ensure localStorage is cleared
-            await new Promise((resolve) => setTimeout(resolve, 50));
-
-            console.log('UniverseDetail - Auth data cleared, localStorage state:', {
-              token: localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
-              user: localStorage.getItem(AUTH_CONFIG.USER_KEY),
-              refreshToken: localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
-            });
-            // Early return: do not proceed with fetches if token was invalid
-            return;
-          }
-
-          // Check if this is a demo session after cleanup
-          const isDemoSession = demoService.isValidDemoSession();
-
-          console.log('UniverseDetail - After cleanup:', {
-            isDemoSession,
-            hasToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
-            hasUser: !!localStorage.getItem(AUTH_CONFIG.USER_KEY),
-          });
-
-          // If no token and not a valid demo session, try to set up demo session
-          if ((!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY) || !isValidToken) && !isDemoSession) {
-            console.log('UniverseDetail - No valid session, attempting demo login');
-            try {
-              const demoResponse = await demoService.setupDemoSession();
-              console.log('UniverseDetail - Demo session setup result:', demoResponse);
-
-              // Verify the session was established
-              const newToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-              const newUserStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-              const newUser = newUserStr ? JSON.parse(newUserStr) : null;
-
-              console.log('UniverseDetail - After demo setup:', {
-                hasNewToken: !!newToken,
-                hasNewUser: !!newUser,
-                newUserEmail: newUser?.email,
-                newTokenPreview: newToken ? `${newToken.substring(0, 20)}...` : 'none',
-                newTokenLength: newToken?.length || 0,
-              });
-            } catch (demoError) {
-              console.error('UniverseDetail - Demo session setup failed:', demoError);
-              // Continue anyway, the request might still work
-            }
-          }
-
-          // Add a small delay to ensure localStorage is updated
-          await new Promise((resolve) => setTimeout(resolve, 100));
-
-          // Final check before making requests
-          const finalToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-          const finalUserStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-          const finalUser = finalUserStr ? JSON.parse(finalUserStr) : null;
-
-          console.log('UniverseDetail - Final auth state before requests:', {
-            hasToken: !!finalToken,
-            hasUser: !!finalUser,
-            userEmail: finalUser?.email,
-            tokenLength: finalToken?.length || 0,
-            tokenPreview: finalToken ? `${finalToken.substring(0, 20)}...` : 'none',
-          });
-
-          // Now make the requests
-          console.log('UniverseDetail - Making universe requests for ID:', id);
-          dispatch(fetchUniverseById({ id }));
-          dispatch(fetchScenesForUniverse(id));
-        } catch (error) {
-          console.error('UniverseDetail - Error in auth check:', error);
-          // Still try to make the requests
-          dispatch(fetchUniverseById({ id }));
-          dispatch(fetchScenesForUniverse(id));
-        }
-      };
-
       checkAuthAndFetch();
     }
-  }, [dispatch, id]);
+  }, [id, checkAuthAndFetch]);
 
   // Set active tab when location state changes
   useEffect(() => {
@@ -338,24 +337,8 @@ const UniverseDetail = () => {
   };
 
   const handleCreateSceneClick = () => {
-    console.log('UniverseDetail - BUTTON CLICKED - handleCreateSceneClick called');
-
-    // Set a flag to force the modal to open
+    console.log('UniverseDetail - Create Scene button clicked');
     setIsCreateSceneModalOpen(true);
-
-    // Better logging to check state
-    console.log('UniverseDetail - State before update:', { isCreateSceneModalOpen });
-
-    // Force a re-render with the dummy state update
-    setDummyState({ timestamp: Date.now() });
-
-    // Add a timeout to check the state after the update
-    setTimeout(() => {
-      console.log('UniverseDetail - State after update (timeout):', {
-        isCreateSceneModalOpen: isCreateSceneModalOpen,
-        dummyState: dummyState,
-      });
-    }, 100);
   };
 
   const handleCreateSceneSuccess = (newScene) => {
@@ -489,32 +472,32 @@ const UniverseDetail = () => {
         <h2>Error</h2>
         <p>{errorMessage}</p>
         <div style={{ marginTop: '20px' }}>
-          <MyButton
+          <button
             as="button"
             onClick={() => navigate('/universes')}
             style={{ marginRight: '10px' }}
           >
             Back to Universes
-          </MyButton>
-          <MyButton
+          </button>
+          <button
             as="button"
             onClick={clearAuthData}
             variant="secondary"
             style={{ marginRight: '10px' }}
           >
             Clear Auth Data
-          </MyButton>
-          <MyButton
+          </button>
+          <button
             as="button"
             onClick={debugAuthFlow}
             variant="secondary"
             style={{ marginRight: '10px' }}
           >
             Debug Auth Flow
-          </MyButton>
-          <MyButton as="button" onClick={() => window.location.reload()} variant="secondary">
+          </button>
+          <button as="button" onClick={() => window.location.reload()} variant="secondary">
             Reload Page
-          </MyButton>
+          </button>
         </div>
       </div>
     );
@@ -528,7 +511,7 @@ const UniverseDetail = () => {
           The universe you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission
           to view it.
         </p>
-        <MyButton onClick={() => navigate('/universes')}>Back to Universes</MyButton>
+        <button onClick={() => navigate('/universes')}>Back to Universes</button>
       </div>
     );
   }
@@ -553,19 +536,8 @@ const UniverseDetail = () => {
           </div>
         </div>
         <div className="universe-actions">
-          <MyButton as="button" onClick={handleEditClick} variant="secondary">
-            Edit Universe
-          </MyButton>
-          <MyButton as="button" onClick={handleDeleteClick} variant="danger">
-            Delete Universe
-          </MyButton>
-          {/* Native test button for debugging event handling */}
-          <button style={{ marginLeft: 8 }} onClick={() => alert('Native button works!')}>
-            Native Test Button
-          </button>
-          <MyButton as="button" onClick={() => alert('Minimal Button works!')}>
-            Minimal Test Button
-          </MyButton>
+          <button onClick={handleEditClick}>Edit Universe</button>
+          <button onClick={handleDeleteClick}>Delete Universe</button>
         </div>
       </div>
 
@@ -616,9 +588,9 @@ const UniverseDetail = () => {
           <>
             <div className="universe-scenes-header">
               <h2>Scenes</h2>
-              <MyButton as="button" onClick={handleCreateSceneClick} variant="primary">
+              <button onClick={handleCreateSceneClick} variant="primary">
                 Create Scene
-              </MyButton>
+              </button>
             </div>
 
             {scenesLoading ? (
@@ -642,9 +614,9 @@ const UniverseDetail = () => {
             ) : (
               <div className="empty-state">
                 <p>No scenes found in this universe</p>
-                <MyButton as="button" onClick={handleCreateSceneClick} variant="primary">
+                <button onClick={handleCreateSceneClick} variant="primary">
                   Create Your First Scene
-                </MyButton>
+                </button>
               </div>
             )}
           </>

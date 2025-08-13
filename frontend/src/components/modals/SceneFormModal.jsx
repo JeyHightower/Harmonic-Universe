@@ -1,7 +1,6 @@
 import {
   Alert,
   Box,
-  Button,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -269,16 +268,15 @@ const SceneFormModal = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleCancel}>Cancel</Button>
-        <Button
-          variant="contained"
+        <button onClick={handleCancel}>Cancel</button>
+        <button
+
           color="primary"
           onClick={handleModalSubmit}
           disabled={loading}
-          startIcon={loading && <CircularProgress size={20} color="inherit" />}
         >
           {modalType === 'create' ? 'Create' : 'Save Changes'}
-        </Button>
+        </button>
       </DialogActions>
     </Dialog>
   );
