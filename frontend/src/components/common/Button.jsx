@@ -32,19 +32,19 @@ const Button = React.forwardRef(
   ) => {
     // Debug log to confirm rendering and props
     console.log('Button render', { Component, onClick, disabled, loading, children });
-    const buttonClass = `
-    button
-    button-${variant}
-    button-${size}
-    ${fullWidth ? 'button-full-width' : ''}
-    ${disabled || loading ? 'button-disabled' : ''}
-    ${loading ? 'button-loading' : ''}
-    ${variant === 'icon' ? 'button-icon' : ''}
-    ${variant === 'icon-danger' ? 'button-icon button-icon-danger' : ''}
-    ${className}
-  `
-      .trim()
-      .replace(/\s+/g, ' ');
+
+    // Construct button class
+    const buttonClass = [
+      'button',
+      `button-${variant}`,
+      `button-${size}`,
+      fullWidth ? 'button-full-width' : '',
+      (disabled || loading) ? 'button-disabled' : '',
+      loading ? 'button-loading' : '',
+      variant === 'icon' ? 'button-icon' : '',
+      variant === 'icon-danger' ? 'button-icon button-icon-danger' : '',
+      className,
+    ].filter(Boolean).join(' ');
 
     // Enhanced style to ensure button is interactive in modals
     const enhancedStyle = {
@@ -70,10 +70,11 @@ const Button = React.forwardRef(
       return (
         <button
           className={buttonClass}
-          disabled={disabled || loading}
+          disabled={true}
           onClick={handleClick}
           ref={ref}
           style={enhancedStyle}
+          tabIndex={-1} // Prevent focus when disabled
           {...props}
         >
           {loading ? <Spinner size="small" /> : children}
@@ -88,6 +89,7 @@ const Button = React.forwardRef(
         onClick={handleClick}
         ref={ref}
         style={enhancedStyle}
+        tabIndex={disabled ? -1 : 0} // Prevent focus when disabled
         {...props}
       >
         {loading ? <Spinner size="small" /> : children}
@@ -113,11 +115,21 @@ Button.propTypes = {
   fullWidth: PropTypes.bool,
   disabled: PropTypes.bool,
   loading: PropTypes.bool,
-  as: PropTypes.elementType,
+  as: PropTypes.elementType, // Ensure it's a valid React component or HTML element
   className: PropTypes.string,
   onClick: PropTypes.func,
   children: PropTypes.node,
   style: PropTypes.object,
+};
+
+Button.defaultProps = {
+  variant: 'primary',
+  size: 'medium',
+  fullWidth: false,
+  disabled: false,
+  loading: false,
+  className: '',
+  style: {},
 };
 
 Button.displayName = 'Button';

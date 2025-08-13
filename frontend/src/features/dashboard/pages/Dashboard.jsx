@@ -33,18 +33,16 @@ import {
 import { deleteUniverse, fetchUniverses } from '../../../store/thunks/universeThunks';
 import { AUTH_CONFIG } from '../../../utils/config';
 
-/**
- * Dashboard component for displaying and managing user's universes
- * Combines features from both Dashboard implementations
- */
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { universes, loading: universesLoading, error } = useSelector((state) => state.universes);
   const { isAuthenticated } = useSelector((state) => state.auth);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [modalState, setModalState] = useState({
+    isCreateModalOpen: false,
+    isEditModalOpen: false,
+    isDeleteModalOpen: false,
+  });
   const [selectedUniverse, setSelectedUniverse] = useState(null);
   const [sortOption, setSortOption] = useState('updated_at');
   const [filterOption, setFilterOption] = useState('all');
@@ -55,25 +53,14 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const maxRetries = 3;
 
-  // Track last dashboard logout attempt
-  let lastDashboardLogoutAttempt = 0;
-  let lastDashboardLoadAttempt = 0;
-  const DASHBOARD_LOGOUT_COOLDOWN = 2000; // 2 seconds
-
-  // Use ref to track retry attempts without causing re-renders
   const retryCountRef = useRef(0);
 
-  // Initialize modal portal and apply fixes on component mount
   useEffect(() => {
     console.log('Dashboard - Initializing modal portal');
-
-    // Initialize the modal portal
     dispatch(initializeModalPortalThunk())
       .unwrap()
       .then((result) => {
         console.log('Modal portal initialized:', result);
-
-        // Pre-apply interaction fixes to ensure they're ready when a modal is opened
         return dispatch(applyModalInteractionFixesThunk()).unwrap();
       })
       .then((result) => {
@@ -84,7 +71,6 @@ const Dashboard = () => {
       });
   }, [dispatch]);
 
-  // Create a memoized function to load universes
   const loadUniverses = useCallback(async () => {
     console.log('Dashboard - loadUniverses called', {
       retryCount: retryCountRef.current,
@@ -92,17 +78,11 @@ const Dashboard = () => {
       isDemoSession: demoService.isValidDemoSession(),
     });
 
-    // Update the timestamp to prevent duplicate calls
-    lastDashboardLoadAttempt = Date.now();
-
-    // FIRST: Check if this is a demo session before any other operations
     const isDemoSession = demoService.isValidDemoSession();
     console.log('Dashboard - loadUniverses: isDemoSession check =', isDemoSession);
 
     if (isDemoSession) {
       console.log('Dashboard - Demo session detected in loadUniverses, using demo flow');
-
-      // Check if we have both tokens
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
 
@@ -116,42 +96,16 @@ const Dashboard = () => {
         }
       }
 
-      // Continue to load universes using dispatch for demo sessions
       try {
         console.log('Dashboard - Dispatching fetchUniverses for demo user');
         const result = await dispatch(fetchUniverses()).unwrap();
         console.log('Dashboard - Successfully loaded universes in demo mode', result);
         return result;
       } catch (error) {
-        console.error('Dashboard - Error loading universes in demo mode:', error);
-
-        // Handle server errors gracefully
-        if (error.serverError || (error.response && error.response.status >= 500)) {
-          console.warn('Server error detected (500), showing error UI');
-          setConnectionError(true);
-
-          // Schedule an automatic retry if we haven't exceeded the limit
-          if (retryCountRef.current < maxRetries) {
-            console.log(
-              `Dashboard - Scheduling automatic retry ${retryCountRef.current + 1} of ${maxRetries}`
-            );
-            retryCountRef.current += 1;
-            setTimeout(() => {
-              // Call loadUniverses again without changing dependencies
-              console.log('Dashboard - Executing scheduled retry');
-              loadUniverses();
-            }, 3000); // Wait 3 seconds before retrying
-          } else {
-            console.log('Dashboard - Maximum retries reached, not scheduling more retries');
-          }
-        }
-
-        // Let Redux handle the error state for non-connection errors
-        throw error;
+        handleLoadError(error);
       }
     }
 
-    // Not in demo mode, proceed with normal universe loading
     try {
       console.log('Dashboard - Dispatching fetchUniverses for regular user');
       const result = await dispatch(fetchUniverses()).unwrap();
@@ -161,48 +115,52 @@ const Dashboard = () => {
       console.error('Dashboard - Error loading universes:', error);
       throw error;
     }
-  }, [dispatch]); // Removed retryCount and maxRetries from dependencies
+  }, [dispatch]);
 
-  // Load universes on component mount
+  const handleLoadError = (error) => {
+    console.error('Dashboard - Error loading universes:', error);
+    if (error.serverError || (error.response && error.response.status >= 500)) {
+      console.warn('Server error detected (500), showing error UI');
+      setConnectionError(true);
+      if (retryCountRef.current < maxRetries) {
+        console.log(`Dashboard - Scheduling automatic retry ${retryCountRef.current + 1} of ${maxRetries}`);
+        retryCountRef.current += 1;
+        setTimeout(() => {
+          console.log('Dashboard - Executing scheduled retry');
+          loadUniverses();
+        }, 3000);
+      } else {
+        console.log('Dashboard - Maximum retries reached, not scheduling more retries');
+      }
+    }
+    throw error;
+  };
+
   useEffect(() => {
-    console.log('Dashboard - Component mounted, loading universes', {
-      loadUniversesFunction: !!loadUniverses,
-      isDemoSession: demoService.isValidDemoSession(),
-    });
-
-    // Add proper error handling to prevent uncaught promise rejections
+    console.log('Dashboard - Component mounted, loading universes');
     loadUniverses().catch((error) => {
       console.error('Dashboard - loadUniverses failed in mount useEffect:', error);
-      // Error is already handled in loadUniverses function, just log it here
     });
 
-    // Add event listener for server errors
     const handleServerError = (event) => {
       console.warn('Dashboard - Server error event received:', event.detail);
       setConnectionError(true);
     };
 
-    // Listen for server-error events
     window.addEventListener('server-error', handleServerError);
-
-    // Cleanup listener on unmount
     return () => {
       window.removeEventListener('server-error', handleServerError);
     };
   }, [loadUniverses]);
 
-  // Check for authentication and load data on component mount
   useEffect(() => {
-    // First check if this is a demo session
     const isDemoSession = demoService.isValidDemoSession();
-
     if (isDemoSession) {
       console.log('Dashboard - Demo session detected');
       setLoading(false);
       return;
     }
 
-    // Not in demo mode, check regular auth
     if (!isAuthenticated) {
       console.log('Not authenticated, redirecting to login');
       navigate('/?modal=login', { replace: true });
@@ -220,24 +178,13 @@ const Dashboard = () => {
     setLoading(false);
   }, [isAuthenticated, dispatch, navigate]);
 
-  // Consistent logout handler that uses the auth service
   const handleLogout = () => {
-    const now = Date.now();
-
-    if (now - lastDashboardLogoutAttempt < DASHBOARD_LOGOUT_COOLDOWN) {
-      console.log('Dashboard - Logout throttled (multiple attempts)');
-      return;
-    }
-
-    lastDashboardLogoutAttempt = now;
-
     console.log('Dashboard - Logging out user');
     authService.clearAuthData();
     dispatch(logoutThunk());
     navigate('/?modal=login', { replace: true });
   };
 
-  // Reset authentication and redirect to login
   const handleResetAuth = () => {
     console.log('Dashboard - Resetting authentication state');
     authService.resetAuth();
@@ -247,125 +194,42 @@ const Dashboard = () => {
 
   const handleCreateClick = () => {
     console.log('Dashboard - Create button clicked');
-    // Clear any errors before opening the create modal
     dispatch(clearError());
-    setIsCreateModalOpen(true);
+    setModalState((prev) => ({ ...prev, isCreateModalOpen: true }));
+  };
+
+  const closeModal = (setModalOpen) => {
+    setTimeout(() => {
+      setModalOpen(false);
+    }, 50);
   };
 
   const handleCreateSuccess = (universe) => {
     console.log('Dashboard - Create success with universe:', universe);
-
-    // Set the new universe ID first so UI can highlight it
     if (universe && universe.id) {
       setNewUniverseId(universe.id);
     }
-
-    // Close modal after a small delay
-    setTimeout(() => {
-      setIsCreateModalOpen(false);
-    }, 50);
-
-    // No need to refetch - Redux state already has the new universe
-  };
-
-  const handleViewUniverse = async (universe) => {
-    console.log('Viewing universe:', universe);
-
-    // Clear any errors before navigating
-    dispatch(clearError());
-
-    // Add debugging to understand the authentication state
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-    const user = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-
-    console.log('Debug - handleViewUniverse authentication state:', {
-      hasToken: !!token,
-      hasRefreshToken: !!refreshToken,
-      hasUser: !!user,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-      refreshTokenPreview: refreshToken ? `${refreshToken.substring(0, 20)}...` : 'none',
-      userPreview: user ? JSON.parse(user).username || 'no username' : 'none',
-    });
-
-    // Check if this is a demo session first
-    const isDemoSession = demoService.isValidDemoSession();
-    console.log('Debug - isDemoSession result:', isDemoSession);
-
-    // Add detailed demo session debugging
-    if (token) {
-      try {
-        const parts = token.split('.');
-        console.log('Debug - Token format check:', {
-          isJWT: parts.length === 3,
-          parts: parts.length,
-        });
-
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          console.log('Debug - Token payload:', {
-            sub: payload.sub,
-            isDemoSub:
-              payload.sub &&
-              (payload.sub.includes('demo-') ||
-                payload.sub.includes('demo_') ||
-                payload.sub === 'demo-user'),
-            exp: payload.exp,
-            iat: payload.iat,
-          });
-        }
-      } catch (e) {
-        console.log('Debug - Token parsing failed:', e.message);
-        console.log('Debug - Legacy token check:', {
-          startsWithDemo: token.startsWith('demo-'),
-          includesDemoToken: token.includes('demo_token_'),
-          includesDemoHyphen: token.includes('demo-token-'),
-        });
-      }
-    }
-
-    if (isDemoSession) {
-      console.log('Demo session detected, ensuring tokens are valid and navigating directly');
-      // For demo sessions, just ensure tokens are set up and navigate
-      try {
-        await demoService.setupDemoSession();
-        navigate(`/universes/${universe.id}`);
-      } catch (error) {
-        console.error('Error setting up demo session:', error);
-      }
-      return;
-    }
-
-    // For non-demo sessions, ensure we have a fresh auth token before navigating
-    navigate(`/universes/${universe.id}`);
+    closeModal(setModalState((prev) => ({ ...prev, isCreateModalOpen: false })));
   };
 
   const handleEditUniverse = (universe) => {
     console.log('Editing universe:', universe);
-    // Clear any errors before editing
     dispatch(clearError());
     setSelectedUniverse(universe);
-    setIsEditModalOpen(true);
+    setModalState((prev) => ({ ...prev, isEditModalOpen: true }));
   };
 
   const handleEditSuccess = (updatedUniverse) => {
     console.log('Universe updated:', updatedUniverse);
-
-    // Close modal after a small delay to ensure Redux state is updated first
-    setTimeout(() => {
-      setIsEditModalOpen(false);
-      setSelectedUniverse(null);
-    }, 50);
-
-    // No need to refetch - Redux state already has the updated universe
+    closeModal(setModalState((prev) => ({ ...prev, isEditModalOpen: false })));
+    setSelectedUniverse(null);
   };
 
   const handleDeleteUniverse = (universe) => {
     console.log('Deleting universe:', universe);
-    // Clear any errors before delete confirmation
     dispatch(clearError());
     setSelectedUniverse(universe);
-    setIsDeleteModalOpen(true);
+    setModalState((prev) => ({ ...prev, isDeleteModalOpen: true }));
   };
 
   const handleConfirmDelete = async () => {
@@ -374,18 +238,11 @@ const Dashboard = () => {
       try {
         await dispatch(deleteUniverse(selectedUniverse.id)).unwrap();
         console.log('Universe deleted successfully');
-
-        // Update UI after a small delay to ensure Redux updates are processed
-        setTimeout(() => {
-          setIsDeleteModalOpen(false);
-          setSelectedUniverse(null);
-        }, 50);
-
-        // No need to refetch - Redux state already removes the deleted universe
+        closeModal(setModalState((prev) => ({ ...prev, isDeleteModalOpen: false })));
+        setSelectedUniverse(null);
       } catch (error) {
         console.error('Error deleting universe:', error);
-        // Still close modal on error
-        setIsDeleteModalOpen(false);
+        closeModal(setModalState((prev) => ({ ...prev, isDeleteModalOpen: false })));
         setSelectedUniverse(null);
       }
     }
@@ -419,21 +276,17 @@ const Dashboard = () => {
 
   const handleRetry = () => {
     setIsRetrying(true);
-    retryCountRef.current = 0; // Reset retry count for manual retry
-
-    // Clear any errors in Redux store
+    retryCountRef.current = 0;
     dispatch(clearError());
 
-    // Small delay before retry
     setTimeout(() => {
       loadUniverses()
-        .then((result) => {
+        .then(() => {
           console.log('Dashboard - Successfully retried loading universes');
           setConnectionError(false);
         })
         .catch((error) => {
           console.error('Retry failed:', error);
-          // Server errors handled by the loadUniverses function and Redux
         })
         .finally(() => {
           setIsRetrying(false);
@@ -580,9 +433,6 @@ const Dashboard = () => {
             ))}
           </div>
         )}
-        {/* Modals */}
-        {renderModals()}
-        {/* Error Dialog */}
         {renderErrorDialog()}
       </div>
     );
@@ -619,20 +469,11 @@ const Dashboard = () => {
             Create Your First Universe
           </Button>
         </div>
-        {isCreateModalOpen && (
-          <Suspense fallback={<div>Loading Universe Modal...</div>}>
-            <UniverseModal
-              isOpen={isCreateModalOpen}
-              onClose={() => setIsCreateModalOpen(false)}
-              onSuccess={handleCreateSuccess}
-              mode="create"
-            />
-          </Suspense>
-        )}
+        {renderModals()}
       </div>
     );
   }
-  // Beginning of Return for this Jsx.
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
@@ -690,7 +531,7 @@ const Dashboard = () => {
         </div>
       </div>
       <div className="universes-controls">
-        <Tooltip content="Filter universes by visibility" position="top">
+        <Tooltip title="Filter universes by visibility" placement="top">
           <select
             className="control-select"
             value={filterOption}
@@ -702,7 +543,7 @@ const Dashboard = () => {
           </select>
         </Tooltip>
 
-        <Tooltip content="Sort universes by different criteria" position="top">
+        <Tooltip title="Sort universes by different criteria" placement="top">
           <select
             className="control-select"
             value={sortOption}
@@ -727,7 +568,6 @@ const Dashboard = () => {
         ))}
       </div>
       {renderModals()}
-      {/* Error Dialog */}
       {renderErrorDialog()}
     </div>
   );
@@ -737,25 +577,27 @@ const Dashboard = () => {
       <>
         <Suspense fallback={<div>Loading Universe Modal...</div>}>
           <UniverseModal
-            isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
+            isOpen={modalState.isCreateModalOpen}
+            onClose={() => setModalState((prev) => ({ ...prev, isCreateModalOpen: false }))}
             onSuccess={handleCreateSuccess}
             mode="create"
           />
         </Suspense>
 
-        <UniverseModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          universe={selectedUniverse}
-          onSuccess={handleEditSuccess}
-          mode="edit"
-        />
+        <Suspense fallback={<div>Loading Universe Modal...</div>}>
+          <UniverseModal
+            isOpen={modalState.isEditModalOpen}
+            onClose={() => setModalState((prev) => ({ ...prev, isEditModalOpen: false }))}
+            universe={selectedUniverse}
+            onSuccess={handleEditSuccess}
+            mode="edit"
+          />
+        </Suspense>
 
-        {isDeleteModalOpen && selectedUniverse && (
+        {modalState.isDeleteModalOpen && selectedUniverse && (
           <Dialog
-            open={isDeleteModalOpen}
-            onClose={() => setIsDeleteModalOpen(false)}
+            open={modalState.isDeleteModalOpen}
+            onClose={() => setModalState((prev) => ({ ...prev, isDeleteModalOpen: false }))}
             disableEnforceFocus
             disableAutoFocus
             style={{ zIndex: 1050 }}
@@ -769,21 +611,10 @@ const Dashboard = () => {
               </Typography>
             </DialogContent>
             <DialogActions>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsDeleteModalOpen(false);
-                }}
-              >
+              <Button onClick={() => setModalState((prev) => ({ ...prev, isDeleteModalOpen: false }))}>
                 Cancel
               </Button>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleConfirmDelete();
-                }}
-                color="error"
-              >
+              <Button onClick={handleConfirmDelete} color="error">
                 Delete
               </Button>
             </DialogActions>
