@@ -1,11 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 import {
-  createScene,
-  deleteScene,
+  createSceneAndRefresh,
+  deleteSceneAndRefresh,
   fetchSceneById,
   fetchScenes,
   reorderScenes,
-  updateScene,
+  updateSceneAndRefresh,
 } from '../thunks/scenesThunks';
 
 const initialState = {
@@ -279,12 +279,12 @@ const scenesSlice = createSlice({
       })
 
       // createScene
-      .addCase(createScene.pending, (state) => {
+      .addCase(createSceneAndRefresh.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.success = false;
       })
-      .addCase(createScene.fulfilled, (state, action) => {
+      .addCase(createSceneAndRefresh.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
 
@@ -333,19 +333,19 @@ const scenesSlice = createSlice({
           state.currentScene = newScene;
         }
       })
-      .addCase(createScene.rejected, (state, action) => {
+      .addCase(createSceneAndRefresh.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to create scene';
         state.success = false;
       })
 
       // updateScene
-      .addCase(updateScene.pending, (state) => {
+      .addCase(updateSceneAndRefresh.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.success = false;
       })
-      .addCase(updateScene.fulfilled, (state, action) => {
+      .addCase(updateSceneAndRefresh.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
 
@@ -387,19 +387,19 @@ const scenesSlice = createSlice({
           }
         }
       })
-      .addCase(updateScene.rejected, (state, action) => {
+      .addCase(updateSceneAndRefresh.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to update scene';
         state.success = false;
       })
 
       // deleteScene
-      .addCase(deleteScene.pending, (state) => {
+      .addCase(deleteSceneAndRefresh.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.success = false;
       })
-      .addCase(deleteScene.fulfilled, (state, action) => {
+      .addCase(deleteSceneAndRefresh.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
 
@@ -439,7 +439,7 @@ const scenesSlice = createSlice({
           }
         }
       })
-      .addCase(deleteScene.rejected, (state, action) => {
+      .addCase(deleteSceneAndRefresh.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to delete scene';
         state.success = false;

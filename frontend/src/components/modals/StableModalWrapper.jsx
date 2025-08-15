@@ -17,6 +17,8 @@ const StableModalWrapper = ({
   footer = undefined,
   children,
 }) => {
+  // Debug log for modal open state
+  console.log('StableModalWrapper render: open =', open);
   const [isVisible, setIsVisible] = useState(open);
   const modalRef = useRef(null);
   const instanceId = useRef(`modal-${Math.random().toString(36).substr(2, 9)}`);

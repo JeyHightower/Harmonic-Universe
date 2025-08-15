@@ -427,116 +427,116 @@ export const createScene = createAsyncThunk(
 /**
  * Update an existing scene
  */
-export const updateScene = createAsyncThunk(
-  'scenes/updateScene',
-  async (sceneData, { rejectWithValue }) => {
-    try {
-      console.log('updateScene - Scene data to update:', sceneData);
+// export const updateScene = createAsyncThunk(
+//   'scenes/updateScene',
+//   async (sceneData, { rejectWithValue }) => {
+//     try {
+//       console.log('updateScene - Scene data to update:', sceneData);
 
-      if (!sceneData || !sceneData.id) {
-        throw new Error('Scene ID is required for updating a scene');
-      }
+//       if (!sceneData || !sceneData.id) {
+//         throw new Error('Scene ID is required for updating a scene');
+//       }
 
-      // Ensure scene ID is properly formatted
-      const formattedSceneId = String(sceneData.id);
+//       // Ensure scene ID is properly formatted
+//       const formattedSceneId = String(sceneData.id);
 
-      // Create a copy of the data with the properly formatted ID
-      const formattedSceneData = {
-        ...sceneData,
-        id: formattedSceneId,
-      };
+//       // Create a copy of the data with the properly formatted ID
+//       const formattedSceneData = {
+//         ...sceneData,
+//         id: formattedSceneId,
+//       };
 
-      console.log(`updateScene - Updating scene with ID: ${formattedSceneId}`, formattedSceneData);
+//       console.log(`updateScene - Updating scene with ID: ${formattedSceneId}`, formattedSceneData);
 
-      // Using correct endpoint: http://localhost:5001/api/scenes/{scene_id}
-      const response = await sceneService.updateScene(formattedSceneId, formattedSceneData);
-      console.log('updateScene - Response:', response);
+//       // Using correct endpoint: http://localhost:5001/api/scenes/{scene_id}
+//       const response = await sceneService.updateScene(formattedSceneId, formattedSceneData);
+//       console.log('updateScene - Response:', response);
 
-      return response.data;
-    } catch (error) {
-      console.error('Error updating scene:', error);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Error updating scene:', error);
 
-      // Attempt backup method
-      try {
-        const formattedSceneId = String(sceneData.id);
-        console.log('updateScene - Attempting backup method for scene ID:', formattedSceneId);
+//       // Attempt backup method
+//       try {
+//         const formattedSceneId = String(sceneData.id);
+//         console.log('updateScene - Attempting backup method for scene ID:', formattedSceneId);
 
-        const formattedSceneData = {
-          ...sceneData,
-          id: formattedSceneId,
-        };
+//         const formattedSceneData = {
+//           ...sceneData,
+//           id: formattedSceneId,
+//         };
 
-        // Try alternative endpoint
-        const backupResponse = await sceneService.updateScene(
-          `/api/scenes/${formattedSceneId}`,
-          formattedSceneData
-        );
-        console.log('updateScene - Backup response:', backupResponse);
+//         // Try alternative endpoint
+//         const backupResponse = await sceneService.updateScene(
+//           `/api/scenes/${formattedSceneId}`,
+//           formattedSceneData
+//         );
+//         console.log('updateScene - Backup response:', backupResponse);
 
-        return backupResponse.data;
-      } catch (backupError) {
-        console.error('Backup method also failed:', backupError);
-        return rejectWithValue(
-          error.response?.data?.message || error.message || 'Failed to update scene'
-        );
-      }
-    }
-  }
-);
+//         return backupResponse.data;
+//       } catch (backupError) {
+//         console.error('Backup method also failed:', backupError);
+//         return rejectWithValue(
+//           error.response?.data?.message || error.message || 'Failed to update scene'
+//         );
+//       }
+//     }
+//   }
+// );
 
 /**
  * Delete a scene (soft delete)
  */
-export const deleteScene = createAsyncThunk(
-  'scenes/deleteScene',
-  async (sceneId, { rejectWithValue }) => {
-    try {
-      // Handle both scene object and direct ID
-      const formattedSceneId =
-        typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
-          ? String(sceneId.id)
-          : String(sceneId);
+// export const deleteScene = createAsyncThunk(
+//   'scenes/deleteScene',
+//   async (sceneId, { rejectWithValue }) => {
+//     try {
+//       // Handle both scene object and direct ID
+//       const formattedSceneId =
+//         typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
+//           ? String(sceneId.id)
+//           : String(sceneId);
 
-      console.log(`deleteScene - Deleting scene with ID: ${formattedSceneId}`);
+//       console.log(`deleteScene - Deleting scene with ID: ${formattedSceneId}`);
 
-      // Using correct endpoint: http://localhost:5001/api/scenes/{scene_id}
-      const response = await sceneService.deleteScene(formattedSceneId);
-      console.log('deleteScene - Response:', response);
+//       // Using correct endpoint: http://localhost:5001/api/scenes/{scene_id}
+//       const response = await sceneService.deleteScene(formattedSceneId);
+//       console.log('deleteScene - Response:', response);
 
-      return { id: formattedSceneId, ...response.data };
-    } catch (error) {
-      console.error('Error deleting scene:', error);
+//       return { id: formattedSceneId, ...response.data };
+//     } catch (error) {
+//       console.error('Error deleting scene:', error);
 
-      // Attempt backup method
-      try {
-        // Handle both scene object and direct ID
-        const formattedSceneId =
-          typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
-            ? String(sceneId.id)
-            : String(sceneId);
+//       // Attempt backup method
+//       try {
+//         // Handle both scene object and direct ID
+//         const formattedSceneId =
+//           typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
+//             ? String(sceneId.id)
+//             : String(sceneId);
 
-        console.log('deleteScene - Attempting backup method for scene ID:', formattedSceneId);
+//         console.log('deleteScene - Attempting backup method for scene ID:', formattedSceneId);
 
-        // Try different methods/endpoints
-        let backupResponse;
-        try {
-          backupResponse = await sceneService.deleteScene(`/api/scenes/${formattedSceneId}`);
-        } catch (err) {
-          backupResponse = await sceneService.deleteScene(`/api/scenes/${formattedSceneId}`);
-        }
+//         // Try different methods/endpoints
+//         let backupResponse;
+//         try {
+//           backupResponse = await sceneService.deleteScene(`/api/scenes/${formattedSceneId}`);
+//         } catch (err) {
+//           backupResponse = await sceneService.deleteScene(`/api/scenes/${formattedSceneId}`);
+//         }
 
-        console.log('deleteScene - Backup response:', backupResponse);
+//         console.log('deleteScene - Backup response:', backupResponse);
 
-        return { id: formattedSceneId, ...backupResponse.data };
-      } catch (backupError) {
-        console.error('Backup method also failed:', backupError);
-        return rejectWithValue(
-          error.response?.data?.message || error.message || 'Failed to delete scene'
-        );
-      }
-    }
-  }
-);
+//         return { id: formattedSceneId, ...backupResponse.data };
+//       } catch (backupError) {
+//         console.error('Backup method also failed:', backupError);
+//         return rejectWithValue(
+//           error.response?.data?.message || error.message || 'Failed to delete scene'
+//         );
+//       }
+//     }
+//   }
+// );
 
 /**
  * Reorder scenes
