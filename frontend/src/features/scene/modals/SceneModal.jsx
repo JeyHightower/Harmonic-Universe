@@ -19,8 +19,8 @@ const SceneModal = React.forwardRef(
   (
     {
       // Props from consolidated component
-      open = false,
-      isOpen = false,
+      open,
+      isOpen,
       onClose,
       onSuccess,
       universeId,
@@ -30,7 +30,6 @@ const SceneModal = React.forwardRef(
       modalType = 'scene',
       mode = 'create',
     },
-    ref
   ) => {
     // Enhanced debug logging on component init
     console.log('SceneModal - COMPONENT INITIALIZED', {

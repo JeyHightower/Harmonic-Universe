@@ -9,19 +9,18 @@ import {
 } from '../../../store/thunks/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
 import { AUTH_CONFIG } from '../../../utils/config.mjs';
-// import { SceneCard } from '../../scene/index.mjs';
 import '../styles/Universe.css';
 
 const UniverseModal = lazy(() => import('../modals/UniverseModal'));
 const UniverseDeleteModal = lazy(() => import('../modals/UniverseDeleteModal.jsx'));
 const SceneModal = lazy(() => import('../../scene/modals/SceneModal.jsx'));
-
 const SceneCard = lazy(() => import('../../scene/components/SceneCard.jsx'));
 
 const UniverseDetail = () => {
   console.log(createSceneAndRefresh);
   console.log(deleteSceneAndRefresh);
   console.log(fetchScenesForUniverse);
+
   const { id } = useParams();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -29,115 +28,23 @@ const UniverseDetail = () => {
   const { currentUniverse, loading, error } = useSelector((state) => state.universes);
   const { scenes, loading: scenesLoading } = useSelector((state) => state.scenes);
 
-  // Initialize activeTab from location state if available
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'details');
-
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCreateSceneModalOpen, setIsCreateSceneModalOpen] = useState(false);
-
-  // Add state for scene editing
   const [isEditSceneModalOpen, setIsEditSceneModalOpen] = useState(false);
   const [sceneToEdit, setSceneToEdit] = useState(null);
-
-  // Add state for scene viewing
   const [isViewSceneModalOpen, setIsViewSceneModalOpen] = useState(false);
   const [sceneToView, setSceneToView] = useState(null);
 
-  // Utility function to clear all auth data
-  const clearAuthData = () => {
+  const clearAuthData = async () => {
     localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
     localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
     localStorage.removeItem(AUTH_CONFIG.USER_KEY);
     console.log('UniverseDetail - Auth data cleared');
+    await new Promise((resolve) => setTimeout(resolve, 50));
   };
 
-  // Global token cleanup function
-  const globalTokenCleanup = () => {
-    console.log('=== GLOBAL TOKEN CLEANUP START ===');
-
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-    const refreshToken = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-
-    console.log('Before cleanup:', {
-      hasToken: !!token,
-      hasUser: !!userStr,
-      hasRefreshToken: !!refreshToken,
-      tokenLength: token?.length || 0,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-    });
-
-    // Check if token is valid JWT format
-    const isValidToken = token && token.split('.').length === 3;
-
-    if (token && !isValidToken) {
-      console.log('Invalid token detected, clearing all auth data');
-      clearAuthData();
-
-      // Verify cleanup
-      setTimeout(() => {
-        const afterToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-        const afterUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-        const afterRefresh = localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-
-        console.log('After cleanup:', {
-          hasToken: !!afterToken,
-          hasUser: !!afterUser,
-          hasRefreshToken: !!afterRefresh,
-        });
-        console.log('=== GLOBAL TOKEN CLEANUP END ===');
-      }, 10);
-    } else if (isValidToken) {
-      console.log('Valid token found, no cleanup needed');
-      console.log('=== GLOBAL TOKEN CLEANUP END ===');
-    } else {
-      console.log('No token found, no cleanup needed');
-      console.log('=== GLOBAL TOKEN CLEANUP END ===');
-    }
-  };
-
-  // Immediate token cleanup - runs before any other logic
-  useEffect(() => {
-    console.log('UniverseDetail - Running immediate token cleanup...');
-
-    // Check for invalid tokens immediately
-    const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-    const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-
-    console.log('UniverseDetail - Current localStorage state:', {
-      hasToken: !!token,
-      hasUser: !!userStr,
-      tokenLength: token?.length || 0,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-    });
-
-    // Check if token is valid JWT format
-    const isValidToken = token && token.split('.').length === 3;
-
-    if (token && !isValidToken) {
-      console.log(
-        'UniverseDetail - Invalid token detected during immediate cleanup, clearing auth data'
-      );
-      clearAuthData();
-
-      // Verify cleanup worked
-      setTimeout(() => {
-        const afterToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-        const afterUser = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-        console.log('UniverseDetail - After immediate cleanup:', {
-          hasToken: !!afterToken,
-          hasUser: !!afterUser,
-        });
-      }, 10);
-    } else if (isValidToken) {
-      console.log('UniverseDetail - Valid token found during immediate cleanup');
-    } else {
-      console.log('UniverseDetail - No token found during immediate cleanup');
-    }
-  }, []); // Empty dependency array - runs only once on mount
-
-  // Test function to verify demo login
   const testDemoLogin = async () => {
     try {
       console.log('Testing demo login...');
@@ -162,7 +69,6 @@ const UniverseDetail = () => {
     }
   };
 
-  // Test function to verify CORS preflight
   const testCorsPreflight = async (universeId = 1) => {
     try {
       console.log(`Testing CORS preflight for universe endpoint (ID: ${universeId})...`);
@@ -190,76 +96,31 @@ const UniverseDetail = () => {
 
   const checkAuthAndFetch = useCallback(async () => {
     try {
-      // First, aggressively check and clear any invalid tokens
       const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
       const user = userStr ? JSON.parse(userStr) : null;
 
-      console.log('UniverseDetail - Initial auth check:', {
-        hasToken: !!token,
-        hasUser: !!user,
-        userEmail: user?.email,
-        tokenLength: token?.length || 0,
-        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-      });
-
-      // Check if token is valid JWT format
       const isValidToken = token && token.split('.').length === 3;
       if (token && !isValidToken) {
         console.log('UniverseDetail - Invalid token format detected, clearing auth data');
-        // Clear invalid auth data
-        clearAuthData();
-
-        // Force a small delay to ensure localStorage is cleared
-        await new Promise((resolve) => setTimeout(resolve, 50));
-
-        console.log('UniverseDetail - Auth data cleared, localStorage state:', {
-          token: localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
-          user: localStorage.getItem(AUTH_CONFIG.USER_KEY),
-          refreshToken: localStorage.getItem(AUTH_CONFIG.REFRESH_TOKEN_KEY),
-        });
-        // Early return: do not proceed with fetches if token was invalid
+        await clearAuthData();
         return;
       }
 
-      // Check if this is a demo session after cleanup
       const isDemoSession = demoService.isValidDemoSession();
 
-      console.log('UniverseDetail - After cleanup:', {
-        isDemoSession,
-        hasToken: !!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY),
-        hasUser: !!localStorage.getItem(AUTH_CONFIG.USER_KEY),
-      });
-
-      // If no token and not a valid demo session, try to set up demo session
       if ((!localStorage.getItem(AUTH_CONFIG.TOKEN_KEY) || !isValidToken) && !isDemoSession) {
         console.log('UniverseDetail - No valid session, attempting demo login');
         try {
           const demoResponse = await demoService.setupDemoSession();
           console.log('UniverseDetail - Demo session setup result:', demoResponse);
-
-          // Verify the session was established
-          const newToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-          const newUserStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-          const newUser = newUserStr ? JSON.parse(newUserStr) : null;
-
-          console.log('UniverseDetail - After demo setup:', {
-            hasNewToken: !!newToken,
-            hasNewUser: !!newUser,
-            newUserEmail: newUser?.email,
-            newTokenPreview: newToken ? `${newToken.substring(0, 20)}...` : 'none',
-            newTokenLength: newToken?.length || 0,
-          });
         } catch (demoError) {
           console.error('UniverseDetail - Demo session setup failed:', demoError);
-          // Continue anyway, the request might still work
         }
       }
 
-      // Add a small delay to ensure localStorage is updated
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Final check before making requests
       const finalToken = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
       const finalUserStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
       const finalUser = finalUserStr ? JSON.parse(finalUserStr) : null;
@@ -272,13 +133,11 @@ const UniverseDetail = () => {
         tokenPreview: finalToken ? `${finalToken.substring(0, 20)}...` : 'none',
       });
 
-      // Now make the requests
       console.log('UniverseDetail - Making universe requests for ID:', id);
       dispatch(fetchUniverseById({ id }));
       dispatch(fetchScenesForUniverse(id));
     } catch (error) {
       console.error('UniverseDetail - Error in auth check:', error);
-      // Still try to make the requests
       dispatch(fetchUniverseById({ id }));
       dispatch(fetchScenesForUniverse(id));
     }
@@ -290,21 +149,18 @@ const UniverseDetail = () => {
     console.log('--- DEBUG AUTH FLOW END ---');
   };
 
-  // Fetch universe data when component mounts or id changes
   useEffect(() => {
     if (id) {
       checkAuthAndFetch();
     }
   }, [id, checkAuthAndFetch]);
 
-  // Set active tab when location state changes
   useEffect(() => {
     if (location.state?.activeTab) {
       setActiveTab(location.state.activeTab);
     }
   }, [location.state]);
 
-  // Open edit modal automatically if accessed through the edit route
   useEffect(() => {
     if (location.pathname.endsWith('/edit') && currentUniverse) {
       setIsEditModalOpen(true);
@@ -317,11 +173,9 @@ const UniverseDetail = () => {
 
   const handleEditSuccess = () => {
     setIsEditModalOpen(false);
-    // Redirect to the detail page if we're on the edit route
     if (location.pathname.endsWith('/edit')) {
       navigate(`/universes/${id}`);
     } else {
-      // Refresh universe data
       dispatch(fetchUniverseById({ id }));
     }
   };
@@ -332,7 +186,6 @@ const UniverseDetail = () => {
 
   const handleDeleteSuccess = () => {
     setIsDeleteModalOpen(false);
-    // Navigate back to universes list after successful deletion
     navigate('/universes');
   };
 
@@ -344,11 +197,9 @@ const UniverseDetail = () => {
   const handleCreateSceneSuccess = (newScene) => {
     console.log('UniverseDetail - handleCreateSceneSuccess called with:', newScene);
     setIsCreateSceneModalOpen(false);
-    // Log localStorage user/email before dispatch
     const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
     const user = userStr ? JSON.parse(userStr) : null;
     console.log('UniverseDetail - Before createSceneAndRefresh dispatch, localStorage user:', user);
-    // Dispatch action to create scene using Redux with auto-refresh
     dispatch(
       createSceneAndRefresh({
         ...newScene,
@@ -358,18 +209,14 @@ const UniverseDetail = () => {
   };
 
   const handleEditScene = (scene) => {
-    // Open modal for editing, only pass the scene ID
     console.log(`Opening edit modal for scene ${scene.id} in universe ${id}`);
     setSceneToEdit(scene.id);
     setIsEditSceneModalOpen(true);
   };
 
   const handleViewScene = (scene) => {
-    // Open modal for viewing
     console.log(`Opening view modal for scene ${scene.id} in universe ${id}`);
-
     try {
-      // Store both the ID and full scene object if available
       setSceneToView(scene);
       setIsViewSceneModalOpen(true);
     } catch (error) {
@@ -381,12 +228,10 @@ const UniverseDetail = () => {
     setIsEditSceneModalOpen(false);
     setSceneToEdit(null);
 
-    // Make sure we refresh the scenes data from the server
     if (editedScene) {
       console.log('Scene edited successfully, refreshing scenes list for universe:', id);
     }
 
-    // Always refresh to ensure we have the latest data
     dispatch(fetchScenesForUniverse(id));
   };
 
@@ -406,7 +251,6 @@ const UniverseDetail = () => {
         `Are you sure you want to delete "${scene.title || scene.name}"? This cannot be undone.`
       )
     ) {
-      // Log localStorage user/email before dispatch
       const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
       const user = userStr ? JSON.parse(userStr) : null;
       console.log(
@@ -424,26 +268,21 @@ const UniverseDetail = () => {
     }
   };
 
-  // Modal close handlers
   const handleEditModalClose = () => {
     setIsEditModalOpen(false);
-    // Redirect to detail page if accessed via edit route
     if (location.pathname.endsWith('/edit')) {
       navigate(`/universes/${id}`);
     }
   };
 
-  // Filter scenes for this universe using Redux store
   const filteredScenes = scenes.filter(
     (scene) => scene.universe_id === parseInt(id, 10) && !scene.is_deleted
   );
 
-  // Handle tab changes
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
 
-  // Return early if universe is not loaded
   if (loading && !currentUniverse) {
     return (
       <div className="loading-container">
@@ -454,7 +293,6 @@ const UniverseDetail = () => {
   }
 
   if (error) {
-    // Format error message based on different possible error formats
     let errorMessage = 'Unknown error occurred';
 
     if (typeof error === 'string') {
@@ -473,29 +311,24 @@ const UniverseDetail = () => {
         <p>{errorMessage}</p>
         <div style={{ marginTop: '20px' }}>
           <button
-            as="button"
             onClick={() => navigate('/universes')}
             style={{ marginRight: '10px' }}
           >
             Back to Universes
           </button>
           <button
-            as="button"
             onClick={clearAuthData}
-            variant="secondary"
             style={{ marginRight: '10px' }}
           >
             Clear Auth Data
           </button>
           <button
-            as="button"
             onClick={debugAuthFlow}
-            variant="secondary"
             style={{ marginRight: '10px' }}
           >
             Debug Auth Flow
           </button>
-          <button as="button" onClick={() => window.location.reload()} variant="secondary">
+          <button onClick={() => window.location.reload()}>
             Reload Page
           </button>
         </div>
@@ -547,7 +380,6 @@ const UniverseDetail = () => {
         </div>
       )}
 
-      {/* Tab Navigation */}
       <div className="universe-tabs">
         <button
           className={`tab-button ${activeTab === 'details' ? 'active' : ''}`}
@@ -575,12 +407,10 @@ const UniverseDetail = () => {
         </button>
       </div>
 
-      {/* Tab Content */}
       <div className="universe-content">
         {activeTab === 'details' && (
           <div className="universe-details-tab">
             <h2>Universe Details</h2>
-            {/* Details content here */}
           </div>
         )}
 
@@ -588,7 +418,7 @@ const UniverseDetail = () => {
           <>
             <div className="universe-scenes-header">
               <h2>Scenes</h2>
-              <button onClick={handleCreateSceneClick} variant="primary">
+              <button onClick={handleCreateSceneClick}>
                 Create Scene
               </button>
             </div>
@@ -605,6 +435,7 @@ const UniverseDetail = () => {
                     <SceneCard
                       scene={scene}
                       onEdit={handleEditScene}
+                      on Login to continue using 
                       onDelete={handleDeleteScene}
                       onView={handleViewScene}
                     />
@@ -614,7 +445,7 @@ const UniverseDetail = () => {
             ) : (
               <div className="empty-state">
                 <p>No scenes found in this universe</p>
-                <button onClick={handleCreateSceneClick} variant="primary">
+                <button onClick={handleCreateSceneClick}>
                   Create Your First Scene
                 </button>
               </div>
@@ -637,7 +468,6 @@ const UniverseDetail = () => {
         )}
       </div>
 
-      {/* Edit Universe Modal */}
       {isEditModalOpen && currentUniverse && (
         <Suspense fallback={<div>Loading Universe Modal...</div>}>
           <UniverseModal
@@ -650,17 +480,17 @@ const UniverseDetail = () => {
         </Suspense>
       )}
 
-      {/* Delete Universe Modal */}
       {isDeleteModalOpen && currentUniverse && (
-        <UniverseDeleteModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          onSuccess={handleDeleteSuccess}
-          universe={currentUniverse}
-        />
+        <Suspense fallback={<div>Loading Delete Modal...</div>}>
+          <UniverseDeleteModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onSuccess={handleDeleteSuccess}
+            universe={currentUniverse}
+          />
+        </Suspense>
       )}
 
-      {/* Scene Create Modal */}
       <Suspense fallback={<div>Loading Scene Modal...</div>}>
         <SceneModal
           open={isCreateSceneModalOpen}
@@ -708,3 +538,4 @@ const UniverseDetail = () => {
 };
 
 export default UniverseDetail;
+
