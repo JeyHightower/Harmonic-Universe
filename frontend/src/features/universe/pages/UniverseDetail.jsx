@@ -1,10 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-<<<<<<< HEAD
-=======
-import Button from '../../../components/common/Button.jsx';
->>>>>>> 64d26fb0450c4c235f1b7446371f5501f9bfb769
+import  Button  from '../../../components/common/Button';
 import { demoService } from '../../../services/demo.service.mjs';
 import {
   createSceneAndRefresh,
@@ -21,13 +18,10 @@ const SceneModal = lazy(() => import('../../scene/modals/SceneModal.jsx'));
 const SceneCard = lazy(() => import('../../scene/components/SceneCard.jsx'));
 
 const UniverseDetail = () => {
-<<<<<<< HEAD
   console.log(createSceneAndRefresh);
   console.log(deleteSceneAndRefresh);
   console.log(fetchScenesForUniverse);
 
-=======
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
   const { id } = useParams();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -44,13 +38,8 @@ const UniverseDetail = () => {
   const [isViewSceneModalOpen, setIsViewSceneModalOpen] = useState(false);
   const [sceneToView, setSceneToView] = useState(null);
 
-<<<<<<< HEAD
-  const clearAuthData = async () => {
-=======
-<<<<<<< HEAD
   // Utility function to clear all auth data
-  const clearAuthData = () => {
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
+  const clearAuthData = async () => {
     localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
     localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
     localStorage.removeItem(AUTH_CONFIG.USER_KEY);
@@ -164,33 +153,6 @@ const UniverseDetail = () => {
 
   useEffect(() => {
     if (id) {
-=======
-  useEffect(() => {
-    if (id) {
-      const checkAuthAndFetch = async () => {
-        try {
-          const token = localStorage.getItem(AUTH_CONFIG.TOKEN_KEY);
-          const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
-          const user = userStr ? JSON.parse(userStr) : null;
-
-          const isValidToken = token && token.split('.').length === 3;
-          if (token && !isValidToken) {
-            localStorage.removeItem(AUTH_CONFIG.TOKEN_KEY);
-            localStorage.removeItem(AUTH_CONFIG.REFRESH_TOKEN_KEY);
-            localStorage.removeItem(AUTH_CONFIG.USER_KEY);
-            return;
-          }
-
-          dispatch(fetchUniverseById({ id }));
-          dispatch(fetchScenesForUniverse(id));
-        } catch (error) {
-          console.error('Error in auth check:', error);
-          dispatch(fetchUniverseById({ id }));
-          dispatch(fetchScenesForUniverse(id));
-        }
-      };
-
->>>>>>> 64d26fb0450c4c235f1b7446371f5501f9bfb769
       checkAuthAndFetch();
     }
   }, [id, checkAuthAndFetch]);
@@ -210,19 +172,11 @@ const UniverseDetail = () => {
   const handleEditClick = () => setIsEditModalOpen(true);
   const handleEditSuccess = () => {
     setIsEditModalOpen(false);
-<<<<<<< HEAD
     if (location.pathname.endsWith('/edit')) {
       navigate(`/universes/${id}`);
     } else {
       dispatch(fetchUniverseById({ id }));
     }
-  };
-
-  const handleDeleteClick = () => {
-    setIsDeleteModalOpen(true);
-=======
-    navigate(`/universes/${id}`);
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
   };
 
   const handleDeleteClick = () => setIsDeleteModalOpen(true);
@@ -232,16 +186,12 @@ const UniverseDetail = () => {
   };
 
   const handleCreateSceneClick = () => {
-<<<<<<< HEAD
     console.log('UniverseDetail - Create Scene button clicked');
-=======
->>>>>>> 64d26fb0450c4c235f1b7446371f5501f9bfb769
     setIsCreateSceneModalOpen(true);
   };
 
   const handleCreateSceneSuccess = (newScene) => {
     setIsCreateSceneModalOpen(false);
-<<<<<<< HEAD
     const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
     const user = userStr ? JSON.parse(userStr) : null;
     console.log('UniverseDetail - Before createSceneAndRefresh dispatch, localStorage user:', user);
@@ -255,18 +205,11 @@ const UniverseDetail = () => {
 
   const handleEditScene = (scene) => {
     console.log(`Opening edit modal for scene ${scene.id} in universe ${id}`);
-=======
-    dispatch(createSceneAndRefresh({ ...newScene, universe_id: id }));
-  };
-
-  const handleEditScene = (scene) => {
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
     setSceneToEdit(scene.id);
     setIsEditSceneModalOpen(true);
   };
 
   const handleViewScene = (scene) => {
-<<<<<<< HEAD
     console.log(`Opening view modal for scene ${scene.id} in universe ${id}`);
     try {
       setSceneToView(scene);
@@ -274,23 +217,14 @@ const UniverseDetail = () => {
     } catch (error) {
       console.error('Error opening view scene modal:', error);
     }
-=======
-    setSceneToView(scene);
-    setIsViewSceneModalOpen(true);
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
   };
 
   const handleEditSceneSuccess = () => {
     setIsEditSceneModalOpen(false);
-<<<<<<< HEAD
     setSceneToEdit(null);
 
-    if (editedScene) {
-      console.log('Scene edited successfully, refreshing scenes list for universe:', id);
-    }
+    console.log('Scene edited successfully, refreshing scenes list for universe:', id);
 
-=======
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
     dispatch(fetchScenesForUniverse(id));
   };
 
@@ -305,7 +239,6 @@ const UniverseDetail = () => {
   };
 
   const handleDeleteScene = (scene) => {
-<<<<<<< HEAD
     if (
       window.confirm(
         `Are you sure you want to delete "${scene.title || scene.name}"? This cannot be undone.`
@@ -343,15 +276,6 @@ const UniverseDetail = () => {
     setActiveTab(tab);
   };
 
-=======
-    if (window.confirm(`Are you sure you want to delete "${scene.title || scene.name}"? This cannot be undone.`)) {
-      dispatch(deleteSceneAndRefresh({ sceneId: scene.id, universeId: id }));
-    }
-  };
-
-  const filteredScenes = scenes.filter((scene) => scene.universe_id === parseInt(id, 10) && !scene.is_deleted);
-
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
   if (loading && !currentUniverse) {
     return (
       <div className="loading-container">
@@ -362,7 +286,6 @@ const UniverseDetail = () => {
   }
 
   if (error) {
-<<<<<<< HEAD
     let errorMessage = 'Unknown error occurred';
 
     if (typeof error === 'string') {
@@ -375,40 +298,22 @@ const UniverseDetail = () => {
         JSON.stringify(error);
     }
 
-=======
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
     return (
       <div className="error-container">
         <h2>Error</h2>
-<<<<<<< HEAD
         <p>{errorMessage}</p>
         <div style={{ marginTop: '20px' }}>
-          <button
-            onClick={() => navigate('/universes')}
-            style={{ marginRight: '10px' }}
-          >
+          <Button onClick={() => navigate('/universes')} style={{ marginRight: '10px' }}>
             Back to Universes
-          </button>
-          <button
-            onClick={clearAuthData}
-            style={{ marginRight: '10px' }}
-          >
+          </Button>
+          <Button onClick={clearAuthData} style={{ marginRight: '10px' }}>
             Clear Auth Data
-          </button>
-          <button
-            onClick={debugAuthFlow}
-            style={{ marginRight: '10px' }}
-          >
+          </Button>
+          <Button onClick={debugAuthFlow} style={{ marginRight: '10px' }}>
             Debug Auth Flow
-          </button>
-          <button onClick={() => window.location.reload()}>
-            Reload Page
-          </button>
+          </Button>
+          <Button onClick={() => window.location.reload()}>Reload Page</Button>
         </div>
-=======
-        <p>{error.message || 'Unknown error occurred'}</p>
-        <Button onClick={() => navigate('/universes')}>Back to Universes</Button>
->>>>>>> 64d26fb0450c4c235f1b7446371f5501f9bfb769
       </div>
     );
   }
@@ -417,16 +322,11 @@ const UniverseDetail = () => {
     return (
       <div className="not-found-container">
         <h2>Universe Not Found</h2>
-<<<<<<< HEAD
         <p>
           The universe you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission
           to view it.
         </p>
-        <button onClick={() => navigate('/universes')}>Back to Universes</button>
-=======
-        <p>The universe you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.</p>
         <Button onClick={() => navigate('/universes')}>Back to Universes</Button>
->>>>>>> 64d26fb0450c4c235f1b7446371f5501f9bfb769
       </div>
     );
   }
@@ -437,21 +337,26 @@ const UniverseDetail = () => {
         <div className="universe-info">
           <h1>{currentUniverse.name}</h1>
           <div className="universe-meta">
-            <span className={`universe-visibility ${currentUniverse.is_public ? 'public' : 'private'}`}>
+            <span
+              className={`universe-visibility ${currentUniverse.is_public ? 'public' : 'private'}`}
+            >
               {currentUniverse.is_public ? 'Public' : 'Private'}
             </span>
-            {currentUniverse.theme && <span className="universe-theme">{currentUniverse.theme}</span>}
-            {currentUniverse.genre && <span className="universe-genre">{currentUniverse.genre}</span>}
+            {currentUniverse.theme && (
+              <span className="universe-theme">{currentUniverse.theme}</span>
+            )}
+            {currentUniverse.genre && (
+              <span className="universe-genre">{currentUniverse.genre}</span>
+            )}
           </div>
         </div>
         <div className="universe-actions">
-<<<<<<< HEAD
-          <button onClick={handleEditClick}>Edit Universe</button>
-          <button onClick={handleDeleteClick}>Delete Universe</button>
-=======
-          <Button onClick={handleEditClick} variant="secondary">Edit Universe</Button>
-          <Button onClick={handleDeleteClick} variant="danger">Delete Universe</Button>
->>>>>>> 64d26fb0450c4c235f1b7446371f5501f9bfb769
+          <Button onClick={handleEditClick} variant="secondary">
+            Edit Universe
+          </Button>
+          <Button onClick={handleDeleteClick} variant="danger">
+            Delete Universe
+          </Button>
         </div>
       </div>
 
@@ -462,38 +367,46 @@ const UniverseDetail = () => {
       )}
 
       <div className="universe-tabs">
-        <button className={`tab-button ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>Details</button>
-        <button className={`tab-button ${activeTab === 'scenes' ? 'active' : ''}`} onClick={() => setActiveTab('scenes')}>Scenes</button>
-        <button className={`tab-button ${activeTab === 'characters' ? 'active' : ''}`} onClick={() => setActiveTab('characters')}>Characters</button>
-        <button className={`tab-button ${activeTab === 'notes' ? 'active' : ''}`} onClick={() => setActiveTab('notes')}>Notes</button>
+        <button
+          className={`tab-button ${activeTab === 'details' ? 'active' : ''}`}
+          onClick={() => setActiveTab('details')}
+        >
+          Details
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'scenes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('scenes')}
+        >
+          Scenes
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'characters' ? 'active' : ''}`}
+          onClick={() => setActiveTab('characters')}
+        >
+          Characters
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'notes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('notes')}
+        >
+          Notes
+        </button>
       </div>
 
       <div className="universe-content">
-<<<<<<< HEAD
         {activeTab === 'details' && (
           <div className="universe-details-tab">
             <h2>Universe Details</h2>
           </div>
         )}
-=======
-        {activeTab === 'details' && <div className="universe-details-tab"><h2>Universe Details</h2></div>}
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
 
         {activeTab === 'scenes' && (
           <>
             <div className="universe-scenes-header">
               <h2>Scenes</h2>
-<<<<<<< HEAD
-              <button onClick={handleCreateSceneClick}>
-=======
-<<<<<<< HEAD
-              <button onClick={handleCreateSceneClick} variant="primary">
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
+              <Button onClick={handleCreateSceneClick} variant="primary">
                 Create Scene
-              </button>
-=======
-              <Button onClick={handleCreateSceneClick} variant="primary">Create Scene</Button>
->>>>>>> 64d26fb0450c4c235f1b7446371f5501f9bfb769
+              </Button>
             </div>
 
             {scenesLoading ? (
@@ -508,7 +421,6 @@ const UniverseDetail = () => {
                     <SceneCard
                       scene={scene}
                       onEdit={handleEditScene}
-                      on Login to continue using 
                       onDelete={handleDeleteScene}
                       onView={handleViewScene}
                     />
@@ -518,24 +430,26 @@ const UniverseDetail = () => {
             ) : (
               <div className="empty-state">
                 <p>No scenes found in this universe</p>
-<<<<<<< HEAD
-                <button onClick={handleCreateSceneClick}>
-=======
-<<<<<<< HEAD
-                <button onClick={handleCreateSceneClick} variant="primary">
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
+                <Button onClick={handleCreateSceneClick} variant="primary">
                   Create Your First Scene
-                </button>
-=======
-                <Button onClick={handleCreateSceneClick} variant="primary">Create Your First Scene</Button>
->>>>>>> 64d26fb0450c4c235f1b7446371f5501f9bfb769
+                </Button>
               </div>
             )}
           </>
         )}
 
-        {activeTab === 'characters' && <div className="universe-characters-tab"><h2>Characters</h2><p>Character management will be implemented soon.</p></div>}
-        {activeTab === 'notes' && <div className="universe-notes-tab"><h2>Notes</h2><p>Note management will be implemented soon.</p></div>}
+        {activeTab === 'characters' && (
+          <div className="universe-characters-tab">
+            <h2>Characters</h2>
+            <p>Character management will be implemented soon.</p>
+          </div>
+        )}
+        {activeTab === 'notes' && (
+          <div className="universe-notes-tab">
+            <h2>Notes</h2>
+            <p>Note management will be implemented soon.</p>
+          </div>
+        )}
       </div>
 
       {isEditModalOpen && currentUniverse && (
@@ -601,4 +515,3 @@ const UniverseDetail = () => {
 };
 
 export default UniverseDetail;
-

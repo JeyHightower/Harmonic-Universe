@@ -17,13 +17,9 @@ import SceneDeleteConfirmation from './SceneDeleteConfirmation';
 const SceneModal = React.forwardRef(
   (
     {
-<<<<<<< HEAD
       // Props from consolidated component
       open,
       isOpen,
-=======
-      open = false, // Changed default to false for safety
->>>>>>> a5b62f7c41c7d5ccb3cf28d9366e727d0a1462d4
       onClose,
       onSuccess,
       universeId,
