@@ -15,25 +15,25 @@ import SceneDeleteConfirmation from './SceneDeleteConfirmation';
  * A unified modal for handling all scene operations: create, edit, view, and delete
  */
 const SceneModal = React.forwardRef(
-  (
-    {
-      // Props from consolidated component
-      open,
-      isOpen,
-      onClose,
-      onSuccess,
-      universeId,
-      sceneId,
-      initialData = null,
-      modalType = 'scene',
-      mode = 'create',
-    },
-  ) => {
-    console.log('SceneModal - COMPONENT INITIALIZED', { open, universeId, mode, modalType });
+  ({
+    // Props from consolidated component
+    open,
+    isOpen,
+    onClose,
+    onSuccess,
+    universeId,
+    sceneId,
+    initialData = null,
+    modalType = 'scene',
+    mode = 'create',
+  }) => {
+    if (open) {
+      console.log('SceneModal - COMPONENT INITIALIZED with open=true');
+    }
 
     const isModalOpen = open; // Direct usage of the open prop
     const actualMode = mode || modalType;
-
+    console.log('SceneModal - isModalOpen value:', isModalOpen);
     const [scene, setScene] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -102,11 +102,26 @@ const SceneModal = React.forwardRef(
             '../../../store/thunks/scenesThunks'
           );
 
+          // Handle date formatting properly
+          let formattedDate = null;
+          if (formData.dateOfScene) {
+            if (typeof formData.dateOfScene === 'object' && formData.dateOfScene.format) {
+              // It's a moment.js or dayjs object
+              formattedDate = formData.dateOfScene.format('YYYY-MM-DD');
+            } else if (typeof formData.dateOfScene === 'string') {
+              // It's already a string
+              formattedDate = formData.dateOfScene;
+            } else if (formData.dateOfScene instanceof Date) {
+              // It's a Date object
+              formattedDate = formData.dateOfScene.toISOString().split('T')[0];
+            }
+          }
+
           const sceneData = {
             ...formData,
             universe_id: universeId,
             is_deleted: false,
-            date_of_scene: formData.dateOfScene?.format('YYYY-MM-DD') || formData.dateOfScene,
+            date_of_scene: formattedDate,
           };
 
           const action =
@@ -127,7 +142,9 @@ const SceneModal = React.forwardRef(
         } finally {
           setLoading(false);
         }
-      }, [actualMode, formattedSceneId, universeId, dispatch, loading, onClose, onSuccess]);
+      },
+      [actualMode, formattedSceneId, universeId, dispatch, loading, onClose, onSuccess]
+    );
 
     const handleDelete = useCallback(async () => {
       try {
@@ -186,15 +203,14 @@ const SceneModal = React.forwardRef(
 
     useEffect(() => {
       if (isModalOpen) {
-        const timer = setTimeout(() => setIsContentMounted(true), 50);
-        return () => clearTimeout(timer);
+        setIsContentMounted(true);
       } else {
         setIsContentMounted(false);
       }
     }, [isModalOpen]);
 
     const renderContent = useCallback(() => {
-      if (!isContentMounted) return null;
+      // Remove the isContentMounted check to ensure content renders immediately
 
       if (loading) {
         return (
@@ -249,8 +265,25 @@ const SceneModal = React.forwardRef(
         default:
           return <p>Invalid mode: {actualMode}</p>;
       }
-    }, [isContentMounted, loading, error, actualMode, form, universeId, formattedSceneId, scene, initialData, handleSubmit, onClose, viewerData, handleDelete]);
+    }, [
+      isContentMounted,
+      loading,
+      error,
+      actualMode,
+      form,
+      universeId,
+      formattedSceneId,
+      scene,
+      initialData,
+      handleSubmit,
+      onClose,
+      viewerData,
+      handleDelete,
+    ]);
 
+    if (open) {
+      console.log('SceneModal - About to render StableModalWrapper with open=true');
+    }
     return (
       <StableModalWrapper
         title={modalTitle}

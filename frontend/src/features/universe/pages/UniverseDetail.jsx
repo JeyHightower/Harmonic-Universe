@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import  Button  from '../../../components/common/Button';
+import Button from '../../../components/common/Button';
 import { demoService } from '../../../services/demo.service.mjs';
 import {
   createSceneAndRefresh,
@@ -186,11 +186,15 @@ const UniverseDetail = () => {
   };
 
   const handleCreateSceneClick = () => {
-    console.log('UniverseDetail - Create Scene button clicked');
+    console.log('Button clicked! Current state: ' + isCreateSceneModalOpen);
     setIsCreateSceneModalOpen(true);
+    console.log('State set to true. New state should be: true');
   };
 
   const handleCreateSceneSuccess = (newScene) => {
+    console.log(
+      'handleCreateSceneSuccess called with: ' + JSON.stringify(newScene).substring(0, 100)
+    );
     setIsCreateSceneModalOpen(false);
     const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
     const user = userStr ? JSON.parse(userStr) : null;
@@ -404,9 +408,19 @@ const UniverseDetail = () => {
           <>
             <div className="universe-scenes-header">
               <h2>Scenes</h2>
-              <Button onClick={handleCreateSceneClick} variant="primary">
+              <button
+                onClick={handleCreateSceneClick}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#1890ff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                }}
+              >
                 Create Scene
-              </Button>
+              </button>
             </div>
 
             {scenesLoading ? (
@@ -430,9 +444,19 @@ const UniverseDetail = () => {
             ) : (
               <div className="empty-state">
                 <p>No scenes found in this universe</p>
-                <Button onClick={handleCreateSceneClick} variant="primary">
+                <button
+                  onClick={handleCreateSceneClick}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#1890ff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                  }}
+                >
                   Create Your First Scene
-                </Button>
+                </button>
               </div>
             )}
           </>

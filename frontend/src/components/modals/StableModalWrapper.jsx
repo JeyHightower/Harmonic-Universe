@@ -36,12 +36,16 @@ const StableModalWrapper = ({
 
   // Sync the open prop to internal state
   useEffect(() => {
-    console.log('StableModalWrapper - open prop changed:', open);
+    if (open) {
+      alert('StableModalWrapper - Setting isVisible to true');
+    } else {
+      alert('StableModalWrapper - Setting isVisible to false');
+    }
     setIsVisible(open);
   }, [open]);
 
   const handleClose = () => {
-    console.log('StableModalWrapper - handleClose called');
+    alert('StableModalWrapper - handleClose called');
     setIsVisible(false);
     if (onClose) {
       onClose();
@@ -106,6 +110,82 @@ const StableModalWrapper = ({
     }
   };
 
+  // Fix button interactions specifically
+  const fixButtonInteractions = () => {
+    if (open) {
+      setTimeout(() => {
+        // Fix close button
+        const closeButtons = document.querySelectorAll(
+          '.ant-modal-close, .modal-close, button[aria-label="Close"]'
+        );
+        closeButtons.forEach((button) => {
+          button.style.setProperty('pointer-events', 'auto', 'important');
+          button.style.setProperty('z-index', '100000', 'important');
+          button.style.setProperty('position', 'relative', 'important');
+          button.style.setProperty('cursor', 'pointer', 'important');
+        });
+
+        // Fix form buttons
+        const formButtons = document.querySelectorAll(
+          '.ant-modal-body button, .modal-body button, .scene-form button'
+        );
+        formButtons.forEach((button) => {
+          button.style.setProperty('pointer-events', 'auto', 'important');
+          button.style.setProperty('z-index', '100000', 'important');
+          button.style.setProperty('position', 'relative', 'important');
+          button.style.setProperty('cursor', 'pointer', 'important');
+        });
+
+        console.log('Button interactions fixed');
+      }, 200);
+    }
+  };
+
+  if (open) {
+    console.log('StableModalWrapper - About to render Modal with isVisible: ' + isVisible);
+    // Fix button interactions
+    fixButtonInteractions();
+    // Check if modal elements exist in DOM after a short delay
+    setTimeout(() => {
+      const modalElements = document.querySelectorAll('.ant-modal');
+      const modalWraps = document.querySelectorAll('.ant-modal-wrap');
+      const modalMasks = document.querySelectorAll('.ant-modal-mask');
+      console.log(
+        `Modal elements found: ${modalElements.length} modals, ${modalWraps.length} wraps, ${modalMasks.length} masks`
+      );
+
+      if (modalElements.length > 0) {
+        const modal = modalElements[modalElements.length - 1];
+        const computedStyle = window.getComputedStyle(modal);
+        const rect = modal.getBoundingClientRect();
+        console.log(
+          `Modal CSS: display=${computedStyle.display}, visibility=${computedStyle.visibility}, opacity=${computedStyle.opacity}, z-index=${computedStyle.zIndex}`
+        );
+        console.log(
+          `Modal position: top=${rect.top}, left=${rect.left}, width=${rect.width}, height=${rect.height}, visible=${rect.width > 0 && rect.height > 0}`
+        );
+
+        // Check if modal content exists
+        const modalContent = modal.querySelector('.ant-modal-content');
+        if (modalContent) {
+          console.log('Modal content found: ' + modalContent.innerHTML.substring(0, 100) + '...');
+        } else {
+          console.log('No modal content found!');
+        }
+
+        // Check modal backdrop
+        const modalMask = document.querySelector('.ant-modal-mask');
+        if (modalMask) {
+          const maskStyle = window.getComputedStyle(modalMask);
+          console.log(
+            `Modal mask: display=${maskStyle.display}, visibility=${maskStyle.visibility}, opacity=${maskStyle.opacity}, background-color=${maskStyle.backgroundColor}`
+          );
+        } else {
+          console.log('No modal mask found!');
+        }
+      }
+    }, 100);
+  }
   return (
     <Modal
       title={title}
@@ -117,7 +197,7 @@ const StableModalWrapper = ({
       maskClosable={true}
       className={`stable-modal stable-modal-${instanceId.current}`}
       style={combinedStyle}
-      zIndex={1050}
+      zIndex={9999}
       forceRender={true}
       onClick={handleModalClick}
       wrapClassName="stable-modal-wrap"
@@ -129,7 +209,8 @@ const StableModalWrapper = ({
       styles={{
         mask: {
           pointerEvents: 'auto',
-          zIndex: 1050,
+          zIndex: 9998,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
         },
       }}
       wrapProps={{
@@ -141,16 +222,22 @@ const StableModalWrapper = ({
           }
           e.stopPropagation();
         },
-        style: { pointerEvents: 'auto', zIndex: 1050 },
+        style: { pointerEvents: 'auto', zIndex: 9998 },
       }}
-      getContainer={() => document.getElementById('portal-root') || document.body}
+      getContainer={() => {
+        const portalRoot = document.getElementById('portal-root');
+        if (open) {
+          console.log('Portal root exists: ' + !!portalRoot);
+        }
+        return document.body; // Force render to body to avoid portal issues
+      }}
       modalRender={(node) => (
         <div
           onClick={handleContentWrapperClick}
           className="modal-content-wrapper"
           style={{
             pointerEvents: 'auto',
-            zIndex: 1051,
+            zIndex: 9999,
             position: 'relative',
           }}
         >
@@ -166,10 +253,26 @@ const StableModalWrapper = ({
         style={{
           pointerEvents: 'auto',
           position: 'relative',
-          zIndex: 1051,
+          zIndex: 9999,
         }}
       >
         {stableContent}
+        {/* Force button interactions */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            setTimeout(() => {
+              const buttons = document.querySelectorAll('.ant-modal-close, .ant-modal-body button, .modal-body button, .scene-form button');
+              buttons.forEach(button => {
+                button.style.pointerEvents = 'auto';
+                button.style.zIndex = '100000';
+                button.style.position = 'relative';
+                button.style.cursor = 'pointer';
+              });
+            }, 100);
+          `,
+          }}
+        />
       </div>
     </Modal>
   );

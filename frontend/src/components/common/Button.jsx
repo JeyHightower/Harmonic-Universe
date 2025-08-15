@@ -39,12 +39,14 @@ const Button = React.forwardRef(
       `button-${variant}`,
       `button-${size}`,
       fullWidth ? 'button-full-width' : '',
-      (disabled || loading) ? 'button-disabled' : '',
+      disabled || loading ? 'button-disabled' : '',
       loading ? 'button-loading' : '',
       variant === 'icon' ? 'button-icon' : '',
       variant === 'icon-danger' ? 'button-icon button-icon-danger' : '',
       className,
-    ].filter(Boolean).join(' ');
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     // Enhanced style to ensure button is interactive in modals
     const enhancedStyle = {
@@ -60,9 +62,14 @@ const Button = React.forwardRef(
       // Stop propagation to prevent modal close
       e.stopPropagation();
       // Debug log
-      console.log('Button clicked');
+      console.log('Button clicked with onClick handler:', !!onClick);
       // Call original handler if provided
-      onClick && onClick(e);
+      if (onClick) {
+        console.log('Button - Calling onClick handler');
+        onClick(e);
+      } else {
+        console.log('Button - No onClick handler provided');
+      }
     };
 
     // If it's a Link and disabled/loading, render a button instead
