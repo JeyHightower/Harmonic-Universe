@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import useModalState from '../../../hooks/useModalState';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../components/common/Button';
@@ -30,13 +31,7 @@ const UniverseDetail = () => {
   const { scenes, loading: scenesLoading } = useSelector((state) => state.scenes);
 
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'details');
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isCreateSceneModalOpen, setIsCreateSceneModalOpen] = useState(false);
-  const [isEditSceneModalOpen, setIsEditSceneModalOpen] = useState(false);
-  const [sceneToEdit, setSceneToEdit] = useState(null);
-  const [isViewSceneModalOpen, setIsViewSceneModalOpen] = useState(false);
-  const [sceneToView, setSceneToView] = useState(null);
+  const { open: openModal, close: closeModal } = useModalState();
 
   // Utility function to clear all auth data
   const clearAuthData = async () => {
@@ -169,9 +164,9 @@ const UniverseDetail = () => {
     }
   }, [location.pathname, currentUniverse]);
 
-  const handleEditClick = () => setIsEditModalOpen(true);
+  const handleEditClick = () => openModal('editUniverse', { universe: currentUniverse });
   const handleEditSuccess = () => {
-    setIsEditModalOpen(false);
+    closeModal();
     if (location.pathname.endsWith('/edit')) {
       navigate(`/universes/${id}`);
     } else {
@@ -179,23 +174,18 @@ const UniverseDetail = () => {
     }
   };
 
-  const handleDeleteClick = () => setIsDeleteModalOpen(true);
+  const handleDeleteClick = () => openModal('deleteUniverse', { universe: currentUniverse });
   const handleDeleteSuccess = () => {
-    setIsDeleteModalOpen(false);
+    closeModal();
     navigate('/universes');
   };
 
   const handleCreateSceneClick = () => {
-    console.log('Button clicked! Current state: ' + isCreateSceneModalOpen);
-    setIsCreateSceneModalOpen(true);
-    console.log('State set to true. New state should be: true');
+    openModal('createScene', { universeId: id });
   };
 
   const handleCreateSceneSuccess = (newScene) => {
-    console.log(
-      'handleCreateSceneSuccess called with: ' + JSON.stringify(newScene).substring(0, 100)
-    );
-    setIsCreateSceneModalOpen(false);
+    closeModal();
     const userStr = localStorage.getItem(AUTH_CONFIG.USER_KEY);
     const user = userStr ? JSON.parse(userStr) : null;
     console.log('UniverseDetail - Before createSceneAndRefresh dispatch, localStorage user:', user);
@@ -208,38 +198,29 @@ const UniverseDetail = () => {
   };
 
   const handleEditScene = (scene) => {
-    console.log(`Opening edit modal for scene ${scene.id} in universe ${id}`);
-    setSceneToEdit(scene.id);
-    setIsEditSceneModalOpen(true);
+    openModal('editScene', { universeId: id, sceneId: scene.id });
   };
 
   const handleViewScene = (scene) => {
-    console.log(`Opening view modal for scene ${scene.id} in universe ${id}`);
-    try {
-      setSceneToView(scene);
-      setIsViewSceneModalOpen(true);
-    } catch (error) {
-      console.error('Error opening view scene modal:', error);
-    }
+    openModal('viewScene', {
+      universeId: id,
+      sceneId: scene.id,
+      initialData: scene,
+    });
   };
 
   const handleEditSceneSuccess = () => {
-    setIsEditSceneModalOpen(false);
-    setSceneToEdit(null);
-
+    closeModal();
     console.log('Scene edited successfully, refreshing scenes list for universe:', id);
-
     dispatch(fetchScenesForUniverse(id));
   };
 
   const handleViewSceneClose = () => {
-    setIsViewSceneModalOpen(false);
-    setSceneToView(null);
+    closeModal();
   };
 
   const handleEditSceneClose = () => {
-    setIsEditSceneModalOpen(false);
-    setSceneToEdit(null);
+    closeModal();
   };
 
   const handleDeleteScene = (scene) => {
@@ -476,64 +457,23 @@ const UniverseDetail = () => {
         )}
       </div>
 
-      {isEditModalOpen && currentUniverse && (
-        <Suspense fallback={<div>Loading Universe Modal...</div>}>
-          <UniverseModal
-            isOpen={isEditModalOpen}
-            onClose={() => setIsEditModalOpen(false)}
-            onSuccess={handleEditSuccess}
-            universe={currentUniverse}
-            isEdit={true}
-          />
-        </Suspense>
-      )}
-
-      {isDeleteModalOpen && currentUniverse && (
-        <Suspense fallback={<div>Loading Delete Modal...</div>}>
-          <UniverseDeleteModal
-            isOpen={isDeleteModalOpen}
-            onClose={() => setIsDeleteModalOpen(false)}
-            onSuccess={handleDeleteSuccess}
-            universe={currentUniverse}
-          />
-        </Suspense>
-      )}
-
-      <Suspense fallback={<div>Loading Scene Modal...</div>}>
+      <Suspense fallback={<div>Loading Modals...</div>}>
+        <UniverseModal
+          onSuccess={handleEditSuccess}
+          onClose={closeModal}
+        />
+        <UniverseDeleteModal
+          onSuccess={handleDeleteSuccess}
+          onClose={closeModal}
+        />
         <SceneModal
-          open={isCreateSceneModalOpen}
-          onClose={() => setIsCreateSceneModalOpen(false)}
           onSuccess={handleCreateSceneSuccess}
-          mode="create"
+          onEditSuccess={handleEditSceneSuccess}
+          onViewClose={handleViewSceneClose}
+          onClose={closeModal}
           universeId={id}
         />
       </Suspense>
-
-      {isEditSceneModalOpen && sceneToEdit && (
-        <Suspense fallback={<div>Loading Scene Modal...</div>}>
-          <SceneModal
-            open={isEditSceneModalOpen}
-            onClose={handleEditSceneClose}
-            onSuccess={handleEditSceneSuccess}
-            universeId={id}
-            sceneId={sceneToEdit}
-            mode="edit"
-          />
-        </Suspense>
-      )}
-
-      {isViewSceneModalOpen && sceneToView && (
-        <Suspense fallback={<div>Loading Scene Modal...</div>}>
-          <SceneModal
-            open={isViewSceneModalOpen}
-            onClose={handleViewSceneClose}
-            universeId={id}
-            sceneId={typeof sceneToView === 'object' ? sceneToView.id : sceneToView}
-            initialData={typeof sceneToView === 'object' ? sceneToView : null}
-            mode="view"
-          />
-        </Suspense>
-      )}
     </div>
   );
 };

@@ -805,6 +805,12 @@ export const httpClient = {
           console.log('HTTP Client: Sanitized scene data:', data);
         }
 
+        // Ensure name is present for scene creation
+        if (!data.name || data.name.trim() === '') {
+          console.error('HTTP Client: Missing or empty name in scene data');
+          throw new Error('Scene name is required');
+        }
+
         // Make the request with retry logic for scene-related endpoints with enhanced logging
         console.log('HTTP Client: Sending scene POST request');
         const response = await withRetry(async () => {

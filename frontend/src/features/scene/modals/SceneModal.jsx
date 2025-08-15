@@ -119,10 +119,15 @@ const SceneModal = React.forwardRef(
 
           const sceneData = {
             ...formData,
-            universe_id: universeId,
+            universe_id: universeId, // Ensure universeId is passed correctly
             is_deleted: false,
             date_of_scene: formattedDate,
           };
+
+          if (!sceneData.universe_id) {
+            console.error('SceneModal - Missing universe_id in sceneData', sceneData);
+            throw new Error('Universe ID is required for scene creation');
+          }
 
           const action =
             actualMode === 'create'
@@ -203,11 +208,12 @@ const SceneModal = React.forwardRef(
 
     useEffect(() => {
       if (isModalOpen) {
+        console.log('SceneModal - Modal opened with universeId:', universeId);
         setIsContentMounted(true);
       } else {
         setIsContentMounted(false);
       }
-    }, [isModalOpen]);
+    }, [isModalOpen, universeId]);
 
     const renderContent = useCallback(() => {
       // Remove the isContentMounted check to ensure content renders immediately
@@ -233,6 +239,14 @@ const SceneModal = React.forwardRef(
       switch (actualMode) {
         case 'create':
         case 'edit':
+          if (actualMode === 'create' && !universeId) {
+            return (
+              <div className="scene-modal-error">
+                <p className="error-message">Universe ID is missing. Cannot create a scene.</p>
+                <button onClick={onClose}>Close</button>
+              </div>
+            );
+          }
           return (
             <SceneForm
               form={form}

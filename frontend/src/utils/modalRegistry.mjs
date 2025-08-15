@@ -134,6 +134,8 @@ export const getModalComponent = async (type) => {
     'music-view',
     'music-edit',
     'music-delete',
+    'viewScene',
+    'editScene',
     'PHYSICS_OBJECT',
     'PHYSICS_PARAMETERS',
     'PHYSICS_CONSTRAINT',
@@ -211,6 +213,26 @@ export const getModalComponent = async (type) => {
           component = FormModal;
         }
         break;
+      case 'viewScene':
+        console.log('Loading SceneModal for viewScene');
+        try {
+          const { SceneModal } = await import(/* @vite-ignore */ '../features/scene');
+          component = SceneModal;
+        } catch (e) {
+          console.warn('Fallback to FormModal for SceneModal', e);
+          component = FormModal;
+        }
+        break;
+      case 'editScene':
+        console.log('Loading SceneModal for editScene');
+        try {
+          const { SceneModal } = await import(/* @vite-ignore */ '../features/scene');
+          component = SceneModal;
+        } catch (e) {
+          console.warn('Fallback to FormModal for SceneModal', e);
+          component = FormModal;
+        }
+        break;
       default:
         console.error(`No modal component found for type: ${type}`);
         return null;
@@ -245,6 +267,8 @@ export const getModalDisplayName = (type) => {
     'universe-create': 'Create Universe',
     [MODAL_TYPES.SCENE_FORM]: 'Scene',
     SCENE_FORM: 'Scene',
+    [MODAL_TYPES.EDIT_SCENE]: 'editScene',
+    EditScene: 'Scene',
     [MODAL_TYPES.CHARACTER_FORM]: 'Character',
     CHARACTER_FORM: 'Character',
     [MODAL_TYPES.PHYSICS_OBJECT]: 'Physics Object',
@@ -462,6 +486,8 @@ export const getModalComponentSync = (type) => {
     MODAL_TYPES.SIGNUP,
     MODAL_TYPES.UNIVERSE_CREATE,
     'SCENE_FORM',
+    'SceneModal',
+    'editScene',
     'CHARACTER_FORM',
     'audio-generate',
     'audio-details',
