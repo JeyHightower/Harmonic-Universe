@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
-import useModalState from '../../../hooks/useModalState';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../components/common/Button';
+import useModalState from '../../../hooks/useModalState';
 import { demoService } from '../../../services/demo.service.mjs';
 import {
   createSceneAndRefresh,
@@ -458,14 +458,8 @@ const UniverseDetail = () => {
       </div>
 
       <Suspense fallback={<div>Loading Modals...</div>}>
-        <UniverseModal
-          onSuccess={handleEditSuccess}
-          onClose={closeModal}
-        />
-        <UniverseDeleteModal
-          onSuccess={handleDeleteSuccess}
-          onClose={closeModal}
-        />
+        <UniverseModal onSuccess={handleEditSuccess} onClose={closeModal} />
+        <UniverseDeleteModal onSuccess={handleDeleteSuccess} onClose={closeModal} />
         <SceneModal
           onSuccess={handleCreateSceneSuccess}
           onEditSuccess={handleEditSceneSuccess}

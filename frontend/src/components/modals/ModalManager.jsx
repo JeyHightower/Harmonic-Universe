@@ -13,7 +13,7 @@ import Modal from './Modal';
  * This component should be mounted once at the application root
  */
 const ModalManager = () => {
-  const isOpen = useSelector(selectIsModalOpen);
+  const open = useSelector(selectIsModalOpen);
   const type = useSelector(selectModalType);
   const props = useSelector(selectModalProps);
   const { close } = useModalState();
@@ -21,7 +21,7 @@ const ModalManager = () => {
 
   // Effect for body scroll locking
   useEffect(() => {
-    if (isOpen) {
+    if (open) {
       // Lock body scroll
       const scrollY = window.scrollY;
       document.body.style.position = 'fixed';
@@ -38,7 +38,7 @@ const ModalManager = () => {
         window.scrollTo(0, scrollY);
       };
     }
-  }, [isOpen]);
+  }, [open]);
 
   // Load the appropriate modal component when type changes
   useEffect(() => {
@@ -69,7 +69,7 @@ const ModalManager = () => {
   }, [type]);
 
   // Render nothing if no modal is open or no component is found
-  if (!isOpen || !type || !ModalComponent) {
+  if (!open || !type || !ModalComponent) {
     return null;
   }
 
@@ -87,7 +87,7 @@ const ModalManager = () => {
   return (
     <Suspense fallback={<div className="modal-loading">Loading...</div>}>
       <Modal
-        isOpen={isOpen}
+        open={open}
         onClose={close}
         title={title}
         size={size}

@@ -9,6 +9,8 @@ const modalRegistry = new Map();
 const builtInModalTypes = [
   'UNIVERSE_CREATE',
   'universe-create',
+  'editScene',
+  'viewScene',
   'LOGIN',
   'SIGNUP',
   'PHYSICS_PARAMETERS',
@@ -126,6 +128,7 @@ export const getModalComponent = async (type) => {
     MODAL_TYPES.LOGIN,
     MODAL_TYPES.SIGNUP,
     MODAL_TYPES.UNIVERSE_CREATE,
+    MODAL_TYPES.EDIT_SCENE,
     'SCENE_FORM',
     'CHARACTER_FORM',
     'audio-generate',

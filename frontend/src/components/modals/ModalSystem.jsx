@@ -20,7 +20,7 @@ ModalSystem.displayName = 'ModalSystem';
 ModalSystem.propTypes = {
   children: PropTypes.node,
   className: PropTypes.string,
-  isOpen: PropTypes.bool,
+  open: PropTypes.bool,
   onClose: PropTypes.func,
   title: PropTypes.string,
 };

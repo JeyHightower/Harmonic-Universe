@@ -21,7 +21,7 @@ import SceneForm from '../consolidated/SceneForm';
  * Modal component for creating and editing scenes
  */
 const SceneFormModal = ({
-  isOpen,
+  open,
   onClose,
   universeId,
   sceneId = null,
@@ -38,12 +38,12 @@ const SceneFormModal = ({
 
   // Fetch scene data if editing or clear data when creating
   useEffect(() => {
-    if (isOpen) {
+    if (open) {
       setError(null);
       console.log(`SceneFormModal: Modal opened in ${modalType} mode`);
       fetchSceneData();
     }
-  }, [isOpen, modalType, sceneId, universeId]);
+  }, [open, modalType, sceneId, universeId]);
 
   // Add debugging for the form submit reference
   useEffect(() => {
@@ -213,7 +213,7 @@ const SceneFormModal = ({
 
   return (
     <Dialog
-      open={isOpen}
+      open={open}
       onClose={handleCancel}
       maxWidth="md"
       fullWidth

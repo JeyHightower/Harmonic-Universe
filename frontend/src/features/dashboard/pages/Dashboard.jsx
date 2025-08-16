@@ -42,6 +42,7 @@ const Dashboard = () => {
     isCreateModalOpen: false,
     isEditModalOpen: false,
     isDeleteModalOpen: false,
+    isViewModalOpen: false,
   });
   const [selectedUniverse, setSelectedUniverse] = useState(null);
   const [sortOption, setSortOption] = useState('updated_at');
@@ -198,11 +199,21 @@ const Dashboard = () => {
     setModalState((prev) => ({ ...prev, isCreateModalOpen: true }));
   };
 
-  const closeModal = (setModalOpen) => {
-    setTimeout(() => {
-      setModalOpen(false);
-    }, 50);
+  const closeModal = (prev) => {
+     setModalState ((prev) => ({ ...prev, isCreateModalOpen: false, isEditModalOpen: false, isViewModalOpen: false,isDeleteModalOpen: false }))
+
   };
+
+  const handleViewUniverse = (universe) => {
+    setSelectedUniverse(universe)
+    if (universe && universe.id) {
+      setNewUniverseId(universe.id);
+       setModalState((prev) => ({ ...prev, isViewModalOpen: true }))
+    }
+    closeModal(setModalState((prev) => ({ ...prev, isViewModalOpen: false})));
+  }
+
+
 
   const handleCreateSuccess = (universe) => {
     console.log('Dashboard - Create success with universe:', universe);
@@ -247,6 +258,12 @@ const Dashboard = () => {
       }
     }
   };
+
+
+
+
+
+
 
   const getSortedUniverses = () => {
     if (!universes || !Array.isArray(universes)) {
