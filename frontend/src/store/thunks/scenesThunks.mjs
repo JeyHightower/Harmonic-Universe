@@ -495,13 +495,13 @@ export const updateScene = createAsyncThunk(
  */
 export const deleteScene = createAsyncThunk(
   'scenes/deleteScene',
-  async (sceneId, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
       // Handle both scene object and direct ID
       const formattedSceneId =
-        typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
-          ? String(sceneId.id)
-          : String(sceneId);
+        typeof payload === 'object' && payload !== null && 'id' in payload
+          ? String(payload.id)
+          : String(payload);
 
       console.log(`deleteScene - Deleting scene with ID: ${formattedSceneId}`);
 
@@ -517,9 +517,9 @@ export const deleteScene = createAsyncThunk(
       try {
         // Handle both scene object and direct ID
         const formattedSceneId =
-          typeof sceneId === 'object' && sceneId !== null && 'id' in sceneId
-            ? String(sceneId.id)
-            : String(sceneId);
+          typeof payload === 'object' && payload !== null && 'id' in payload
+            ? String(payload.id)
+            : String(payload);
 
         console.log('deleteScene - Attempting backup method for scene ID:', formattedSceneId);
 

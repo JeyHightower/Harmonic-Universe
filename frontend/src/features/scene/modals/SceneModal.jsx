@@ -24,7 +24,6 @@ const SceneModal = React.forwardRef(
     universeId,
     sceneId,
     initialData = null,
-    modalType = 'scene',
     mode = 'create',
   }) => {
     if (open) {
@@ -32,7 +31,7 @@ const SceneModal = React.forwardRef(
     }
 
     const isModalOpen = open; // Direct usage of the open prop
-    const actualMode = mode || modalType;
+    const actualMode = mode;
     console.log('SceneModal - isModalOpen value:', isModalOpen);
     const [scene, setScene] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -324,7 +323,6 @@ SceneModal.propTypes = {
   universeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   sceneId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   initialData: PropTypes.object,
-  modalType: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
   mode: PropTypes.oneOf(['create', 'edit', 'view', 'delete']),
 };
 

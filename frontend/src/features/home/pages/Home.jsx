@@ -10,7 +10,7 @@ import { AUTH_CONFIG } from '../../../utils/config';
 // Destructure window.setTimeout to fix linter error
 const { setTimeout } = window;
 
-function Home() {
+const  Home = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, loading, isDemoUser } = useSelector((state) => state.auth);

@@ -9,12 +9,12 @@ const modalRegistry = new Map();
 const builtInModalTypes = [
   'UNIVERSE_CREATE',
   'universe-create',
-  'editScene',
-  'viewScene',
   'LOGIN',
   'SIGNUP',
   'PHYSICS_PARAMETERS',
   'PHYSICS_CONSTRAINT',
+  'viewScene',
+  'editScene',
 ];
 
 // Initialize registry with statically imported components
@@ -37,7 +37,8 @@ async function initializeRegistry() {
     const { PhysicsConstraintModal, PhysicsParametersModal } = await import(
       /* @vite-ignore */ '../features/physics'
     );
-    const { SceneModal } = await import(/* @vite-ignore */ '../features/scene');
+    const SceneModalModule = await import(/* @vite-ignore */ '../features/scene');
+    const SceneModal = SceneModalModule.default;
     const UniverseModalModule = await import(
       /* @vite-ignore */ '../features/universe/modals/UniverseModal'
     );
@@ -84,6 +85,9 @@ async function initializeRegistry() {
     });
 
     modalRegistry.set('SCENE_FORM', { component: SceneModal, hasBuiltInModal: false });
+
+    modalRegistry.set('viewScene', { component: SceneModal, hasBuiltInModal: true });
+    modalRegistry.set('editScene', { component: SceneModal, hasBuiltInModal: true });
 
     modalRegistry.set('PHYSICS_PARAMETERS', {
       component: PhysicsParametersModal,
@@ -217,22 +221,13 @@ export const getModalComponent = async (type) => {
         }
         break;
       case 'viewScene':
-        console.log('Loading SceneModal for viewScene');
-        try {
-          const { SceneModal } = await import(/* @vite-ignore */ '../features/scene');
-          component = SceneModal;
-        } catch (e) {
-          console.warn('Fallback to FormModal for SceneModal', e);
-          component = FormModal;
-        }
-        break;
       case 'editScene':
-        console.log('Loading SceneModal for editScene');
+        console.log(`Loading SceneModal for ${type}`);
         try {
-          const { SceneModal } = await import(/* @vite-ignore */ '../features/scene');
-          component = SceneModal;
+          const SceneModalModule = await import(/* @vite-ignore */ '../features/scene');
+          component = SceneModalModule.default;
         } catch (e) {
-          console.warn('Fallback to FormModal for SceneModal', e);
+          console.warn(`Fallback to FormModal for SceneModal (${type})`, e);
           component = FormModal;
         }
         break;
@@ -491,6 +486,7 @@ export const getModalComponentSync = (type) => {
     'SCENE_FORM',
     'SceneModal',
     'editScene',
+    'viewScene',
     'CHARACTER_FORM',
     'audio-generate',
     'audio-details',
