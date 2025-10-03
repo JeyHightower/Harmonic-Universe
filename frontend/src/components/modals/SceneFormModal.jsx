@@ -1,3 +1,9 @@
+// DEPRECATED: Use features/scene/modals/SceneModal.jsx instead. This file remains as a guard to prevent accidental legacy imports.
+// If you see this warning at runtime, update your imports to use the feature-based modal.
+
+/* eslint-disable no-console */
+console.warn('Deprecated import: components/modals/SceneFormModal.jsx. Use features/scene/modals/SceneModal.jsx instead.');
+
 import {
   Alert,
   Box,

@@ -15,3 +15,6 @@ export { default as SceneDetail } from './pages/SceneDetail.jsx';
 export { default as SceneEditPage } from './pages/SceneEditPage.jsx';
 export { default as SceneForm } from './pages/SceneForm.jsx';
 export { default as ScenesPage } from './pages/ScenesPage.jsx';
+
+// Modal exports
+export { default } from './modals/SceneModal.jsx';

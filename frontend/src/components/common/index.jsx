@@ -7,4 +7,3 @@ export { default as Slider } from './Slider';
 export { default as Spinner } from './Spinner';
 export { default as Tooltip } from './Tooltip';
 
-export { default as UserProfileModal } from './UserProfileModal';
