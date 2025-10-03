@@ -84,6 +84,9 @@ out/
 .serverless/
 .dynamodb/
 .fusebox/
+.parcel-cache/
+.vite/
+.turbo/
 
 # =============================================================================
 # Cache & Temporary files
@@ -95,6 +98,9 @@ out/
 .tmp/
 *.tmp
 *.temp
+.eslintcache
+.stylelintcache
+coverage/
 
 # Frontend cache
 frontend/.eslintcache
