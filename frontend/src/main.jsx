@@ -27,7 +27,7 @@ import {
 
 // Import utilities for development only
 if (import.meta.env.DEV) {
-  import('./utils/clearUniverseCache.mjs');
+  import('./utils/clearUniverseCache.jsx');
 }
 
 // Ensure modal system is properly initialized
