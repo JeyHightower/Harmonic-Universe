@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { IS_PRODUCTION } from '../../utils/config.mjs';
+import { IS_PRODUCTION } from '../../utils/config.jsx';
 import {
   createCharacter,
   deleteCharacter,

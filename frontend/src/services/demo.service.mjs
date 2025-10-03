@@ -1,4 +1,4 @@
-import { AUTH_CONFIG } from '../utils/config.mjs';
+import { AUTH_CONFIG } from '../utils/config.jsx';
 import { authEndpoints } from './endpoints';
 import { httpClient } from './http-client';
 

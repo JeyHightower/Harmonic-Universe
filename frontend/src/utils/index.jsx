@@ -35,4 +35,4 @@ export {
 export * from './visualizerUtils';
 
 // Dynamic Import Helper
-export { loadComponent } from './dynamic-import.jsx';
+// export { loadComponent } from './dynamic-import.jsx';

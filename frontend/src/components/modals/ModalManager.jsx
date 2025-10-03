@@ -50,7 +50,7 @@ const ModalManager = () => {
     const loadAsyncComponent = async () => {
       try {
         const { getModalComponent } = await import(
-          /* @vite-ignore */ '../../utils/modalRegistry.mjs'
+          /* @vite-ignore */ '../../utils/modalRegistry.jsx'
         );
         const asyncComponent = await getModalComponent(type);
         if (asyncComponent) {

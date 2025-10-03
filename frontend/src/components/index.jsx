@@ -2,7 +2,7 @@
 // Auth Components
 
 // Navigation Components
-export * from "./navigation/index.mjs";
+export * from "./navigation/index.jsx";
 
 // Common Components
 export { default as Button } from "./common/Button.jsx";
@@ -15,7 +15,7 @@ export { default as Spinner } from "./common/Spinner.jsx";
 export { default as Tooltip } from "./common/Tooltip.jsx";
 
 // Error Components
-export * from "./error/index.mjs";
+export * from "./error/index.jsx";
 
 // Audio Components
 export { default as AudioButton } from "./audio/AudioButton.jsx";

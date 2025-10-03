@@ -2,7 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiClient } from '../../services/api.adapter.mjs';
 import { demoService } from '../../services/demo.service.mjs';
 import { requestWithRetry } from '../../utils/apiUtils';
-import { IS_PRODUCTION } from '../../utils/config.mjs';
+import { IS_PRODUCTION } from '../../utils/config.jsx';
 
 // Storage key for character cache
 const CHARACTER_CACHE_KEY = 'harmonic_universe_character_cache';

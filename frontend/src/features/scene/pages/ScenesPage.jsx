@@ -28,7 +28,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
 import { useModalState } from '../../../hooks/useModalState';
-import { apiClient, endpoints } from '../../../services';
+import { apiClient, endpoints } from '../../../services/api.adapter.mjs';
 import { deleteSceneAndRefresh, fetchScenes } from '../../../store/thunks/scenesThunks';
 
 // Create a wrapper component that handles redirection logic

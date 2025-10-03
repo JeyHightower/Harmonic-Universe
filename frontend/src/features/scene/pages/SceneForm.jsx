@@ -20,7 +20,7 @@ import dayjs from 'dayjs';
 import moment from 'moment';
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useState } from 'react';
-import useUniverseCharacters from '../../../hooks/useUniverseCharacters.js';
+import useUniverseCharacters from '../../../hooks/useUniverseCharacters.mjs';
 import { apiClient } from '../../../services/api.adapter.mjs';
 import { CharacterSelector } from '../../character';
 

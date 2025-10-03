@@ -1,7 +1,7 @@
 import { Modal } from 'antd';
 import PropTypes from 'prop-types';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ensurePortalRoot } from '../../utils/portalUtils.mjs';
+import { ensurePortalRoot } from '../../utils/portalUtils.jsx';
 import './Modal.css';
 
 /**

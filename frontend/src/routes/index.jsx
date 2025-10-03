@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/layout/Layout.jsx';
 import ProtectedRoute from '../components/routing/ProtectedRoute.jsx';
-import { ROUTES } from '../utils/routes.mjs';
+import { ROUTES } from '../utils/routes.jsx';
 
 // Shared loading component
 const LoadingFallback = ({ message = 'Loading...' }) => (

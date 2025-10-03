@@ -3,7 +3,7 @@
  * Common utilities for handling API responses
  */
 
-import { log } from '../utils/logger.mjs';
+import { log } from '../utils/logger.jsx';
 
 /**
  * Handle successful API responses

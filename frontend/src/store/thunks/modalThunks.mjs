@@ -5,7 +5,7 @@ import {
     cleanupAllPortals,
     ensurePortalRoot,
     forceModalInteractivity
-} from '../../utils/portalUtils.mjs';
+} from '../../utils/portalUtils.jsx';
 
 /**
  * Thunk to initialize the modal portal system

@@ -4,7 +4,7 @@
  * This file exports configuration settings for API services
  */
 
-import { AUTH_CONFIG, IS_PRODUCTION } from '../utils/config.mjs';
+import { AUTH_CONFIG, IS_PRODUCTION } from '../utils/config.jsx';
 
 // API Base URL determination
 const getApiBaseUrl = () => {

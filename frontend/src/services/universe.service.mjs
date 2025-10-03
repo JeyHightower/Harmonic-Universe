@@ -3,7 +3,7 @@
  * Handles operations related to universes in the application
  */
 
-import { AUTH_CONFIG } from '../utils/config.mjs';
+import { AUTH_CONFIG } from '../utils/config.jsx';
 import { demoService } from './demo.service.mjs';
 import { universeEndpoints } from './endpoints.mjs';
 import { httpClient } from './http-client.mjs';

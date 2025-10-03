@@ -4,8 +4,8 @@
  */
 
 import axios from 'axios';
-import { API_CONFIG, AUTH_CONFIG } from '../utils/config.mjs';
-import { log } from '../utils/logger.mjs';
+import { API_CONFIG, AUTH_CONFIG } from '../utils/config.jsx';
+import { log } from '../utils/logger.jsx';
 import { API_SERVICE_CONFIG } from './config.mjs';
 
 let isRefreshing = false;

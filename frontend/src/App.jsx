@@ -5,12 +5,12 @@ import { authService } from './services/auth.service.mjs';
 import { checkAuthState, logoutThunk } from './store/thunks/authThunks';
 import './styles'; // Import all styles
 import { AUTH_CONFIG } from './utils';
-import { fixModalZIndex, resetModalSystem } from './utils/modalUtils.mjs';
-import { cleanupAllPortals, ensurePortalRoot } from './utils/portalUtils.mjs';
+import { fixModalZIndex, resetModalSystem } from './utils/modalUtils.jsx';
+import { cleanupAllPortals, ensurePortalRoot } from './utils/portalUtils.jsx';
 // Import modal debugging utilities in development
-import { setupModalDebugging } from './utils/modalDebug.mjs';
+import { setupModalDebugging } from './utils/modalDebug.jsx';
 // Import the safer interaction fixes
-import { applyEssentialFixes, setupAutoFix } from './utils/interactionFixes.mjs';
+import { applyEssentialFixes, setupAutoFix } from './utils/interactionFixes.jsx';
 
 const ModalManager = lazy(() => import('./components/modals/ModalManager.jsx'));
 

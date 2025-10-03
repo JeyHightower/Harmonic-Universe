@@ -7,7 +7,7 @@ import {
   showUnlockButton,
   unlockAttempted,
 } from '../store/slices/audioSlice.mjs';
-import audioManager, { AudioErrorCode } from '../utils/audioManager.mjs';
+import audioManager, { AudioErrorCode } from '../utils/audioManager.jsx';
 
 // Create a shared initialization tracker across hook instances
 let globalInitAttemptInProgress = false;

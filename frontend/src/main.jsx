@@ -18,7 +18,7 @@ import './styles/reset.css'; // First: Reset browser defaults
 import './styles/theme.css'; // Third: Define theme variables
 import './styles/variables.css'; // Second: Define CSS variables
 import { AUTH_CONFIG, ensurePortalRoot } from './utils';
-import { ROUTER_FUTURE_FLAGS } from './utils/ensure-router-provider.mjs';
+import { ROUTER_FUTURE_FLAGS } from './utils/ensure-router-provider.jsx';
 import {
   applyModalFixes,
   fixModalFormElements,

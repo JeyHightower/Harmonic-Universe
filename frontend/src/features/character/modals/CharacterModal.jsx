@@ -27,7 +27,8 @@ import {
   updateCharacter,
 } from '../../../store/thunks/characterThunks';
 import { fetchScenes } from '../../../store/thunks/scenesThunks';
-import { cache, getCharacterWithRetry } from '../../../utils';
+import { getCharacterWithRetry } from '../../../utils/apiUtils.jsx';
+import { cache } from '../../../utils/cache.jsx';
 
 // Cache constants for characters and scenes
 const CHARACTER_CACHE_KEY = 'character_cache';

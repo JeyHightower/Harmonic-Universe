@@ -22,7 +22,8 @@ import { useNavigate } from 'react-router-dom';
 import { UniverseCard } from '../../universe';
 const UniverseModal = lazy(() => import('../../universe/modals/UniverseModal'));
 
-import { authService, demoService } from '../../../services';
+import { demoService } from '../../../services/demo.service.mjs';
+import { authService } from '../../../services/auth.service.mjs'
 import { clearError } from '../../../store/slices/universeSlice.mjs';
 import { logoutThunk } from '../../../store/thunks/authThunks';
 import {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_CONFIG, AUTH_CONFIG } from './config.mjs';
+import { API_CONFIG, AUTH_CONFIG } from './config.jsx';
 
 // Keep track of the last request time for specific endpoints
 const lastRequestTimes = {};
@@ -7,7 +7,7 @@ const MIN_REQUEST_INTERVAL = 1000; // 1 second minimum between requests to the s
 
 /**
  * Makes a rate-limited API request by ensuring minimum time between requests to the same endpoint
- * 
+ *
  * @param {Function} requestFn - Function that returns a promise to make the request
  * @param {string} endpointKey - Key to identify the endpoint (for rate limiting)
  * @returns {Promise} - Promise that resolves with the response
@@ -143,7 +143,7 @@ export const requestWithRetry = async (config, maxRetries = 3, baseDelay = 1000)
 
 /**
  * Helper function to get a character with retry logic
- * 
+ *
  * @param {string|number} characterId - The ID of the character to fetch
  * @returns {Promise} - Promise with the character data
  */
@@ -176,7 +176,7 @@ export const getCharacterWithRetry = async (characterId) => {
 
 /**
  * Get all characters with retry logic
- * 
+ *
  * @returns {Promise} - Promise with the characters data
  */
 export const getAllCharactersWithRetry = async () => {
@@ -219,4 +219,4 @@ export default {
   getCharacterWithRetry,
   getAllCharactersWithRetry,
   rateLimitedRequest
-}; 
+};

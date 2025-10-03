@@ -2,8 +2,8 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api.adapter';
 import { authService } from '../../services/auth.service.mjs';
 import { demoService } from '../../services/demo.service.mjs';
-import { AUTH_CONFIG } from '../../utils/config.mjs';
-import { handleError } from '../../utils/error.mjs';
+import { AUTH_CONFIG } from '../../utils/config.jsx';
+import { handleError } from '../../utils/error.jsx';
 import {
   loginFailure,
   loginStart,

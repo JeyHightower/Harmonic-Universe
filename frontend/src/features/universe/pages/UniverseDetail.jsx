@@ -2,8 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../../components/common';
-import { useModalState } from '../../../hooks';
-import { demoService } from '../../../services';
+import { useModalState } from '../../../hooks/useModalState.mjs';
+import { demoService } from '../../../services/demo.service.mjs';
 import {
   createSceneAndRefresh,
   deleteSceneAndRefresh,

@@ -1,7 +1,6 @@
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
-import copyReactFixesPlugin from './src/utils/vite-plugins/copy-react-fixes.mjs';
 
 // Detect environment
 const isProd =
@@ -12,7 +11,7 @@ const isDebug = import.meta?.env?.DEBUG || process.env.DEBUG || process.env.VITE
 
 // Configure Vite
 export default defineConfig({
-  plugins: [react(), copyReactFixesPlugin()],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
