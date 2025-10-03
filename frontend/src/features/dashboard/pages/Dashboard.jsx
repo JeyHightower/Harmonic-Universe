@@ -22,8 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { UniverseCard } from '../../universe';
 const UniverseModal = lazy(() => import('../../universe/modals/UniverseModal'));
 
-import { authService } from '../../../services/auth.service.mjs';
-import { demoService } from '../../../services/demo.service.mjs';
+import { authService, demoService } from '../../../services';
 import { clearError } from '../../../store/slices/universeSlice.mjs';
 import { logoutThunk } from '../../../store/thunks/authThunks';
 import {
@@ -124,7 +123,9 @@ const Dashboard = () => {
       console.warn('Server error detected (500), showing error UI');
       setConnectionError(true);
       if (retryCountRef.current < maxRetries) {
-        console.log(`Dashboard - Scheduling automatic retry ${retryCountRef.current + 1} of ${maxRetries}`);
+        console.log(
+          `Dashboard - Scheduling automatic retry ${retryCountRef.current + 1} of ${maxRetries}`
+        );
         retryCountRef.current += 1;
         setTimeout(() => {
           console.log('Dashboard - Executing scheduled retry');
@@ -200,20 +201,23 @@ const Dashboard = () => {
   };
 
   const closeModal = (prev) => {
-     setModalState ((prev) => ({ ...prev, isCreateModalOpen: false, isEditModalOpen: false, isViewModalOpen: false,isDeleteModalOpen: false }))
-
+    setModalState((prev) => ({
+      ...prev,
+      isCreateModalOpen: false,
+      isEditModalOpen: false,
+      isViewModalOpen: false,
+      isDeleteModalOpen: false,
+    }));
   };
 
   const handleViewUniverse = (universe) => {
-    setSelectedUniverse(universe)
+    setSelectedUniverse(universe);
     if (universe && universe.id) {
       setNewUniverseId(universe.id);
-       setModalState((prev) => ({ ...prev, isViewModalOpen: true }))
+      setModalState((prev) => ({ ...prev, isViewModalOpen: true }));
     }
-    closeModal(setModalState((prev) => ({ ...prev, isViewModalOpen: false})));
-  }
-
-
+    closeModal(setModalState((prev) => ({ ...prev, isViewModalOpen: false })));
+  };
 
   const handleCreateSuccess = (universe) => {
     console.log('Dashboard - Create success with universe:', universe);
@@ -258,12 +262,6 @@ const Dashboard = () => {
       }
     }
   };
-
-
-
-
-
-
 
   const getSortedUniverses = () => {
     if (!universes || !Array.isArray(universes)) {
@@ -628,7 +626,9 @@ const Dashboard = () => {
               </Typography>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setModalState((prev) => ({ ...prev, isDeleteModalOpen: false }))}>
+              <Button
+                onClick={() => setModalState((prev) => ({ ...prev, isDeleteModalOpen: false }))}
+              >
                 Cancel
               </Button>
               <Button onClick={handleConfirmDelete} color="error">

@@ -26,8 +26,9 @@ import PropTypes from 'prop-types';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apiClient } from '../../../services/api.adapter.mjs';
-import { safeId } from '../../../services/endpoints.mjs';
+import { MODAL_TYPES } from '../../../constants/modalTypes';
+import { useModalState } from '../../../hooks/useModalState';
+import { apiClient, endpoints } from '../../../services';
 import { deleteSceneAndRefresh, fetchScenes } from '../../../store/thunks/scenesThunks';
 
 // Create a wrapper component that handles redirection logic
@@ -67,7 +68,7 @@ const ScenesPageWrapper = () => {
 
     // Comprehensive validation check for universeId using safeId utility
     try {
-      const safeUniverseId = safeId(universeId);
+      const safeUniverseId = endpoints.safeId(universeId);
 
       // Check if safeId returned null (invalid id) or if it's not a positive number
       const isValidUniverseId =
@@ -162,7 +163,7 @@ const ScenesPageContent = ({ universeId }) => {
   useEffect(() => {
     try {
       // Use the safeId utility to validate and normalize the universeId
-      const validatedId = safeId(universeId);
+      const validatedId = endpoints.safeId(universeId);
 
       // Check if the ID is valid (not null and is a positive number or valid string)
       const isValid =

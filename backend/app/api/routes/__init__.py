@@ -10,7 +10,7 @@ from .user import user_bp
 from .modal import modal_bp
 from .notes import notes_bp
 from .characters import characters_bp
-from .scenes import scenes_bp  # Import from scenes/__init__.py instead of scenes.py
+from .scenes import scenes_bp
 
 # Register blueprints with correct prefixes
 api_bp.register_blueprint(auth_bp, url_prefix='/auth')

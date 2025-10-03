@@ -8,12 +8,10 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import Button from '../../../components/common/Button.jsx';
-import Icon from '../../../components/common/Icon.jsx';
-import Spinner from '../../../components/common/Spinner.jsx';
+import { Button, Icon, Spinner } from '../../../components/common';
 import { MODAL_TYPES } from '../../../constants/modalTypes';
 import { useModalState } from '../../../hooks/useModalState';
-import api from '../../../services/api.adapter';
+import { default as apiClient } from '../../../services/api.adapter.mjs';
 import { fetchUniverses } from '../../../store/thunks/universeThunks';
 import '../styles/Universe.css';
 
@@ -78,7 +76,7 @@ const UniverseManager = () => {
       message: `Are you sure you want to delete "${universe.name}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          await api.deleteUniverse(universe.id);
+          await apiClient.deleteUniverse(universe.id);
           handleModalSuccess(universe, 'delete');
         } catch (error) {
           console.error('Error deleting universe:', error);

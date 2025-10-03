@@ -1,16 +1,16 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import Button from '../../../components/common/Button';
-import useModalState from '../../../hooks/useModalState';
-import { demoService } from '../../../services/demo.service.mjs';
+import { Button } from '../../../components/common';
+import { useModalState } from '../../../hooks';
+import { demoService } from '../../../services';
 import {
   createSceneAndRefresh,
   deleteSceneAndRefresh,
   fetchScenesForUniverse,
 } from '../../../store/thunks/scenesThunks';
 import { fetchUniverseById } from '../../../store/thunks/universeThunks';
-import { AUTH_CONFIG } from '../../../utils/config.mjs';
+import { AUTH_CONFIG } from '../../../utils';
 import '../styles/Universe.css';
 
 const UniverseModal = lazy(() => import('../modals/UniverseModal'));
@@ -31,6 +31,7 @@ const UniverseDetail = () => {
   const { scenes, loading: scenesLoading } = useSelector((state) => state.scenes);
 
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'details');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { open: openModal, close: closeModal } = useModalState();
 
   // Utility function to clear all auth data
