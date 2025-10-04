@@ -3,7 +3,7 @@
  * Centralized error handling and reporting service
  */
 
-import { API_CONFIG } from '../utils/config.mjs';
+import { API_CONFIG } from '../utils/config.jsx';
 
 /**
  * Log an error to the console and optionally to a remote service

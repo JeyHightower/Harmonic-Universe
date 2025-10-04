@@ -17,6 +17,8 @@ export { useNetworkError } from './useNetworkError.mjs';
 export { usePaymentError } from './usePaymentError.mjs';
 export { default as useUniverseCharacters } from './useUniverseCharacters.mjs';
 export { useWebSocketError } from './useWebSocketError.mjs';
+export { useModalFixes } from './useModalFixes.mjs';
+export { useAuthInit } from './useAuthInit.jsx';
 
 
 
