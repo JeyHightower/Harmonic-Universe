@@ -4,14 +4,16 @@ import errorService from '../services/error.service.mjs';
 /**
  * Custom hook for handling network errors consistently across the application
  */
-export function useNetworkError({
-  context,
+export function useNetworkError(options = {}) {
+  const {
+  context = 'default',
   onError,
   onOffline,
   onOnline,
   retryCount = 3,
   retryDelay = 1000,
-}) {
+} = options;
+
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [retryAttempts, setRetryAttempts] = useState(0);
 

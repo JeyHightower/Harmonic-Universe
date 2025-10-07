@@ -7,7 +7,13 @@ const { setTimeout } = window;
 /**
  * Custom hook for handling API errors consistently across the application
  */
-export function useApiError({ context, onError, retryCount = 3, retryDelay = 1000 }) {
+export function useApiError(options = {}){
+
+  const {context = 'default',
+     onError,
+     retryCount = 3,
+     retryDelay = 1000 } = options;
+
   const handleError = useCallback(
     async (error, retryFn) => {
       // Create a standardized error object
