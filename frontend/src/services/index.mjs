@@ -61,5 +61,6 @@ export {
   userService,
 };
 
+export { resetAuth } from './auth.service.mjs'
 // Export the consolidated service
 export default apiService;

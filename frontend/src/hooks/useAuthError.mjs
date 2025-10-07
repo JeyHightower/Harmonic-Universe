@@ -1,9 +1,8 @@
 import { useCallback } from 'react';
-
+import ErrorService from '../services/error.service.mjs'
 // Safe import for errorService (fallback if file doesn't exist yet)
 let errorService;
 try {
-  errorService = require('../services/error.service.mjs').default;  // Assuming default export
 } catch (importError) {
   console.warn('[useAuthError] errorService not found - falling back to console logging:', importError);
   errorService = {
