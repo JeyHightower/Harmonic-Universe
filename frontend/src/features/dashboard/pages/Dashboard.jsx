@@ -36,6 +36,7 @@ import { AUTH_CONFIG } from '../../../utils/config';
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
   const { universes, loading: universesLoading, error } = useSelector((state) => state.universes);
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [modalState, setModalState] = useState({
