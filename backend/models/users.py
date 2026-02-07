@@ -1,7 +1,7 @@
 from . import db, users_universes
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import datetime
 
