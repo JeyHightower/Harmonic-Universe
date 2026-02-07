@@ -1,3 +1,4 @@
 node_modules
 backend/.harmonic-env
 **/.env
+**/__pycache__/
