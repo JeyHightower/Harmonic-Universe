@@ -63,7 +63,9 @@ def session_check():
         return jsonify({
             'Message': 'User not found'
         }), 404
-    return jsonify(user.to_dict()), 200
+    return jsonify({
+        'Message': 'Session found.',
+        'user':user.to_dict()}), 200
 
 
 
