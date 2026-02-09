@@ -16,11 +16,18 @@ class Universe(db.Model):
     members: Mapped[List['User']] = relationship(secondary='users_universes', back_populates='universes')
 
 
-    def to_dict(self):
-        return {
+    def to_dict(self, summary = True):
+        data = {
             'universe_id': self.universe_id,
             'name': self.name,
-            'description': self.description,
-            'alignment': self.alignment.value if self.alignment else None
+            'alignment': self.alignment.value if self.alignment else None,
+            'members_count': len(self.members)
         }
+        if not summary:
+            data['description']=self.description
+            data['created_at']=self.created_at.isoformat()
+            data['members']=[m.name for m in self.members]
+        
+        return data
+        
 

@@ -5,3 +5,5 @@ class AlignmentType(enum.Enum):
     GOOD = 'good'
     BAD = 'bad'
     NEUTRAL = 'neutral'
+    CHAOTIC  = 'chaotic'
+    LAWFUL = 'lawful'

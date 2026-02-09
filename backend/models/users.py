@@ -1,9 +1,11 @@
 from . import db, users_universes
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy import String
-from flask_bcrypt import generate_password_hash, check_password_hash
+from flask_bcrypt import generate_password_hash, check_password_hash, Bcrypt
 from flask_login import UserMixin
 from datetime import datetime
+
+bcrypt = Bcrypt()
 
 
 class User(db.Model, UserMixin):
@@ -12,7 +14,7 @@ class User(db.Model, UserMixin):
     user_id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     username: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
-    email: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
+    _email: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
     _hashed_password: Mapped[str] = mapped_column(String(250), nullable=False)
     bio: Mapped[str] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
@@ -20,23 +22,58 @@ class User(db.Model, UserMixin):
     universes: Mapped[List['Universe']] = relationship(secondary='users_universes', back_populates='members')
     
     @property
-    def password(self):
+    def password(self) -> str:
         raise AttributeError('Password is not a readable attribute')
     
     @password.setter
     def password(self, password):
-        self._hashed_password = generate_password_hash(password)
+        self._hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def check_password(self, password):
-        return check_password_hash(self._hashed_password, password)
+        return bcrypt.check_password_hash(self._hashed_password, password)
 
-    def to_dict(self):
-        return {
+    @property
+    def email(self):
+        return self._email
+
+    @email.setter
+    def email(self, value):
+        if '@' not in value:
+            raise  ValueError('Invalid Email')
+        parts = value.split('@')
+        if len(parts)  != 2 or "." not in parts[1]:
+            raise ValueError("Invalid Domain")
+        if len(parts[0]) <= 2:
+            raise ValueError("Email prefix is too short")
+        
+        self._email = value.lower().strip()
+
+
+    def to_dict(self, summary : bool = True) -> dict:
+        """        
+         Transforms the User model into a dictionary for Json responses. 
+         Flag 'summary' toggles between a light version and a full profile.
+        """
+
+        data = {  
             'user_id': self.user_id,
             'name': self.name,
             'username': self.username,
             'email': self.email,
-            'bio': self.bio,
-            'created_at': self.created_at.isoformat()
+            'universe_count': len(self.universes)
         }
 
+        if not summary:
+            data['bio']=self.bio
+            data['created_at']=self.created_at.isoformat()
+            data['universes']=[u.name for u in self.universes]
+        
+        return data
+        
+    @validates("name", "username" )
+    def user_validation(self, attribute, value):
+        if not value or len(value.strip() ) < 2:
+            raise ValueError(f"The {attribute} field is not long enough!!")
+        if attribute == "username":
+            return value.strip().lower()
+        return value.strip()
