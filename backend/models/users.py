@@ -80,3 +80,5 @@ class User(db.Model, UserMixin):
         if attribute == "username":
             return value.strip().lower()
         return value.strip()
+
+       

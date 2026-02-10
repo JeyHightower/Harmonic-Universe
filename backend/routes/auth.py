@@ -2,7 +2,7 @@
 from flask import session, Blueprint, request, jsonify
 from models import User, db
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
 @auth_bp.route('/register', methods=['POST'])

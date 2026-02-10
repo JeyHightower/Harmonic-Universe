@@ -10,7 +10,14 @@ app.config.from_object(Config)
 CORS(app)
 db.init_app(app)
 
-app.register_blueprint(auth_bp)
+all_blueprints = [
+    (auth_bp, '/auth'),
+    (universe_bp, '/universes')
+]
+
+for bp, prefix in all_blueprints:
+    app.register_blueprint(bp, url_prefix=prefix)
+
 
 if __name__ == '__main__':
     with app.app_context():
