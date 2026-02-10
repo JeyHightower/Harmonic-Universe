@@ -1,4 +1,6 @@
 node_modules
 backend/.harmonic-env
-**/.env
+**/.env/
+**/.harmonic-env/
 **/__pycache__/
+**/.py[cod]

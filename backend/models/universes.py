@@ -2,6 +2,7 @@ from . import db, AlignmentType, users_universes
 from datetime import datetime
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 from sqlalchemy import String
+from typing import List
 
 
 class Universe(db.Model):

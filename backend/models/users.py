@@ -4,6 +4,7 @@ from sqlalchemy import String
 from flask_bcrypt import generate_password_hash, check_password_hash, Bcrypt
 from flask_login import UserMixin
 from datetime import datetime
+from typing import List
 
 bcrypt = Bcrypt()
 
@@ -14,12 +15,14 @@ class User(db.Model, UserMixin):
     user_id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     username: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
-    _email: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
-    _hashed_password: Mapped[str] = mapped_column(String(250), nullable=False)
+    _email: Mapped[str] = mapped_column('email',String(200), nullable=False, unique=True)
+    _password: Mapped[str] = mapped_column('password',String(250), nullable=False)
     bio: Mapped[str] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    universes: Mapped[List['Universe']] = relationship(secondary='users_universes', back_populates='members')
+    universes: Mapped[List['Universe']] = relationship(
+        secondary='users_universes', 
+        back_populates='members')
     
     @property
     def password(self) -> str:
@@ -27,10 +30,10 @@ class User(db.Model, UserMixin):
     
     @password.setter
     def password(self, password):
-        self._hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        self._password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def check_password(self, password):
-        return bcrypt.check_password_hash(self._hashed_password, password)
+        return bcrypt.check_password_hash(self._password, password)
 
     @property
     def email(self):

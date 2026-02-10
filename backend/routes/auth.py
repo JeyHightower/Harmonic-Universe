@@ -1,19 +1,30 @@
 
+from flask import session, Blueprint, request, jsonify
+from models import User, db
 
-@app.route('/register', methods=['POST'])
+auth_bp = Blueprint('auth', __name__)
+
+
+@auth_bp.route('/register', methods=['POST'])
 def register():
     try:
         data : dict = request.json
 
         if not data:
             return jsonify({'message': 'Data is needed.'}), 400
+        
+        if User.query.filter_by(username=data.get('username')).first() or User.query.filter_by(_email=data.get('email') or "".lower()).first():
+            return jsonify({
+                'Message': 'User already exists'
+            }), 400
 
 
         new_user = User(
             name=data.get('name'),
             username=data.get('username'),
             email=data.get('email'),
-            password=data.get('password')
+            password=data.get('password'),
+            bio=data.get('bio')
         )
 
         db.session.add(new_user)
@@ -30,21 +41,39 @@ def register():
         return jsonify({'Message': str(e)}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({'Error': 'Registration Failed'}), 500
+        print(f"DEBUG ERROR: {e}")
+        return jsonify({'Error': 'Server Error'}), 500
 
 
-@app.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST'])
 def login():
     try:
         data = request.json
-        user = User.query.filter_by(username = data.get('username')).first() or User.query.filter_by(email = data.get('email')).first()
+        username=data.get('username') 
+        email=data.get('email')
+        password = data.get('password')
 
-        if not user or not user.check_password(data.get('password')):
+        if not password:
+            return jsonify({'Message': 'Password is required'}), 400
+
+        user = None
+        if not username and not email:
+            return jsonify({'Message': 'Username or Email is required'}), 400
+        elif not email and username:
+            user = User.query.filter_by(username=username.strip().lower()).first()
+        elif email and not username:
+            user = User.query.filter_by(_email=email.strip().lower()).first()
+        else:
+            user = User.query.filter_by(_email=email.strip().lower()).first()
+
+
+        if not user or not user.check_password(password):
             return jsonify({'Message': 'Invalid Credentials'}), 401
 
         session['user_id'] = user.user_id
-        return jsonify ({
-                'user': user.to_dict(),
+        # Remember to pass summary=False if you want to see the bio!
+        return jsonify({
+                'user': user.to_dict(summary=False),
                 'message': 'User successfully logged in'
                 }), 200
 
@@ -52,7 +81,7 @@ def login():
         return jsonify ({'Message': 'Error occured during login'}), 500
 
 
-@app.route('/session-check', methods=['GET'])
+@auth_bp.route('/session-check', methods=['GET'])
 def session_check():
     user_id = session.get('user_id')
 
@@ -69,10 +98,10 @@ def session_check():
 
 
 
-    @app.route('/logout', methods= ['DELETE'])
-    def logout():
-            session.pop('user_id', None)
-            return jsonify({
+@auth_bp.route('/logout', methods= ['DELETE'])
+def logout():
+    session.pop('user_id', None)
+    return jsonify({
                 'Message': 'Logout Successful'
             }), 200
     
