@@ -26,9 +26,8 @@ class Universe(db.Model):
         parts = value.strip().split()
         if len(parts) > 5:
             raise ValueError('Universe name must be less than 5 words')
-        for part in parts:
-            if len(part) >19:
-                raise ValueError('Each word in the universe name must be less than 20 characters')
+        if any (len(p) > 19 for p in parts) :
+            raise ValueError('Each word in the universe name must be less than 20 characters')
         return value.strip().upper()
 
     @property
