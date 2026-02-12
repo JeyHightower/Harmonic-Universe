@@ -1,7 +1,7 @@
 from . import db, AlignmentType, users_universes
 from datetime import datetime
 from sqlalchemy.orm import relationship, mapped_column, Mapped, validates
-from sqlalchemy import String
+from sqlalchemy import String, ForeignKey
 from typing import List
 
 
@@ -14,7 +14,8 @@ class Universe(db.Model):
     alignment: Mapped[AlignmentType] = mapped_column(db.Enum(AlignmentType), default=AlignmentType.NEUTRAL, nullable=False )
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    members: Mapped[List['User']] = relationship(secondary='users_universes', back_populates='universes')
+    owner_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False) 
+    owner: Mapped['User'] = relationship( back_populates='owned_universes')
 
     
     @validates('_name')
@@ -44,12 +45,12 @@ class Universe(db.Model):
             'universe_id': self.universe_id,
             'name': self.name,
             'alignment': self.alignment.value if self.alignment else None,
-            'members_count': len(self.members)
+            'owner_id': self.owner_id
         }
         if not summary:
             data['description']=self.description
             data['created_at']=self.created_at.isoformat()
-            data['members']=[m.name for m in self.members]
+            data['owner']=self.owner.username if self.owner else None
         
         return data
         

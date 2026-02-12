@@ -78,6 +78,7 @@ def login():
                 }), 200
 
     except Exception as e:
+        print(f'Error: {str(e)}')
         return jsonify ({'Message': 'Error occured during login'}), 500
 
 

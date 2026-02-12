@@ -15,7 +15,8 @@ def create_universe():
         new_universe = Universe(
             name = data.get('name'),
             description = data.get('description'),
-            alignment = data.get('alignment')
+            alignment = data.get('alignment'),
+            owner_id = data.get('owner_id')
             )
         
         db.session.add(new_universe)

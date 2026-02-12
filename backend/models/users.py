@@ -20,9 +20,7 @@ class User(db.Model, UserMixin):
     bio: Mapped[str] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    universes: Mapped[List['Universe']] = relationship(
-        secondary='users_universes', 
-        back_populates='members')
+    owned_universes: Mapped[List['Universe']] = relationship(back_populates='owner')
     
     @property
     def password(self) -> str:
@@ -63,13 +61,13 @@ class User(db.Model, UserMixin):
             'name': self.name,
             'username': self.username,
             'email': self.email,
-            'universe_count': len(self.universes)
+            'universe_count': len(self.owned_universes)
         }
 
         if not summary:
             data['bio']=self.bio
             data['created_at']=self.created_at.isoformat()
-            data['universes']=[u.name for u in self.universes]
+            data['universes']=[u.name for u in self.owned_universes]
         
         return data
         
