@@ -1,6 +1,6 @@
 from flask import jsonify, Blueprint, request
-from models import Universe, db
-
+from models import Universe, db, AlignmentType
+from sqlalchemy import select
 
 universe_bp = Blueprint('universe', __name__, url_prefix='/universes')
 
@@ -64,7 +64,7 @@ def get_universe(universe_id):
 
 
 
-@universe_bp.route('/<int:universe_id>', methods=['PATCH'])
+@universe_bp.route('/<int:universe_id>', methods=['PUT'])
 def update_universe(universe_id):
     universe = db.session.get(Universe, universe_id)
     if not universe:

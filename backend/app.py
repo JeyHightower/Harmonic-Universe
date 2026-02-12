@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from config import Config
 from models import db, User, Universe, users_universes, AlignmentType
-from routes import auth_bp
+from routes import auth_bp, universe_bp
 
 
 app = Flask(__name__)
