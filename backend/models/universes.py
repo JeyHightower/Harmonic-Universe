@@ -9,13 +9,15 @@ class Universe(db.Model):
     __tablename__ = 'universes'
 
     universe_id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False) 
     _name: Mapped[str] = mapped_column('name',String(100), nullable=False)
     description: Mapped[str] = mapped_column(String(300), nullable=True)
     alignment: Mapped[AlignmentType] = mapped_column(db.Enum(AlignmentType), default=AlignmentType.NEUTRAL, nullable=False )
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    owner_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False) 
-    owner: Mapped['User'] = relationship( back_populates='owned_universes')
+
+    owner: Mapped['User'] = relationship(back_populates='owned_universes')
+    characters: Mapped[List['Character']] = relationship(secondary = 'character_universes', back_populates='universes')
 
     
     @validates('_name')

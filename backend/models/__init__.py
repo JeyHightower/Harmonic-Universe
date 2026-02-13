@@ -5,9 +5,9 @@ db = SQLAlchemy()
 
 
 from .enums import AlignmentType
-from .associations import users_universes
+from .associations import character_universes
 from .users import User
 from .universes import Universe
-from .associations import users_universes
+from .characters import Character
 
-__all__ = ['db', 'User', 'Universe', 'AlignmentType']
+__all__ = ['db', 'User', 'Universe', 'AlignmentType', 'Character', 'character_universes']

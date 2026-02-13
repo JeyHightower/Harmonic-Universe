@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from config import Config
-from models import db, User, Universe, users_universes, AlignmentType
+from models import db, User, Universe, character_universes, AlignmentType, Character
 from routes import auth_bp, universe_bp
 
 
@@ -12,7 +12,8 @@ db.init_app(app)
 
 all_blueprints = [
     (auth_bp, '/auth'),
-    (universe_bp, '/universes')
+    (universe_bp, '/universes'),
+    (character_bp, '/characters')
 ]
 
 for bp, prefix in all_blueprints:

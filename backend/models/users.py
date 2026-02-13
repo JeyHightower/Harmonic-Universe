@@ -21,6 +21,7 @@ class User(db.Model, UserMixin):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     owned_universes: Mapped[List['Universe']] = relationship(back_populates='owner')
+    characters = Mapped[List['Character']] = relationship(back_populates='user')
     
     @property
     def password(self) -> str:
