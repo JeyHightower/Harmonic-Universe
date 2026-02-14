@@ -77,7 +77,7 @@ class User(db.Model, UserMixin):
         if not value or len(value.strip() ) < 2:
             raise ValueError(f"The {attribute} field is not long enough!!")
         if attribute == "username":
-            return value.strip().lower()
-        return value.strip()
+            return value.strip().capitalize()
+        return value.strip().capitalize()
 
        
