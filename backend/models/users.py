@@ -1,4 +1,4 @@
-from . import db, users_universes
+from . import db, character_universes
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy import String
 from flask_bcrypt import generate_password_hash, check_password_hash, Bcrypt
@@ -21,7 +21,7 @@ class User(db.Model, UserMixin):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     owned_universes: Mapped[List['Universe']] = relationship(back_populates='owner')
-    characters = Mapped[List['Character']] = relationship(back_populates='user')
+    created_characters: Mapped[List['Character']] = relationship(back_populates='creator')
     
     @property
     def password(self) -> str:
@@ -68,7 +68,8 @@ class User(db.Model, UserMixin):
 
         if not summary:
             data['bio'] = self.bio
-            data['universes'] = [u.name for u in self.owned_universes]
+            data['universes'] = [u.name for u in self.owned_universes] if self.owned_universes else []
+            data['universe_ids'] = [u.universe_id for u in self.owned_universes] if self.owned_universes else []
         
         return data
         

@@ -1,5 +1,8 @@
-
-
+from . import db
+from sqlalchemy.orm import mapped_column, Mapped, relationship, validates
+from sqlalchemy import ForeignKey, String, JSON
+from datetime import datetime
+from typing import List
 
 class Character(db.Model):
     __tablename__ = 'characters'
@@ -15,7 +18,7 @@ class Character(db.Model):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     universes: Mapped[List['Universe']] = relationship(secondary = 'character_universes', back_populates = 'characters')
-    user: Mapped['User'] = relationship(back_populates = 'characters')
+    creator: Mapped['User'] = relationship(back_populates = 'created_characters')
 
 
     @validates('skills', 'name', 'main_power_set', 'secondary_power_set', 'user_id')

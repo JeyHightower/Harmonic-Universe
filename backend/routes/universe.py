@@ -2,7 +2,7 @@ from flask import jsonify, Blueprint, request
 from models import Universe, db, AlignmentType
 from sqlalchemy import select
 
-universe_bp = Blueprint('universe', __name__, url_prefix='/universes')
+universe_bp = Blueprint('universes', __name__, url_prefix='/universes')
 
 @universe_bp.route('/', methods=['POST'])
 def create_universe():

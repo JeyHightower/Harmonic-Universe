@@ -13,7 +13,10 @@ def register():
         if not data:
             return jsonify({'message': 'Data is needed.'}), 400
         
-        if User.query.filter_by(username=data.get('username')).first() or User.query.filter_by(_email=data.get('email') or "".lower()).first():
+        email = data.get('email', '').strip().lower()
+        username = data.get('username', '').strip().lower()
+        
+        if User.query.filter_by(username=username).first() or User.query.filter_by(_email=email).first():
             return jsonify({
                 'Message': 'User already exists'
             }), 400

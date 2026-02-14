@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from config import Config
 from models import db, User, Universe, character_universes, AlignmentType, Character
-from routes import auth_bp, universe_bp
+from routes import auth_bp, universe_bp, character_bp
 
 
 app = Flask(__name__)
@@ -23,6 +23,6 @@ for bp, prefix in all_blueprints:
 if __name__ == '__main__':
     with app.app_context():
         # db.drop_all()
-        # db.create_all()
-        # print("Tables have been created!!")
+        db.create_all()
+        print("Tables have been created!!")
         app.run(debug=True)
