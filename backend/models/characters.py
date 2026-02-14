@@ -12,6 +12,7 @@ class Character(db.Model):
     main_power_set: Mapped[str] = mapped_column(String(100), nullable = False, unique = True)
     secondary_power_set: Mapped[str] = mapped_column(String(100), nullable = False, unique = True)
     skills: Mapped[List[str]] = mapped_column(JSON, nullable = False, default = 'list')
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     universes: Mapped[List['Universe']] = relationship(secondary = 'character_universes', back_populates = 'characters')
     user: Mapped['User'] = relationship(back_populates = 'characters')
@@ -57,13 +58,15 @@ class Character(db.Model):
         'user_id': self.user_id,
         'name': self.name,
         'age': self.age,
-        'main_power_set': self.main_power_set
+        'main_power_set': self.main_power_set,
+        'created_at': self.created_at.isoformat()
         }
 
         if not summary:
             data['origin'] = self.origin
             data['secondary_power_set'] = self.secondary_power_set
             data['skills'] = self.skills
+            data['universes']=[u.name for u in universes] if self.universes else []
 
         return data
 

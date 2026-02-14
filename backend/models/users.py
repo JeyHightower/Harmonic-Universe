@@ -62,13 +62,13 @@ class User(db.Model, UserMixin):
             'name': self.name,
             'username': self.username,
             'email': self.email,
-            'universe_count': len(self.owned_universes)
+            'universe_count': len(self.owned_universes),
+            'created_at': self.created_at.isoformat()
         }
 
         if not summary:
-            data['bio']=self.bio
-            data['created_at']=self.created_at.isoformat()
-            data['universes']=[u.name for u in self.owned_universes]
+            data['bio'] = self.bio
+            data['universes'] = [u.name for u in self.owned_universes]
         
         return data
         

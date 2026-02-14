@@ -47,12 +47,13 @@ class Universe(db.Model):
             'universe_id': self.universe_id,
             'name': self.name,
             'alignment': self.alignment.value if self.alignment else None,
-            'owner_id': self.owner_id
+            'owner_id': self.owner_id,
+            'created_at': self.created_at.isoformat()
         }
         if not summary:
-            data['description']=self.description
-            data['created_at']=self.created_at.isoformat()
-            data['owner']=self.owner.username if self.owner else None
+            data['description'] = self.description
+            data['owner'] = self.owner.username if self.owner else None
+            data['characters'] = [c.name for c in self.characters] if self.characters else []
         
         return data
         
