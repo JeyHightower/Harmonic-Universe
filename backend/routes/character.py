@@ -37,12 +37,12 @@ def create_character():
 
         if not data:
             return jsonify({
-                'Message': 'Data is needed'
+                'Message': 'Request body cannot be empty or invalid.'
             }), 400
 
         if not user:
             return jsonify({
-                'Message': 'User is required to create a character'
+                'Message': 'Authentication required.'
             }),  401
 
         owned_ids = get_owned_universe_ids(user)
@@ -106,4 +106,31 @@ def get_all_characters():
     }), 200
     
 
+@character_bp.route('/<int:character_id>')
+def get_character(character_id):
+    user = get_current_user()
+
+    if not user:
+        return jsonify({
+            'Message': 'Authentication required. '
+        }), 401
     
+    query = select(Character).where(Character.character_id == character_id, Character.user_id == user.user_id)
+    character = db.session.execute(query).scalars().first()
+
+    if not character:
+        return jsonify({
+            'Message': 'Character not found.'
+        }), 404
+
+    return jsonify({
+        'Message': f'Character with id of {character_id} has been found.',
+        'Character': character.to_dict()
+    }), 200
+
+
+
+@character_bp('/<int:character_id>', methods = ['PUT'])
+def update_character(character_id):
+    
+
