@@ -41,7 +41,7 @@ def register():
 
 
     except  ValueError as e:
-        return jsonify({'Message': str(e)}), 400
+        return print(f'Message:{e}'), 400
     except Exception as e:
         db.session.rollback()
         print(f"DEBUG ERROR: {e}")

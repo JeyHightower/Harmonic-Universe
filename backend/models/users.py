@@ -69,7 +69,7 @@ class User(db.Model, UserMixin):
         if not summary:
             data['bio'] = self.bio
             data['universes'] = [u.name for u in self.owned_universes] if self.owned_universes else []
-            data['universe_ids'] = [u.universe_id for u in self.owned_universes] if self.owned_universes else []
+            data['owned_universe_ids'] = [u.universe_id for u in self.owned_universes] if self.owned_universes else []
         
         return data
         
