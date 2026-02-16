@@ -27,6 +27,18 @@ def get_request_universe_ids():
         return []
     return data.get('universe_ids', [])
     
+def character_autherization(character_id):
+    user = get_current_user()
+    if not user:
+        return None
+    query = select(Character).where(
+        Character.user_id == user.user_id,
+        Character.character_id == character_id)
+    character =db.session.execute(query).scalars().first()
+    if not character:
+        return None
+    return character
+
 
 @character_bp.route('/', methods = ['POST'])
 def create_character():
@@ -115,7 +127,10 @@ def get_character(character_id):
             'Message': 'Authentication required. '
         }), 401
     
-    query = select(Character).where(Character.character_id == character_id, Character.user_id == user.user_id)
+    query = select(Character).where(
+        Character.character_id == character_id,
+        Character.user_id == user.user_id
+        )
     character = db.session.execute(query).scalars().first()
 
     if not character:
@@ -167,6 +182,15 @@ def update_character(character_id):
         character.secondary_power_set = data.get('secondary_power_set', character.secondary_power_set)
         character.skills = data.get('skills', character.skills)
 
+        if 'universe_ids' in data:
+            character.universes.clear()
+            owned_universe_ids = {u.universe_id for u in user.owned_universes}
+            for uid in data['universe_ids']:
+                if uid in owned_universe_ids:
+                    universe = next((u for u in u.owned_universes if u.universe_id == uid), None)
+                    if universe:
+                        character.universes.append(universe)
+
         db.session.commit()
 
         return jsonify({
@@ -179,4 +203,32 @@ def update_character(character_id):
         print(f'Error: {str(e)}')
         return jsonify({
             'Message': 'Server Error'
+        }), 500
+
+    
+@character_bp.route('/<int:character_id>', methods = ['DELETE'])
+def delete_character(character_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            'Message': 'Unauthorized.'
+        }), 401
+
+    character = character_autherization(character_id)
+    if not character:
+        return jsonify({
+            'Message': 'Character not found.'
+        }), 404
+    try:
+        db.session.delete(character)
+        db.session.commit()
+
+        return jsonify({
+            'Message': f'Character {character_id} has been deleted successfully.'
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error: {str(e)}')
+        return jsonify({
+            'Message': ' Error has occured.'
         }), 500
