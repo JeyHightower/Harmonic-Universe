@@ -130,7 +130,53 @@ def get_character(character_id):
 
 
 
-@character_bp('/<int:character_id>', methods = ['PUT'])
+@character_bp.route('/<int:character_id>', methods = ['PUT'])
 def update_character(character_id):
-    
+    try:
+        data = request.json
+        user = get_current_user()
 
+        if not user:
+            return jsonify ({
+                'Message': 'Authentication required.'
+            }), 401
+
+        universe_id = data.get('universe_id')
+
+        if not universe_id or not character_id:
+            return jsonify({
+                'Message': 'Authentication required data.'
+            }), 401
+
+        query = select(Character).where(
+            Character.user_id == user.user_id, 
+            Character.character_id == character_id
+            )
+
+        character = db.session.execute(query).scalars().first()
+
+        if not character:
+            return jsonify({
+                'Message': 'Character not found.'
+            }), 404
+
+        character.name = data.get('name', character.name)
+        character.age = data.get('age', character.age)
+        character.origin = data.get('origin', character.origin)
+        character.main_power_set = data.get('main_power_set', character.main_power_set)
+        character.secondary_power_set = data.get('secondary_power_set', character.secondary_power_set)
+        character.skills = data.get('skills', character.skills)
+
+        db.session.commit()
+
+        return jsonify({
+            'Message': 'Character has been successfully updated.',
+            'Character': character.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error: {str(e)}')
+        return jsonify({
+            'Message': 'Server Error'
+        }), 500
