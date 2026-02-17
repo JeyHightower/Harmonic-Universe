@@ -1,22 +1,29 @@
-from flask import jsonify, Blueprint, request
-from models import Universe, db, AlignmentType
+from flask import jsonify, Blueprint, request, abort
+from models import Universe, db, AlignmentType, get_current_user
 from sqlalchemy import select
+from utils import get_current_user, universe_authorization
 
 universe_bp = Blueprint('universes', __name__, url_prefix='/universes')
+
 
 @universe_bp.route('/', methods=['POST'])
 def create_universe():
     try:
-        data = request.get_json()
+        user = get_current_user
+        if not user:
+            return jsonify({
+                'Message': 'Unauthorized.'
+            }), 401
 
+        data = request.get_json()
         if not data:
             return jsonify({'Message': 'Data is required'}), 400
         
         new_universe = Universe(
+            owner_id = user.user_id,
             name = data.get('name'),
             description = data.get('description'),
-            alignment = data.get('alignment'),
-            owner_id = data.get('owner_id')
+            alignment = data.get('alignment')
             )
         
         db.session.add(new_universe)
@@ -36,8 +43,10 @@ def create_universe():
 
 @universe_bp.route('/', methods=['GET'])
 def get_all_universes():
+    user = get_current_user()
+    owner_id = user.user_id
 
-    query = select(Universe)
+    query = select(Universe).where(Universe.owner_id == owner_id)
     universes = db.session.execute(query).scalars().all()
 
     if not universes:
@@ -52,8 +61,13 @@ def get_all_universes():
 
 @universe_bp.route('/<int:universe_id>', methods=['GET'])
 def get_universe(universe_id):
-    universe = db.session.get(Universe, universe_id)
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            'Message':'Unauthorized.'
+        }), 401
 
+    universe = universe_authorization(universe_id)
     if not universe:
         return jsonify ({
             'Message': 'Universe not found.'
@@ -67,7 +81,13 @@ def get_universe(universe_id):
 
 @universe_bp.route('/<int:universe_id>', methods=['PUT'])
 def update_universe(universe_id):
-    universe = db.session.get(Universe, universe_id)
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            'Message': 'Autherization required.'
+        }), 401
+
+    universe = universe_authorization(universe_id)
     if not universe:
         return jsonify({
              'Message': 'Universe not found. '

@@ -2,7 +2,8 @@ from flask import Flask
 from flask_cors import CORS
 from config import Config
 from models import db, User, Universe, character_universes, AlignmentType, Character
-from routes import auth_bp, universe_bp, character_bp, get_current_user, get_owned_universe_ids, get_request_universe_ids, character_autherization
+from routes import auth_bp, universe_bp, character_bp
+from utils import get_current_user, get_owned_universe_ids, get_request_universe_ids, character_autherization
 
 
 app = Flask(__name__)
@@ -22,7 +23,12 @@ for bp, prefix in all_blueprints:
 
 if __name__ == '__main__':
     with app.app_context():
+        # db.session.execute(db.text('DROP TABLE IF EXISTS users_universes'))
+        # db.session.execute(db.text('DROP TABLE IF EXISTS character_universes'))
+        # db.session.execute(db.text('DROP TABLE IF EXISTS characters'))
+        # db.session.execute(db.text('DROP TABLE IF EXISTS universes'))
+        # db.session.execute(db.text('DROP TABLE IF EXISTS users'))
         # db.drop_all()
-        db.create_all()
-        print("Tables have been created!!")
+        # db.create_all()
+        # print("Tables have been created!!")
         app.run(debug=True)

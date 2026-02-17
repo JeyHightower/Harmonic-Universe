@@ -1,43 +1,10 @@
 from flask import jsonify, Blueprint, request
 from models import Character, db, Universe
 from sqlalchemy import select
+from utils import get_current_user, get_owned_universe_ids, get_request_universe_ids, character_autherization
 
 
 character_bp = Blueprint('characters', __name__, url_prefix='/characters')
-
-#! HELPER FUNCTIONS
-
-def get_current_user():
-    """Retrieves the current user."""
-    user_id = session.get('user_id')
-    if not user_id:
-        return None
-    return db.session.get(User, user_id)
-
-def get_owned_universe_ids(user):
-    """Returns set of universe IDs owned by the user."""
-    if not user or not hasattr(user, 'owned_universes'):
-        return set ()
-    return set (u.universe_id for u in user.owned_universes)
-
-def get_request_universe_ids():
-    """Returns list of universe IDs in the request"""
-    data = request.json
-    if not data:
-        return []
-    return data.get('universe_ids', [])
-    
-def character_autherization(character_id):
-    user = get_current_user()
-    if not user:
-        return None
-    query = select(Character).where(
-        Character.user_id == user.user_id,
-        Character.character_id == character_id)
-    character =db.session.execute(query).scalars().first()
-    if not character:
-        return None
-    return character
 
 
 @character_bp.route('/', methods = ['POST'])
@@ -73,7 +40,7 @@ def create_character():
             main_power_set = data.get('main_power_set'),
             secondary_power_set = data.get('secondary_power_set'),
             skills = data.get('skills', []),
-            owner_id = user.user_id
+            user_id = user.user_id
         )
 
         for uid in request_ids:
@@ -156,19 +123,7 @@ def update_character(character_id):
                 'Message': 'Authentication required.'
             }), 401
 
-        universe_id = data.get('universe_id')
-
-        if not universe_id or not character_id:
-            return jsonify({
-                'Message': 'Authentication required data.'
-            }), 401
-
-        query = select(Character).where(
-            Character.user_id == user.user_id, 
-            Character.character_id == character_id
-            )
-
-        character = db.session.execute(query).scalars().first()
+        character = character_autherization(character_id)
 
         if not character:
             return jsonify({
@@ -184,10 +139,11 @@ def update_character(character_id):
 
         if 'universe_ids' in data:
             character.universes.clear()
-            owned_universe_ids = {u.universe_id for u in user.owned_universes}
+            owned_universes = user.owned_universes
+            owned_universe_ids = {u.universe_id for u in owned_universes}
             for uid in data['universe_ids']:
                 if uid in owned_universe_ids:
-                    universe = next((u for u in u.owned_universes if u.universe_id == uid), None)
+                    universe = next((u for u in user.owned_universes if u.universe_id == uid), None)
                     if universe:
                         character.universes.append(universe)
 
