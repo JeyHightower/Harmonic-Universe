@@ -19,6 +19,7 @@ class Character(db.Model):
 
     universes: Mapped[List['Universe']] = relationship(secondary = 'character_universes', back_populates = 'characters')
     creator: Mapped['User'] = relationship(back_populates = 'created_characters')
+    notes: Mapped[List['Note']] = relationship(secondary = 'character_notes', back_populates = 'characters')
 
 
     @validates('skills', 'name', 'main_power_set', 'secondary_power_set', 'user_id')

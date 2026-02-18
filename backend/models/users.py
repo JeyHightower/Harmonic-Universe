@@ -22,6 +22,7 @@ class User(db.Model, UserMixin):
 
     owned_universes: Mapped[List['Universe']] = relationship(back_populates='owner')
     created_characters: Mapped[List['Character']] = relationship(back_populates='creator')
+    notes: Mapped[List['Note']] = relationship(back_populates = 'creator')
     
     @property
     def password(self) -> str:
