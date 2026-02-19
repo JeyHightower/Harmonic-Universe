@@ -9,7 +9,7 @@ class Note(db.Model):
     creator_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    characters: Mapped[List['Character']] = relatiopnsip(secondary = 'character_notes', back_populates = 'notes')
+    characters: Mapped[List['Character']] = relationship(secondary = 'character_notes', back_populates = 'notes')
     creator: Mapped['User'] = relationship(back_populates = 'notes')
 
 
@@ -34,7 +34,7 @@ class Note(db.Model):
             'title': self.title,
             'creator_id': self.creator_id,
             'created_at': self.created_at,
-            'characters': [c .name for c in self.characters] if self.characters else []
+            'characters': [c .to_dict(summary=True) for c in self.characters] if self.characters else []
         }
 
         if not summary:

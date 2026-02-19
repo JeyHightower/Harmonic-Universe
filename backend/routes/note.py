@@ -79,3 +79,25 @@ def get_all_notes():
         'Message': 'Notes have been found',
         'Notes': [ n.to_dict() for n in notes ]
     }), 200
+
+
+@note_bp.route('/<int:note_id>', methods = ['GET'])
+def get_note(note_id):
+    user = get_current_user()
+    if not user: 
+        return jsonify({
+            'Message': 'Authorization required.'
+        }), 401
+    query = select(Note).where(
+        Note.note_id == note_id,
+        Note.creator_id == user.user_id
+    ).options(selectinload(Note.characters))
+    note = db.session.execute(query).scalars().first()
+    if not note:
+        return jsonify({
+            'Message': 'Note not found.'
+        }), 404
+    return jsonify({
+        'Message': 'Note has been found.',
+        'Note': note.to_dict()
+    }), 200

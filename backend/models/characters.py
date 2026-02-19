@@ -35,9 +35,9 @@ class Character(db.Model):
             return stripped.capitalize()
         elif key =='main_power_set' or key == 'secondary_power_set':
             if not isinstance(value, str):
-                raise TypeError(f'{key.replace('_', ' ').capitalize()} must be a str.')
+                raise TypeError(f'{key.replace("_", " ").capitalize()} must be a str.')
             if len(value.strip()) < 3:
-                raise ValueError(f'{key.replace('_', ' ').capitalize()} cannot be less than 3 characters.')
+                raise ValueError(f'{key.replace("_", " ").capitalize()} cannot be less than 3 characters.')
             return value.strip().capitalize()
         elif key == 'skills':
             if not isinstance(value, list):
@@ -59,6 +59,7 @@ class Character(db.Model):
 
     def to_dict(self, summary = True):
         data = {
+        'character_id': self.character_id,
         'user_id': self.user_id,
         'name': self.name,
         'age': self.age,
@@ -70,7 +71,8 @@ class Character(db.Model):
             data['origin'] = self.origin
             data['secondary_power_set'] = self.secondary_power_set
             data['skills'] = self.skills
-            data['universes']=[u.name for u in universes] if self.universes else []
+            data['universes'] = [u.name for u in self.universes] if self.universes else []
+            data['notes'] = [n.title for n in self.notes] if self.notes else []
 
         return data
 

@@ -1,6 +1,8 @@
 
 from flask import session, Blueprint, request, jsonify
-from models import User, db
+from flask_jwt_extended import create_access_token, get_jwt, jwt_required
+from sqlalchemy import select
+from models import User, db, TokenBlocklist
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -32,16 +34,17 @@ def register():
 
         db.session.add(new_user)
         db.session.commit()
-        session['user_id'] = new_user.user_id  #!creates a session for the user!!
+        access_token = create_access_token(identity=new_user.user_id)
 
         return jsonify ({
             'Message': f"{new_user.username} with user id of {new_user.user_id} has been successfully created",
-            'User': new_user.to_dict()
+            'User': new_user.to_dict(),
+            'access_token': access_token
             }), 201
 
 
     except  ValueError as e:
-        return print(f'Message:{e}'), 400
+        return jsonify({f'Message:{e}'}), 400
     except Exception as e:
         db.session.rollback()
         print(f"DEBUG ERROR: {e}")
@@ -73,9 +76,10 @@ def login():
         if not user or not user.check_password(password):
             return jsonify({'Message': 'Invalid Credentials'}), 401
 
-        session['user_id'] = user.user_id
+        access_token = create_access_token(identify =user.user_id)
         # Remember to pass summary=False if you want to see the bio!
         return jsonify({
+                'access_token': access_token,
                 'user': user.to_dict(summary=False),
                 'message': 'User successfully logged in'
                 }), 200
@@ -85,12 +89,11 @@ def login():
         return jsonify ({'Message': 'Error occured during login'}), 500
 
 
-@auth_bp.route('/session-check', methods=['GET'])
-def session_check():
-    user_id = session.get('user_id')
+@auth_bp.route('/token-check', methods=['GET'])
+@jwt_required()
+def token_check():
+    user_id = get_jwt_identity()
 
-    if not user_id:
-        return jsonify({ 'error': 'No active session'}), 401
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({
@@ -103,10 +106,22 @@ def session_check():
 
 
 @auth_bp.route('/logout', methods= ['DELETE'])
+@jwt_required()
 def logout():
-    session.pop('user_id', None)
+    jti = get_jwt()["jti"]
+    blocked_token = TokenBlocklist(
+        jti = jti,
+        created_at = datetime.now(timezone.utc)
+    )
+    db.session.add(blocked_token)
+    db.session.commit()
     return jsonify({
                 'Message': 'Logout Successful'
             }), 200
     
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    token = db.session.scalar(select(TokenBlocklist).where(TokenBlocklist.jti == jti))
+    return token is not None
 

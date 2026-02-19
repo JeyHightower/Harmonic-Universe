@@ -10,6 +10,7 @@ from .users import User
 from .universes import Universe
 from .characters import Character
 from .notes import Note
+from .token_blocklist import TokenBlocklist
 from utils import get_current_user
 
 __all__ = ['db', 'User', 'Universe', 'AlignmentType', 'Character', 'character_universes', 'character_notes', 'Note']

@@ -1,11 +1,12 @@
 from flask import session, request, abort
+from flask_jwt_extended import get_jwt_identify
 from sqlalchemy import select
 from models import db, User, Character, Universe
 
 
 def get_current_user():
     """Retrieves the current user."""
-    user_id = session.get('user_id')
+    user_id = get_jwt_identity()
     if not user_id:
         return None
     return db.session.get(User, user_id)

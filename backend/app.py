@@ -1,13 +1,15 @@
 from flask import Flask
+from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from config import Config
-from models import db, User, Universe, character_universes, AlignmentType, Character
+from models import db, User, Universe, character_universes, AlignmentType, Character,TokenBlocklist
 from routes import auth_bp, universe_bp, character_bp
 from utils import get_current_user, get_owned_universe_ids, get_request_universe_ids, character_autherization
 
 
 app = Flask(__name__)
 app.config.from_object(Config)
+jwt = JWTManager(app)
 CORS(app)
 db.init_app(app)
 
