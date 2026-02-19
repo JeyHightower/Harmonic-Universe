@@ -14,7 +14,8 @@ db.init_app(app)
 all_blueprints = [
     (auth_bp, '/auth'),
     (universe_bp, '/universes'),
-    (character_bp, '/characters')
+    (character_bp, '/characters'),
+    (note_bp, '/notes')
 ]
 
 for bp, prefix in all_blueprints:

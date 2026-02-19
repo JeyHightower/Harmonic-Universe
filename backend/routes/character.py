@@ -73,7 +73,8 @@ def get_all_characters():
             'Message': 'User not found.'
         }), 404
     
-    characters = user.created_characters
+    query = select(Character). where(Character.user_id == user.user_id)
+    characters = db.session.execute(query).scalars().all()
     if not characters:
         return jsonify({
             'Message': 'No characters found.'
