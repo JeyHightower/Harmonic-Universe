@@ -1,7 +1,8 @@
 from flask import session, request, abort
 from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import select
-from models import db, User, Character, Universe
+from models import User, Character, Universe, TokenBlocklist
+from config import  jwt, db
 
 
 def get_current_user():
@@ -50,3 +51,9 @@ def universe_authorization(universe_id):
     if not universe:
         abort(403)
     return universe
+
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload.get("jti")
+    token = db.session.scalar(select(TokenBlocklist).where(TokenBlocklist.jti == jti))
+    return token is not None

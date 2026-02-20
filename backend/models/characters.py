@@ -1,4 +1,4 @@
-from . import db
+from config import db
 from sqlalchemy.orm import mapped_column, Mapped, relationship, validates
 from sqlalchemy import ForeignKey, String, JSON
 from datetime import datetime

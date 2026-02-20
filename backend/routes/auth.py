@@ -3,7 +3,8 @@ from flask import session, Blueprint, request, jsonify
 from datetime import datetime, timezone
 from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, jwt_required
 from sqlalchemy import select
-from models import User, db, TokenBlocklist
+from models import User, TokenBlocklist
+from config import db
 import time
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')

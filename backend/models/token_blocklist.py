@@ -1,7 +1,7 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
-from . import db
+from config import db
 
 class TokenBlocklist(db.Model):
     __tablename__ = 'token_blocklist'

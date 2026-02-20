@@ -1,5 +1,6 @@
 from flask import jsonify, Blueprint, request
-from models import Character, db, Universe
+from models import Character,Universe
+from config import db
 from sqlalchemy import select
 from utils import get_current_user, get_owned_universe_ids, get_request_universe_ids, character_autherization
 

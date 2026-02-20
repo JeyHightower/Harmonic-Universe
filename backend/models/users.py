@@ -1,4 +1,5 @@
-from . import db, character_universes
+from . import character_universes
+from config import db
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy import String
 from flask_bcrypt import generate_password_hash, check_password_hash, Bcrypt

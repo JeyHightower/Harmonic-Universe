@@ -1,5 +1,6 @@
 from flask import jsonify, Blueprint, request, abort
-from models import Universe, db, AlignmentType, get_current_user
+from models import Universe,AlignmentType, get_current_user
+from config import db
 from sqlalchemy import select
 from utils import get_current_user, universe_authorization
 

@@ -1,4 +1,5 @@
-from . import db, character_notes
+from config import db
+from . import character_notes
 from sqlalchemy.orm import mapped_column, relationship, validates, Mapped
 from sqlalchemy import String, Text, ForeignKey
 from datetime import datetime

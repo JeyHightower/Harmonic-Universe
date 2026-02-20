@@ -1,8 +1,12 @@
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
+from flask_jwt_extended import JWTManager
+from flask_sqlalchemy import  SQLAlchemy
 
 load_dotenv()
+db = SQLAlchemy()
+jwt = JWTManager()
 
 class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///harmonic.db'

@@ -1,7 +1,8 @@
 from flask import jsonify, request, Blueprint
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy import select
-from models import Character, db, Universe
+from models import Character, Universe
+from config import db
 from utils import get_current_user
 
 

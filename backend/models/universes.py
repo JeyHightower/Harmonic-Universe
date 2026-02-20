@@ -1,4 +1,5 @@
-from . import db, AlignmentType, character_universes
+from . import AlignmentType, character_universes
+from config import db
 from datetime import datetime
 from sqlalchemy.orm import relationship, mapped_column, Mapped, validates
 from sqlalchemy import String, ForeignKey
