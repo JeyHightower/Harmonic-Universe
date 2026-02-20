@@ -2,14 +2,23 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from config import Config
-from models import db, User, Universe, character_universes, AlignmentType, Character,TokenBlocklist
-from routes import auth_bp, universe_bp, character_bp
+from sqlalchemy import select
+from models import db, User, Universe, character_universes, AlignmentType, Character, TokenBlocklist
+from routes import auth_bp, universe_bp, character_bp, note_bp
 from utils import get_current_user, get_owned_universe_ids, get_request_universe_ids, character_autherization
 
 
 app = Flask(__name__)
 app.config.from_object(Config)
 jwt = JWTManager(app)
+
+
+# callback used to check if a JWT exists in the blocklist database
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload.get("jti")
+    token = db.session.scalar(select(TokenBlocklist).where(TokenBlocklist.jti == jti))
+    return token is not None
 CORS(app)
 db.init_app(app)
 
@@ -26,11 +35,9 @@ for bp, prefix in all_blueprints:
 
 if __name__ == '__main__':
     with app.app_context():
-        # db.session.execute(db.text('DROP TABLE IF EXISTS users_universes'))
-        # db.session.execute(db.text('DROP TABLE IF EXISTS character_universes'))
-        # db.session.execute(db.text('DROP TABLE IF EXISTS characters'))
-        # db.session.execute(db.text('DROP TABLE IF EXISTS universes'))
-        # db.session.execute(db.text('DROP TABLE IF EXISTS users'))
+        TokenBlocklist.query.delete()
+        db.session.commit()
+  
         # db.drop_all()
         # db.create_all()
         # print("Tables have been created!!")

@@ -1,4 +1,8 @@
-
+from . import db, character_notes
+from sqlalchemy.orm import mapped_column, relationship, validates, Mapped
+from sqlalchemy import String, Text, ForeignKey
+from datetime import datetime
+from typing import List
 
 class Note(db.Model):
     __tablename__ = 'notes'

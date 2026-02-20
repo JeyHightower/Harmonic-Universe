@@ -1,5 +1,5 @@
 from flask import session, request, abort
-from flask_jwt_extended import get_jwt_identify
+from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import select
 from models import db, User, Character, Universe
 

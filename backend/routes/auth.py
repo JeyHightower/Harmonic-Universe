@@ -1,8 +1,10 @@
 
 from flask import session, Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, get_jwt, jwt_required
+from datetime import datetime, timezone
+from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, jwt_required
 from sqlalchemy import select
 from models import User, db, TokenBlocklist
+import time
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -34,7 +36,10 @@ def register():
 
         db.session.add(new_user)
         db.session.commit()
-        access_token = create_access_token(identity=new_user.user_id)
+        access_token = create_access_token(
+            identity=str(new_user.user_id), 
+            additional_claims={"iat": time.time()}
+            )
 
         return jsonify ({
             'Message': f"{new_user.username} with user id of {new_user.user_id} has been successfully created",
@@ -76,7 +81,10 @@ def login():
         if not user or not user.check_password(password):
             return jsonify({'Message': 'Invalid Credentials'}), 401
 
-        access_token = create_access_token(identify =user.user_id)
+        access_token = create_access_token(
+            identity=str(user.user_id),
+            additional_claims={"iat": time.time()}
+            )
         # Remember to pass summary=False if you want to see the bio!
         return jsonify({
                 'access_token': access_token,
@@ -94,13 +102,13 @@ def login():
 def token_check():
     user_id = get_jwt_identity()
 
-    user = db.session.get(User, user_id)
+    user = db.session.get(User, int(user_id))
     if not user:
         return jsonify({
             'Message': 'User not found'
         }), 404
     return jsonify({
-        'Message': 'Session found.',
+        'Message': 'token still valid.',
         'user':user.to_dict()}), 200
 
 
@@ -108,20 +116,21 @@ def token_check():
 @auth_bp.route('/logout', methods= ['DELETE'])
 @jwt_required()
 def logout():
-    jti = get_jwt()["jti"]
-    blocked_token = TokenBlocklist(
-        jti = jti,
-        created_at = datetime.now(timezone.utc)
-    )
-    db.session.add(blocked_token)
-    db.session.commit()
-    return jsonify({
-                'Message': 'Logout Successful'
-            }), 200
+    try:
+        jti = get_jwt()["jti"]
+        blocked_token = TokenBlocklist(
+            jti = jti,
+            created_at = datetime.now(timezone.utc)
+        )
+        db.session.add(blocked_token)
+        db.session.commit()
+        return jsonify({
+                    'Message': 'Logout Successful'
+                }), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error: {str(e)}')
+        return jsonify({
+            'Message': 'Server Error.'
+        }), 500
     
-@jwt.token_in_blocklist_loader
-def check_if_token_revoked(jwt_header, jwt_payload):
-    jti = jwt_payload["jti"]
-    token = db.session.scalar(select(TokenBlocklist).where(TokenBlocklist.jti == jti))
-    return token is not None
-
