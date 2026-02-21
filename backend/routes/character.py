@@ -1,14 +1,16 @@
 from flask import jsonify, Blueprint, request
+from flask_jwt_extended import jwt_required
 from models import Character,Universe
 from config import db
 from sqlalchemy import select
-from utils import get_current_user, get_owned_universe_ids, get_request_universe_ids, character_autherization
+from utils import get_current_user, get_owned_universe_ids, get_request_universe_ids, character_authorization
 
 
 character_bp = Blueprint('characters', __name__, url_prefix='/characters')
 
 
 @character_bp.route('/', methods = ['POST'])
+@jwt_required()
 def create_character():
     """Creates a character."""
     try:
@@ -22,8 +24,8 @@ def create_character():
 
         if not user:
             return jsonify({
-                'Message': 'Authentication required.'
-            }),  401
+                'Message': 'User no longer exists.'
+            }),  404
 
         owned_ids = get_owned_universe_ids(user)
         request_ids = get_request_universe_ids()
@@ -59,13 +61,14 @@ def create_character():
     
     except Exception as e:
         db.session.rollback()
-        print (f'Error: str{e}')
+        print (f'Error: {str(e)}')
         return jsonify({
             'Message': 'Server Error'
         }), 500
 
     
 @character_bp.route('/', methods=['GET'])
+@jwt_required()
 def get_all_characters():
     
     user = get_current_user()
@@ -74,7 +77,10 @@ def get_all_characters():
             'Message': 'User not found.'
         }), 404
     
-    query = select(Character). where(Character.user_id == user.user_id)
+    query = select(Character). where(Character.user_id == user.user_id).options(
+        selectinload(Character.universes),
+        selectinload(Character.notes)
+    )
     characters = db.session.execute(query).scalars().all()
     if not characters:
         return jsonify({
@@ -88,13 +94,14 @@ def get_all_characters():
     
 
 @character_bp.route('/<int:character_id>')
+@jwt_required()
 def get_character(character_id):
     user = get_current_user()
 
     if not user:
         return jsonify({
-            'Message': 'Authentication required. '
-        }), 401
+            'Message': 'User not found. '
+        }), 404
     
     query = select(Character).where(
         Character.character_id == character_id,
@@ -104,7 +111,7 @@ def get_character(character_id):
 
     if not character:
         return jsonify({
-            'Message': 'Character not found.'
+            'Message': 'No Character found.'
         }), 404
 
     return jsonify({
@@ -115,17 +122,31 @@ def get_character(character_id):
 
 
 @character_bp.route('/<int:character_id>', methods = ['PUT'])
+@jwt_required()
 def update_character(character_id):
     try:
         data = request.json
         user = get_current_user()
 
+        if not data:
+            return jsonify({
+                'Message': 'Missing Json in request.'
+            }), 400
+
+        required_fields = ['name', 'main_power_set', 'secondary_power_set', 'skills']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({
+                'Error': 'Info needed to create a characer.',
+                'Missing_Fields': missing_fields
+            }), 400
+
         if not user:
             return jsonify ({
-                'Message': 'Authentication required.'
-            }), 401
+                'Message': 'User not found.'
+            }), 404
 
-        character = character_autherization(character_id)
+        character = character_authorization(character_id)
 
         if not character:
             return jsonify({
@@ -140,15 +161,18 @@ def update_character(character_id):
         character.skills = data.get('skills', character.skills)
 
         if 'universe_ids' in data:
-            character.universes.clear()
-            owned_universes = user.owned_universes
-            owned_universe_ids = {u.universe_id for u in owned_universes}
-            for uid in data['universe_ids']:
-                if uid in owned_universe_ids:
-                    universe = next((u for u in user.owned_universes if u.universe_id == uid), None)
-                    if universe:
-                        character.universes.append(universe)
-
+            uids = data['universe_ids']
+            query = select(Universe).where(
+                Universe.owner_id == user.user_id,
+                Universe.universe_id.in_(uids)
+            )
+            valid_universes = db.session.execute(query).scalars().all()
+            if len(valid_universes) != len(uids):
+                return jsonify({
+                    'Error': 'One or more universe IDs are invalid or unauthroized'
+                }), 403
+            
+            character.universes = valid_universes
         db.session.commit()
 
         return jsonify({
@@ -165,14 +189,15 @@ def update_character(character_id):
 
     
 @character_bp.route('/<int:character_id>', methods = ['DELETE'])
+@jwt_required()
 def delete_character(character_id):
     user = get_current_user()
     if not user:
         return jsonify({
-            'Message': 'Unauthorized.'
-        }), 401
+            'Message': 'User not found.'
+        }), 404
 
-    character = character_autherization(character_id)
+    character = character_authorization(character_id)
     if not character:
         return jsonify({
             'Message': 'Character not found.'

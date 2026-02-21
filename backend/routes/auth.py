@@ -38,8 +38,7 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         access_token = create_access_token(
-            identity=str(new_user.user_id), 
-            additional_claims={"iat": time.time()}
+            identity=str(new_user.user_id)
             )
 
         return jsonify ({
@@ -83,8 +82,7 @@ def login():
             return jsonify({'Message': 'Invalid Credentials'}), 401
 
         access_token = create_access_token(
-            identity=str(user.user_id),
-            additional_claims={"iat": time.time()}
+            identity=str(user.user_id)
             )
         # Remember to pass summary=False if you want to see the bio!
         return jsonify({
@@ -101,9 +99,9 @@ def login():
 @auth_bp.route('/token-check', methods=['GET'])
 @jwt_required()
 def token_check():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
-    user = db.session.get(User, int(user_id))
+    user = db.session.get(User, iuser_id)
     if not user:
         return jsonify({
             'Message': 'User not found'

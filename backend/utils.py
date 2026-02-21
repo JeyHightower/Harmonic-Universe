@@ -7,7 +7,7 @@ from config import  jwt, db
 
 def get_current_user():
     """Retrieves the current user."""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     if not user_id:
         return None
     return db.session.get(User, user_id)
@@ -25,13 +25,16 @@ def get_request_universe_ids():
         return []
     return data.get('universe_ids', [])
     
-def character_autherization(character_id):
+def character_authorization(character_id):
     user = get_current_user()
     if not user:
         return None
     query = select(Character).where(
         Character.user_id == user.user_id,
-        Character.character_id == character_id)
+        Character.character_id == character_id).options(
+            selectinload(Character.universes),
+            selectinload(Character.notes)
+        )
     character =db.session.execute(query).scalars().first()
     if not character:
         return None
