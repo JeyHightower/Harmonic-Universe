@@ -1,5 +1,6 @@
 from flask import jsonify, request, Blueprint
 from sqlalchemy.orm import joinedload, selectinload
+from flask_jwt_extended import jwt_required
 from sqlalchemy import select
 from models import Character, Universe
 from config import db
@@ -10,6 +11,7 @@ note_bp = Blueprint ('notes', __name__, url_prefix='/notes')
 
 
 @note_bp.route('/', methods = ['POST'])
+@jwt_required()
 def create_note():
 
     try:
@@ -60,6 +62,7 @@ def create_note():
 
 
 @note_bp.route('/', methods = ['GET'])
+@jwt_required()
 def get_all_notes():
     user = get_current_user()
     if not user:
@@ -83,6 +86,7 @@ def get_all_notes():
 
 
 @note_bp.route('/<int:note_id>', methods = ['GET'])
+@jwt_required()
 def get_note(note_id):
     user = get_current_user()
     if not user: 

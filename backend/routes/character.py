@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 from models import Character,Universe
 from config import db
 from sqlalchemy import select
-from utils import get_current_user, get_owned_universe_ids, get_request_universe_ids, character_authorization
+from utils import get_current_user, add_universes_to_character, character_with_authorization, validate_character_data, characters_with_authorization, execute_character_creation, execute_character_update
 
 
 character_bp = Blueprint('characters', __name__, url_prefix='/characters')
@@ -14,46 +14,26 @@ character_bp = Blueprint('characters', __name__, url_prefix='/characters')
 def create_character():
     """Creates a character."""
     try:
-        data = request.json
-        user = get_current_user()
-
+        data = request.json or {}
         if not data:
             return jsonify({
                 'Message': 'Request body cannot be empty or invalid.'
             }), 400
 
+        user = get_current_user()
         if not user:
             return jsonify({
-                'Message': 'User no longer exists.'
+                'Message': 'User can not be found.'
             }),  404
-
-        owned_ids = get_owned_universe_ids(user)
-        request_ids = get_request_universe_ids()
-
-        invalid_ids = [uid for uid in request_ids if  uid not in owned_ids] 
-        if invalid_ids:
-            return jsonify({
-                'Message': f'Unauthorized Universe:{invalid_ids}' 
-                })
         
-        new_character = Character(
-            name = data.get('name'),
-            age = data.get('age'), 
-            origin = data.get('origin'),
-            main_power_set = data.get('main_power_set'),
-            secondary_power_set = data.get('secondary_power_set'),
-            skills = data.get('skills', []),
-            user_id = user.user_id
-        )
+        is_valid, error_msg = validate_character_data(data)
+        if not is_valid:
+            return jsonify({
+                'Error': error_msg
+            }), 400
 
-        for uid in request_ids:
-            universe = next((u for u in user.owned_universes if u.universe_id == uid), None)
-            if universe:
-                new_character.universes.append(universe)
-
-        db.session.add(new_character)
+        new_character = execute_character_creation(data, user)
         db.session.commit()
-
         return jsonify ({
             'Message': 'Character successfully created',
             'Character': new_character.to_dict()
@@ -77,11 +57,7 @@ def get_all_characters():
             'Message': 'User not found.'
         }), 404
     
-    query = select(Character). where(Character.user_id == user.user_id).options(
-        selectinload(Character.universes),
-        selectinload(Character.notes)
-    )
-    characters = db.session.execute(query).scalars().all()
+    characters = characters_with_authorization(user)
     if not characters:
         return jsonify({
             'Message': 'No characters found.'
@@ -96,19 +72,14 @@ def get_all_characters():
 @character_bp.route('/<int:character_id>')
 @jwt_required()
 def get_character(character_id):
-    user = get_current_user()
 
+    user = get_current_user()
     if not user:
         return jsonify({
             'Message': 'User not found. '
         }), 404
-    
-    query = select(Character).where(
-        Character.character_id == character_id,
-        Character.user_id == user.user_id
-        )
-    character = db.session.execute(query).scalars().first()
 
+    character = character_with_authorization(user, character_id)
     if not character:
         return jsonify({
             'Message': 'No Character found.'
@@ -121,71 +92,43 @@ def get_character(character_id):
 
 
 
-@character_bp.route('/<int:character_id>', methods = ['PUT'])
+@character_bp.route('/<int:character_id>', methods = ['PATCH'])
 @jwt_required()
 def update_character(character_id):
+    data = request.json or {}
+    user = get_current_user()
+
+    is_valid, error_msg = validate_character_update_data(data)
+    if not is_valid:
+        return jsonify({
+            'Error': error_msg
+        }), 400
+
     try:
-        data = request.json
-        user = get_current_user()
-
-        if not data:
-            return jsonify({
-                'Message': 'Missing Json in request.'
-            }), 400
-
-        required_fields = ['name', 'main_power_set', 'secondary_power_set', 'skills']
-        missing_fields = [field for field in required_fields if field not in data]
-        if missing_fields:
-            return jsonify({
-                'Error': 'Info needed to create a characer.',
-                'Missing_Fields': missing_fields
-            }), 400
-
-        if not user:
-            return jsonify ({
-                'Message': 'User not found.'
-            }), 404
-
-        character = character_authorization(character_id)
-
+        character = character_with_authorization(character_id)
         if not character:
             return jsonify({
                 'Message': 'Character not found.'
             }), 404
-
-        character.name = data.get('name', character.name)
-        character.age = data.get('age', character.age)
-        character.origin = data.get('origin', character.origin)
-        character.main_power_set = data.get('main_power_set', character.main_power_set)
-        character.secondary_power_set = data.get('secondary_power_set', character.secondary_power_set)
-        character.skills = data.get('skills', character.skills)
-
-        if 'universe_ids' in data:
-            uids = data['universe_ids']
-            query = select(Universe).where(
-                Universe.owner_id == user.user_id,
-                Universe.universe_id.in_(uids)
-            )
-            valid_universes = db.session.execute(query).scalars().all()
-            if len(valid_universes) != len(uids):
-                return jsonify({
-                    'Error': 'One or more universe IDs are invalid or unauthroized'
-                }), 403
-            
-            character.universes = valid_universes
+        
+        execute_character_update(character, data, user)
         db.session.commit()
-
         return jsonify({
-            'Message': 'Character has been successfully updated.',
+            'Message': 'Character updated successfully.',
             'Character': character.to_dict()
         }), 200
-
+    except(PermissionError, ValueError) as e:
+        db.session.rollback()
+        return jsonify({
+            'Error': f'{str(e)}'
+        }), 400
     except Exception as e:
         db.session.rollback()
-        print(f'Error: {str(e)}')
+        print(f'System Error: {e}')
         return jsonify({
-            'Message': 'Server Error'
+            'Message': 'Server Error.'
         }), 500
+
 
     
 @character_bp.route('/<int:character_id>', methods = ['DELETE'])
@@ -197,7 +140,7 @@ def delete_character(character_id):
             'Message': 'User not found.'
         }), 404
 
-    character = character_authorization(character_id)
+    character = character_with_authorization(character_id)
     if not character:
         return jsonify({
             'Message': 'Character not found.'
@@ -215,3 +158,5 @@ def delete_character(character_id):
         return jsonify({
             'Message': ' Error has occured.'
         }), 500
+
+

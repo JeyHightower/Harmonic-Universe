@@ -1,13 +1,15 @@
 from flask import jsonify, Blueprint, request, abort
 from models import Universe,AlignmentType, get_current_user
+from flask_jwt_extended import jwt_required
 from config import db
 from sqlalchemy import select
-from utils import get_current_user, universe_authorization
+from utils import get_current_user, universe_with_authorization
 
 universe_bp = Blueprint('universes', __name__, url_prefix='/universes')
 
 
 @universe_bp.route('/', methods=['POST'])
+@jwt_required()
 def create_universe():
     try:
         user = get_current_user
@@ -43,6 +45,7 @@ def create_universe():
 
 
 @universe_bp.route('/', methods=['GET'])
+@jwt_required()
 def get_all_universes():
     user = get_current_user()
     owner_id = user.user_id
@@ -61,6 +64,7 @@ def get_all_universes():
 
 
 @universe_bp.route('/<int:universe_id>', methods=['GET'])
+@jwt_required()
 def get_universe(universe_id):
     user = get_current_user()
     if not user:
@@ -81,6 +85,7 @@ def get_universe(universe_id):
 
 
 @universe_bp.route('/<int:universe_id>', methods=['PUT'])
+@jwt_required()
 def update_universe(universe_id):
     user = get_current_user()
     if not user:
@@ -147,6 +152,7 @@ def update_universe(universe_id):
 
 
 @universe_bp.route('/<int:universe_id>', methods=['DELETE'])
+@jwt_required()
 def delete_universe(universe_id):
     universe = db.session.get(Universe, universe_id)
     if not universe:

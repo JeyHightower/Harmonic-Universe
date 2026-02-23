@@ -7,28 +7,62 @@ from config import  jwt, db
 
 def get_current_user():
     """Retrieves the current user."""
-    user_id = int(get_jwt_identity())
-    if not user_id:
+    user_id = get_jwt_identity()
+    if user_id is None:
         return None
-    return db.session.get(User, user_id)
+    try:
+        user_id = int(user_id)
+    except(ValueError, TypeError):
+        return None
+    return  db.session.get(User, user_id)
 
-def get_owned_universe_ids(user):
-    """Returns set of universe IDs owned by the user."""
-    if not user or not hasattr(user, 'owned_universes'):
-        return set ()
-    return set (u.universe_id for u in user.owned_universes)
 
-def get_request_universe_ids():
-    """Returns list of universe IDs in the request"""
-    data = request.json
-    if not data:
-        return []
-    return data.get('universe_ids', [])
+
+def add_universes_to_character(universe_ids, user, character):
+    uids = set(universe_ids)
+    query = select(Universe).where(
+        Universe.owner_id == user.user_id,
+        Universe.universe_id.in_(uids)
+    )
+    valid_universes = db.session.execute(query).scalars().all()
+    if len(valid_universes) != len(uids):
+        raise PermissionError(
+            'You do not have permission to access one or more of the Universes.'
+            )
+    character.universes = valid_universes
+
+
+def validate_character_data(data):
+    required_fields = ['name', 'main_power_set', 'secondary_power_set', 'skills']
+    for field in required_fields:
+        if field in data and data[field] is None:
+            return False, f'{field.replace("_", " ").capitalize()} cannot be null.'
+    if 'universe_ids' in data and not isinstance(data['universe_ids'], list):
+        return False, 'Universe Ids must be a list.'
+    return True, None
+
+
+def execute_character_creation(data, user):
+    fields = ['name', 'age', 'origin', 'main_power_set', 'secondary_power_set', 'skills']
+    character_data = {k:v for k,v in data.items() if k in fields}
+    new_character = Character(**character_data, user_id = user.user_id)
+    if 'universe_ids' in data:
+        add_universes_to_character(data['universe_ids'], user, new_character)
+        db.session.add(new_character)
+        return new_character
+
+
+def execute_character_update(character, data, user):
+    updatable_fields = ['name', 'age', 'orgin', 'main_powef_set', 'secondary_power_set', 'skills']
+    for field in updatable_fields:
+        if field in data:
+            setattr(character, field, data[field])
+    if 'universe_ids' in data:
+        add_universes_to_character(data[universe_ids], user, character)
+
+
     
-def character_authorization(character_id):
-    user = get_current_user()
-    if not user:
-        return None
+def character_with_authorization(user,character_id):
     query = select(Character).where(
         Character.user_id == user.user_id,
         Character.character_id == character_id).options(
@@ -41,7 +75,19 @@ def character_authorization(character_id):
     return character
 
 
-def universe_authorization(universe_id):
+def characters_with_authorization(user):
+    query = select(Character).where(
+        Character.user_id == user.user_id).options(
+            selectinload(Character.universes),
+            selectinload(Character.notes)
+        )
+    characters =db.session.execute(query).scalars().all()
+    if not characters:
+        return None
+    return characters
+
+
+def universe_with_authorization(universe_id):
     user = get_current_user()
     owner_id = user.user_id
     if not user:
@@ -49,6 +95,8 @@ def universe_authorization(universe_id):
     query = select(Universe).where(
         Universe.owner_id == owner_id,
         Universe.universe_id == universe_id
+        ).options(
+            selectinload(Universe.characters)
         )
     universe = db.session.execute(query).scalars().first()
     if not universe:
