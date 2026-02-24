@@ -17,14 +17,14 @@ def create_character():
         data = request.json or {}
         if not data:
             return jsonify({
-                'Message': 'Request body cannot be empty or invalid.'
+                'Error': 'Request body cannot be empty or invalid.'
             }), 400
 
         user = get_current_user()
         if not user:
             return jsonify({
-                'Message': 'User can not be found.'
-            }),  404
+                'Error': 'Unauthorized.'
+            }),  401
         
         is_valid, error_msg = validate_character_data(data)
         if not is_valid:
@@ -43,7 +43,7 @@ def create_character():
         db.session.rollback()
         print (f'Error: {str(e)}')
         return jsonify({
-            'Message': 'Server Error'
+            'Error': 'Server Error'
         }), 500
 
     
@@ -54,8 +54,8 @@ def get_all_characters():
     user = get_current_user()
     if not user:
         return jsonify({
-            'Message': 'User not found.'
-        }), 404
+            'Error': 'Unauthorized.'
+        }), 401
     
     characters = characters_with_authorization(user)
     if not characters:
@@ -98,7 +98,7 @@ def update_character(character_id):
     data = request.json or {}
     user = get_current_user()
 
-    is_valid, error_msg = validate_character_update_data(data)
+    is_valid, error_msg = validate_character_data(data)
     if not is_valid:
         return jsonify({
             'Error': error_msg

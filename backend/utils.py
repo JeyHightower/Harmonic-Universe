@@ -31,6 +31,18 @@ def add_universes_to_character(universe_ids, user, character):
             )
     character.universes = valid_universes
 
+def add_characters_to_universe(character_ids, user, universe):
+    cids = set(character_ids)
+    query = select(Character).where(
+        Character.user_id = user.user_id,
+        Character.character_id.in_(cids)
+    )
+    valid_characters = db.session.execute(query).scalars().all()
+    if len(valid_characters) != len(cids):
+        raise PermissionError(
+            'You do not have permission to access one or more of the Characters.'
+        )
+    universe.characters = valid_characters
 
 def validate_character_data(data):
     required_fields = ['name', 'main_power_set', 'secondary_power_set', 'skills']
@@ -87,21 +99,73 @@ def characters_with_authorization(user):
     return characters
 
 
-def universe_with_authorization(universe_id):
-    user = get_current_user()
-    owner_id = user.user_id
-    if not user:
-        abort(401)
+def universe_with_authorization(user,universe_id):
     query = select(Universe).where(
-        Universe.owner_id == owner_id,
+        Universe.owner_id == user.user_id,
         Universe.universe_id == universe_id
         ).options(
             selectinload(Universe.characters)
         )
     universe = db.session.execute(query).scalars().first()
-    if not universe:
-        abort(403)
     return universe
+
+def universes_with_authorization(user):
+    query = select(Universe).where(
+        Universe.owner_id == user.user_id
+    ).options(
+        selectinload(Universe.characters)
+    )
+    universes = db.session.execute(query).scalars().all()
+    return universes 
+
+def validate_universe_data(data, is_creation=False):
+    if is_creation:
+        required_fields = ['name', 'alignment']
+        for field in required_fields:
+            if field not in data:
+                return False, f"{field.capitalize()} is required."
+
+    for field in ['name', 'alignment']:
+        if field in data and data[field] is None:
+            return False, f"{field.capitalize()} cannot be null."
+
+    if 'name' in data:
+        if not isinstance(data['name'], str) or not data['name'].strip():
+            return False, 'Name must be a non-empty string.'
+
+    if 'alignment' in data:
+        if not isinstance(data['alignment'], str):
+            return False, 'Alignment must be a string.'
+        try:
+            _ = AlignmentType[data['alignment'].upper()]
+        except (KeyError, AttributeError):
+            valid_options = [e.name for e in AlignmentType]
+            return False, f"Invalid Alignment. Must be one of: {valid_options}"
+            
+    if 'description' in data and data['description'] is not None:
+        if not isinstance(data['description'], str):
+            return False, 'Description must be a string.'
+        if len(data['description']) > 300:
+            return False, 'Description must be 300 characters or less.'
+
+    return True, None
+
+def execute_universe_creation(data, user):
+    fields = ['name', 'description', 'alignment']
+    universe_data = [k,v for k,v in data.items() if k in fields]
+    new_universe = Universe(**universe_data, owner_id = user.user_id)
+    db.session.add(new_universe)
+    return new_universe
+
+
+def execute_universe_update(universe, data, user):
+    fields = ['name', 'description', 'alignment']
+    for field in fields:
+        if field in data:
+            setattr(universe, field, data[field])
+    if 'character_ids' in data:
+        add_characters_to_universe(data['character_ids'], user, universe)
+
 
 @jwt.token_in_blocklist_loader
 def check_if_token_revoked(jwt_header, jwt_payload):
