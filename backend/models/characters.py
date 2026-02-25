@@ -8,7 +8,7 @@ class Character(db.Model):
     __tablename__ = 'characters'
 
     character_id: Mapped[int] = mapped_column(primary_key = True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False)
+    creator_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False)
     name: Mapped[str] = mapped_column('name', String(100), nullable = False)
     age: Mapped[int] = mapped_column(nullable = True)
     origin: Mapped[str] = mapped_column(String(200), nullable = True)

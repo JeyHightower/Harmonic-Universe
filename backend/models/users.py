@@ -21,9 +21,9 @@ class User(db.Model, UserMixin):
     bio: Mapped[str] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    owned_universes: Mapped[List['Universe']] = relationship(back_populates='owner')
-    created_characters: Mapped[List['Character']] = relationship(back_populates='creator')
-    notes: Mapped[List['Note']] = relationship(back_populates = 'creator')
+    owned_universes: Mapped[List['Universe']] = relationship(back_populates = 'owner', cascade = 'all, delete-orphan')
+    created_characters: Mapped[List['Character']] = relationship(back_populates = 'creator', cascade ='all, delete-orphan')
+    notes: Mapped[List['Note']] = relationship(back_populates = 'creator', cascade ='all, delete-orphan')
     
     @property
     def password(self) -> str:

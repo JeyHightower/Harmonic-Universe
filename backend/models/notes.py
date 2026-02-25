@@ -15,6 +15,7 @@ class Note(db.Model):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     characters: Mapped[List['Character']] = relationship(secondary = 'character_notes', back_populates = 'notes')
+    universes:Mapped[List['Universe']] = relationship(secondary = 'note_universes', back_populates = 'notes')
     creator: Mapped['User'] = relationship(back_populates = 'notes')
 
 

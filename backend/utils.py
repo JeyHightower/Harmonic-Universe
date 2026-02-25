@@ -50,7 +50,7 @@ def validate_character_data(data, partial = False):
 def execute_character_creation(user, data):
     fields = ['name', 'age', 'origin', 'main_power_set', 'secondary_power_set', 'skills']
     character_data = {k:v for k,v in data.items() if k in fields}
-    new_character = Character(**character_data, user_id = user.user_id)
+    new_character = Character(**character_data, creator_id = user.user_id)
     if 'universe_ids' in data:
         add_universes_to_character(user, new_character, data['universe_ids'])
     if 'note_ids' in data:
@@ -60,7 +60,7 @@ def execute_character_creation(user, data):
 
 
 def execute_character_update(user, character, data):
-    updatable_fields = ['name', 'age', 'origin', 'main_powef_set', 'secondary_power_set', 'skills']
+    updatable_fields = ['name', 'age', 'origin', 'main_power_set', 'secondary_power_set', 'skills']
     for field in updatable_fields:
         if field in data:
             setattr(character, field, data[field])
@@ -72,7 +72,7 @@ def execute_character_update(user, character, data):
 
 def character_with_authorization(user,character_id):
     query = select(Character).where(
-        Character.user_id == user.user_id,
+        Character.creator_id == user.user_id,
         Character.character_id == character_id).options(
             selectinload(Character.universes),
             selectinload(Character.notes)
@@ -85,7 +85,7 @@ def character_with_authorization(user,character_id):
 
 def characters_with_authorization(user):
     query = select(Character).where(
-        Character.user_id == user.user_id).options(
+        Character.creator_id == user.user_id).options(
             selectinload(Character.universes),
             selectinload(Character.notes)
         )
@@ -98,7 +98,7 @@ def characters_with_authorization(user):
 def add_universes_to_character(user, character, universe_ids):
     uids = set(universe_ids)
     query = select(Universe).where(
-        Universe.owner_id == user.user_id,
+        Universe.creator_id == user.user_id,
         Universe.universe_id.in_(uids)
     )
     valid_universes = db.session.execute(query).scalars().all()
@@ -160,10 +160,15 @@ def validate_universe_data(data, partial=False):
 
 def universe_with_authorization(user,universe_id):
     query = select(Universe).where(
-        Universe.owner_id == user.user_id,
+        Universe.creator_id == user.user_id,
         Universe.universe_id == universe_id
         ).options(
-            selectinload(Universe.characters)
+            selectinload(
+                Universe.characters
+            ),
+            selectinload(
+                Universe.notes
+            )
         )
     universe = db.session.execute(query).scalars().first()
     return universe
@@ -172,9 +177,14 @@ def universe_with_authorization(user,universe_id):
 
 def universes_with_authorization(user):
     query = select(Universe).where(
-        Universe.owner_id == user.user_id
+        Universe.creator_id == user.user_id
     ).options(
-        selectinload(Universe.characters)
+        selectinload(
+            Universe.characters
+        ),
+        selectinload(
+            Universe.notes
+        )
     )
     universes = db.session.execute(query).scalars().all()
     return universes 
@@ -183,8 +193,12 @@ def universes_with_authorization(user):
 
 def execute_universe_creation(user, data):
     fields = ['name', 'description', 'alignment']
-    universe_data = {k,v for k,v in data.items() if k in fields}
-    new_universe = Universe(**universe_data, owner_id = user.user_id)
+    universe_data = {k:v for k,v in data.items() if k in fields}
+    new_universe = Universe(**universe_data, creator_id = user.user_id)
+    if 'character_ids' in data:
+        add_characters_to_universe(user, new_universe, data['character_ids'])
+    if 'note_ids' in data:
+        add_notes_to_universe(user, new_universe, data['note_ids'])
     db.session.add(new_universe)
     return new_universe
 
@@ -197,13 +211,15 @@ def execute_universe_update(user, universe, data):
             setattr(universe, field, data[field])
     if 'character_ids' in data:
         add_characters_to_universe(user, universe, data['character_ids'])
+    if 'note_ids' in data:
+        add_notes_to_universe(user, universe, data['note_ids'])
 
 
 
 def add_characters_to_universe(user, universe, character_ids):
     cids = set(character_ids)
     query = select(Character).where(
-        Character.user_id == user.user_id,
+        Character.creator_id == user.user_id,
         Character.character_id.in_(cids)
     )
     valid_characters = db.session.execute(query).scalars().all()
@@ -213,17 +229,128 @@ def add_characters_to_universe(user, universe, character_ids):
         )
     universe.characters = valid_characters
 
+def add_notes_to_universe(user, universe, note_ids):
+    nids = set(note_ids)
+    query = select(Note).where(
+        Note.creator_id == user.user_id,
+        Note.note_id.in_(nids)
+    )
+    valid_notes = db.session.execute(query).scalars().all()
+    if len(nids) != len(valid_notes):
+        raise PermissionError(
+            'You do not have permission to access one or more of the Notes.'
+        )
+    universe.notes = valid_notes
 
 
 
+#! ------------ Note Helper Functions -----------
 
+def validate_note_data(data, partial=False):
+    if not partial:
+        required_fields = ['title']
+        for field in required_fields: 
+            if field not in data:
+                return False, f'{field} is required.'
+    if 'title' in data and data['title'] is None:
+        return False, 'Title cannot be null.'
+    if 'title' in data:
+        if not isinstance(data['title'], str):
+            return False, 'Title must be a string.'
+        title_value = data['title'].strip()
+        if not title_value:
+            return False, 'Title cannot be empty.'
+        if len(title_value) > 100:
+            return False, 'Title must be a string and 100 characters or less.'
+    if 'content' in data:
+        if not isinstance(data['content'], str):
+            return False, 'Content must be a string.'
+    return True, None
+
+
+def execute_note_creation(user, data):
+    note_fields = ['title', 'content']
+    note_data = {k:v for k,v in data.items() if k in note_fields}
+    new_note = Note(**note_data, creator_id = user.user_id)
+    if 'character_ids' in data:
+        add_characters_to_note(user, new_note, data['character_ids'])
+    if 'universe_ids' in data:
+        add_universes_to_note(user, new_note, data['universe_ids'])
+
+    db.session.add(new_note)
+    return new_note
+
+
+def execute_note_update(user,note, data):
+    note_fields = ['title', 'content']
+    for field in note_fields:
+        if field in data:
+            setattr(note,field,data[field])
+    if 'character_ids' in data:
+        add_characters_to_note(user, note, data['character_ids'])
+    if 'universe_ids' in data:
+        add_universes_to_note(user, note, data['universe_ids'])
+
+
+
+def notes_with_authorization(user):
+    query = select(Note).where(
+        Note.creator_id == user.user_id
+    ).options(
+        selectinload(
+            Note.characters
+        ),
+        selectinload(
+            Note.universes
+        )
+    )
+    notes = db.session.execute(query).scalars().all()
+    return notes
+
+
+def note_with_authorization(user, note_id):
+    query = select(Note).where(
+        Note.creator_id == user.user_id,
+        Note.note_id == note_id
+    ).options(
+        selectinload(
+            Note.characters
+        ),
+        selectinload(
+            Note.universes
+        )
+    )
+    note = db.session.execute(query).scalars().first()
+    return note 
 
 
     
+def add_characters_to_note(user, note, character_ids):
+    cids = set(character_ids)
+    query = select(Character).where(
+        Character.creator_id == user.user_id,
+        Character.character_id.in_(cids)
+    )
+    valid_characters = db.session.execute(query).scalars().all()
+    if len(cids) != len(valid_characters):
+        raise PermissionError(
+            'You do not have permission for one or more charactes.'
+        )
+    note.characters = valid_characters
 
 
-
-
+def add_universes_to_note(user, note, universe_ids):
+    uids = set(universe_ids)
+    query = select(Universe).where(
+        Universe.creator_id == user.user_id,
+        Universe.universe_id.in_(uids)
+    )
+    valid_universes = db.session.execute(query).scalars().all()
+    if len(uids) != len(valid_universes):
+        raise PermissionError(
+            'You do not have permssion for one or more universes.'
+        )
+    note.universes = valid_universes
 
 
 
