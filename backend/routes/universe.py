@@ -28,7 +28,7 @@ def create_universe():
                 'Error': error_msg
             }), 400
         
-        new_universe = execute_universe_creation(data, user)
+        new_universe = execute_universe_creation(user, data)
         db.session.commit()
         return jsonify({
             'Message': 'Universe created successfully',
@@ -96,7 +96,7 @@ def update_universe(universe_id):
             'Error': 'Unauthorized.'
         }), 401
 
-    is_valid, error_msg = validate_universe_data(data, is_creation=False)
+    is_valid, error_msg = validate_universe_data(data, partial=True)
     if not is_valid:
         return jsonify({
             'Error': error_msg

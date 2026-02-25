@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 from models import Character,Universe
 from config import db
 from sqlalchemy import select
-from utils import get_current_user, add_universes_to_character, character_with_authorization, validate_character_data, characters_with_authorization, execute_character_creation, execute_character_update
+from utils import get_current_user,add_notes_to_character, add_universes_to_character, character_with_authorization, validate_character_data, characters_with_authorization, execute_character_creation, execute_character_update
 
 
 character_bp = Blueprint('characters', __name__, url_prefix='/characters')
@@ -32,7 +32,7 @@ def create_character():
                 'Error': error_msg
             }), 400
 
-        new_character = execute_character_creation(data, user)
+        new_character = execute_character_creation(user, data)
         db.session.commit()
         return jsonify ({
             'Message': 'Character successfully created',
@@ -98,7 +98,7 @@ def update_character(character_id):
     data = request.json or {}
     user = get_current_user()
 
-    is_valid, error_msg = validate_character_data(data)
+    is_valid, error_msg = validate_character_data(data, partial=True)
     if not is_valid:
         return jsonify({
             'Error': error_msg
@@ -111,7 +111,7 @@ def update_character(character_id):
                 'Message': 'Character not found.'
             }), 404
         
-        execute_character_update(character, data, user)
+        execute_character_update(user, character, data)
         db.session.commit()
         return jsonify({
             'Message': 'Character updated successfully.',
