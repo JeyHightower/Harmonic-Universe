@@ -14,7 +14,7 @@ character_bp = Blueprint('characters', __name__, url_prefix='/characters')
 def create_character():
     """Creates a character."""
     try:
-        data = request.json or {}
+        data = request.get_json or {}
         if not data:
             return jsonify({
                 'Error': 'Request body cannot be empty or invalid.'

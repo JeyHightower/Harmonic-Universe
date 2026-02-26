@@ -54,7 +54,8 @@ class Universe(db.Model):
         if not summary:
             data['description'] = self.description
             data['owner'] = self.owner.username if self.owner else None
-            data['characters'] = [c.name for c in self.characters] if self.characters else []
+            data['characters'] = [{'id': c.character_id, 'name': c.name} for c in self.characters] 
+            data['notes'] = [{'id': n.note_id, 'title': n.title} for n in self.notes]
         
         return data
         

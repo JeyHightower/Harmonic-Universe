@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required
 from sqlalchemy import select
 from models import Character, Universe
 from config import db
-from utils import get_current_user
+from utils import get_current_user,validate_note_data, execute_note_creation, notes_with_authorization, note_with_authorization
 
 
 note_bp = Blueprint ('notes', __name__, url_prefix='/notes')
@@ -15,49 +15,40 @@ note_bp = Blueprint ('notes', __name__, url_prefix='/notes')
 def create_note():
 
     try:
-        data = request.json
+        data = request.get_json() or {}
         if not data:
             return jsonify ({
-                'Message': 'Request cannot be empty.'
+                'Error': 'Request cannot be empty.'
             }), 400
         user = get_current_user()
         if not user:
             return jsonify({
-                'Message': 'Authorization required.'
+                'Error': 'Unauthorized.'
             }), 401
-
-        new_note = Note(
-            title = data.get('title'),
-            content = data.get('content'),
-            creator_id = user.user_id
-         )
-
-        character_ids = data.get('character_ids', [])
-        if character_ids:
-            query = select(Character). where(Character.character_id.in_ (character_ids),
-            Character.creator_id == user.user_id)
-            valid_characters = db.session.execute(query).scalars().all()
-            if len(valid_characters) != len(character_ids):
-                return jsonify({
-                    'Mesage': 'One or more characters IDs are invalid or unauthorized.' 
-                }), 403
-            new_note.characters.append(valid_characters)
-
-        db.session.add(new_note)
+        is_valid, error_msg = validate_note_data(data)
+        if not is_valid:
+            return jsonify({
+                'Error': error_msg
+            }), 400
+        new_note = execute_note_creation(user, data)
         db.session.commit()
-        db.session.refresh(new_note)
-
         return jsonify({
-            'Message': 'Note has been created successfully.',
+            'Message': 'Note has been successfully created.',
             'Note': new_note.to_dict()
         }), 201
+    except PermissionError as e:
+        db.session.rollback()
+        return jsonify({
+            'Error': str(e)
+        }), 403
 
     except Exception as e:
         db.session.rollback()
-        print(f'Error: {e}')
-        return jsonify ({
-            'Message': 'Error has occured.'
-        }), 500       
+        print(f'Error: {str(e)}')
+        return jsonify({
+            'Error': 'Server Error.'
+        }), 500
+
 
 
 
@@ -67,42 +58,95 @@ def get_all_notes():
     user = get_current_user()
     if not user:
         return jsonify({
-            'Method': 'Authorization required.'
-        }), 401
-
-    query = select(Note).where(Note.creator_id == user.user_id).options(selectinload(Note.characters))
-    notes = db.session.execute(query).scalars().all()
-
-
+            'Error': 'User not found.'
+        }), 404
+    notes = notes_with_authorization(user)
     if not notes:
         return jsonify({
-            'Message': 'Notes could not be found.'
-        }), 404
-
+            'Message': 'No notes found.',
+            'Notes': []
+        }), 200
     return jsonify({
-        'Message': 'Notes have been found',
-        'Notes': [ n.to_dict() for n in notes ]
+        'Message': 'Notes found.',
+        'Notes': [n.to_dict(summary=True) for n in notes]
     }), 200
+    
 
 
 @note_bp.route('/<int:note_id>', methods = ['GET'])
 @jwt_required()
 def get_note(note_id):
     user = get_current_user()
-    if not user: 
-        return jsonify({
-            'Message': 'Authorization required.'
-        }), 401
-    query = select(Note).where(
-        Note.note_id == note_id,
-        Note.creator_id == user.user_id
-    ).options(selectinload(Note.characters))
-    note = db.session.execute(query).scalars().first()
+    if not user:
+        return jsonfy({
+            'Message': 'User not found.'
+        }), 404
+    note = note_with_authorization(user, note_id)
     if not note:
         return jsonify({
             'Message': 'Note not found.'
         }), 404
     return jsonify({
-        'Message': 'Note has been found.',
-        'Note': note.to_dict()
+        'Message': 'Note found',
+        'Note': note.to_dict(summary=False)
     }), 200
+
+
+@note_bp.route('/<int:note_id>', methods = ['PATCH'])
+@jwt_required()
+def update_note(note_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            'Error': 'Authorization required.'
+        }), 401
+    data = request.get_json() or {}
+    is_valid, error_msg = validate_note_data(data, partial = True)
+    if not is_valid:
+        return jsonify({
+            'Error': error_msg
+        }), 400
+    note = note_with_authorization(user, note_id)
+    if not note:
+        return jsonify({
+            'Message': 'Note not found.'
+        }), 404
+    try:
+        execute_note_update(user, note, data)
+        db.session.commit()
+    except PermissionError as e:
+        db.session.rollback()
+        return jsonify({
+            'Error': f'{str(e)}'
+        }), 403
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error: {e}')
+        return jsonify({
+            'Error': 'Server error'
+        }), 500
+
+
+
+@note_bp.route('/<int:note_id>', methods = ['DELETE'])
+@jwt_required()
+def delete_note(note_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({
+            'Error': 'Authorization required.'
+        }), 401
+    note = note_with_authorization(user, note_id)
+    if not note:
+        return jsonify({
+            'Message': 'Note could not be found.'
+        }), 404
+    try:
+        db.session.delete(note)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f'Error: {e}')
+        return jsonify({
+            'Error': 'Server Error.'
+        }), 500

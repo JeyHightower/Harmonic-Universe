@@ -71,8 +71,8 @@ class Character(db.Model):
             data['origin'] = self.origin
             data['secondary_power_set'] = self.secondary_power_set
             data['skills'] = self.skills
-            data['universes'] = [u.name for u in self.universes] if self.universes else []
-            data['notes'] = [n.title for n in self.notes] if self.notes else []
+            data['universes'] = [{'id': u.universe_id, 'name': u.name} for u in self.universes]
+            data['notes'] = [{'id': n.note_id, 'title': n.title} for n in self.notes]
 
         return data
 

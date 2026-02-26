@@ -40,7 +40,8 @@ class Note(db.Model):
             'title': self.title,
             'creator_id': self.creator_id,
             'created_at': self.created_at,
-            'characters': [c .to_dict(summary=True) for c in self.characters] if self.characters else []
+            'characters': [{'id': c .character_id, 'name': c.name} for c in self.characters],
+            'universes': [{'id': u.universe_id,'name': u.name } for u in self.universes]
         }
 
         if not summary:
