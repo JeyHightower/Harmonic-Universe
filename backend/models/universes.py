@@ -20,6 +20,7 @@ class Universe(db.Model):
     creator: Mapped['User'] = relationship(back_populates='owned_universes')
     characters: Mapped[List['Character']] = relationship(secondary = 'character_universes', back_populates='universes')
     notes: Mapped[List['Note']] = relationship(secondary = 'note_universes', back_populates='universes')
+    locations: Mapped[List['Location']] = relationship(back_populates='universe', cascade= 'all, delete-orphan' )
     
     @validates('_name')
     def validate_name(self, key, value):

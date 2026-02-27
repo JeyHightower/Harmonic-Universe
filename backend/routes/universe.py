@@ -18,7 +18,7 @@ def create_universe():
                 'Error': 'Unauthorized.'
             }), 401
 
-        data = request.json or {}
+        data = request.get_json() or {}
         if not data:
             return jsonify({'Error': 'Data is required'}), 400
 

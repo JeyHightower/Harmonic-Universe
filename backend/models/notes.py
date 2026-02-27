@@ -17,6 +17,7 @@ class Note(db.Model):
     characters: Mapped[List['Character']] = relationship(secondary = 'character_notes', back_populates = 'notes')
     universes:Mapped[List['Universe']] = relationship(secondary = 'note_universes', back_populates = 'notes')
     creator: Mapped['User'] = relationship(back_populates = 'notes')
+    locations: Mapped[List['Location']]  = relationship(secondary='location_notes', back_populates = 'notes'
 
 
 

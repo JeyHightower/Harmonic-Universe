@@ -14,7 +14,8 @@ def get_current_user():
         user_id = int(user_id)
     except(ValueError, TypeError):
         return None
-    return  db.session.get(User, user_id)
+    user = db.session.get(User, user_id)
+    return user
 
 
 @jwt.token_in_blocklist_loader
@@ -354,3 +355,126 @@ def add_universes_to_note(user, note, universe_ids):
 
 
 
+#! ------------ Location Helper Functions -----------
+
+def validate_location_data(data, partial=False):
+    if not partial:
+        required_field = ['name', 'location_type', 'universe_id']
+        for field in required_field:
+            if field not in data:
+                return False, f'{field} data is required.'
+
+    for field in ['name', 'location_type', 'universe_id']:
+        if field in data and data[field] is None:
+            return False, f'{field} cannot be empty.' 
+
+    if 'name' in data:
+        if not isinstance(data['name'], str):
+            return False, 'Name must be a string.'
+        clean_name = data['name'].strip()
+        if len(clean_name) < 2:
+            return False, 'Name must be at least 2 characters long.'
+    if 'location_type' in data:
+        if not isinstance(data['location_type'], str):
+            return False, 'Location Type must be a string.'
+        try:
+            _ = LocationType[data['location_type'].upper()]
+        except (KeyError, AttributeError):
+            valid_options = [e.name for e in LocationType]
+            return False, f"Invalid Location Type: {', '.join(valid_options)}"
+    if 'description' in data:
+        if not isinstance(data['description'], str):
+            return False, 'Description must be a string.'
+        clean_description = data['description'].strip()
+        if len(clean_description) > 500:
+            return False, 'Description must be less than 500 characters.'
+    return True, None
+
+
+def execute_location_creation(user, data):
+    universe_id = data.get('universe_id')
+    query = select(Universe).where(
+        Universe.creator_id == user.user_id,
+        Universe.universe_id == universe_id
+    )
+    universe = db.session.execute(query).scalars().first()
+    if not universe:
+        raise ValueError(
+            'Invalid Universe:You do not have permission to add locations here.'
+        )
+    fields = ['name', 'location_type', 'description', 'universe_id']
+    location_data = {k:v for k,v in data.items() if k in fields}
+    new_location = Location(**location_data, creator_id = user.user_id, universe_id = universe.universe_id)
+    
+    if 'character_ids' in data and data['character_ids']:
+        add_characters_to_location(user, new_location, data['character_ids'])
+
+    if 'note_ids' in data and data['note_ids']:
+        add_notes_to_location(user, new_location, data['note_ids'])
+    db.session.add(new_location)
+    db.session.commit()
+    return new_location
+
+
+
+
+def add_characters_to_location(user, location, character_ids):
+    cids = set(character_ids)
+    query = select(Character).where(
+        Character.creator_id == user.user_id,
+        Character.character_id.in_(cids)
+    )
+    valid_characters = db.session.execute(query).scalars().all()
+    if len(cids) != len(valid_characters):
+        raise PermissionError(
+            'You do not have authorization for one or more characters'
+        )
+    location.characters = valid_characters
+
+
+def add_notes_to_location(user, location, note_ids):
+    nids = set(note_ids)
+    query = select(Note).where(
+        Note.creator_id == user.user_id,
+        Note.note_id.in_(nids)
+    )
+    valid_notes = db.session.execute(query).scalars().all()
+    if len(nids) != len(valid_notes):
+        raise PermissionError(
+            'You do not have authorization for one or more notes.'
+        )
+    location.notes = valid_notes
+
+def locations_with_authorization(user,universe_id):
+    query = select(Location).where(
+        Location.universe_id == universe.id,
+        Location.creator_id == user.user_id
+    ).options(
+        selectinload(Location.notes),
+        selectinload(Location.characters)
+    )
+    locations = db.session.execute(query).scalars().all()
+    return locations
+
+
+def location_with_authorization(user,location_id):
+    query = select(Location).where(
+        Location.location_id == location_id,
+        Location.creator_id == user.user_id,
+    ).options(
+        selectinload(Location.notes),
+        selectinload(Location.characters)
+    )
+    location = db.session.execute(query).scalar_one_or_none()
+    return location
+
+
+def execute_location_update(user,location, data):
+    location_fields = ['name', 'location_type', 'description']
+    for field in location_fields:
+        if field in data:
+            setattr(location, field, data[field])
+    if 'character_ids' in data and data['character_ids']:
+        add_characters_to_location(user,location,data['character_ids'])
+    if 'note_ids' in data and data['note_ids']:
+        add_notes_to_location(user, location, data['note_ids'])
