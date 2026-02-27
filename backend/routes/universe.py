@@ -29,7 +29,6 @@ def create_universe():
             }), 400
         
         new_universe = execute_universe_creation(user, data)
-        db.session.commit()
         return jsonify({
             'Message': 'Universe created successfully',
             'universe': new_universe.to_dict()

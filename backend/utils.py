@@ -1,7 +1,7 @@
-from flask import session, request, abort
+from flask import session, request
 from flask_jwt_extended import get_jwt_identity
 from sqlalchemy import select
-from models import User, Character, Universe, TokenBlocklist
+from models import User, Character, Universe, Note, Location, TokenBlocklist, LocationType, AlignmentType, character_universes, character_notes, character_universes, note_universes, location_notes
 from config import  jwt, db
 
 #!------------ Universal Helper Function ----------
@@ -52,11 +52,14 @@ def execute_character_creation(user, data):
     fields = ['name', 'age', 'origin', 'main_power_set', 'secondary_power_set', 'skills']
     character_data = {k:v for k,v in data.items() if k in fields}
     new_character = Character(**character_data, creator_id = user.user_id)
-    if 'universe_ids' in data:
+    if 'universe_ids' in data and data['universe_ids']:
         add_universes_to_character(user, new_character, data['universe_ids'])
-    if 'note_ids' in data:
+    if 'note_ids' in data and data['note_ids']:
         add_notes_to_character(user, new_character, data['note_ids'])
+    if 'location_ids' in data and data['location_ids']:
+        add_locations_to_character(user, new_character, data['location_ids'])
     db.session.add(new_character)
+    db.session.commit()
     return new_character
 
 
@@ -65,10 +68,12 @@ def execute_character_update(user, character, data):
     for field in updatable_fields:
         if field in data:
             setattr(character, field, data[field])
-    if 'universe_ids' in data:
+    if 'universe_ids' in data and data['universe_ids']:
         add_universes_to_character(user, character, data['universe_ids'])
-    if 'note_ids' in data:
+    if 'note_ids' in data and data['note_ids']:
         add_notes_to_character(user, character, data['note_ids'])
+    if 'location_id' in data and data['location_ids']:
+        add_locations_to_character(user, character, data['location_ids'])
 
 
 def character_with_authorization(user,character_id):
@@ -122,6 +127,18 @@ def add_notes_to_character(user, character, note_ids):
         )
     character.notes = valid_notes
 
+def add_locations_to_character(user, character, location_ids):
+    lids = set(location_ids)
+    query = select(Location).where(
+        Location.creator_id == user.user_id,
+        Location.location_id.in_(lids)
+    )
+    valid_locations = db.session.execute(query).scalars().all()
+    if len(lids) != len(valid_locations):
+        raise PermissionError(
+            'You do not have access to 1 or more locations.'
+        )
+    character.locations = valid_locations
 
 #! ------------ Universe Helper Functions -----------
 
@@ -196,11 +213,14 @@ def execute_universe_creation(user, data):
     fields = ['name', 'description', 'alignment']
     universe_data = {k:v for k,v in data.items() if k in fields}
     new_universe = Universe(**universe_data, creator_id = user.user_id)
-    if 'character_ids' in data:
+    if 'character_ids' in data and data['character_ids']:
         add_characters_to_universe(user, new_universe, data['character_ids'])
-    if 'note_ids' in data:
+    if 'note_ids' in data and data['note_ids']:
         add_notes_to_universe(user, new_universe, data['note_ids'])
+    if 'location_ids' in data and data['location_ids']:
+        add_locations_to_universe(user, new_universe, data['location_ids'])
     db.session.add(new_universe)
+    db.session.commit()
     return new_universe
 
 
@@ -210,10 +230,12 @@ def execute_universe_update(user, universe, data):
     for field in fields:
         if field in data:
             setattr(universe, field, data[field])
-    if 'character_ids' in data:
+    if 'character_ids' in data and data['character_ids']:
         add_characters_to_universe(user, universe, data['character_ids'])
-    if 'note_ids' in data:
+    if 'note_ids' in data and data['note_ids']:
         add_notes_to_universe(user, universe, data['note_ids'])
+    if 'location_ids' in data and data['location_ids']:
+        add_locations_to_universe(user, universe, data['location_ids'])
 
 
 
@@ -242,6 +264,19 @@ def add_notes_to_universe(user, universe, note_ids):
             'You do not have permission to access one or more of the Notes.'
         )
     universe.notes = valid_notes
+
+def add_locations_to_universe(user, universe, location_ids):
+    lids = set(location_ids)
+    query = select(Location).where(
+        Location.creator_id == user.user_id,
+        Location.location_id.in_(lids)
+    )
+    valid_locations = db.session.execute(query).scalars().all()
+    if len(lids) != len(valid_locations):
+        raise PermissionError(
+            'You do not have access to one or more of the locations.'
+        )
+    universe.locations = valid_locations
 
 
 
@@ -273,12 +308,15 @@ def execute_note_creation(user, data):
     note_fields = ['title', 'content']
     note_data = {k:v for k,v in data.items() if k in note_fields}
     new_note = Note(**note_data, creator_id = user.user_id)
-    if 'character_ids' in data:
+    if 'character_ids' in data and data['character_ids']:
         add_characters_to_note(user, new_note, data['character_ids'])
-    if 'universe_ids' in data:
+    if 'universe_ids' in data and data['universe_ids']:
         add_universes_to_note(user, new_note, data['universe_ids'])
+    if 'location_ids' in data and data['location_ids']:
+        add_locations_to_note(user, new_note, data['universe_ids'])
 
     db.session.add(new_note)
+    db.commit()
     return new_note
 
 
@@ -287,10 +325,12 @@ def execute_note_update(user,note, data):
     for field in note_fields:
         if field in data:
             setattr(note,field,data[field])
-    if 'character_ids' in data:
+    if 'character_ids' in data and data['character_ids']:
         add_characters_to_note(user, note, data['character_ids'])
-    if 'universe_ids' in data:
+    if 'universe_ids' in data and data['universe_ids']:
         add_universes_to_note(user, note, data['universe_ids'])
+    if 'location_ids' in data and data['location_ids']:
+        add_locations_to_note(user, note, data['location_ids'])
 
 
 
@@ -352,6 +392,19 @@ def add_universes_to_note(user, note, universe_ids):
             'You do not have permssion for one or more universes.'
         )
     note.universes = valid_universes
+
+def add_locations_to_note(user, note, location_ids):
+    lids = set(location_ids)
+    query = select(Locations).where(
+        Location.creator_id == user.user_id,
+        Location.location_id.in_(lids)
+    )
+    valid_locations = db.session.execute(query).scalars().all()
+    if len(lids) != len(valid_locations):
+        raise PermissionError(
+            'You do not have access to one or more locations.'
+        )
+    note.locations = valid_locations
 
 
 
@@ -445,9 +498,9 @@ def add_notes_to_location(user, location, note_ids):
         )
     location.notes = valid_notes
 
-def locations_with_authorization(user,universe_id):
+def locations_with_authorization_in_universe(user,universe_id):
     query = select(Location).where(
-        Location.universe_id == universe.id,
+        Location.universe_id == universe_id,
         Location.creator_id == user.user_id
     ).options(
         selectinload(Location.notes),

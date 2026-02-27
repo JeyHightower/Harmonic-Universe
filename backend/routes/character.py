@@ -33,7 +33,6 @@ def create_character():
             }), 400
 
         new_character = execute_character_creation(user, data)
-        db.session.commit()
         return jsonify ({
             'Message': 'Character successfully created',
             'Character': new_character.to_dict()

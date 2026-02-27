@@ -31,7 +31,6 @@ def create_note():
                 'Error': error_msg
             }), 400
         new_note = execute_note_creation(user, data)
-        db.session.commit()
         return jsonify({
             'Message': 'Note has been successfully created.',
             'Note': new_note.to_dict()
