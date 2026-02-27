@@ -89,7 +89,7 @@ def get_universe(universe_id):
 @jwt_required()
 def update_universe(universe_id):
     user = get_current_user()
-    data = request.json or {}
+    data = request.get_json() or {}
     if not user:
         return jsonify({
             'Error': 'Unauthorized.'

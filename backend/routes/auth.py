@@ -5,6 +5,7 @@ from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, j
 from sqlalchemy import select
 from models import User, TokenBlocklist
 from config import db
+from utils import validate_auth_data, validate_login_data, authenticate_user
 import time
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -13,30 +14,15 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 @auth_bp.route('/register', methods=['POST'])
 def register():
     try:
-        data : dict = request.json
+        data : dict = request.get_json() or {}
 
-        if not data:
-            return jsonify({'message': 'Data is needed.'}), 400
-        
-        email = data.get('email', '').strip().lower()
-        username = data.get('username', '').strip().lower()
-        
-        if User.query.filter_by(username=username).first() or User.query.filter_by(_email=email).first():
+        is_valid, error_msg = validate_auth_data(data)
+        if not is_valid:
             return jsonify({
-                'Message': 'User already exists'
+                'Error': error_msg
             }), 400
-
-
-        new_user = User(
-            name=data.get('name'),
-            username=data.get('username'),
-            email=data.get('email'),
-            password=data.get('password'),
-            bio=data.get('bio')
-        )
-
-        db.session.add(new_user)
-        db.session.commit()
+            
+        new_user = execute_user_creation(data)
         access_token = create_access_token(
             identity=str(new_user.user_id)
             )
@@ -58,33 +44,23 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    try:
-        data = request.json
-        username=data.get('username') 
-        email=data.get('email')
-        password = data.get('password')
-
-        if not password:
-            return jsonify({'Message': 'Password is required'}), 400
-
-        user = None
-        if not username and not email:
-            return jsonify({'Message': 'Username or Email is required'}), 400
-        elif not email and username:
-            user = User.query.filter_by(username=username.strip().lower()).first()
-        elif email and not username:
-            user = User.query.filter_by(_email=email.strip().lower()).first()
-        else:
-            user = User.query.filter_by(_email=email.strip().lower()).first()
-
-
-        if not user or not user.check_password(password):
-            return jsonify({'Message': 'Invalid Credentials'}), 401
+    try:   
+        data = request.get_json() or {}
+        is_valid, error_msg = validate_login_data(data)
+        if not is_valid:
+            return jsonify({
+                'Error': error_msg
+            }), 400
+        user = authenticate_user(data)
+        if not user:
+            return jsonify({
+                'Error': 'Invalid username/email or password.'
+            }), 401
 
         access_token = create_access_token(
             identity=str(user.user_id)
             )
-        # Remember to pass summary=False if you want to see the bio!
+
         return jsonify({
                 'access_token': access_token,
                 'user': user.to_dict(summary=False),

@@ -1,7 +1,8 @@
 from flask import session, request
 from flask_jwt_extended import get_jwt_identity
+from flask_bcrypt import generate_password_hash, check_password_hash
 from sqlalchemy import select
-from models import User, Character, Universe, Note, Location, TokenBlocklist, LocationType, AlignmentType, character_universes, character_notes, character_universes, note_universes, location_notes
+from models import User, bcrypt, Character, Universe, Note, Location, TokenBlocklist, LocationType, AlignmentType, character_universes, character_notes, character_universes, note_universes, location_notes
 from config import  jwt, db
 
 #!------------ Universal Helper Function ----------
@@ -23,6 +24,88 @@ def check_if_token_revoked(jwt_header, jwt_payload):
     jti = jwt_payload.get("jti")
     token = db.session.scalar(select(TokenBlocklist).where(TokenBlocklist.jti == jti))
     return token is not None
+
+
+#! ------------ Auth Helper Functions -----------
+
+def validate_auth_data(data, partial=False): # Fixed: False
+    if not partial:
+        required_fields = ['name', 'username', 'email', 'password']
+        for field in required_fields:
+            if field not in data:
+                return False, f'{field} is required.'
+
+    for field in ['name', 'username', 'email', 'password', 'bio']:
+        if field in data:
+            val = data[field]
+
+            if not isinstance(val, str):
+                return False, f'{field.capitalize()} must be a string.'
+            
+            clean_val = val.strip()
+            if not clean_val:
+                return False, f'{field.capitalize()} can not be empty.'
+            
+            # Constraints
+            if field == 'name' and (len(clean_val) < 2 or len(clean_val) > 100):
+                return False, 'Name must be between 2 and 100 characters.'
+                
+            if field == 'username' and (len(clean_val) < 2 or len(clean_val) > 200):
+                return False, 'Username must be between 2 and 200 characters.'
+        
+            if field == 'email':
+                if '@' not in clean_val or '.' not in clean_val.split('@')[-1]:
+                    return False, 'Invalid email format.'
+                if len(clean_val) > 255:
+                    return False, 'Email is too long.'  
+
+            if field == 'password' and (len(val) < 8 or len(val) > 250):
+                return False, 'Password must be at least 8 characters long.'
+
+            if field == 'bio' and (len(clean_val) < 20 or len(clean_val) > 500):
+                return False, 'Bio must be between 20 and 500 characters.'
+            
+    return True, None
+
+
+
+def validate_login_data(data):
+    if 'password' not in data:
+        return False, 'Password is required.'
+    if 'email' not in data and 'username' not in data:
+        return False, 'Username or Email is required.'
+    return True, None
+
+def authenticate_user(data):
+    password = data.get('password')
+    identifier = data.get('email') or data.get('username')
+    if not identifier or not password:
+        return None
+
+    user = User.query.filter(
+        (User.email == identifier) | (User.username == identifier)).first()
+    if user and bcrypt.check_password_hash(user.password, password):
+        return user
+    return None
+
+
+
+def execute_user_creation(data):
+    if User.query.filter_by(email=data['email']).first():
+        raise ValueError('Email already exists.')
+    if User.query.filter_by(username=data['username']).first():
+        raise ValueError('Username already exists.')
+    
+    fields = ['name', 'username', 'email', 'password', 'bio']
+    user_data = {k:v for k,v in data.items() if k in fields}
+    if 'password' in user_data:
+        user_data['password'] = bcrypt.generate_password_hash(user_data['password']).decode('utf-8')
+
+    new_user = User(**user_data)
+    db.session.add(new_user)
+    db.session.commit()
+    return new_user
+        
 
 
 #! ------------ Character Helper Functions -----------
@@ -83,7 +166,7 @@ def character_with_authorization(user,character_id):
             selectinload(Character.universes),
             selectinload(Character.notes)
         )
-    character =db.session.execute(query).scalars().first()
+    character =db.session.execute(query).scalar_one_or_none()
     if not character:
         return None
     return character
@@ -188,7 +271,7 @@ def universe_with_authorization(user,universe_id):
                 Universe.notes
             )
         )
-    universe = db.session.execute(query).scalars().first()
+    universe = db.session.execute(query).scalar_one_or_none()
     return universe
 
 
@@ -361,7 +444,7 @@ def note_with_authorization(user, note_id):
             Note.universes
         )
     )
-    note = db.session.execute(query).scalars().first()
+    note = db.session.execute(query).scalar_one_or_none()
     return note 
 
 

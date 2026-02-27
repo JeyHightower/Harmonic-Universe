@@ -6,7 +6,7 @@ db = SQLAlchemy()
 
 from .enums import AlignmentType, LocationType
 from .associations import character_universes, character_notes, note_universes, character_locations, location_notes
-from .users import User
+from .users import User, bcrypt
 from .universes import Universe
 from .characters import Character
 from .notes import Note

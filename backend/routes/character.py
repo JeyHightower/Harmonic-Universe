@@ -94,7 +94,7 @@ def get_character(character_id):
 @character_bp.route('/<int:character_id>', methods = ['PATCH'])
 @jwt_required()
 def update_character(character_id):
-    data = request.json or {}
+    data = request.get_json() or {}
     user = get_current_user()
 
     is_valid, error_msg = validate_character_data(data, partial=True)
