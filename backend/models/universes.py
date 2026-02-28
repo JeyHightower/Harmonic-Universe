@@ -11,7 +11,7 @@ class Universe(db.Model):
 
     universe_id: Mapped[int] = mapped_column(primary_key=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False) 
-    _name: Mapped[str] = mapped_column('name',String(100), nullable=False)
+    name: Mapped[str] = mapped_column('name',String(100), nullable=False)
     description: Mapped[str] = mapped_column(String(300), nullable=True)
     alignment: Mapped[AlignmentType] = mapped_column(db.Enum(AlignmentType), default=AlignmentType.NEUTRAL, nullable=False )
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
@@ -22,7 +22,7 @@ class Universe(db.Model):
     notes: Mapped[List['Note']] = relationship(secondary = 'note_universes', back_populates='universes')
     locations: Mapped[List['Location']] = relationship(back_populates='universe', cascade= 'all, delete-orphan' )
     
-    @validates('_name')
+    @validates('name')
     def validate_name(self, key, value):
         if not value or not value.strip():
             raise ValueError('Universe name is required')
@@ -35,13 +35,6 @@ class Universe(db.Model):
             raise ValueError('Each word in the universe name must be less than 20 characters')
         return value.strip().upper()
 
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
 
 
     def to_dict(self, summary = True):
@@ -49,12 +42,12 @@ class Universe(db.Model):
             'universe_id': self.universe_id,
             'name': self.name,
             'alignment': self.alignment.value if self.alignment else None,
-            'owner_id': self.owner_id,
+            'owner_id': self.creator_id,
             'created_at': self.created_at.isoformat()
         }
         if not summary:
             data['description'] = self.description
-            data['owner'] = self.owner.username if self.owner else None
+            data['owner'] = self.creator.username if self.creator else None
             data['characters'] = [{'id': c.character_id, 'name': c.name} for c in self.characters] 
             data['notes'] = [{'id': n.note_id, 'title': n.title} for n in self.notes]
         

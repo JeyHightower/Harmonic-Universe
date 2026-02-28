@@ -3,7 +3,7 @@ from models import Universe,AlignmentType, get_current_user
 from flask_jwt_extended import jwt_required
 from config import db
 from sqlalchemy import select
-from utils import get_current_user, add_characters_to_universe, universe_with_authorization, universes_with_authorization, validate_universe_data, execute_universe_creation
+from utils import get_current_user, execute_universe_update, add_characters_to_universe, universe_with_authorization, universes_with_authorization, validate_universe_data, execute_universe_creation
 
 universe_bp = Blueprint('universes', __name__, url_prefix='/universes')
 
@@ -102,13 +102,13 @@ def update_universe(universe_id):
         }), 400
 
     try:
-        universe = universe_with_authorization(universe_id)
+        universe = universe_with_authorization(user,universe_id)
         if not universe:
             return jsonify({
                 'Message': 'Universe not found. '
             }), 404
         
-        execute_universe_update(universe, data, user)
+        execute_universe_update(user, universe, data)
         db.session.commit()
         return jsonify({
             'Message': 'Universe has been updated successfully.'

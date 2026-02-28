@@ -2,6 +2,7 @@ from flask import session, request
 from flask_jwt_extended import get_jwt_identity
 from flask_bcrypt import generate_password_hash, check_password_hash
 from sqlalchemy import select, or_
+from sqlalchemy.orm import selectinload
 from models import User, bcrypt, Character, Universe, Note, Location, TokenBlocklist, LocationType, AlignmentType, character_universes, character_notes, character_universes, note_universes, location_notes
 from config import  jwt, db
 
@@ -141,13 +142,13 @@ def execute_character_creation(user, data):
     fields = ['name', 'age', 'origin', 'main_power_set', 'secondary_power_set', 'skills']
     character_data = {k:v for k,v in data.items() if k in fields}
     new_character = Character(**character_data, creator_id = user.user_id)
+    db.session.add(new_character)
     if 'universe_ids' in data and data['universe_ids']:
         add_universes_to_character(user, new_character, data['universe_ids'])
     if 'note_ids' in data and data['note_ids']:
         add_notes_to_character(user, new_character, data['note_ids'])
     if 'location_ids' in data and data['location_ids']:
         add_locations_to_character(user, new_character, data['location_ids'])
-    db.session.add(new_character)
     db.session.commit()
     return new_character
 

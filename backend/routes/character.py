@@ -104,7 +104,7 @@ def update_character(character_id):
         }), 400
 
     try:
-        character = character_with_authorization(character_id)
+        character = character_with_authorization(user,character_id)
         if not character:
             return jsonify({
                 'Message': 'Character not found.'
@@ -139,7 +139,7 @@ def delete_character(character_id):
             'Message': 'User not found.'
         }), 404
 
-    character = character_with_authorization(character_id)
+    character = character_with_authorization(user,character_id)
     if not character:
         return jsonify({
             'Message': 'Character not found.'

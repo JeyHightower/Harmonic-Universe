@@ -61,7 +61,7 @@ class Character(db.Model):
     def to_dict(self, summary = True):
         data = {
         'character_id': self.character_id,
-        'user_id': self.user_id,
+        'creator_id': self.creator_id,
         'name': self.name,
         'age': self.age,
         'main_power_set': self.main_power_set,
