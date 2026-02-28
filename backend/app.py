@@ -17,7 +17,8 @@ all_blueprints = [
     (auth_bp, '/auth'),
     (universe_bp, '/universes'),
     (character_bp, '/characters'),
-    (note_bp, '/notes')
+    (note_bp, '/notes'),
+    (location_bp, '/')
 ]
 
 for bp, prefix in all_blueprints:

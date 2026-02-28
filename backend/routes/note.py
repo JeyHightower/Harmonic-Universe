@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required
 from sqlalchemy import select
 from models import Character, Universe
 from config import db
-from utils import get_current_user,validate_note_data, execute_note_creation, notes_with_authorization, note_with_authorization
+from utils import get_current_user,validate_note_data, execute_note_creation, notes_with_authorization, note_with_authorization, execute_note_update
 
 
 note_bp = Blueprint ('notes', __name__, url_prefix='/notes')
@@ -113,6 +113,10 @@ def update_note(note_id):
     try:
         execute_note_update(user, note, data)
         db.session.commit()
+        return jsonify({
+            'Message': 'Note successfully Updated', 
+            'Note': note.to_dict(summary=True)
+        }), 200
     except PermissionError as e:
         db.session.rollback()
         return jsonify({
@@ -143,6 +147,10 @@ def delete_note(note_id):
     try:
         db.session.delete(note)
         db.session.commit()
+        return jsonify({
+            'Message': 'Note successfully deleted.'
+        }), 200
+        
     except Exception as e:
         db.session.rollback()
         print(f'Error: {e}')

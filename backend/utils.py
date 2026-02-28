@@ -406,7 +406,7 @@ def execute_note_creation(user, data):
         add_locations_to_note(user, new_note, data['universe_ids'])
 
     db.session.add(new_note)
-    db.commit()
+    db.session.commit()
     return new_note
 
 
@@ -540,21 +540,21 @@ def execute_location_creation(user, data):
         Universe.creator_id == user.user_id,
         Universe.universe_id == universe_id
     )
-    universe = db.session.execute(query).scalars().first()
+    universe = db.session.execute(query).scalar_one_or_none()
     if not universe:
         raise ValueError(
             'Invalid Universe:You do not have permission to add locations here.'
         )
-    fields = ['name', 'location_type', 'description', 'universe_id']
+    fields = ['name', 'location_type', 'description']
     location_data = {k:v for k,v in data.items() if k in fields}
     new_location = Location(**location_data, creator_id = user.user_id, universe_id = universe.universe_id)
+    db.session.add(new_location)
     
     if 'character_ids' in data and data['character_ids']:
         add_characters_to_location(user, new_location, data['character_ids'])
 
     if 'note_ids' in data and data['note_ids']:
         add_notes_to_location(user, new_location, data['note_ids'])
-    db.session.add(new_location)
     db.session.commit()
     return new_location
 

@@ -4,11 +4,11 @@ from flask_jwt_extended import jwt_required
 from sqlalchemy import select
 from utils import get_current_user, validate_location_data, execute_location_creation, add_characters_to_location, add_notes_to_location, locations_with_authorization_in_universe, location_with_authorization, execute_location_update
 
-location_bp = Blueprint('locations', __name__,)
+location_bp = Blueprint('locations', __name__)
 
 @location_bp.route('/universes/<int:universe_id>/locations', methods=['POST'])
 @jwt_required()
-def create_location():
+def create_location(universe_id):
     data = request.get_json() or {}
 
     is_valid, error_msg = validate_location_data(data)
@@ -56,7 +56,7 @@ def get_all_locations_for_universe(universe_id):
         }), 200
     return jsonify({
         'Message': 'Locations found.',
-        'Locations': [l_to_dict(summary=True) for l in locations]
+        'Locations': [location.to_dict(summary=True) for location in locations]
     }), 200
 
 
