@@ -5,7 +5,7 @@ from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, j
 from sqlalchemy import select
 from models import User, TokenBlocklist
 from config import db
-from utils import validate_auth_data, validate_login_data, authenticate_user
+from utils import validate_auth_data, validate_login_data, authenticate_user, execute_user_creation
 import time
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -21,7 +21,7 @@ def register():
             return jsonify({
                 'Error': error_msg
             }), 400
-            
+
         new_user = execute_user_creation(data)
         access_token = create_access_token(
             identity=str(new_user.user_id)
@@ -35,6 +35,7 @@ def register():
 
 
     except  ValueError as e:
+        db.session.rollback()
         return jsonify({f'Message:{e}'}), 400
     except Exception as e:
         db.session.rollback()
@@ -68,6 +69,7 @@ def login():
                 }), 200
 
     except Exception as e:
+        db.session.rollback()
         print(f'Error: {str(e)}')
         return jsonify ({'Message': 'Error occured during login'}), 500
 
@@ -77,7 +79,7 @@ def login():
 def token_check():
     user_id = int(get_jwt_identity())
 
-    user = db.session.get(User, iuser_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({
             'Message': 'User not found'
