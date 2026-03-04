@@ -3,3 +3,4 @@ from .universe import universe_bp
 from .character import character_bp
 from .note import note_bp
 from .location import location_bp
+from .users import user_bp
