@@ -13,9 +13,9 @@ CORS(app)
 db.init_app(app)
 
 #! Link to frontend
-# @app.route('/api/data')
-# def get_data():
-#     return {"message": "Hello from flask engine."}
+# @app.route('/api/test-connection')
+# def test_connection():
+#     return {"status": "Success!!!"}
 
 all_blueprints = [
     (auth_bp, '/api/auth'),

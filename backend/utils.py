@@ -5,6 +5,7 @@ from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 from models import User, bcrypt, Character, Universe, Note, Location, TokenBlocklist, LocationType, AlignmentType, character_universes, character_notes, character_universes, note_universes, location_notes
 from config import  jwt, db
+from functools import wraps
 
 #!------------ Universal Helper Function ----------
 def get_current_user():
@@ -621,3 +622,24 @@ def execute_location_update(user,location, data):
         add_characters_to_location(user,location,data['character_ids'])
     if 'note_ids' in data and data['note_ids']:
         add_notes_to_location(user, location, data['note_ids'])
+
+
+#!------------ User Helper Function ----------
+
+def execute_get_all_users():
+    query = select(User)
+    all_users = db.session.execute(query).scalars().all()
+    return [{'id': user.user_id, 'name': user.name } for user in all_users]
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = get_current_user()
+        if not user or not user.is_admin:
+            return jsonify({
+                'Message': 'Permission Denied, Admin only.'
+            }), 403
+        return f(user, *args, **kwargs)
+    return decorated
+

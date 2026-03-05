@@ -14,6 +14,7 @@ class User(db.Model, UserMixin):
     __tablename__ = 'users'
 
     user_id: Mapped[int] = mapped_column(primary_key=True)
+    is_admin: Mapped[bool]= mapped_column(default=False, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     username: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
     email: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
