@@ -8,7 +8,7 @@ class Character(db.Model):
     __tablename__ = 'characters'
 
     character_id: Mapped[int] = mapped_column(primary_key = True)
-    creator_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False)
     name: Mapped[str] = mapped_column('name', String(100), nullable = False)
     age: Mapped[int] = mapped_column(nullable = True)
     origin: Mapped[str] = mapped_column(String(200), nullable = True)
@@ -61,7 +61,7 @@ class Character(db.Model):
     def to_dict(self, summary = True):
         data = {
         'character_id': self.character_id,
-        'creator_id': self.creator_id,
+        'user_id': self.user_id,
         'name': self.name,
         'age': self.age,
         'main_power_set': self.main_power_set,

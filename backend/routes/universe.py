@@ -1,23 +1,16 @@
 from flask import jsonify, Blueprint, request, abort
 from models import Universe,AlignmentType, get_current_user
-from flask_jwt_extended import jwt_required
 from config import db
 from sqlalchemy import select
-from utils import get_current_user, execute_universe_update, add_characters_to_universe, universe_with_authorization, universes_with_authorization, validate_universe_data, execute_universe_creation
+from utils import get_current_user, token_and_user_required, resource_owner_required, execute_universe_update, add_characters_to_universe, load_universe_with_relationships, universes_with_authorization, validate_universe_data, execute_universe_creation
 
 universe_bp = Blueprint('universes', __name__, url_prefix='/universes')
 
 
 @universe_bp.route('/', methods=['POST'])
-@jwt_required()
-def create_universe():
+@token_and_user_required
+def create_universe(user):
     try:
-        user = get_current_user()
-        if not user:
-            return jsonify({
-                'Error': 'Unauthorized.'
-            }), 401
-
         data = request.get_json() or {}
         if not data:
             return jsonify({'Error': 'Data is required'}), 400
@@ -44,14 +37,8 @@ def create_universe():
 
 
 @universe_bp.route('/', methods=['GET'])
-@jwt_required()
-def get_all_universes():
-    user = get_current_user()
-    if not user:
-        return jsonify({
-            'Error': 'Unauthorized.'
-        }), 401
-
+@token_and_user_required
+def get_all_universes(user):
     universes = universes_with_authorization(user)
     if not universes:
         return jsonify({
@@ -65,36 +52,26 @@ def get_all_universes():
 
 
 @universe_bp.route('/<int:universe_id>', methods=['GET'])
-@jwt_required()
-def get_universe(universe_id):
-    user = get_current_user()
-    if not user:
-        return jsonify({
-            'Error':'Unauthorized.'
-        }), 401
-
-    universe = universe_with_authorization(user, universe_id)
-    if not universe:
+@token_and_user_required
+@resource_owner_required(Universe)
+def get_universe(user, universe, *args, **kwargs):
+    universe_with_relationships = load_universe_with_relationships(user,universe.universe_id)
+    if not universe_with_relationships:
         return jsonify ({
             'Message': 'Universe not found.'
         }), 404
     return jsonify ({
-        'Message': f'Universe with id of {universe_id} has been found.',
-        'Universe': universe.to_dict()
+        'Message': f'Universe with id of {universe_with_relationships.universe_id} has been found.',
+        'Universe': universe_with_relationships.to_dict()
     }), 200
 
 
 
 @universe_bp.route('/<int:universe_id>', methods=['PATCH'])
-@jwt_required()
-def update_universe(universe_id):
-    user = get_current_user()
-    data = request.get_json() or {}
-    if not user:
-        return jsonify({
-            'Error': 'Unauthorized.'
-        }), 401
-
+@token_and_user_required
+@resource_owner_required(Universe)
+def update_universe(user, universe, *args, **kwargs):
+    data = request.get_json() or {} 
     is_valid, error_msg = validate_universe_data(data, partial=True)
     if not is_valid:
         return jsonify({
@@ -102,16 +79,11 @@ def update_universe(universe_id):
         }), 400
 
     try:
-        universe = universe_with_authorization(user,universe_id)
-        if not universe:
-            return jsonify({
-                'Message': 'Universe not found. '
-            }), 404
-        
         execute_universe_update(user, universe, data)
         db.session.commit()
         return jsonify({
-            'Message': 'Universe has been updated successfully.'
+            'Message': 'Universe has been updated successfully.',
+            'Universe': universe.to_dict(summary=True)
         }), 200
 
     except (PermissionError, ValueError) as e:
@@ -125,25 +97,15 @@ def update_universe(universe_id):
 
 
 @universe_bp.route('/<int:universe_id>', methods=['DELETE'])
-@jwt_required()
-def delete_universe(universe_id):
-    user = get_current_user()
-    if not user:
-        return jsonify({
-            'Error': 'Unauthorized.'
-        }), 401
-   
-    universe = universe_with_authorization(user, universe_id)
-    if not universe:
-        return jsonify({
-        'Message': 'Universe not found'
-    }), 404
+@token_and_user_required
+@resource_owner_required(Universe)
+def delete_universe(user, universe, *args, **kwargs):
     try:
         db.session.delete(universe)
         db.session.commit()
         return jsonify({
             'Message': 'Universe successfully deleted.',
-            'id': universe_id
+            'id': universe.universe_id
         }), 200
     except Exception as e:
         db.session.rollback()

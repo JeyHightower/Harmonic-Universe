@@ -27,57 +27,8 @@ class User(db.Model, UserMixin):
     notes: Mapped[List['Note']] = relationship(back_populates = 'creator', cascade ='all, delete-orphan')
     locations: Mapped[List['Location']] = relationship(back_populates = 'creator', cascade = 'all, delete-orphan')
     
-    # @property
-    # def password(self) -> str:
-    #     raise AttributeError('Password is not a readable attribute')
-    
-    # @password.setter
-    # def password(self, password):
-    #     self.password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    # def check_password(self, password):
-    #     return bcrypt.check_password_hash(self.password, password)
-
-    # @property
-    # def email(self):
-    #     return self.email
-
-    # @email.setter
-    # def email(self, value):
-    #     if '@' not in value:
-    #         raise  ValueError('Invalid Email')
-    #     parts = value.split('@')
-    #     if len(parts)  != 2 or "." not in parts[1]:
-    #         raise ValueError("Invalid Domain")
-    #     if len(parts[0]) <= 2:
-    #         raise ValueError("Email prefix is too short")
-        
-    #     self.email = value.lower().strip()
-
-
-    def to_dict(self, summary : bool = True) -> dict:
-        """        
-         Transforms the User model into a dictionary for Json responses. 
-         Flag 'summary' toggles between a light version and a full profile.
-        """
-
-        data = {  
-            'user_id': self.user_id,
-            'name': self.name,
-            'username': self.username,
-            'email': self.email,
-            'universe_count': len(self.owned_universes),
-            'created_at': self.created_at.isoformat()
-        }
-
-        if not summary:
-            data['bio'] = self.bio
-            data['universes'] = [u.name for u in self.owned_universes] if self.owned_universes else []
-            data['owned_universe_ids'] = [u.universe_id for u in self.owned_universes] if self.owned_universes else []
-        
-        return data
-        
-    @validates("name", "username", "email" )
+    @validates("name", "username", "email")
     def user_validation(self, attribute, value):
         if not value or len(value.strip() ) < 2:
             raise ValueError(f"The {attribute} field is not long enough!!")
@@ -88,5 +39,30 @@ class User(db.Model, UserMixin):
                 raise ValueError("Invalid Email Format")
             return value.strip().lower()
         return value.strip().capitalize()
+
+     
+    def to_dict(self, summary : bool = True) -> dict:
+        """        
+         Transforms the User model into a dictionary for Json responses. 
+         Flag 'summary' toggles between a light version and a full profile.
+        """
+
+        data = {  
+            'user_id': self.user_id,
+            'is_admin': self.is_admin,
+            'username': self.username,
+            'email': self.email
+        }
+
+        if not summary:
+            data['name']= self.name,
+            data['bio'] = self.bio
+            data['universes'] = [u.name for u in self.owned_universes] if self.owned_universes else []
+            data['owned_universe_ids'] = [u.universe_id for u in self.owned_universes] if self.owned_universes else []
+            data['universe_count'] = len(self.owned_universes),
+            data['created_at'] = self.created_at.isoformat()
+        
+        return data
+        
 
        

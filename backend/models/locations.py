@@ -10,7 +10,7 @@ class Location (db.Model):
 
     location_id : Mapped[int] = mapped_column(primary_key=True)
     universe_id: Mapped[int] = mapped_column(ForeignKey('universes.universe_id'), nullable=False)
-    creator_id : Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable=False)
+    user_id : Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable=False)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     location_type: Mapped[LocationType] = mapped_column(db.Enum(LocationType), default = LocationType.CITY, nullable=False)
     description: Mapped[str] = mapped_column(String(500), nullable = True)

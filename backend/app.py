@@ -11,6 +11,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app)
 db.init_app(app)
+jwt.init_app(app)
 
 #! Link to frontend
 # @app.route('/api/test-connection')

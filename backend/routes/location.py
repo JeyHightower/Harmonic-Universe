@@ -1,14 +1,15 @@
 from config import db
 from flask import jsonify, Blueprint, request
 from flask_jwt_extended import jwt_required
+from models import Location
 from sqlalchemy import select
-from utils import get_current_user, validate_location_data, execute_location_creation, add_characters_to_location, add_notes_to_location, locations_with_authorization_in_universe, location_with_authorization, execute_location_update
+from utils import get_current_user, validate_location_data, load_location_with_relationships, token_and_user_required, resource_owner_required, execute_location_creation, add_characters_to_location, add_notes_to_location, locations_with_authorization_in_universe, execute_location_update
 
 location_bp = Blueprint('locations', __name__)
 
 @location_bp.route('/universes/<int:universe_id>/locations', methods=['POST'])
-@jwt_required()
-def create_location(universe_id):
+@token_and_user_required
+def create_location(user,universe_id):
     data = request.get_json() or {}
 
     is_valid, error_msg = validate_location_data(data)
@@ -16,12 +17,6 @@ def create_location(universe_id):
         return jsonify({
             'Error': error_msg
         }), 400
-    
-    user = get_current_user()
-    if not user:
-        return jsonify({
-            'Message': 'Unauthorized. User required.'
-        }), 401
     try:
         location = execute_location_creation(user, data)
         return jsonify({
@@ -41,13 +36,8 @@ def create_location(universe_id):
         }), 500
 
 @location_bp.route('/universes/<int:universe_id>/locations', methods=['GET'])
-@jwt_required()
-def get_all_locations_for_universe(universe_id):
-    user = get_current_user()
-    if not user:
-        return jsonify({
-            'Message': 'Unauthorized. User required.'
-        }), 401
+@token_and_user_required
+def get_all_locations_for_universe(user, universe_id):
     locations = locations_with_authorization_in_universe(user, universe_id)
     if not locations:
         return jsonify({
@@ -61,48 +51,35 @@ def get_all_locations_for_universe(universe_id):
 
 
 @location_bp.route('/locations/<int:location_id>', methods=['GET'])
-@jwt_required()
-def get_location(location_id):
-    user = get_current_user()
-    if not user:
-        return jsonify({
-            'Message': 'Unauthorized. User required.'
-        }), 401
-    location = location_with_authorization(user,location_id)
-    if not location:
+@token_and_user_required
+@resource_owner_required(Location)
+def get_location(user, location, *args, **kwargs):
+    location_with_relationships = load_location_with_relationships(user,location.location_id)
+    if not location_with_relationships:
         return jsonify({
             'Message': 'Location could not be found.'
         }), 404
     return jsonify({
         'Message': 'Location found.',
-        'Location': location.to_dict(summary=False)
+        'Location': location_with_relationships.to_dict(summary=False)
     }), 200
 
 @location_bp.route('/locations/<int:location_id>', methods=['PATCH'])
-@jwt_required()
-def update_location(location_id):
+@token_and_user_required
+@resource_owner_required(Location)
+def update_location(user, location, *args, **kwargs):
     data = request.get_json() or {} 
     is_valid, error_msg = validate_location_data(data, partial=True)
     if not is_valid:
         return jsonify({
             'Error': error_msg
         }), 400
-    user = get_current_user()
-    if not user:
-        return jsonify({
-            Message: 'Unauthorized. User is required.'
-        }), 401
-    location = location_with_authorization(user,location_id)
-    if not location:
-        return jsonify({
-            'Message': 'Location could not be found.'
-        }), 404
     try:
         execute_location_update(user, location, data)
         db.session.commit()
         return jsonify({
             'Message': 'Location has been successfully updated.',
-            'Location': location.to_dict(summary=False)
+            'Location': location.to_dict(summary=True)
         }),200
     except (ValueError, PermissionError) as e:
         db.session.rollback()
@@ -117,18 +94,9 @@ def update_location(location_id):
         }), 500
 
 @location_bp.route('/locations/<int:location_id>', methods=['DELETE'])
-@jwt_required()
-def delete_location(location_id):
-    user = get_current_user()
-    if not user:
-        return jsonify({
-            'Message': 'Unauthorized. User is required.'
-        }), 401
-    location = location_with_authorization(user, location_id)
-    if not location:
-        return jsonify({
-            'Message': 'Location could not be found.'
-        }), 404
+@token_and_user_required
+@resource_owner_required(Location)
+def delete_location(user, location, *args, **kwargs):
     try:
         db.session.delete(location)
         db.session.commit()

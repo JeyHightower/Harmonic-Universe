@@ -11,7 +11,7 @@ class Note(db.Model):
     note_id: Mapped[int] = mapped_column(primary_key = True)
     title: Mapped[str] = mapped_column(String(100), nullable = False)
     content: Mapped[str] = mapped_column(Text, nullable = True)
-    creator_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     characters: Mapped[List['Character']] = relationship(secondary = 'character_notes', back_populates = 'notes')
@@ -39,7 +39,7 @@ class Note(db.Model):
         data = {
             'note_id': self.note_id,
             'title': self.title,
-            'creator_id': self.creator_id,
+            'user_id': self.user_id,
             'created_at': self.created_at,
             'characters': [{'id': c .character_id, 'name': c.name} for c in self.characters],
             'universes': [{'id': u.universe_id,'name': u.name } for u in self.universes]

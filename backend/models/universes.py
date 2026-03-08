@@ -10,7 +10,7 @@ class Universe(db.Model):
     __tablename__ = 'universes'
 
     universe_id: Mapped[int] = mapped_column(primary_key=True)
-    creator_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False) 
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), nullable = False) 
     name: Mapped[str] = mapped_column('name',String(100), nullable=False)
     description: Mapped[str] = mapped_column(String(300), nullable=True)
     alignment: Mapped[AlignmentType] = mapped_column(db.Enum(AlignmentType), default=AlignmentType.NEUTRAL, nullable=False )
@@ -42,7 +42,7 @@ class Universe(db.Model):
             'universe_id': self.universe_id,
             'name': self.name,
             'alignment': self.alignment.value if self.alignment else None,
-            'owner_id': self.creator_id,
+            'owner_id': self.user_id,
             'created_at': self.created_at.isoformat()
         }
         if not summary:
