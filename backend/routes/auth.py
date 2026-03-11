@@ -71,7 +71,7 @@ def login():
     except Exception as e:
         db.session.rollback()
         print(f'Error: {str(e)}')
-        return jsonify ({'Message': 'Error occured during login'}), 500
+        return jsonify ({'Error': 'Error occured during login'}), 500
 
 
 @auth_bp.route('/token-check', methods=['GET'])

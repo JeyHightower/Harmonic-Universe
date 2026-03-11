@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { User, AuthResponse, LoginRequest} from '../types/user';
+import type { AuthResponse, LoginRequest } from '../types/auth';
+import type { User } from '../types/user';
 import { type RootState } from '../app/store';
 
 export const apislice = createApi({
