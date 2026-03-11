@@ -32,8 +32,8 @@ export const useObjectSetter = <T>(initialValue:T) => {
 
     const updateField = (key: keyof T, value: any) => ObjectSetterEngine('UPDATE_FIELD', setData, key, value);
     const reset = () => ObjectSetterEngine('RESET', setData, undefined, initialValue);
-    const toggleLoginMethod = (method: LoginMethod, value: string) => ObjectSetterEngine('LOGIN_TOGGLE', setData, method as keyof T, value)
-    return { data, updateField, reset, toggleLoginMethod };
+    const setLoginIdentifier = (method: LoginMethod, value: string) => ObjectSetterEngine('SET_LOGIN_IDENTIFIER', setData, method as keyof T, value)
+    return { data, updateField, reset, setLoginIdentifier };
 }
 
 

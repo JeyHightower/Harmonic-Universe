@@ -10,7 +10,7 @@ export const Login = () => {
     const {
         data: credentials,
         updateField,
-        toggleLoginMethod
+        setLoginIdentifier
     } = useObjectSetter<LoginRequest>({
         password: '',
         username: ''
@@ -21,7 +21,7 @@ export const Login = () => {
 
 
     useEffect(() => {
-        toggleLoginMethod(loginMethod, '');
+        setLoginIdentifier(loginMethod, '');
     }, [loginMethod]);
 
             
@@ -42,9 +42,8 @@ export const Login = () => {
 
             <input
                 placeholder={loginMethod}
-                // Dynamically access the correct field based on current method
                 value={loginMethod === 'username' ? (credentials.username || '') : (credentials.email || '')}
-                onChange={(e) => toggleLoginMethod(loginMethod, e.target.value)}
+                onChange={(e) => setLoginIdentifier(loginMethod, e.target.value)}
             />
             
             <input

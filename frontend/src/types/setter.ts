@@ -1,6 +1,6 @@
 type ListAction = 'ADD' | 'REMOVE' | 'CLEAR';
 type BooleanAction = 'TOGGLE' | 'SET_TRUE' | 'SET_FALSE';
-type ObjectAction = 'UPDATE_FIELD' | 'RESET' | 'LOGIN_TOGGLE';
+type ObjectAction = 'UPDATE_FIELD' | 'RESET' | 'SET_LOGIN_IDENTIFIER';
 
 export const ListSetterEngine = <T> (
     action: ListAction, 
@@ -50,7 +50,7 @@ export const ObjectSetterEngine = <T> (
             if (key != undefined)
             setter(prev => ({...prev, [key]:value}));
             break;
-        case 'LOGIN_TOGGLE':
+        case 'SET_LOGIN_IDENTIFIER':
             if (key !== undefined){
                 setter(prev => {
                     const base = { ...prev, password: (prev as any).password };

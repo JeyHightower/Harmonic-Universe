@@ -5,10 +5,11 @@ export interface AuthResponse {
     token: string
 }
 
-
 export type LoginRequest = {
-    password: string;
+password:Password
 } & ({ username: string; email?:never } | { email: string ; username?:never });
 
-
+export type Password = string;
 export type LoginMethod = 'username' | 'email';
+
+
