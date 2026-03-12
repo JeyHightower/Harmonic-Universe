@@ -1,6 +1,6 @@
 type ListAction = 'ADD' | 'REMOVE' | 'CLEAR';
 type BooleanAction = 'TOGGLE' | 'SET_TRUE' | 'SET_FALSE';
-type ObjectAction = 'UPDATE_FIELD' | 'RESET' | 'SET_LOGIN_IDENTIFIER';
+type ObjectAction = 'UPDATE_FIELD' | 'RESET' | 'SET_LOGIN_IDENTIFIER' | 'ADD_FIELDS';
 
 export const ListSetterEngine = <T> (
     action: ListAction, 
@@ -59,6 +59,14 @@ export const ObjectSetterEngine = <T> (
                         : { ...base, email: value, username: undefined }  
                     ) as unknown as T;
                   });
+            }
+            break;
+        case 'ADD_FIELDS':
+            if(value && typeof value === 'object'){
+                setter(prev => ({
+                    ...prev,
+                    ...value
+                }));
             }
             break;
         case 'RESET':

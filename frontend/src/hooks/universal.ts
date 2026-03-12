@@ -1,5 +1,5 @@
 import {type TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from '../app/store';
+import type { RootState, AppDispatch } from '../types/universal';
 import { useState } from 'react';
 import { ListSetterEngine, BooleanSetterEngine, ObjectSetterEngine } from '../types/setter';
 import type { LoginMethod } from '../types/auth';
@@ -33,7 +33,8 @@ export const useObjectSetter = <T>(initialValue:T) => {
     const updateField = (key: keyof T, value: any) => ObjectSetterEngine('UPDATE_FIELD', setData, key, value);
     const reset = () => ObjectSetterEngine('RESET', setData, undefined, initialValue);
     const setLoginIdentifier = (method: LoginMethod, value: string) => ObjectSetterEngine('SET_LOGIN_IDENTIFIER', setData, method as keyof T, value)
-    return { data, updateField, reset, setLoginIdentifier };
+    const addFields = (fields: object) => ObjectSetterEngine('ADD_FIELDS', setData, undefined, fields )
+    return { data, updateField, reset, setLoginIdentifier, addFields };
 }
 
 

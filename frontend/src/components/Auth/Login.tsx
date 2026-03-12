@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector, useObjectSetter } from '../../hooks/hooks';
+import { useAppDispatch, useAppSelector, useObjectSetter } from '../../hooks/universal';
 import { loginUser } from '../../features/auth/authActions';
 import type { LoginRequest, LoginMethod } from '../../types/auth';
 
