@@ -1,8 +1,11 @@
 import type { User } from "./types/user";
 import type { ApiRequestConfig } from "./types/api";
 import type { Universe } from "./types/universe";
+import type { Character } from "./types/character";
 import type { AuthState, LoginResponse, RegisterResponse } from "./types/auth";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import type { Note } from "./types/note";
+import type { AppLocation } from "./types/location";
 
 
 export const getInitialToken = ():string | null => {
@@ -14,20 +17,24 @@ export const getInitialUser = (): User | null => {
     return user ? JSON.parse(user) : null
 };
 
-export const apiRequest = async <T> ({ url, method, body, thunkAPI, signal }: ApiRequestConfig):Promise<T | any>  => {
+export const apiRequest = async <T> (config: ApiRequestConfig):Promise<T> => {
+    const { url, method, body, thunkAPI, signal } = config;
     const token = getInitialToken();
-    if (!token && method !== 'POST') {
-        return thunkAPI.rejectWithValue('No Authorization token found.');
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+    };
+    if(token){
+        headers['Authorization'] = `Bearer ${token}`;
     }
+    // if (!token && method !== 'POST') {
+    //     return thunkAPI.rejectWithValue('No Authorization token found.');
+    // }
     try {
         const response = await fetch( url, {
             method,
             signal,
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: method !== 'GET' ? JSON.stringify(body): undefined
+            headers,
+            body: body ? JSON.stringify(body): undefined,
         });
         const data = await response.json();
         if(!response.ok){
@@ -39,8 +46,12 @@ export const apiRequest = async <T> ({ url, method, body, thunkAPI, signal }: Ap
         }
         return data as T;
 
-    } catch (error) {
-        return thunkAPI.rejectWithValue('Network Connection failed. ')
+    }
+    catch (error) {
+        if(error instanceof DOMException && error.name === 'AbortError'){
+            return thunkAPI.rejectWithValue('Request aborted.');
+        }
+        return thunkAPI.rejectWithValue('Network Connection failed.')
     }
 };
 
@@ -52,12 +63,50 @@ export const handleAuthSuccess = (state: AuthState, action: PayloadAction<LoginR
 }
 
 export const getCurrentUniverse = (): Universe | null => {
-    const universeData = localStorage.getItem('current_universe');
-    if(!universeData) return null;
+    const universe = localStorage.getItem('currentUniverse');
+    if(!universe) return null;
     try{
-        return JSON.parse(universeData) as Universe;
-    } catch(error){
-        console.log('failed to parse universe data', error);
+        return JSON.parse(universe) as Universe;
+    }
+     catch(error){
+        console.error('failed to parse universe data', error);
+        return null;
+    }
+}
+
+export const getCurrentCharacter = () => {
+    const character = localStorage.getItem('currentCharacter')
+    if(!character) return null;
+    try{
+        return JSON.parse(character) as Character;
+    } 
+    catch(error){
+        console.error('failed to parse character data', error);
+        return null;
+    }
+}
+
+export const getCurrentNote = () => {
+    const note = localStorage.getItem('currentNote')
+    if (!note) return null;
+    try{
+        return JSON.parse(note) as Note;
+    }
+    catch(error){
+        console.error('failed to parse character Data', error)
+        return null;
+    }
+}
+
+
+export const getCurrentLocation = () => {
+    const appLocation = localStorage.getItem('currentLocation')
+    if(!appLocation) return null;
+    try{
+        return JSON.parse(appLocation) as AppLocation;
+    }
+    catch(error){
+        console.error('failed to parse location data', error)
         return null;
     }
 }

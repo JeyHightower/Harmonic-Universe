@@ -23,6 +23,7 @@ const universeSlice = createSlice({
             })
             .addCase(createUniverse.fulfilled, (state, action) => {
                 state.isLoading = false;
+                state.error= null;
                 state.currentUniverse = action.payload;
                 state.allUniverses.push(action.payload);
             })
@@ -72,7 +73,9 @@ const universeSlice = createSlice({
                 if (index !== -1){
                     state.allUniverses[index] = action.payload;
                 }
-                state.currentUniverse = action.payload;
+                if (state.currentUniverse?.universe_id === action.payload.universe_id){
+                    state.currentUniverse = action.payload;
+                };
             })
             .addCase(updateUniverse.rejected, (state, action) => {
                 if (action.error.name === 'AbortError'){

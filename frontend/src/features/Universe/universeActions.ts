@@ -17,7 +17,7 @@ export const createUniverse = createAsyncThunk(
 )
 
 
-export const getAllUniverses = createAsyncThunk(
+export const getAllUniverses = createAsyncThunk<Universe[], void>(
     'universes/get',
     async(_, thunkAPI) => {
         return await apiRequest<Universe[]>({
@@ -59,7 +59,7 @@ export const updateUniverse = createAsyncThunk(
 export const deleteUniverse = createAsyncThunk(
     'universe/delete',
     async(universeId:number, thunkAPI) => {
-        return await apiRequest({
+        return await apiRequest<Universe>({
             url:`/api/universes/${universeId}`,
             method: 'DELETE',
             signal: thunkAPI.signal,

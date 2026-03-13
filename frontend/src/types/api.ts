@@ -7,7 +7,7 @@ export interface ApiRequestConfig {
     url: string;
     method: apiMethod;
     body?: any;
-    signal: any,
+    signal?: AbortSignal,
     thunkAPI: any;
   }
 
