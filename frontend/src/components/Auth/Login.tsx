@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector, useObjectSetter } from '../../hooks/universal';
-import { loginUser } from '../../features/auth/authActions';
+import { loginUser } from '../../features/Auth/authActions';
 import type { LoginRequest, LoginMethod } from '../../types/auth';
 
 

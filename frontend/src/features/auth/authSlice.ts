@@ -1,24 +1,8 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { type User } from '../../types/user';
-import { type AuthResponse } from '../../types/auth';
-import { loginUser, initializeAuth } from './authActions';
-
-interface AuthState {
-    user: User | null;
-    token: string | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    error: string | null;
-}
-
-const getInitialToken = ():string | null => {
-    return localStorage.getItem('token')
-};
-
-const getInitialUser = (): User | null => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null
-};
+import { getInitialToken, getInitialUser, handleAuthSuccess } from '../../helpers';
+import type { AuthState,  LoginResponse} from '../../types/auth';
+import { loginUser, initializeAuth, registerUser} from './authActions';
+;
 
 const initialState: AuthState = {
     user: getInitialUser(),
@@ -38,6 +22,8 @@ const authSlice = createSlice({
             state.token = null;
             state.isAuthenticated = false;
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.remove
         }
     },
     extraReducers: (builder) => {
@@ -46,20 +32,13 @@ const authSlice = createSlice({
             state.isLoading = true;
             state.error = null;
         })
-        .addCase(loginUser.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
-            state.isLoading = false;
-            state.isAuthenticated = true;
-            state.user = action.payload.user;
-            state.token = action.payload.token;
-            localStorage.setItem('token', action.payload.token);
-            localStorage.setItem('user', JSON.stringify(action.payload.user))
-        })
+        .addCase(loginUser.fulfilled, handleAuthSuccess)
         .addCase(loginUser.rejected, (state, action)=>{
             state.isLoading = false;
             state.isAuthenticated = false;
             state.error = action.payload as string;
         })
-        .addCase(initializeAuth.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
+        .addCase(initializeAuth.fulfilled, (state, action: PayloadAction<LoginResponse>) => {
             state.isLoading = false;
             state.user = action.payload.user;
             state.token = action.payload.token || state.token;
@@ -69,8 +48,19 @@ const authSlice = createSlice({
             state.user = null;
             state.token = null;
         })
+        .addCase(registerUser.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+        })
+        .addCase(registerUser.fulfilled, handleAuthSuccess)
+        .addCase(registerUser.rejected, (state, action) => {
+            state.isLoading = false;
+            state.isAuthenticated = false;
+            state.error = action.payload as string;
+        })
     }
 })
 
 export const { logout } = authSlice.actions;
+export {registerUser, loginUser, initializeAuth}
 export default authSlice.reducer;

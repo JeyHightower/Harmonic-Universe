@@ -1,51 +1,45 @@
 import{ createAsyncThunk } from '@reduxjs/toolkit';
-import type { LoginRequest, AuthResponse } from '../../types/auth.ts';
+import type { LoginRequest, LoginResponse } from '../../types/auth.ts';
+import type { User } from '../../types/user.ts';
+import { apiRequest } from '../../helpers.ts';
 
 export const loginUser = createAsyncThunk(
     'auth/login',
     async(credentials: LoginRequest, thunkAPI) => {
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST', 
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(credentials),
-            });
-            const data = await response.json();
-            if(!response.ok){
-                return thunkAPI.rejectWithValue(data.Error || 'Login failed.');
-            }
-            return data as AuthResponse;
-        } catch(error){
-            return thunkAPI.rejectWithValue('Network error Occured.');
-        }
+        return await apiRequest<LoginResponse>({
+            url: '/api/auth/login',
+            method: 'POST',
+            signal:thunkAPI.signal,
+            body: credentials,
+            thunkAPI
+        });
     }
-);
+)
+
+
+export const registerUser = createAsyncThunk(
+    'auth/register',
+    async(credentials: User, thunkAPI) => {
+        return await apiRequest<User>({
+            url:'/api/auth/register',
+            method: 'POST',
+            signal: thunkAPI.signal,
+            body: credentials,
+            thunkAPI
+        });
+    }
+)
+
 
 
 export const initializeAuth = createAsyncThunk(
     'auth/initialize',
     async(_, thunkAPI) => {
-        const token = localStorage.getItem('token');
-        if(!token) return thunkAPI.rejectWithValue('No token found.')
-
-        try {
-            const response = await fetch('/api/users/me', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-            const data = await response.json();
-            if (!response.ok){
-                localStorage.removeItem('token');
-                return thunkAPI.rejectWithValue('Session expired.');
-            }
-            return data as AuthResponse;
-        } catch(error){
-            return thunkAPI.rejectWithValue('Connection failed');
-        }
+        return await apiRequest<LoginResponse>({
+            url:'/api/users/me',
+            signal: thunkAPI.signal,
+            method: 'GET',
+            thunkAPI
+        });
     }
 );
