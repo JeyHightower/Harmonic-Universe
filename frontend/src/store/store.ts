@@ -4,7 +4,7 @@ import authReducer from '../features/Auth/authSlice';
 import universeReducer from '../features/Universe/universeSlice';
 import characterReducer from '../features/Character/characterSlice';
 import noteReducer from '../features/Note/noteSlice';
-import locationReducer from '../features/Location/locationSlice';
+import locationReducer from '../features/Location/locationSlice'
 
 export const store = configureStore({
     reducer: {
