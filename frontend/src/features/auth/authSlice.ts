@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { getInitialToken, getInitialUser, handleAuthSuccess } from '../../helpers';
 import type { AuthState,  LoginResponse} from '../../types/auth';
-import { loginUser, initializeAuth, registerUser} from './authActions';
+import { loginUser, initializeAuth, registerUser, registerAdmin} from './authActions';
 ;
 
 const initialState: AuthState = {
@@ -34,16 +34,28 @@ const authSlice = createSlice({
         })
         .addCase(loginUser.fulfilled, handleAuthSuccess)
         .addCase(loginUser.rejected, (state, action)=>{
+            if(action.error.name === 'AbortError'){
+                state.isLoading = false;
+                return;
+            }
             state.isLoading = false;
             state.isAuthenticated = false;
             state.error = action.payload as string;
+        })
+        .addCase(initializeAuth.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
         })
         .addCase(initializeAuth.fulfilled, (state, action: PayloadAction<LoginResponse>) => {
             state.isLoading = false;
             state.user = action.payload.user;
             state.token = action.payload.token || state.token;
         })
-        .addCase(initializeAuth.rejected, (state) => {
+        .addCase(initializeAuth.rejected, (state,action) => {
+            if(action.error.name === 'AbortError'){
+                state.isLoading = false;
+                return;
+            }
             state.isLoading = false;
             state.user = null;
             state.token = null;
@@ -54,8 +66,26 @@ const authSlice = createSlice({
         })
         .addCase(registerUser.fulfilled, handleAuthSuccess)
         .addCase(registerUser.rejected, (state, action) => {
+            if(action.error.name === 'AbortError'){
+                state.isLoading = false;
+                return;
+            }
             state.isLoading = false;
             state.isAuthenticated = false;
+            state.error = action.payload as string;
+        })
+        .addCase(registerAdmin.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+        })
+        .addCase(registerAdmin.fulfilled, handleAuthSuccess)
+        .addCase(registerAdmin.rejected, (state, action) => {
+            if(action.error.name === 'AbortError'){
+                state.isLoading = false;
+                return;
+            }
+            state.isLoading = false;
+            state.isAuthenticated= false;
             state.error = action.payload as string;
         })
     }

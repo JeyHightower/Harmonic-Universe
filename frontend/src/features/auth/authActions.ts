@@ -1,6 +1,6 @@
 import{ createAsyncThunk } from '@reduxjs/toolkit';
-import type { LoginRequest, LoginResponse } from '../../types/auth.ts';
-import type { User } from '../../types/user.ts';
+import type { LoginRequest, LoginResponse, RegisterResponse } from '../../types/auth.ts';
+import type {AdminDraft, UserDraft } from '../../types/user.ts';
 import { apiRequest } from '../../helpers.ts';
 
 export const loginUser = createAsyncThunk(
@@ -19,8 +19,8 @@ export const loginUser = createAsyncThunk(
 
 export const registerUser = createAsyncThunk(
     'auth/register',
-    async(credentials: User, thunkAPI) => {
-        return await apiRequest<User>({
+    async(credentials: UserDraft, thunkAPI) => {
+        return await apiRequest<RegisterResponse>({
             url:'/api/auth/register',
             method: 'POST',
             signal: thunkAPI.signal,
@@ -30,6 +30,18 @@ export const registerUser = createAsyncThunk(
     }
 )
 
+export const registerAdmin = createAsyncThunk(
+    'auth/register',
+    async(credentials: AdminDraft, thunkAPI) => {
+        return await apiRequest<RegisterResponse>({
+            url:'/api/auth/register',
+            method: 'POST',
+            signal: thunkAPI.signal,
+            body: credentials,
+            thunkAPI
+        });
+    }
+)
 
 
 export const initializeAuth = createAsyncThunk(

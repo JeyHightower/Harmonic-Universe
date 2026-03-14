@@ -1,9 +1,12 @@
 export interface User {
-    user_id: number;
+    userId: number;
     name: string;
     username: string;
-    is_admin: boolean;
+    isAdmin: boolean;
     email: string;
     bio: string | null;
 }
 
+export type UserDraft = Omit<User, 'userId' | 'isAdmin' > & {isAdmin: false};
+
+export type AdminDraft = Omit<User, 'userId' | 'isAdmin'> & {isAdmin: true};
