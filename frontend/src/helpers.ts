@@ -60,6 +60,7 @@ export const handleAuthSuccess = (state: AuthState, action: PayloadAction<LoginR
     state.isAuthenticated = true;
     state.user = action.payload.user;
     state.token = action.payload.token;
+    localStorage.setItem('token', action.payload.token)
 }
 
 export const getCurrentUniverse = (): Universe | null => {

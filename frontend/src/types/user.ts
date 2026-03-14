@@ -10,3 +10,8 @@ export interface User {
 export type UserDraft = Omit<User, 'userId' | 'isAdmin' > & {isAdmin: false};
 
 export type AdminDraft = Omit<User, 'userId' | 'isAdmin'> & {isAdmin: true};
+export interface AdminState {
+    allUsers: User[],
+    isLoading: boolean,
+    error: string | null
+}

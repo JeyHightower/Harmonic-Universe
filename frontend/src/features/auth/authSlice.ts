@@ -1,7 +1,7 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import { getInitialToken, getInitialUser, handleAuthSuccess } from '../../helpers';
-import type { AuthState,  LoginResponse} from '../../types/auth';
-import { loginUser, initializeAuth, registerUser, registerAdmin} from './authActions';
+import type { AuthState } from '../../types/auth';
+import { loginUser, registerUser, registerAdmin} from './authActions';
 ;
 
 const initialState: AuthState = {
@@ -23,7 +23,6 @@ const authSlice = createSlice({
             state.isAuthenticated = false;
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            localStorage.remove
         }
     },
     extraReducers: (builder) => {
@@ -41,24 +40,6 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.isAuthenticated = false;
             state.error = action.payload as string;
-        })
-        .addCase(initializeAuth.pending, (state) => {
-            state.isLoading = true;
-            state.error = null;
-        })
-        .addCase(initializeAuth.fulfilled, (state, action: PayloadAction<LoginResponse>) => {
-            state.isLoading = false;
-            state.user = action.payload.user;
-            state.token = action.payload.token || state.token;
-        })
-        .addCase(initializeAuth.rejected, (state,action) => {
-            if(action.error.name === 'AbortError'){
-                state.isLoading = false;
-                return;
-            }
-            state.isLoading = false;
-            state.user = null;
-            state.token = null;
         })
         .addCase(registerUser.pending, (state) => {
             state.isLoading = true;
@@ -92,5 +73,5 @@ const authSlice = createSlice({
 })
 
 export const { logout } = authSlice.actions;
-export {registerUser, loginUser, initializeAuth}
+export {registerUser, loginUser,registerAdmin}
 export default authSlice.reducer;

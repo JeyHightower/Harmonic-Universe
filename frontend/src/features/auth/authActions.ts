@@ -44,14 +44,3 @@ export const registerAdmin = createAsyncThunk(
 )
 
 
-export const initializeAuth = createAsyncThunk(
-    'auth/initialize',
-    async(_, thunkAPI) => {
-        return await apiRequest<LoginResponse>({
-            url:'/api/users/me',
-            signal: thunkAPI.signal,
-            method: 'GET',
-            thunkAPI
-        });
-    }
-);
