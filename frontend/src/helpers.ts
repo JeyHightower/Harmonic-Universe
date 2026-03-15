@@ -26,9 +26,9 @@ export const apiRequest = async <T> (config: ApiRequestConfig):Promise<T> => {
     if(token){
         headers['Authorization'] = `Bearer ${token}`;
     }
-    // if (!token && method !== 'POST') {
-    //     return thunkAPI.rejectWithValue('No Authorization token found.');
-    // }
+    if (!token && method !== 'POST') {
+        return thunkAPI.rejectWithValue('No Authorization token found.');
+    }
     try {
         const response = await fetch( url, {
             method,

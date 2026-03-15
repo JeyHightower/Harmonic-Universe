@@ -11,9 +11,9 @@ const Dashboard = () => {
     return (
         <div className="dashboard">
             <h1> Welcome, {uiData?.username || 'Guest'}!</h1>
-            <p> Current Status: {uiData?.accountStatus}</p>
+            <p> Current Status: {uiData?.accountStatus }</p>
             
-            <button onClick={() => updateField('accountStatus', 'Active')}>
+            <button onClick={() => updateField('accountStatus', 'active')}>
             Set To Active
         </button>
         </div>

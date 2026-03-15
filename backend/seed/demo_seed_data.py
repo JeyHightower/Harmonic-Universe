@@ -1,4 +1,4 @@
-from models import User, Universe, Character, Location, AlignmentType
+from models import User, Universe, Character, Location, AlignmentType, Note
 from config import db
 
 def demo_seed_data():
@@ -43,8 +43,15 @@ def demo_seed_data():
 
     )
 
+    demo_note = Note(
+        title = 'demo_note',
+        content = 'This is a demo note.',
+        creator = demo_user
+    )
+
     demo_character_1.universes.append(demo_universe_1)
     demo_universe_1.locations.append(demo_location)
+    demo_note.characters.append(demo_character_1)
 
     try: 
         db.session.add_all([demo_user, demo_universe_1, demo_universe_2, demo_character_1, demo_location])

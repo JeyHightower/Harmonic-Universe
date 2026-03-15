@@ -34,14 +34,14 @@ for bp, prefix in all_blueprints:
 
 if __name__ == '__main__':
     with app.app_context():
-        TokenBlocklist.query.delete()
-        db.session.commit()
-        print('Blocklist Deleted')
+        # TokenBlocklist.query.delete()
+        # db.session.commit()
+        # print('Blocklist Deleted')
   
-        db.drop_all()
-        print("Tables have been droped!!")
-        db.create_all()
-        print("Tables have been created!!")
-        demo_seed_data()
-        print("Demo seed data created!!")
+        # db.drop_all()
+        # print("Tables have been droped!!")
+        # db.create_all()
+        # print("Tables have been created!!")
+        # demo_seed_data()
+        # print("Demo seed data created!!")
         app.run(debug=True)

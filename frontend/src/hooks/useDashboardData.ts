@@ -10,16 +10,18 @@ export const useDashboardData = () => {
         accountStatus: 'pending',
         recentActivity: []
     } : {
-        user_id: 0,
+        userId: 0,
+        name: '',
         username: '',
         email: '',
-        is_admin: false,
+        isAdmin: false,
         bio: '',
         accountStatus: 'pending',
         recentActivity: []
     };
     const { data:uIData, updateField } = useObjectSetter<DashboardDataType>(initialValue);
     const isLoading = !userData;
+
 
     return { data:uIData, updateField, isLoading };
 }; 
