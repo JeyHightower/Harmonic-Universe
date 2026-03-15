@@ -18,7 +18,7 @@ class User(db.Model, UserMixin):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     username: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
     email: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
-    password: Mapped[str] = mapped_column(String(250), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(250), nullable=False)
     bio: Mapped[str] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
@@ -27,6 +27,19 @@ class User(db.Model, UserMixin):
     notes: Mapped[List['Note']] = relationship(back_populates = 'creator', cascade ='all, delete-orphan')
     locations: Mapped[List['Location']] = relationship(back_populates = 'creator', cascade = 'all, delete-orphan')
     
+
+    @property
+    def password(self):
+        raise AttributeError('Password is not a readable attribute.')
+
+    @password.setter
+    def password(self, plain_text_password):
+        self.password_hash = bcrypt.generate_password_hash(plain_text_password).decode('utf-8') 
+    
+    def check_password(self, plain_text_password):
+        return bcrypt.check_passwsord_hash(self.password_hash, plain_text_password)
+
+
 
     @validates("name", "username", "email")
     def user_validation(self, attribute, value):
