@@ -3,6 +3,7 @@ import type { LoginRequest, LoginResponse, RegisterResponse } from '../../types/
 import type {AdminDraft, UserDraft } from '../../types/user.ts';
 import { apiRequest } from '../../helpers.ts';
 
+
 export const loginUser = createAsyncThunk(
     'auth/login',
     async(credentials: LoginRequest, thunkAPI) => {

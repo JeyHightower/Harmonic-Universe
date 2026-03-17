@@ -1,4 +1,4 @@
-import { useAppSelector, useObjectSetter } from './universal';
+import { useAppSelector, useObjectSetter } from './universalToolbox';
 import { type DashboardDataType } from '../types/dashboard';
 
 
