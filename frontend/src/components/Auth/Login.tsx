@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector, useObjectSetter } from '../../hooks/universalToolbox';
+import { useAppDispatch, useAppSelector, useObjectSetter } from '../../hooks/useUniversalToolbox';
 import { loginUser } from '../../features/Auth/authActions';
 import type { LoginRequest, LoginMethod } from '../../types/auth';
 

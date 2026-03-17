@@ -1,8 +1,9 @@
-import { useAppSelector, useObjectSetter } from './universalToolbox';
+import { useAppSelector, useUniversalToolbox} from './useUniversalToolbox';
 import { type DashboardDataType } from '../types/dashboard';
 
 
 export const useDashboardData = () => {
+    const {useObjectSetter} = useUniversalToolbox();
     const { user:userData } = useAppSelector((state) => state.auth);
 
     const initialValue: DashboardDataType = userData ? {
@@ -19,7 +20,7 @@ export const useDashboardData = () => {
         accountStatus: 'pending',
         recentActivity: []
     };
-    const { data:uIData, updateField } = useObjectSetter<DashboardDataType>(initialValue);
+    const { object:uIData, updateField } = useObjectSetter<DashboardDataType>(initialValue);
     const isLoading = !userData;
 
 

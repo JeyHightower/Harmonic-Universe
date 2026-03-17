@@ -2,11 +2,11 @@ import { loginUser, registerUser } from "../features/Auth/authActions";
 import type { LoginRequest } from "../types/auth";
 import { logoutUser } from "../features/Auth/authSlice";
 import type { UserDraft } from "../types/user";
-import { useAppSelector,useAppDispatch  } from "./universalToolbox";
+import { useAppSelector,useAppDispatch  } from "./useUniversalToolbox";
 
 
 
-export const useAuth = () => {
+export const useAuthToolbox = () => {
    const { user, error, isLoading } = useAppSelector((state) => state.auth);
    const dispatch = useAppDispatch();
 
