@@ -1,4 +1,4 @@
-type ListAction = 'ADD' | 'REMOVE' | 'CLEAR';
+type ListAction = 'ADD' | 'REMOVE' | 'CLEAR' | 'ADD_UNIQUE';
 type BooleanAction = 'TOGGLE' | 'SET_TRUE' | 'SET_FALSE';
 type ObjectAction = 'UPDATE_FIELD' | 'RESET' | 'SET_LOGIN_IDENTIFIER' | 'ADD_FIELDS';
 
@@ -17,6 +17,14 @@ export const ListSetterEngine = <T> (
         
         case 'CLEAR':
             setter([]);
+            break;
+        case 'ADD_UNIQUE':
+            setter((prev) => {
+                if (item !== undefined && prev.length > 0 && prev[prev.length -1] === item){
+                    return prev;
+                }
+                return item !== undefined ? [...prev, item] : prev;
+            });
             break;
     }
 }

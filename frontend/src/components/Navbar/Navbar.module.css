@@ -1,0 +1,8 @@
+.nav-links {
+    display: flex;
+    transition: transform 0.3s ease;
+}
+
+.nav-links.open {
+    transform: translateX(0);
+}

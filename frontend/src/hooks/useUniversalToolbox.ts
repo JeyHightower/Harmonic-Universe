@@ -12,7 +12,8 @@ const useListSetter = <T> (initialValue: T[] = []) => {
     const add = (item:T) => ListSetterEngine('ADD', setList, item);
     const remove = (item:T) => ListSetterEngine('REMOVE', setList, item);
     const clear = () => ListSetterEngine('CLEAR', setList);
-    return { list, add, remove, clear } 
+    const addUnique = (item:T) => ListSetterEngine('ADD_UNIQUE', setList, item)
+    return { list, add, remove, clear, addUnique } 
 }
 
 

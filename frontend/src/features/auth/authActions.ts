@@ -19,7 +19,7 @@ export const loginUser = createAsyncThunk(
 
 
 export const registerUser = createAsyncThunk(
-    'auth/register',
+    'auth/registerUser',
     async(credentials: UserDraft, thunkAPI) => {
         return await apiRequest<RegisterResponse>({
             url:'/api/auth/register',
@@ -32,7 +32,7 @@ export const registerUser = createAsyncThunk(
 )
 
 export const registerAdmin = createAsyncThunk(
-    'auth/register',
+    'auth/registerAdmin',
     async(credentials: AdminDraft, thunkAPI) => {
         return await apiRequest<RegisterResponse>({
             url:'/api/auth/register',
