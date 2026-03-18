@@ -16,7 +16,7 @@ export const Navbar = () => {
     
     return (
         <nav className={styles.navbar}>
-            <div className={styles.navLogo}>
+           <div className={styles.navLogo}>
                 <Link to='/' onClick={() => trackAction('Clicked Logo')}>MyApp</Link>
             </div>
             <button className={styles.menuBurger} onClick={menu.toggle}>
@@ -31,7 +31,10 @@ export const Navbar = () => {
                     <li className={styles.userProfile}>Hi, {user?.username}</li>
                     </>
                 ): (
+                    <>
                     <li> <Link to='/login'>Login</Link></li>
+                    <li><Link to='/register'>Register</Link></li>
+                    </>
                 
                 )}
             </ul>

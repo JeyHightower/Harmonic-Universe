@@ -1,6 +1,9 @@
 .navLinks {
     display: flex;
     transition: transform 0.3s ease;
+    margin:0;
+    padding:0;
+    gap: 1.5rem
 }
 
 .open {

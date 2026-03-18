@@ -38,7 +38,7 @@ const useObjectSetter = <T>(initialValue:T) => {
 }
 
 
-export const useUniversalToolbox = () => {
+export const useUniversalToolbox = ()  => {
 return { useObjectSetter, useBooleanSetter, useListSetter }
 }
 
