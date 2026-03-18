@@ -23,7 +23,7 @@ export const Navbar = () => {
                 {menu.boolean ? 'x' : '☰'} 
             </button>
 
-            <ul className={`${styles.navLinks} ${menu. boolean ? styles.open : ''}`}>
+            <ul className={`${styles.navLinks} ${menu.boolean ? styles.open : ''}`}>
                 <li><Link to='/' onClick={() => trackAction('Nav to Home')}>Home</Link></li>
                 {isAuthenticated ? (
                     <>
