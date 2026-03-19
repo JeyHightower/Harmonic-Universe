@@ -1,11 +1,11 @@
 import styles from './Navbar.module.css';
 import { Link } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../hooks/useUniversalToolbox';
+import { useAppSelector } from '../../hooks/useUniversalToolbox';
 import { useUniversalToolbox } from '../../hooks/useUniversalToolbox';
-import { logoutUser } from '../../features/Auth/authSlice';
+import { useAuthToolbox } from '../../hooks/useAuthToolbox';
 
 export const Navbar = () => {
-    const dispatch = useAppDispatch();
+    const { logout } = useAuthToolbox();
     const { isAuthenticated, user } = useAppSelector(state => state.auth);
     const { useBooleanSetter, useListSetter } = useUniversalToolbox()
 
@@ -18,8 +18,8 @@ export const Navbar = () => {
 
     const handleLogout = (e:React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
-        dispatch(logoutUser());
-    }
+        logout();
+    };
     
     return (
         <nav className={styles.navbar}>
