@@ -17,7 +17,7 @@ export const Navbar = () => {
     }
 
     const handleLogout = (e:React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault()
+        e.preventDefault();
         logout();
     };
     
