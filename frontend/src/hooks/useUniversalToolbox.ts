@@ -38,8 +38,23 @@ const useObjectSetter = <T>(initialValue:T) => {
 }
 
 
+const useAudioTrigger = (soundSource: string) => {
+    const audio = new Audio(soundSource);
+    audio.volume = 0.2;
+
+    const play = () => {
+        audio.currentTime = 0;
+        audio.play().catch(() => {
+
+        })
+    }
+
+    return { play };
+};
+
+
 export const useUniversalToolbox = ()  => {
-return { useObjectSetter, useBooleanSetter, useListSetter }
+return { useObjectSetter, useBooleanSetter, useListSetter, useAudioTrigger}
 }
 
 export const useAppDispatch = () => useDispatch<AppDispatch>();

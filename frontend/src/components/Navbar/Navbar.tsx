@@ -1,9 +1,11 @@
 import styles from './Navbar.module.css';
 import { Link } from 'react-router-dom';
-import { useAppSelector } from '../../hooks/useUniversalToolbox';
+import { useAppDispatch, useAppSelector } from '../../hooks/useUniversalToolbox';
 import { useUniversalToolbox } from '../../hooks/useUniversalToolbox';
+import { logoutUser } from '../../features/Auth/authSlice';
 
 export const Navbar = () => {
+    const dispatch = useAppDispatch();
     const { isAuthenticated, user } = useAppSelector(state => state.auth);
     const { useBooleanSetter, useListSetter } = useUniversalToolbox()
 
@@ -12,6 +14,11 @@ export const Navbar = () => {
 
     const trackAction = (msg: string) => {
         activity.addUnique(msg)
+    }
+
+    const handleLogout = (e:React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault()
+        dispatch(logoutUser());
     }
     
     return (
@@ -29,6 +36,11 @@ export const Navbar = () => {
                     <>
                     <li> <Link to='/dashboard' onClick={() =>trackAction('Nav to Dash')}>Dashboard</Link> </li>
                     <li className={styles.userProfile}>Hi, {user?.username}</li>
+                    <li>
+                    <button 
+                        onClick={handleLogout}
+                        className={styles.logoutBtn}
+                        onMouseDown={() => trackAction('Logout')}>Logout</button></li>
                     </>
                 ): (
                     <>

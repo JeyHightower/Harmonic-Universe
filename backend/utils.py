@@ -163,7 +163,7 @@ def authenticate_user(data):
     if not user:
         return None
 
-    if bcrypt.check_password_hash(user.password, password):
+    if bcrypt.check_password_hash(user.password_hash, password):
         return user
     return None
     
