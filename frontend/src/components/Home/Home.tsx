@@ -1,9 +1,11 @@
 import { useUniversalToolbox } from '../../hooks/useUniversalToolbox';
 import styles from './Home.module.css';
 import hoverSound from '../../assets/mixkit-sci-fi-confirmation-914.wav';
+import { useNavigate } from 'react-router-dom';
 
 
 export const Home = () => {
+    const navigate = useNavigate();
     const { useAudioTrigger } = useUniversalToolbox();
     const { play: playHover } = useAudioTrigger(hoverSound);
 
@@ -65,7 +67,11 @@ export const Home = () => {
                         <p>{module.description}</p>
 
                         {module.isAvailable ? (
-                            <button className={styles.enterBtn}>Open {module.title}</button>
+                            <button
+                                className={styles.enterBtn}
+                                onClick={() => navigate(`/${module.id}`)}>
+                                    Open {module.title}
+                                    </button>
                         ) : (
                             <div className={styles.badge}>Coming Soon</div>
                         )}

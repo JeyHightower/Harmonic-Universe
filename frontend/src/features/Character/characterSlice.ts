@@ -13,7 +13,13 @@ const initialState: CharacterState = {
 const characterSlice = createSlice({
     name: 'character',
     initialState,
-    reducers: {},
+    reducers: {
+        setCurrentCharacter:(state, action) => {
+            state.currentCharacter = action.payload;
+            localStorage.setItem('activeCharacter', action.payload);
+
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(createCharacter.pending, (state) => {
@@ -75,11 +81,11 @@ const characterSlice = createSlice({
             .addCase(updateCharacter.fulfilled, (state, action) => {
                 state.isLoading =false;
                 state.error = null;
-                const index = state.allCharacters.findIndex(c => c.characterId === action.payload.characterId)
+                const index = state.allCharacters.findIndex(c => c.character_id === action.payload.character_id)
                 if(index !== -1 ){
                     state.allCharacters[index] = action.payload;
                 }
-                if (state.currentCharacter?.characterId === action.payload.characterId){
+                if (state.currentCharacter?.character_id === action.payload.character_id){
                     state.currentCharacter = action.payload
                 };
             })
@@ -90,7 +96,7 @@ const characterSlice = createSlice({
             .addCase(deleteCharacter.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.error = null;
-                state.allCharacters = state.allCharacters.filter(c => c.characterId !== action.payload.characterId)
+                state.allCharacters = state.allCharacters.filter(c => c.character_id !== action.payload.character_id)
             })
             .addCase(deleteCharacter.rejected, (state, action) => {
                 if(action.error.name === 'AbortError'){
@@ -106,4 +112,5 @@ const characterSlice = createSlice({
 
 
 export default characterSlice.reducer;
+export const { setCurrentCharacter } = characterSlice.actions;
 export{ createCharacter, getAllCharacters, getCharacter, updateCharacter, deleteCharacter};

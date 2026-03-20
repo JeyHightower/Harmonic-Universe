@@ -77,11 +77,11 @@ const locationSlice = createSlice ({
         .addCase(updateLocation.fulfilled, (state, action) => {
             state.isLoading = false;
             state.error = null;
-            const index = state.allLocations.findIndex(l => l.locationId === action.payload.locationId);
+            const index = state.allLocations.findIndex(l => l.location_id === action.payload.location_id);
             if (index !== -1){
                 state.allLocations[index] = action.payload;
             }
-            if(state.currentLocation?.locationId === action.payload.locationId){
+            if(state.currentLocation?.location_id === action.payload.location_id){
                 state.currentLocation = action.payload;
             }
         })
@@ -100,7 +100,7 @@ const locationSlice = createSlice ({
         .addCase(deleteLocation.fulfilled, (state, action) => {
             state.isLoading = false;
             state.error = null
-            state.allLocations = state.allLocations.filter(l => l.locationId !== action.payload.locationId)
+            state.allLocations = state.allLocations.filter(l => l.location_id !== action.payload.location_id)
         })
         .addCase(deleteLocation.rejected, (state, action) => {
             if(action.error.name === 'AbortError'){

@@ -31,9 +31,9 @@ export const updateProfile  = createAsyncThunk(
 
 export const deleteUser = createAsyncThunk(
     'user/delete',
-    async (userId: number, thunkAPI) => {
+    async (user_id: number, thunkAPI) => {
         return await apiRequest({
-            url: `/api/users/${userId}`,
+            url: `/api/users/${user_id}`,
             method: 'DELETE',
             signal: thunkAPI.signal,
             body: null,

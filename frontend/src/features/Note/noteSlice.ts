@@ -75,11 +75,11 @@ const noteSlice = createSlice({
         .addCase(updateNote.fulfilled, (state, action) => {
             state.isLoading = false;
             state.error = null;
-            const index = state.allNotes.findIndex(n => n.noteId === action.payload.noteId);
+            const index = state.allNotes.findIndex(n => n.note_id === action.payload.note_id);
             if (index !== -1){
                 state.allNotes[index] = action.payload;
             }
-            if(state.currentNote?.noteId === action.payload.noteId){
+            if(state.currentNote?.note_id === action.payload.note_id){
                 state.currentNote = action.payload;
             }
         })
@@ -98,7 +98,7 @@ const noteSlice = createSlice({
         .addCase(deleteNote.fulfilled, (state, action) => {
             state.isLoading = false;
             state.error = null;
-            state.allNotes.filter(n => n.noteId !== action.payload.noteId);
+            state.allNotes.filter(n => n.note_id !== action.payload.note_id);
         })
         .addCase(deleteNote.rejected, (state, action) => {
             if(action.error.name === 'AbortError'){

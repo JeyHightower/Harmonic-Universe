@@ -30,9 +30,9 @@ export const getAllCharacters = createAsyncThunk(
 
 export const getCharacter = createAsyncThunk(
     'character/get',
-    async (characterId:number, thunkAPI) => {
+    async (character_id:number, thunkAPI) => {
         return await apiRequest<Character>({
-            url: `/characters/${characterId}`,
+            url: `/characters/${character_id}`,
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
@@ -43,9 +43,9 @@ export const getCharacter = createAsyncThunk(
 
 export const updateCharacter = createAsyncThunk(
     'character/update', 
-    async({characterId, characterData}:{characterId:number,characterData:CharacterDraft}, thunkAPI) => {
+    async({character_id, characterData}:{character_id:number,characterData:CharacterDraft}, thunkAPI) => {
         return await apiRequest<Character>({
-            url: `/api/characters/${characterId}`,
+            url: `/api/characters/${character_id}`,
             method: 'PATCH',
             signal: thunkAPI.signal,
             body: characterData,
@@ -56,9 +56,9 @@ export const updateCharacter = createAsyncThunk(
 
 export const deleteCharacter = createAsyncThunk(
     'character/delete',
-    async(characterId:number, thunkAPI) => {
+    async(character_id:number, thunkAPI) => {
         return await apiRequest<Character>({
-            url:`/api/characters/${characterId}`,
+            url:`/api/characters/${character_id}`,
             method:'DELETE',
             signal: thunkAPI.signal,
             body: null,

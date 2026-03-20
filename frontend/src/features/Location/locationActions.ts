@@ -6,9 +6,9 @@ import { apiRequest } from "../../helpers";
 
 export const createLocation = createAsyncThunk(
     'location/create',
-    async ({locationData, universeId}:{locationData:LocationDraft, universeId:number}, thunkAPI) => {
+    async ({locationData, universe_id}:{locationData:LocationDraft, universe_id:number}, thunkAPI) => {
         return await apiRequest<AppLocation>({
-            url:`/api/universes/${universeId}/locations`,
+            url:`/api/universes/${universe_id}/locations`,
             method:'POST',
             signal: thunkAPI.signal,
             body: locationData,
@@ -19,9 +19,9 @@ export const createLocation = createAsyncThunk(
 
 export const getAllLocationsInUniverse = createAsyncThunk(
     'locations/get', 
-    async(universeId, thunkAPI) => {
+    async(universe_id, thunkAPI) => {
         return await apiRequest<AppLocation[]>({
-            url: `/api/universes/${universeId}/locations`,
+            url: `/api/universes/${universe_id}/locations`,
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
@@ -32,9 +32,9 @@ export const getAllLocationsInUniverse = createAsyncThunk(
 
 export const getLocation = createAsyncThunk(
     'location/get',
-    async (locationId, thunkAPI) => {
+    async (location_id, thunkAPI) => {
         return await apiRequest<AppLocation>({
-            url: `/api/locations/${locationId}`,
+            url: `/api/locations/${location_id}`,
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
@@ -45,9 +45,9 @@ export const getLocation = createAsyncThunk(
 
 export const updateLocation = createAsyncThunk(
     'location/update',
-    async({locationData,locationId}: {locationData:LocationDraft, locationId:number}, thunkAPI) => {
+    async({locationData,location_id}: {locationData:LocationDraft, location_id:number}, thunkAPI) => {
         return await apiRequest<AppLocation>({
-            url: `api/locations/${locationId}`,
+            url: `api/locations/${location_id}`,
             method: 'PATCH',
             signal: thunkAPI.signal,
             body:locationData,
@@ -58,9 +58,9 @@ export const updateLocation = createAsyncThunk(
 
 export const deleteLocation = createAsyncThunk(
     'location/delete',
-    async(locationId, thunkAPI) => {
+    async(location_id, thunkAPI) => {
         return await apiRequest<AppLocation>({
-            url: `api/locations/${locationId}`,
+            url: `api/locations/${location_id}`,
             method: 'DELETE',
             signal: thunkAPI.signal,
             body: null,

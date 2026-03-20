@@ -1,6 +1,7 @@
 export interface Character {
-    characterId: number;
-    userId: number;
+    character_id: number;
+    universe_id: number;
+    user_id: number;
     name: string;
     age: number | null;
     origin: string | null;

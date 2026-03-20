@@ -3,9 +3,9 @@ import type { Note } from "./note";
 import type { Universe } from "./universe";
 
 export interface AppLocation {
-    locationId: number;
-    universeId: number;
-    userId: number;
+    location_id: number;
+    universe_id: number;
+    user_id: number;
     name: string;
     location_type: LocationTypes;
     description: string | null;
@@ -14,7 +14,7 @@ export interface AppLocation {
     universe: Universe;
 }
 
-export type LocationDraft = Omit<AppLocation, 'locationId'>
+export type LocationDraft = Omit<AppLocation, 'location_id'>
 
 export interface LocationState{
     currentLocation: AppLocation | null;

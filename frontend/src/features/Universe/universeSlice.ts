@@ -14,7 +14,12 @@ const initialState: UniverseState = {
 const universeSlice = createSlice({
     name: 'universe',
     initialState,
-    reducers:{},
+    reducers:{
+        setCurrentUniverse: (state,action) => {
+            state.currentUniverse = action.payload;
+            localStorage.setItem('activeUniverse', JSON.stringify(action.payload));
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(createUniverse.pending, (state) => {
@@ -104,4 +109,5 @@ const universeSlice = createSlice({
     },
 })
 export {createUniverse, getAllUniverses, getCurrentUniverse, updateUniverse, deleteUniverse }
+export const { setCurrentUniverse } = universeSlice.actions;
 export default universeSlice.reducer;

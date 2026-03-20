@@ -13,7 +13,7 @@ export const Register = () => {
             email: '',
             password: '',
             bio: '',
-            isAdmin: false
+            is_admin: false
         }
     );
 
@@ -23,7 +23,7 @@ export const Register = () => {
         { id: 'email', type: 'email', label: 'Email', placeholder: 'Enter Your Email' },
         { id: 'password', type: 'password', label: 'Password', placeholder: 'Enter Your Password' },
         { id: 'bio', type: 'text', label: 'Bio', placeholder: 'Enter Your Bio (optional)' },
-        { id: 'isAdmin', type: 'checkbox', label: 'Grant Admin Privileges.' }
+        { id: 'is_admin', type: 'checkbox', label: 'Grant Admin Privileges.' }
 
     ];
 

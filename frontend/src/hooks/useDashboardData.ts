@@ -11,11 +11,11 @@ export const useDashboardData = () => {
         accountStatus: 'pending',
         recentActivity: []
     } : {
-        userId: 0,
+        user_id: 0,
         name: '',
         username: '',
         email: '',
-        isAdmin: false,
+        is_admin: false,
         bio: '',
         accountStatus: 'pending',
         recentActivity: []

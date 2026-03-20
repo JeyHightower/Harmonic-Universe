@@ -1,14 +1,14 @@
 export interface Note {
-    noteId: number;
+    note_id: number;
     title: string;
     content: string | null;
-    userId: number;
+    user_id: number;
     characters: string[];
     universes: string[];
     locations: string[];
 }
 
-export type NoteDraft = Omit<Note, 'noteId'>
+export type NoteDraft = Omit<Note, 'note_id'>
 
 export interface NoteState {
     currentNote : Note | null;

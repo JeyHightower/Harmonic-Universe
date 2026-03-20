@@ -64,7 +64,7 @@ export const handleAuthSuccess = (state: AuthState, action: PayloadAction<LoginR
 }
 
 export const getCurrentUniverse = (): Universe | null => {
-    const universe = localStorage.getItem('currentUniverse');
+    const universe = localStorage.getItem('activeUniverse');
     if(!universe) return null;
     try{
         return JSON.parse(universe) as Universe;
@@ -76,7 +76,7 @@ export const getCurrentUniverse = (): Universe | null => {
 }
 
 export const getCurrentCharacter = () => {
-    const character = localStorage.getItem('currentCharacter')
+    const character = localStorage.getItem('activeCharacter')
     if(!character) return null;
     try{
         return JSON.parse(character) as Character;
@@ -88,7 +88,7 @@ export const getCurrentCharacter = () => {
 }
 
 export const getCurrentNote = () => {
-    const note = localStorage.getItem('currentNote')
+    const note = localStorage.getItem('activeNote')
     if (!note) return null;
     try{
         return JSON.parse(note) as Note;
@@ -101,7 +101,7 @@ export const getCurrentNote = () => {
 
 
 export const getCurrentLocation = () => {
-    const appLocation = localStorage.getItem('currentLocation')
+    const appLocation = localStorage.getItem('activeLocation')
     if(!appLocation) return null;
     try{
         return JSON.parse(appLocation) as AppLocation;
@@ -111,3 +111,5 @@ export const getCurrentLocation = () => {
         return null;
     }
 }
+
+

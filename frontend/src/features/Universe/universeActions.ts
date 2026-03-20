@@ -32,9 +32,9 @@ export const getAllUniverses = createAsyncThunk<Universe[], void>(
 
 export const getUniverse = createAsyncThunk(
     'universe/get',
-    async(universeId:number, thunkAPI) => {
+    async(universe_id:number, thunkAPI) => {
         return await apiRequest<Universe>({
-            url:`/api/universes/${universeId}`,
+            url:`/api/universes/${universe_id}`,
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
@@ -45,9 +45,9 @@ export const getUniverse = createAsyncThunk(
 
 export const updateUniverse = createAsyncThunk(
     'universe/update',
-    async({universeId, universeData}: {universeId:number,universeData:UniverseDraft }, thunkAPI ) => {
+    async({universe_id, universeData}: {universe_id:number,universeData:UniverseDraft }, thunkAPI ) => {
         return await apiRequest<Universe>({
-            url: `/api/universes/${universeId}`,
+            url: `/api/universes/${universe_id}`,
             method: 'PATCH',
             signal: thunkAPI.signal,
             body: universeData,
@@ -58,9 +58,9 @@ export const updateUniverse = createAsyncThunk(
 
 export const deleteUniverse = createAsyncThunk(
     'universe/delete',
-    async(universeId:number, thunkAPI) => {
+    async(universe_id:number, thunkAPI) => {
         return await apiRequest<Universe>({
-            url:`/api/universes/${universeId}`,
+            url:`/api/universes/${universe_id}`,
             method: 'DELETE',
             signal: thunkAPI.signal,
             body: null,

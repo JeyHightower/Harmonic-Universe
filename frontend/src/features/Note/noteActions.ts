@@ -32,9 +32,9 @@ export const getAllNotes = createAsyncThunk(
 
 export const getNote = createAsyncThunk(
     'note/get',
-    async(noteId:number, thunkAPI) => {
+    async(note_id:number, thunkAPI) => {
         return await apiRequest<Note>({
-            url: `/api/notes/${noteId}`,
+            url: `/api/notes/${note_id}`,
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
@@ -45,9 +45,9 @@ export const getNote = createAsyncThunk(
 
 export const updateNote = createAsyncThunk(
     'note/update',
-    async ({noteId, noteData}: {noteId: number, noteData: NoteDraft}, thunkAPI) => {
+    async ({note_id, noteData}: {note_id: number, noteData: NoteDraft}, thunkAPI) => {
         return await apiRequest<Note>({
-            url: `/api/notes/${noteId}`,
+            url: `/api/notes/${note_id}`,
             method: 'PATCH',
             signal: thunkAPI.signal,
             body: noteData,
@@ -58,9 +58,9 @@ export const updateNote = createAsyncThunk(
 
 export const deleteNote = createAsyncThunk(
     'note/delete',
-    async(noteId: number, thunkAPI) => {
+    async(note_id: number, thunkAPI) => {
         return apiRequest<Note>({
-            url: `/api/notes/${noteId}`,
+            url: `/api/notes/${note_id}`,
             method: 'DELETE',
             signal: thunkAPI.signal,
             body: null,
