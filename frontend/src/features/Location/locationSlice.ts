@@ -15,7 +15,12 @@ const initialState: LocationState = {
 const locationSlice = createSlice ({
     name: 'location',
     initialState,
-    reducers: {},
+    reducers: {
+        setCurrentLocation: (state, action) => {
+            state.currentLocation = action.payload;
+            localStorage.setItem('activeLocation', JSON.stringify(action.payload));
+        }
+    },
     extraReducers: (builder) => {
         builder
         .addCase(createLocation.pending, (state) => {
@@ -114,4 +119,5 @@ const locationSlice = createSlice ({
 })
 
 export default locationSlice.reducer;
+export const { setCurrentLocation } = locationSlice.actions;
 export { createLocation, getAllLocationsInUniverse, getLocation, updateLocation, deleteLocation }

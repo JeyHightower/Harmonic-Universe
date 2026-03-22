@@ -13,7 +13,12 @@ const initialState: NoteState = {
 const noteSlice = createSlice({
     name: 'note',
     initialState,
-    reducers: {},
+    reducers: {
+        setCurrentNote: (state, action) => {
+            state.currentNote = action.payload;
+            localStorage.setItem('activeNote', JSON.stringify(action.payload));
+        }
+    },
     extraReducers: (builder) => {
         builder
         .addCase(createNote.pending, (state) => {
@@ -113,4 +118,5 @@ const noteSlice = createSlice({
 
 
 export default noteSlice.reducer;
+export const { setCurrentNote } = noteSlice.actions;
 export {createNote, getNote, getAllNotes, updateNote, deleteNote }

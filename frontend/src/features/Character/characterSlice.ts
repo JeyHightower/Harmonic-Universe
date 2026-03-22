@@ -16,7 +16,7 @@ const characterSlice = createSlice({
     reducers: {
         setCurrentCharacter:(state, action) => {
             state.currentCharacter = action.payload;
-            localStorage.setItem('activeCharacter', action.payload);
+            localStorage.setItem('activeCharacter', JSON.stringify(action.payload));
 
         }
     },

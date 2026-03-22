@@ -6,6 +6,8 @@ import type { AuthState, LoginResponse, RegisterResponse } from "./types/auth";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { Note } from "./types/note";
 import type { AppLocation } from "./types/location";
+import { useAppDispatch } from "./hooks/useUniversalToolbox";
+import { useNavigate } from "react-router-dom";
 
 
 export const getInitialToken = ():string | null => {
@@ -112,4 +114,9 @@ export const getCurrentLocation = () => {
     }
 }
 
-
+export const handleEnter = (func:Function,instOfModel:object, url:string ) => {
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
+    dispatch(func(instOfModel));
+    navigate(url);
+}

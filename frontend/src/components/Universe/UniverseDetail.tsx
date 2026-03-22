@@ -2,26 +2,32 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../hooks/useUniversalToolbox';
 import { Spinner } from '../Universal/Spinner';
 import styles from './Universe.module.css';
-import { deleteCharacter, setCurrentCharacter } from '../../features/Character/characterSlice';
+import { deleteCharacter} from '../../features/Character/characterSlice';
 import type { Character } from '../../types/character';
 import { useState } from 'react';
+// import { setCurrentLocation } from '../../features/Location/locationSlice';
+// import { setCurrentNote } from '../../features/Note/noteSlice';
+// import { setCurrentUniverse } from '../../features/Universe/universeSlice';
+
 
 export const UniverseDetail = () => {
     const dispatch = useAppDispatch()
-    const { universe_id } = useParams<{ universe_id: string }>();
     const navigate = useNavigate();
-
+    // const { useModelNavigate } = useUniversalToolbox();
+    // const enterModel = useModelNavigate();
     const [error, setError] = useState<string | null>(null);
-    const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
+
+    const { universe_id } = useParams<{ universe_id: string }>();
     const { currentUniverse, allUniverses, isLoading: uniLoading } = useAppSelector(state => state.universe);
-    const { allCharacters, isLoading: charLoading } = useAppSelector(state => state.character);
-    const inhabitants = allCharacters.filter((c) => c.universe_id === Number(universe_id));
     const universe = (currentUniverse?.universe_id === Number(universe_id)) ? currentUniverse : allUniverses.find((u) => u.universe_id === Number(universe_id));
 
-    const handleEnterCharacter = (character: Character) => {
-        dispatch(setCurrentCharacter(character))
-        navigate(`/characters/${character.character_id}`);
-    };
+    
+    const { allCharacters, isLoading: charLoading } = useAppSelector(state => state.character);
+    const inhabitants = allCharacters.filter((c) => c.universe_id === Number(universe_id));
+    const [characterToDelete, setCharacterToDelete] = useState<Character | null>(null);
+
+    
+    
 
     const confirmDelete = async () => {
         if (characterToDelete) {
@@ -79,7 +85,7 @@ export const UniverseDetail = () => {
                             <h3> {i.name}</h3>
                             <p>Main Power Set: {i.main_power_set}</p>
                             <p>Skills: {i.skills.join(',')}</p>
-                            <button className={styles.viewBtn} onClick={() => handleEnterCharacter(i)}>View Inhabitant Details</button>
+                            {/* <button className={styles.viewBtn} onClick={() => handleEnterCharacter(i)}>View Inhabitant Details</button> */}
                             <button className={styles.deleteBtn} onClick={() => setCharacterToDelete(i)}>Delete Inhabitant</button>
                         </div>
                     ))

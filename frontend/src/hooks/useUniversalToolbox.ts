@@ -1,40 +1,146 @@
-import {type TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
+import { type TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../types/universal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ListSetterEngine, BooleanSetterEngine, ObjectSetterEngine } from '../types/setter';
 import type { LoginMethod } from '../types/auth';
+import { useNavigate } from 'react-router-dom';
+import { setCurrentCharacter } from '../features/Character/characterSlice';
+import { setCurrentUniverse } from '../features/Universe/universeSlice';
+import { setCurrentNote } from '../features/Note/noteSlice';
+import { setCurrentLocation } from '../features/Location/locationSlice';
 
 
 
-const useListSetter = <T> (initialValue: T[] = []) => {
+
+const useListSetter = <T>(initialValue: T[] = []) => {
     const [list, setList] = useState<T[]>(initialValue);
-    
-    const add = (item:T) => ListSetterEngine('ADD', setList, item);
-    const remove = (item:T) => ListSetterEngine('REMOVE', setList, item);
-    const clear = () => ListSetterEngine('CLEAR', setList);
-    const addUnique = (item:T) => ListSetterEngine('ADD_UNIQUE', setList, item)
-    return { list, add, remove, clear, addUnique } 
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        setList(initialValue);
+    }, [initialValue]);
+
+    const add = (item: T) => {
+        setError(null);
+        try {
+            ListSetterEngine('ADD', setList, item)
+        } catch (e) {
+            setError(`${e}`);
+        }
+    };
+    const remove = (item: T) => {
+        setError(null);
+        try {
+            ListSetterEngine('REMOVE', setList, item);
+        } catch (e) {
+            setError(`${e}`);
+        }
+    };
+
+    const clear = () => {
+        setError(null);
+        try {
+            ListSetterEngine('CLEAR', setList);
+        } catch (e) {
+            setError(`${e}`);
+        }
+    };
+    const addUnique = (item: T) => {
+        setError(null);
+        try {
+            ListSetterEngine('ADD_UNIQUE', setList, item)
+        } catch (e) {
+            setError(`${e}`);
+        }
+    };
+    return { list, add, error, remove, clear, addUnique }
 }
 
 
-const useBooleanSetter = (initialValue:boolean = false) => {
+const useBooleanSetter = (initialValue: boolean = false) => {
     const [boolean, setBoolean] = useState<boolean>(initialValue);
-    
-    const toggle = () => BooleanSetterEngine('TOGGLE' , setBoolean);
-    const setTrue = () => BooleanSetterEngine('SET_TRUE', setBoolean);
-    const setFalse = () => BooleanSetterEngine('SET_FALSE', setBoolean);
-    return { boolean, toggle, setTrue, setFalse };
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        setBoolean(initialValue);
+    }, [initialValue]);
+
+
+    const toggle = () => {
+        setError(null);
+        try {
+            BooleanSetterEngine('TOGGLE', setBoolean);
+        } catch (e) {
+            setError(`${e}`);
+        }
+
+    };
+    const setTrue = () => {
+        setError(null);
+        try {
+            BooleanSetterEngine('SET_TRUE', setBoolean);
+
+        } catch (e) {
+            setError(`${e}`);
+        }
+    };
+
+    const setFalse = () => {
+        setError(null);
+        try {
+            BooleanSetterEngine('SET_FALSE', setBoolean);
+        } catch (e) {
+            setError(`${e}`);
+        }
+    };
+
+    return { boolean, error, toggle, setTrue, setFalse };
 }
 
 
-const useObjectSetter = <T>(initialValue:T) => {
+const useObjectSetter = <T>(initialValue: T) => {
     const [object, setObject] = useState<T>(initialValue);
-    
-    const updateField = (key: keyof T, value: any) => ObjectSetterEngine('UPDATE_FIELD', setObject, key, value);
-    const reset = () => ObjectSetterEngine('RESET', setObject, undefined, initialValue);
-    const setLoginIdentifier = (method: LoginMethod, value: string) => ObjectSetterEngine('SET_LOGIN_IDENTIFIER', setObject, method as keyof T, value)
-    const addFields = (fields: object) => ObjectSetterEngine('ADD_FIELDS', setObject, undefined, fields )
-    return { object, updateField, reset, setLoginIdentifier, addFields };
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        setObject(initialValue);
+    }, [initialValue]);
+
+    const updateField = (key: keyof T, value: any) => {
+        setError(null);
+        try {
+            ObjectSetterEngine('UPDATE_FIELD', setObject, key, value);
+
+        } catch (e) {
+            setError(`${e}`);
+        }
+    };
+    const reset = () => {
+        setError(null);
+        try {
+            ObjectSetterEngine('RESET', setObject, undefined, initialValue);
+        } catch (e) {
+            setError(`${e}`);
+        }
+    }
+    const setLoginIdentifier = (method: LoginMethod, value: string) => {
+        setError(null);
+        try {
+            ObjectSetterEngine('SET_LOGIN_IDENTIFIER', setObject, method as keyof T, value)
+        } catch (e) {
+            setError(`${e}`);
+        }
+    }
+    const addFields = (fields: object) => {
+        setError(null);
+        try {
+
+            ObjectSetterEngine('ADD_FIELDS', setObject, undefined, fields)
+        } catch (e) {
+            setError(`${e}`);
+        }
+    };
+    return { object, error, updateField, reset, setLoginIdentifier, addFields };
 }
 
 
@@ -45,16 +151,43 @@ const useAudioTrigger = (soundSource: string) => {
     const play = () => {
         audio.currentTime = 0;
         audio.play().catch(() => {
-
         })
     }
-
     return { play };
 };
 
+const useModelNavigate = <T>() => {
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
+    return (action: any, payload: T, url: string) => {
+        dispatch(action(payload));
+        navigate(url);
+    }
 
-export const useUniversalToolbox = ()  => {
-return { useObjectSetter, useBooleanSetter, useListSetter, useAudioTrigger}
+}
+
+const useUniversalNavigation = () => {
+    const enterModel = useModelNavigate<any>();
+
+    const handleNavigation = (item: any, type: 'character' | 'universe' | 'note' | 'location') => {
+
+        const config = {
+            character: { action: setCurrentCharacter, path: 'characters', id: item.character_id },
+            universe: { action: setCurrentUniverse, path: 'universes', id: item.universe_id },
+            note: { action: setCurrentNote, path: 'notes', id: item.note_id },
+            location: { action: setCurrentLocation, path: 'locations', id: item.location_id },
+
+        }
+        const { action, path, id } = config[type];
+        enterModel(action, item, `/${path}/${id}`)
+    };
+    return { handleNavigation };
+
+};
+
+
+export const useUniversalToolbox = () => {
+    return { useModelNavigate, useObjectSetter, useBooleanSetter, useListSetter, useAudioTrigger, useUniversalNavigation }
 }
 
 export const useAppDispatch = () => useDispatch<AppDispatch>();
