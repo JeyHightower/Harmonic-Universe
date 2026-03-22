@@ -171,18 +171,17 @@ const useUniversalNavigation = () => {
 
     const handleNavigation = (item: any, type: 'character' | 'universe' | 'note' | 'location') => {
 
-        const config = {
-            character: { action: setCurrentCharacter, path: 'characters', id: item.character_id },
-            universe: { action: setCurrentUniverse, path: 'universes', id: item.universe_id },
-            note: { action: setCurrentNote, path: 'notes', id: item.note_id },
-            location: { action: setCurrentLocation, path: 'locations', id: item.location_id },
-
-        }
-        const { action, path, id } = config[type];
-        enterModel(action, item, `/${path}/${id}`)
+        const id = item[`${type}_id`];
+        const path = `${type}s`;
+        const actionMap = {
+            character: setCurrentCharacter,
+            universe: setCurrentUniverse,
+            note: setCurrentNote,
+            location: setCurrentLocation
+        };
+        enterModel(actionMap[type], item, `/${path}/${id}`);
     };
     return { handleNavigation };
-
 };
 
 
