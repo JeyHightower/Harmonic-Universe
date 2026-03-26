@@ -6,8 +6,7 @@ import type { AuthState, LoginResponse, RegisterResponse } from "./types/auth";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { Note } from "./types/note";
 import type { AppLocation } from "./types/location";
-import { useAppDispatch } from "./hooks/useUniversalToolbox";
-import { useNavigate } from "react-router-dom";
+
 
 
 export const getInitialToken = ():string | null => {
@@ -77,7 +76,7 @@ export const getCurrentUniverse = (): Universe | null => {
     }
 }
 
-export const getCurrentCharacter = () => {
+export const getCurrentCharacter = (): Character | null => {
     const character = localStorage.getItem('activeCharacter')
     if(!character) return null;
     try{
@@ -89,7 +88,7 @@ export const getCurrentCharacter = () => {
     }
 }
 
-export const getCurrentNote = () => {
+export const getCurrentNote = (): Note | null => {
     const note = localStorage.getItem('activeNote')
     if (!note) return null;
     try{
@@ -102,7 +101,7 @@ export const getCurrentNote = () => {
 }
 
 
-export const getCurrentLocation = () => {
+export const getCurrentLocation = (): AppLocation | null => {
     const appLocation = localStorage.getItem('activeLocation')
     if(!appLocation) return null;
     try{
@@ -114,9 +113,3 @@ export const getCurrentLocation = () => {
     }
 }
 
-export const handleEnter = (func:Function,instOfModel:object, url:string ) => {
-    const dispatch = useAppDispatch();
-    const navigate = useNavigate();
-    dispatch(func(instOfModel));
-    navigate(url);
-}

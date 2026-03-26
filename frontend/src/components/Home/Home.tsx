@@ -1,4 +1,4 @@
-import { useUniversalToolbox } from '../../hooks/useUniversalToolbox';
+import { useAudioTrigger } from '../../hooks/useAudioToolbox';
 import styles from './Home.module.css';
 import hoverSound from '../../assets/mixkit-sci-fi-confirmation-914.wav';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 
 export const Home = () => {
     const navigate = useNavigate();
-    const { useAudioTrigger } = useUniversalToolbox();
     const { play: playHover } = useAudioTrigger(hoverSound);
 
     const NAV_MODULES = [

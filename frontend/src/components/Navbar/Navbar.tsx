@@ -1,13 +1,13 @@
 import styles from './Navbar.module.css';
 import { Link } from 'react-router-dom';
-import { useAppSelector } from '../../hooks/useUniversalToolbox';
-import { useUniversalToolbox } from '../../hooks/useUniversalToolbox';
+import { useAppSelector } from '../../hooks/useSetterToolbox';
+import { useSetterToolbox } from '../../hooks/useSetterToolbox';
 import { useAuthToolbox } from '../../hooks/useAuthToolbox';
 
 export const Navbar = () => {
     const { logout } = useAuthToolbox();
     const { isAuthenticated, user } = useAppSelector(state => state.auth);
-    const { useBooleanSetter, useListSetter } = useUniversalToolbox()
+    const { useBooleanSetter, useListSetter } = useSetterToolbox()
 
     const menu = useBooleanSetter(false);
     const activity = useListSetter<string>([]);

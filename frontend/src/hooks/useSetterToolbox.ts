@@ -1,24 +1,14 @@
 import { type TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../types/universal';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ListSetterEngine, BooleanSetterEngine, ObjectSetterEngine } from '../types/setter';
 import type { LoginMethod } from '../types/auth';
-import { useNavigate } from 'react-router-dom';
-import { setCurrentCharacter } from '../features/Character/characterSlice';
-import { setCurrentUniverse } from '../features/Universe/universeSlice';
-import { setCurrentNote } from '../features/Note/noteSlice';
-import { setCurrentLocation } from '../features/Location/locationSlice';
-
-
 
 
 const useListSetter = <T>(initialValue: T[] = []) => {
     const [list, setList] = useState<T[]>(initialValue);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        setList(initialValue);
-    }, [initialValue]);
 
     const add = (item: T) => {
         setError(null);
@@ -61,10 +51,7 @@ const useBooleanSetter = (initialValue: boolean = false) => {
     const [boolean, setBoolean] = useState<boolean>(initialValue);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        setBoolean(initialValue);
-    }, [initialValue]);
-
+ 
 
     const toggle = () => {
         setError(null);
@@ -102,9 +89,7 @@ const useObjectSetter = <T>(initialValue: T) => {
     const [object, setObject] = useState<T>(initialValue);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        setObject(initialValue);
-    }, [initialValue]);
+
 
     const updateField = (key: keyof T, value: any) => {
         setError(null);
@@ -144,49 +129,13 @@ const useObjectSetter = <T>(initialValue: T) => {
 }
 
 
-const useAudioTrigger = (soundSource: string) => {
-    const audio = new Audio(soundSource);
-    audio.volume = 0.2;
-
-    const play = () => {
-        audio.currentTime = 0;
-        audio.play().catch(() => {
-        })
-    }
-    return { play };
-};
-
-const useModelNavigate = <T>() => {
-    const dispatch = useAppDispatch();
-    const navigate = useNavigate();
-    return (action: any, payload: T, url: string) => {
-        dispatch(action(payload));
-        navigate(url);
-    }
-
-}
-
-const useUniversalNavigation = () => {
-    const enterModel = useModelNavigate<any>();
-
-    const handleNavigation = (item: any, type: 'character' | 'universe' | 'note' | 'location') => {
-
-        const id = item[`${type}_id`];
-        const path = `${type}s`;
-        const actionMap = {
-            character: setCurrentCharacter,
-            universe: setCurrentUniverse,
-            note: setCurrentNote,
-            location: setCurrentLocation
-        };
-        enterModel(actionMap[type], item, `/${path}/${id}`);
-    };
-    return { handleNavigation };
-};
 
 
-export const useUniversalToolbox = () => {
-    return { useModelNavigate, useObjectSetter, useBooleanSetter, useListSetter, useAudioTrigger, useUniversalNavigation }
+
+
+
+export const useSetterToolbox = () => {
+    return {  useObjectSetter, useBooleanSetter, useListSetter }
 }
 
 export const useAppDispatch = () => useDispatch<AppDispatch>();

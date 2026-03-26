@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../hooks/useUniversalToolbox';
+import { useAppDispatch, useAppSelector } from '../../hooks/useSetterToolbox';
 import { setCurrentUniverse } from '../../features/Universe/universeSlice';
 import type { Universe } from '../../types/universe';
 import { Spinner } from '../Universal/Spinner';

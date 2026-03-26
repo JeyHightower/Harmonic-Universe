@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector, useUniversalToolbox } from '../../hooks/useUniversalToolbox';
+import { useAppDispatch, useAppSelector, useSetterToolbox } from '../../hooks/useSetterToolbox';
 import { loginUser } from '../../features/Auth/authActions';
 import type { LoginRequest, LoginMethod } from '../../types/auth';
 
 
 export const Login = () => {
-    const {useObjectSetter} = useUniversalToolbox();
+    const {useObjectSetter} = useSetterToolbox();
     const [loginMethod, setLoginMethod] = useState<LoginMethod>('username'); //email or username
     
     const {

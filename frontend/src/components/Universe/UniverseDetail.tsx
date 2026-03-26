@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../hooks/useUniversalToolbox';
+import { useAppDispatch, useAppSelector } from '../../hooks/useSetterToolbox';
 import { Spinner } from '../Universal/Spinner';
 import styles from './Universe.module.css';
 import { deleteCharacter} from '../../features/Character/characterSlice';
@@ -13,7 +13,7 @@ import { useState } from 'react';
 export const UniverseDetail = () => {
     const dispatch = useAppDispatch()
     const navigate = useNavigate();
-    // const { useModelNavigate } = useUniversalToolbox();
+    // const { useModelNavigate } = useSetterToolbox();
     // const enterModel = useModelNavigate();
     const [error, setError] = useState<string | null>(null);
 

@@ -1,11 +1,11 @@
 import { registerUser } from '../../features/Auth/authActions';
-import { useAppDispatch, useUniversalToolbox } from '../../hooks/useUniversalToolbox';
+import { useAppDispatch, useSetterToolbox } from '../../hooks/useSetterToolbox';
 import type { UserDraft } from '../../types/user';
 import styles from './Auth.module.css';
 
 export const Register = () => {
     const dispatch = useAppDispatch();
-    const { useObjectSetter } = useUniversalToolbox();
+    const { useObjectSetter } = useSetterToolbox();
     const { object: form, updateField } = useObjectSetter(
         {
             name: '',

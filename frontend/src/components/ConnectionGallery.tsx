@@ -1,27 +1,32 @@
-import { useUniversalToolbox } from "../hooks/useUniversalToolbox"
+import { useNavigationToolbox } from "../hooks/useNavigationToolbox"
 import type { Gallery } from "../types/gallery";
 import styles from './Home/Home.module.css';
+import { EmptyState } from "./Universal/EmptyState";
 
 export const ConnectionGallery = ({ title, items, type }: Gallery) => {
-    const { useUniversalNavigation } = useUniversalToolbox();
-    const { handleNavigation } = useUniversalNavigation();
+    
+    const { handleModelAction } = useNavigationToolbox();
 
     return (
         <section>
             <h2>{title}</h2>
             <div className={styles.galleryGrid}>
-                {items.map((item) => {
+                {items.length > 0 ? (
+                items.map((item) => {
                     const id = item.id || item.character_id || item.universe_id || item.note_id || item.location_id;
+                    const label = item.name || item.title;
                     return (
                         <div
-                            key={id}
+                            key={`${type}-${id}`}
                             className={styles.connectionCard}
-                            onClick={() => handleNavigation(item, type)}
+                            onClick={() => handleModelAction(item, type)}
                         >
-                            <strong>{item.name || item.title}</strong>
+                            <strong>{label}</strong>
                         </div>
                     )
-                })}
+                })) : (
+                  <EmptyState type={type} />  
+                )}
             </div>
         </section>
     )
