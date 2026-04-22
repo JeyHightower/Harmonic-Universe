@@ -6,7 +6,7 @@ import { ConnectionGallery } from "../ConnectionGallery";
 import styles from './Dashboard.module.css';
 
 
-const Dashboard = () => {
+export const Dashboard = () => {
 
     const { user, isLoading: authLoading, error: authError } = useAppSelector(state => state.auth);
     const { allUniverses, isLoading: uniLoading, error: uniError } = useAppSelector(state => state.universe);
@@ -52,4 +52,3 @@ const Dashboard = () => {
 
 
 
-export default Dashboard;
