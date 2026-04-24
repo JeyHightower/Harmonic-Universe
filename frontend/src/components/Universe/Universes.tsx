@@ -69,7 +69,7 @@ export const Universes = () => {
                 renderCardContent ={(u) => (
                     <>
                     <h3>{u.name}</h3>
-                    <p>{u.description?.substring(100)}</p>
+                    <p>{u.description?.substring(30)}</p>
                     </>
                 )}
                 />
