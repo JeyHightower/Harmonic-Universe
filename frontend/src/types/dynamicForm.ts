@@ -2,9 +2,9 @@ export interface DynamicFormProps {
     type:'user' | 'universe' | 'character' | 'note' | 'location',
     item?: any,
     parentId?: string | number;
-    onClose: () => void,
-    isOpen: boolean,
-    toolbox?: any
+    onClose: () => void;
+    isOpen: boolean;
+    toolbox?: any;
 
 }
 

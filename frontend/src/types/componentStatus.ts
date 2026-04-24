@@ -1,0 +1,1 @@
+export type ComponentStatus = 'idle' | 'loading' | 'success' | 'error' | 'empty';
