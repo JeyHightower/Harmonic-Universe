@@ -1,9 +1,16 @@
+import type { Character } from "./character";
+import type { AppLocation } from "./location";
+import type { Note } from "./note";
+
 export interface Universe {
         universe_id: number | null;
         user_id: number | null;
         name: string | null;
         alignment: AlignmentType | null;
         description: string | null;
+        characters: Character[] | null;
+        locations: AppLocation[] | null;
+        notes: Note[] | null;
 };
 
 

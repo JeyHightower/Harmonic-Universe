@@ -4,6 +4,7 @@ import { ErrorDisplay } from "./ErrorDisplay";
 import { Spinner } from "./Spinner";
 
 export const EntityManager = <T,>({
+    isSection = false,
     type,
     data,
     status,
@@ -17,14 +18,17 @@ export const EntityManager = <T,>({
 
 }: EntityManagerProps<T>) => {
 
+    const Wrapper = isSection ? 'div' : 'main';
+
     return (
 
-        <main className={styles.pageContainer}>
-            <header>
-                <h1> Your {type}s</h1>
-                <button onClick={onAdd}>+ CREATE {type.toUpperCase()}</button>
-            </header>
-
+        <Wrapper className={isSection ? styles.sectionContainer : styles.pageContainer}>
+            {!isSection && (
+                <header>
+                    <h1> Your {type}s</h1>
+                    <button onClick={onAdd}>+ CREATE {type.toUpperCase()}</button>
+                </header>
+            )}
             <div className={styles.contentArea}>
                 {status === 'loading' && <Spinner />}
 
@@ -59,7 +63,7 @@ export const EntityManager = <T,>({
                 )}
 
             </div>
-        </main>
+        </Wrapper>
 
 
     )

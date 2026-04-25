@@ -1,3 +1,7 @@
+import type { AppLocation } from "./location";
+import type { Note } from "./note";
+import type { Universe } from "./universe";
+
 export interface Character {
     character_id: number;
     universe_id: number;
@@ -8,9 +12,9 @@ export interface Character {
     main_power_set: string;
     secondary_power_set: string;
     skills: string[];
-    universes: string[] | null;
-    notes: string[] | null;
-    locations: string[] | null;
+    universes: Universe[] | null;
+    notes: Note[] | null;
+    locations: AppLocation[] | null;
 
 }
 

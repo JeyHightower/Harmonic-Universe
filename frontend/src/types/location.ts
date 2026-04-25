@@ -9,9 +9,9 @@ export interface AppLocation {
     name: string;
     location_type: LocationTypes;
     description: string | null;
-    characters: Character[];
-    notes: Note[];
-    universe: Universe;
+    characters: Character[] | null;
+    notes: Note[] | null;
+    universe: Universe[] | null;
 }
 
 export type LocationDraft = Omit<AppLocation, 'location_id'>

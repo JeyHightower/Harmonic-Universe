@@ -66,13 +66,13 @@ export const Universes = () => {
                 onEnter={handleUniverseEnter}
                 onRetry={() => dispatch(getAllUniverses())}
                 idField="universe_id"
-                renderCardContent ={(u) => (
+                renderCardContent={(u) => (
                     <>
-                    <h3>{u.name}</h3>
-                    <p>{u.description?.substring(30)}</p>
+                        <h3>{u.name}</h3>
+                        <p>{u.description?.substring(30)}</p>
                     </>
                 )}
-                />
+            />
             <GenericModal
                 type="universe"
                 isOpen={universeModal.boolean}

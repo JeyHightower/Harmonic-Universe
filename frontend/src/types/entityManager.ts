@@ -2,6 +2,7 @@ import type { ComponentState } from "react";
 
 export interface EntityManagerProps<T> {
     type: string;
+    isSection?: boolean;
     data: T[];
     status: ComponentState;
     error: string | null;
