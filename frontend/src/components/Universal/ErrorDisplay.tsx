@@ -1,4 +1,4 @@
-import { type ErrorDisplayProps } from "../types/errorDisplayProps"
+import { type ErrorDisplayProps } from "../../types/errorDisplayProps"
 
 export const ErrorDisplay = ({ message, onRetry }: ErrorDisplayProps) => {
 

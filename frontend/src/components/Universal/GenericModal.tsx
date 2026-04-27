@@ -1,6 +1,6 @@
-import { FORM_CONFIG } from "../helpers";
-import type { DynamicModalProps, FormField } from "../types/dynamicForm";
-
+import { FORM_CONFIG } from "../../helpers";
+import type { DynamicModalProps, FormField } from "../../types/dynamicForm";
+import styles from '../General.module.css'
 
 
 export const GenericModal: React.FC<DynamicModalProps> = ({ isOpen, onClose, type, toolbox }) => {

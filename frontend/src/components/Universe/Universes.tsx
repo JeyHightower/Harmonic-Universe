@@ -5,7 +5,6 @@ import { useModalToolbox } from '../../hooks/useModalToolbox';
 import { GenericModal } from '../Universal/GenericModal';
 import { type ComponentStatus } from '../../types/componentStatus';
 import { getAllUniverses } from '../../features/Universe/universeActions';
-
 import { useNavigate } from 'react-router-dom';
 import { setCurrentUniverse } from '../../features/Universe/universeSlice';
 import { EntityManager } from '../Universal/EntityManager';

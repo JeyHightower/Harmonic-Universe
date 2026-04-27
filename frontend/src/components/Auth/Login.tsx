@@ -16,6 +16,8 @@ export const Login = () => {
         password: '',
         username: ''
     });
+
+    
  
     const { isLoading, error } = useAppSelector((state) => state.auth);
     const dispatch = useAppDispatch();
@@ -31,6 +33,15 @@ export const Login = () => {
         e.preventDefault();
         dispatch(loginUser(credentials));
     };
+
+
+    const handleDemoLogin = () => {
+        const demoCredentials:LoginRequest = {
+            username: 'demo',
+            password: 'demo123'
+        }
+        dispatch(loginUser(demoCredentials))
+    }
 
     return (
         <form onSubmit={handleLogin}>
@@ -57,6 +68,14 @@ export const Login = () => {
             <button type="submit" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
             </button>
+            <button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={isLoading}
+                style={{marginTop:'10px', backgroundColor: '#ddd'}}
+                >
+                    Demo Login
+                </button>
             
             {error && <p style={{ color: 'red' }}>{error}</p>}
         </form>
