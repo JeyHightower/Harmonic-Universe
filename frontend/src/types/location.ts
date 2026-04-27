@@ -11,7 +11,7 @@ export interface AppLocation {
     description: string | null;
     characters: Character[] | null;
     notes: Note[] | null;
-    universe: Universe[] | null;
+    universe: Universe | null;
 }
 
 export type LocationDraft = Omit<AppLocation, 'location_id'>

@@ -23,13 +23,18 @@ export const Notes = () => {
     useEffect(() => {
         if (isLoading) {
             setStatus('loading');
-        } else if (error) {
-            setStatus('error')
-        } else if (allNotes.length === 0) {
-            setStatus('empty')
-        } else {
-            setStatus('success')
+            return;
         }
+        if (error) {
+            setStatus('error')
+            return;
+        }
+        if (allNotes.length === 0) {
+            setStatus('empty')
+            return;
+        }
+        setStatus('success')
+
     }, [isLoading, error, allNotes])
 
 

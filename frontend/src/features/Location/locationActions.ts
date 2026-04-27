@@ -19,7 +19,7 @@ export const createLocation = createAsyncThunk(
 
 export const getAllLocationsInUniverse = createAsyncThunk(
     'locations/get', 
-    async(universe_id, thunkAPI) => {
+    async(universe_id:number, thunkAPI) => {
         return await apiRequest<AppLocation[]>({
             url: `/api/universes/${universe_id}/locations`,
             method: 'GET',
@@ -32,7 +32,7 @@ export const getAllLocationsInUniverse = createAsyncThunk(
 
 export const getLocation = createAsyncThunk(
     'location/get',
-    async (location_id, thunkAPI) => {
+    async (location_id:number, thunkAPI) => {
         return await apiRequest<AppLocation>({
             url: `/api/locations/${location_id}`,
             method: 'GET',
@@ -58,7 +58,7 @@ export const updateLocation = createAsyncThunk(
 
 export const deleteLocation = createAsyncThunk(
     'location/delete',
-    async(location_id, thunkAPI) => {
+    async(location_id:number, thunkAPI) => {
         return await apiRequest<AppLocation>({
             url: `api/locations/${location_id}`,
             method: 'DELETE',

@@ -25,13 +25,19 @@ export const Universes = () => {
     useEffect(() => {
         if (isLoading) {
             setStatus('loading')
-        } else if (error) {
-            setStatus('error')
-        } else if (allUniverses.length === 0) {
-            setStatus('empty')
-        } else {
-            setStatus('success')
+            return;
         }
+
+        if (error) {
+            setStatus('error')
+            return;
+        }
+        if (allUniverses.length === 0) {
+            setStatus('empty')
+            return;
+        }
+        
+        setStatus('success')
     }, [isLoading, error, allUniverses])
 
     const handleUniverseEnter = (e: React.MouseEvent, universe: Universe) => {

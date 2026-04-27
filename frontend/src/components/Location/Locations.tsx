@@ -13,6 +13,7 @@ import { EntityManager } from "../Universal/EntityManager";
 export const Locations = () => {
 
     const { allLocations, isLoading, error } = useAppSelector((state) => state.location);
+    const { currentUniverse } = useAppSelector((state) => state.universe);    
     const [status, setStatus] = useState<ComponentStatus>('idle');
     const { useBooleanSetter } = useSetterToolbox();
     const locationModal = useBooleanSetter(false);
@@ -25,13 +26,18 @@ export const Locations = () => {
     useEffect(() => {
         if (isLoading) {
             setStatus('loading')
-        } else if (error) {
-            setStatus('error')
-        } else if (allLocations.length === 0) {
-            setStatus('empty')
-        } else {
-            setStatus('success')
+            return;
         }
+        if (error) {
+            setStatus('error')
+            return;
+        }
+        if (allLocations.length === 0) {
+            setStatus('empty')
+            return;
+        }
+        setStatus('success')
+
     }, [isLoading, error, allLocations])
 
 
@@ -66,7 +72,11 @@ export const Locations = () => {
                 onAdd={locationHandleCreate}
                 onEdit={locationHandleEdit}
                 onEnter={handleLocationEnter}
-                onRetry={() => dispatch(getAllLocationsInUniverse())}
+                onRetry={() =>{
+                    if(currentUniverse?.universe_id){
+                        dispatch(getAllLocationsInUniverse(currentUniverse.universe_id))
+                    }
+                }}
                 idField='location_id'
                 renderCardContent={(l) => (
                     <>

@@ -24,13 +24,18 @@ export const Characters = () => {
     useEffect(() => {
         if (isLoading) {
             setStatus('loading')
-        } else if (error) {
-            setStatus('error')
-        } else if (allCharacters.length === 0) {
-            setStatus('empty')
-        } else {
-            setStatus('success')
+            return;
         }
+        if (error) {
+            setStatus('error')
+            return;
+        }
+        if (allCharacters.length === 0) {
+            setStatus('empty')
+            return;
+        }
+        setStatus('success')
+
     }, [isLoading, error, allCharacters])
 
     const handleCharacterEnter = (e: React.MouseEvent, character: Character) => {

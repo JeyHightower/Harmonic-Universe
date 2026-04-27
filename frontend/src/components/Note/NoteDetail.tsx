@@ -1,24 +1,24 @@
-import { useAppDispatch, useAppSelector, useSetterToolbox } from "../../hooks/useSetterToolbox"
-import type { ComponentStatus } from "../../types/componentStatus";
-import { useState, useEffect, useMemo } from "react";
-import { useModalToolbox } from "../../hooks/useModalToolbox";
-import type { Character } from "../../types/character";
+import { useAppDispatch, useAppSelector, useSetterToolbox } from "../../hooks/useSetterToolbox";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { setCurrentCharacter } from "../../features/Character/characterSlice";
-import type { Note } from "../../types/note";
-import { setCurrentNote } from "../../features/Note/noteSlice";
-import { getAllLocationsInUniverse, setCurrentLocation } from "../../features/Location/locationSlice";
+import { setCurrentLocation } from "../../features/Location/locationSlice";
+import { getNote, setCurrentNote } from "../../features/Note/noteSlice";
+import { useModalToolbox } from "../../hooks/useModalToolbox";
+import type { Character } from "../../types/character";
+import type { ComponentStatus } from "../../types/componentStatus";
 import type { AppLocation } from "../../types/location";
+import type { Universe } from "../../types/universe";
+import { EmptyState } from "../Universal/EmptyState";
 import { EntityManager } from "../Universal/EntityManager";
+import { ErrorDisplay } from "../Universal/ErrorDisplay";
 import { GenericModal } from "../Universal/GenericModal";
 import { Spinner } from "../Universal/Spinner";
-import { ErrorDisplay } from "../Universal/ErrorDisplay";
-import { EmptyState } from "../Universal/EmptyState";
-import { getUniverse } from "../../features/Universe/universeActions";
 
 
-export const UniverseDetail = () => {
-    const { currentUniverse, error: uniError, isLoading: uniLoading } = useAppSelector((state) => state.universe);
+export const NoteDetail = () => {
+
+    const { currentNote, error: noteError, isLoading: noteLoading } = useAppSelector((state) => state.note);
     const [uniStatus, setUniStatus] = useState<ComponentStatus>('idle');
     const [charStatus, setCharStatus] = useState<ComponentStatus>('idle');
     const [noteStatus, setNoteStatus] = useState<ComponentStatus>('idle');
@@ -30,7 +30,7 @@ export const UniverseDetail = () => {
     const [activeModal, setActiveModal] = useState<{ item: any | null, type: string }>({ type: '', item: null });
     const currentToolbox = useModalToolbox(activeModal.item, activeModal.type);
 
-    const universe_id = currentUniverse?.universe_id;
+    const note_id = currentNote?.note_id;
 
 
     const handleCreate = (type: string) => {
@@ -51,10 +51,10 @@ export const UniverseDetail = () => {
         navigate(`/characters/${character.character_id}`)
     }
 
-    const handleNoteEnter = (e: React.MouseEvent, note: Note) => {
+    const handleUniverseEnter = (e: React.MouseEvent, universe: Universe) => {
         e.stopPropagation();
-        dispatch(setCurrentNote(note));
-        navigate(`/notes/${note.note_id}`)
+        dispatch(setCurrentNote(universe));
+        navigate(`/universes/${universe.universe_id}`)
     }
 
     const handleLocationEnter = (e: React.MouseEvent, location: AppLocation) => {
@@ -66,62 +66,62 @@ export const UniverseDetail = () => {
 
 
     const linkedCharacters = useMemo(() => {
-        return currentUniverse?.characters || [];
-    }, [currentUniverse]);
+        return currentNote?.characters || [];
+    }, [currentNote]);
 
-    const linkedNotes = useMemo(() => {
-        return currentUniverse?.notes || [];
-    }, [currentUniverse])
+    const linkedUniverses = useMemo(() => {
+        return currentNote?.universes || [];
+    }, [currentNote])
 
     const linkedLocations = useMemo(() => {
-        return currentUniverse?.locations || [];
-    }, [currentUniverse]
+        return currentNote?.locations || [];
+    }, [currentNote]
     );
 
     useEffect(() => {
-        if (uniLoading) {
-            setUniStatus('loading')
+        if (noteLoading) {
+            setNoteStatus('loading')
             return;
         }
-        if (uniError) {
-            setUniStatus('error')
+        if (noteError) {
+            setNoteStatus('error')
             return;
         }
-        if (!currentUniverse) {
-            setUniStatus('empty')
+        if (!currentNote) {
+            setNoteStatus('empty')
             return;
         }
-        setUniStatus('success')
-        setCharStatus(currentUniverse.characters?.length ? 'success' : 'empty')
-        setNoteStatus(currentUniverse.notes?.length ? 'success' : 'empty')
-        setLocStatus(currentUniverse.locations?.length ? 'success' : 'empty')
+        setNoteStatus('success')
+        setCharStatus(currentNote.characters?.length ? 'success' : 'empty')
+        setUniStatus(currentNote.universes?.length ? 'success' : 'empty')
+        setLocStatus(currentNote.locations?.length ? 'success' : 'empty')
 
-    }, [uniLoading, uniError, currentUniverse])
+    }, [noteLoading, noteError, currentNote])
 
     return (
 
         <main>
-            {uniStatus === 'loading' && <Spinner />}
-            {uniStatus === 'error' && uniError && <ErrorDisplay
-                message={uniError}
-                onRetry={() => universe_id && dispatch(getUniverse(universe_id))}
+            {noteStatus === 'loading' && <Spinner />}
+            {noteStatus === 'error' && noteError && <ErrorDisplay
+                message={noteError}
+                onRetry={() => note_id && dispatch(getNote(note_id))}
             />
             }
-            {uniStatus === 'empty' && <EmptyState type={'universe'} onAdd={() => handleCreate("universe")} />}
+            {noteStatus === 'empty' && <EmptyState type={'note'} onAdd={() => handleCreate("note")} />}
 
             {uniStatus === 'success' && (
                 <>
-                    <h1>{currentUniverse?.name}</h1>
+                    <h1>{currentNote?.title}</h1>
                     <EntityManager
                         type="character"
                         isSection={true}
                         data={linkedCharacters}
-                        error={uniError}
+                        error={noteError}
                         status={charStatus}
                         onAdd={() => handleCreate("character")}
                         onEdit={(item: Character) => handleEdit("character", item)}
                         onEnter={handleCharacterEnter}
-                        onRetry={() => universe_id && dispatch(getUniverse(universe_id))}
+                        onRetry={() => note_id && dispatch(getNote(note_id))}
                         idField="character_id"
                         renderCardContent={(c) => (
                             <>
@@ -131,20 +131,20 @@ export const UniverseDetail = () => {
                         )}
                     />
                     <EntityManager
-                        type="note"
+                        type="universe"
                         isSection={true}
-                        data={linkedNotes}
-                        status={noteStatus}
-                        error={uniError}
-                        onAdd={() => handleCreate("note")}
-                        onEdit={(item: Note) => handleEdit("note", item)}
-                        onEnter={handleNoteEnter}
-                        onRetry={() => universe_id && dispatch(getUniverse(universe_id))}
-                        idField="note_id"
-                        renderCardContent={(n) => (
+                        data={linkedUniverses}
+                        status={uniStatus}
+                        error={noteError}
+                        onAdd={() => handleCreate("universe")}
+                        onEdit={(item: Universe) => handleEdit("universe", item)}
+                        onEnter={handleUniverseEnter}
+                        onRetry={() => note_id && dispatch(getNote(note_id))}
+                        idField="universe_id"
+                        renderCardContent={(u) => (
                             <>
-                                <h3>{n.title}</h3>
-                                <p>Content:{n.content || '...'}</p>
+                                <h3>{u.name}</h3>
+                                <p>{u.description?.substring(30)}</p>
                             </>
                         )}
                     />
@@ -154,11 +154,11 @@ export const UniverseDetail = () => {
                         isSection={true}
                         data={linkedLocations}
                         status={locStatus}
-                        error={uniError}
+                        error={noteError}
                         onAdd={() => handleCreate("location")}
                         onEdit={(item: AppLocation) => handleEdit("location", item)}
                         onEnter={handleLocationEnter}
-                        onRetry={() => universe_id && dispatch(getAllLocationsInUniverse(universe_id))}
+                        onRetry={() => note_id && dispatch(getNote(note_id))}
                         idField="location_id"
                         renderCardContent={(l) => (
                             <>
@@ -180,19 +180,3 @@ export const UniverseDetail = () => {
     )
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
