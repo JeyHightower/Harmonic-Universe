@@ -1,4 +1,4 @@
-import { useAppDispatch, useAppSelector, useSetterToolbox } from "../../hooks/useSetterToolbox"
+import { useAppDispatch, useAppSelector } from "../../hooks/useSetterToolbox"
 import type { ComponentStatus } from "../../types/componentStatus";
 import { useState, useEffect } from "react";
 import type { Character } from "../../types/character";
@@ -12,11 +12,9 @@ import { EntityManager } from "../Universal/EntityManager";
 export const Characters = () => {
 
     const { allCharacters, isLoading, error } = useAppSelector((state) => state.character);
-    const { useBooleanSetter } = useSetterToolbox();
-    const characterModal = useBooleanSetter(false);
-    const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+    const [activeModal, setActiveModal] = useState<{item:Character | null, type:string}>({item:null, type:''});
     const [status, setStatus] = useState<ComponentStatus>('idle');
-    const characterModalInfo = useModalToolbox(selectedCharacter || {}, 'character');
+    const characterModalInfo = useModalToolbox(activeModal.item || {}, 'character');
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
@@ -45,14 +43,17 @@ export const Characters = () => {
     }
 
     const characterHandleCreate = () => {
-        setSelectedCharacter(null);
+        setActiveModal({type:'character', item:null});
         characterModalInfo.reset();
-        characterModal.setTrue();
+       
     }
 
     const characterHandleEdit = (character: Character) => {
-        setSelectedCharacter(character);
-        characterModal.setTrue();
+       setActiveModal({type:'character', item:character})
+    }
+
+    const handleClose = () => {
+        setActiveModal({type:'', item:null})
     }
 
 
@@ -78,10 +79,10 @@ export const Characters = () => {
             />
             <GenericModal
                 type='character'
-                isOpen={characterModal.boolean}
-                onClose={characterModal.setFalse}
+                isOpen={activeModal.type === 'character'}
+                onClose={handleClose}
                 toolbox={characterModalInfo}
-                item={selectedCharacter}
+                item={activeModal.item}
             />
 
 

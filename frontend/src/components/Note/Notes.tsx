@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useAppSelector, useAppDispatch, useSetterToolbox } from "../../hooks/useSetterToolbox";
+import { useAppSelector, useAppDispatch} from "../../hooks/useSetterToolbox";
 import type { Note } from "../../types/note";
 import { useModalToolbox } from "../../hooks/useModalToolbox";
 import { useState, useEffect } from "react";
@@ -12,10 +12,8 @@ import { GenericModal } from "../Universal/GenericModal";
 export const Notes = () => {
 
     const { allNotes, isLoading, error } = useAppSelector((state) => state.note);
-    const { useBooleanSetter } = useSetterToolbox();
-    const noteModal = useBooleanSetter(false);
-    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-    const noteModalInfo = useModalToolbox(selectedNote || {}, 'note');
+    const [activeModal, setActiveModal] = useState<{item:Note | null, type:string}>({item:null, type:''})
+    const noteModalInfo = useModalToolbox(activeModal.item || {}, 'note');
     const [status, setStatus] = useState<ComponentStatus>('idle');
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -45,14 +43,17 @@ export const Notes = () => {
     }
 
     const noteHandleCreate = () => {
-        setSelectedNote(null);
+        setActiveModal({item:null, type:'note'});
         noteModalInfo.reset();
-        noteModal.setTrue();
+        
     }
 
     const noteHandleEdit = (note: Note) => {
-        setSelectedNote(note);
-        noteModal.setTrue();
+        setActiveModal({item:note, type:'note'});
+    }
+
+    const handleClose = () => {
+        setActiveModal({item:null, type:''})
     }
 
 
@@ -79,10 +80,10 @@ export const Notes = () => {
 
             <GenericModal
                 type="note"
-                isOpen={noteModal.boolean}
-                onClose={noteModal.setFalse}
+                isOpen={activeModal.type === 'note' }
+                onClose={handleClose}
                 toolbox={noteModalInfo}
-                item={selectedNote}
+                item={activeModal.item}
             />
         </>
 

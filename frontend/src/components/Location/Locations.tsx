@@ -1,4 +1,4 @@
-import { useAppDispatch, useAppSelector, useSetterToolbox } from "../../hooks/useSetterToolbox"
+import { useAppDispatch, useAppSelector} from "../../hooks/useSetterToolbox"
 import type { ComponentStatus } from "../../types/componentStatus";
 import { useModalToolbox } from "../../hooks/useModalToolbox";
 import { useState, useEffect } from "react";
@@ -15,10 +15,8 @@ export const Locations = () => {
     const { allLocations, isLoading, error } = useAppSelector((state) => state.location);
     const { currentUniverse } = useAppSelector((state) => state.universe);    
     const [status, setStatus] = useState<ComponentStatus>('idle');
-    const { useBooleanSetter } = useSetterToolbox();
-    const locationModal = useBooleanSetter(false);
-    const [selectedLocation, setSelectedLocation] = useState<AppLocation | null>(null);
-    const locationModalInfo = useModalToolbox(selectedLocation || {}, 'location');
+    const [activeModal, setActiveModal] = useState<{type:string, item:AppLocation | null}>({type:"", item:null})
+    const locationModalInfo = useModalToolbox(activeModal.item || {}, 'location');
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
@@ -49,14 +47,18 @@ export const Locations = () => {
 
     const locationHandleCreate = () => {
 
-        setSelectedLocation(null);
+        setActiveModal({type:'location', item:null})
         locationModalInfo.reset();
-        locationModal.setTrue();
+        
     }
 
     const locationHandleEdit = (location: AppLocation) => {
-        setSelectedLocation(location);
-        locationModal.setTrue();
+        setActiveModal({type:'location', item:location})
+        
+    }
+    
+    const handleClose = () => {
+        setActiveModal({type:'', item:null})
     }
 
 
@@ -88,10 +90,10 @@ export const Locations = () => {
 
             <GenericModal
                 type="location"
-                isOpen={locationModal.boolean}
-                onClose={locationModal.setFalse}
+                isOpen={activeModal.type==='location'}
+                onClose={handleClose}
                 toolbox={locationModalInfo}
-                item={selectedLocation}
+                item={activeModal.item}
             />
 
 

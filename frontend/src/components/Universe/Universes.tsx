@@ -1,4 +1,4 @@
-import { useAppDispatch, useAppSelector, useSetterToolbox } from '../../hooks/useSetterToolbox';
+import { useAppDispatch, useAppSelector } from '../../hooks/useSetterToolbox';
 import type { Universe } from '../../types/universe';
 import { useState, useEffect } from 'react';
 import { useModalToolbox } from '../../hooks/useModalToolbox';
@@ -12,10 +12,8 @@ import { EntityManager } from '../Universal/EntityManager';
 
 export const Universes = () => {
     const { allUniverses, isLoading, error } = useAppSelector((state) => state.universe);
-    const [selectedUniverse, setSelectedUniverse] = useState<Universe | null>(null);
-    const { useBooleanSetter } = useSetterToolbox();
-    const universeModal = useBooleanSetter(false);
-    const universeModalInfo = useModalToolbox(selectedUniverse || {}, 'universe');
+    const [activeModal, setActiveModal] = useState<{item:Universe | null, type:string}>({item:null, type:''});
+    const universeModalInfo = useModalToolbox(activeModal.item || {}, 'universe');
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
@@ -49,15 +47,18 @@ export const Universes = () => {
 
 
     const universeHandleCreate = () => {
-        setSelectedUniverse(null);
+        setActiveModal({item:null, type:'universe'});
         universeModalInfo.reset();
-        universeModal.setTrue();
+        
 
     }
 
     const universeHandleEdit = (universe: Universe) => {
-        setSelectedUniverse(universe);
-        universeModal.setTrue();
+        setActiveModal({item:universe, type:'universe'});
+    }
+
+    const handleClose = () => {
+        setActiveModal({item:null, type:''});
     }
 
     return (
@@ -81,10 +82,10 @@ export const Universes = () => {
             />
             <GenericModal
                 type="universe"
-                isOpen={universeModal.boolean}
-                onClose={universeModal.setFalse}
+                isOpen={activeModal.type === 'universe'}
+                onClose={handleClose}
                 toolbox={universeModalInfo}
-                item={selectedUniverse}
+                item={activeModal.item}
             />
 
 
