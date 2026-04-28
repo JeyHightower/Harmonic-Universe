@@ -7,68 +7,97 @@ import { useAuthToolbox } from '../../hooks/useAuthToolbox';
 export const Navbar = () => {
     const { logout } = useAuthToolbox();
     const { isAuthenticated, user } = useAppSelector(state => state.auth);
-    const { useBooleanSetter, useListSetter } = useSetterToolbox()
+    const { useBooleanSetter, useListSetter } = useSetterToolbox();
 
     const menu = useBooleanSetter(false);
     const activity = useListSetter<string>([]);
+    
 
     const trackAction = (msg: string) => {
-        activity.addUnique(msg)
-    }
-
-    const handleLogout = (e:React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        logout();
+        activity.addUnique(msg);
     };
 
-    const handleNavClick = (msg:string) => {
-        trackAction(msg)
+    const handleLogout = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        trackAction('User Logout');
+        logout();
         menu.setFalse();
-    }
-    
+    };
+
+    const handleNavClick = (msg: string) => {
+        trackAction(msg);
+        menu.setFalse();
+    };
 
     return (
         <nav className={styles.navbar}>
-           <div className={styles.navLogo}>
-                <Link to='/' onClick={() => trackAction('Clicked Logo')}>MyApp</Link>
+            <div className={styles.navLogo}>
+                <Link to='/' onClick={() => handleNavClick('Clicked Logo')}>MyApp</Link>
             </div>
+
             <button className={styles.menuBurger} onClick={menu.toggle}>
-                {menu.boolean ? user?.name: '☰'} 
+                {/* Changed to 'X' for better UX/Stability when open */}
+                {menu.boolean ? '✕' : '☰'}
             </button>
 
             <ul className={`${styles.navLinks} ${menu.boolean ? styles.open : ''}`}>
-                <li><Link to='/' onClick={() => handleNavClick('Nav to Home')}>Home</Link></li>
+                <li>
+                    <Link to='/' onClick={() => handleNavClick('Nav to Home')}>Home</Link>
+                </li>
+
                 {isAuthenticated ? (
                     <>
-                    <li><Link to='/universes' onClick={() => handleNavClick('Nav to Universes')}>Universes</Link></li>
-                    <li><Link to='/locations' onClick={() => handleNavClick('Nav to Locations')}>Locations</Link></li>
-                    <li><Link to='/characters' onClick={() => handleNavClick('Nav to Characters')}>Characters</Link></li>
-                    <li> <Link to='/dashboard' onClick={() =>handleNavClick('Nav to Dash')}>Dashboard</Link> </li>
-                    <li className={styles.userProfile}>Hi, {user?.username}</li>
-                    <li>
-                    <button 
-                        onClick={handleLogout}
-                        className={styles.logoutBtn}
-                        onMouseDown={() => trackAction('Logout')}>Logout</button></li>
+                        {/* 1. Identity Section */}
+                        <li className={styles.navProfileHeader}>
+                            <div>
+                                <p className={styles.userName}>{user?.username}</p>
+                                <span className={styles.userRole}>{user?.is_admin}</span>
+                            </div>
+                        </li>
+
+                        {/* 2. Explore Section */}
+                        <div className={styles.navSection}>
+                            <span className={styles.sectionLabel}>Explore</span>
+                            <li><Link to='/universes' onClick={() => handleNavClick('Nav to Universes')}>Universes</Link></li>
+                            <li><Link to='/locations' onClick={() => handleNavClick('Nav to Locations')}>Locations</Link></li>
+                            <li><Link to='/characters' onClick={() => handleNavClick('Nav to Characters')}>Characters</Link></li>
+                            <li><Link to='/dashboard' onClick={() => handleNavClick('Nav to Dash')}>Dashboard</Link></li>
+                        </div>
+
+                        {/* 3. Quick Tools Section */}
+                        <div className={styles.navSection}>
+                            <span className={styles.sectionLabel}>Quick Tools</span>
+                            <li>
+                                <button onClick={handleLogout} className={styles.logoutBtn}>
+                                    Logout
+                                </button>
+                            </li>
+                        </div>
                     </>
-                ): (
+                ) : (
                     <>
-                    <li> <Link to='/login'>Login</Link></li>
-                    <li><Link to='/register'>Register</Link></li>
+                        <li><Link to='/login' onClick={() => menu.setFalse()}>Login</Link></li>
+                        <li><Link to='/register' onClick={() => menu.setFalse()}>Register</Link></li>
                     </>
-                
                 )}
             </ul>
+
             <div className={styles.activityDropdown}>
                 <span>Recent Activity ({activity.list.length})</span>
                 <div className={styles.dropdownContent}>
                     {activity.list.map((item, i) => (
-                        <p key={i} className={styles.activityItem}>{new Date().toLocaleTimeString()} - {item}</p>
+                        <p key={i} className={styles.activityItem}>
+                            {new Date().toLocaleTimeString()} - {item}
+                        </p>
                     ))}
-                    {activity.list.length > 0 && <button className={styles.clearBtn} onClick={activity.clear}>Clear</button>}
+                    {activity.list.length > 0 && (
+                        <button className={styles.clearBtn} onClick={activity.clear}>
+                            Clear
+                        </button>
+                    )}
                 </div>
             </div>
-        </nav>
 
+        </nav>
     );
 };
