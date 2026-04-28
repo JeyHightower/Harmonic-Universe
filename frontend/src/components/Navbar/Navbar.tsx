@@ -20,21 +20,30 @@ export const Navbar = () => {
         e.preventDefault();
         logout();
     };
+
+    const handleNavClick = (msg:string) => {
+        trackAction(msg)
+        menu.setFalse();
+    }
     
+
     return (
         <nav className={styles.navbar}>
            <div className={styles.navLogo}>
                 <Link to='/' onClick={() => trackAction('Clicked Logo')}>MyApp</Link>
             </div>
             <button className={styles.menuBurger} onClick={menu.toggle}>
-                {menu.boolean ? 'x' : '☰'} 
+                {menu.boolean ? user?.name: '☰'} 
             </button>
 
             <ul className={`${styles.navLinks} ${menu.boolean ? styles.open : ''}`}>
-                <li><Link to='/' onClick={() => trackAction('Nav to Home')}>Home</Link></li>
+                <li><Link to='/' onClick={() => handleNavClick('Nav to Home')}>Home</Link></li>
                 {isAuthenticated ? (
                     <>
-                    <li> <Link to='/dashboard' onClick={() =>trackAction('Nav to Dash')}>Dashboard</Link> </li>
+                    <li><Link to='/universes' onClick={() => handleNavClick('Nav to Universes')}>Universes</Link></li>
+                    <li><Link to='/locations' onClick={() => handleNavClick('Nav to Locations')}>Locations</Link></li>
+                    <li><Link to='/characters' onClick={() => handleNavClick('Nav to Characters')}>Characters</Link></li>
+                    <li> <Link to='/dashboard' onClick={() =>handleNavClick('Nav to Dash')}>Dashboard</Link> </li>
                     <li className={styles.userProfile}>Hi, {user?.username}</li>
                     <li>
                     <button 

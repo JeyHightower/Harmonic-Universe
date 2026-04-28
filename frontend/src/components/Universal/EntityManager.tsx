@@ -2,6 +2,7 @@ import type { EntityManagerProps } from "../../types/entityManager";
 import { EmptyState } from "./EmptyState";
 import { ErrorDisplay } from "./ErrorDisplay";
 import { Spinner } from "./Spinner";
+import styles from '../General.module.css'
 
 export const EntityManager = <T,>({
     isSection = false,

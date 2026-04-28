@@ -1,11 +1,32 @@
 .navLinks {
-    display: flex;
+    position: absolute;
+    top: 60px;
+    right: 0;
+    width: 100%;
+    background: #fff;
+    transform: translateX(100%);
     transition: transform 0.3s ease;
-    margin:0;
-    padding:0;
-    gap: 1.5rem
+    margin: 0;
+    padding: 0;
+    gap: 1.5rem;
+    display:flex;
+    flex-direction: column;
 }
 
-.open {
-    transform: translateX(0);
+.navLinks.open {
+  transform: translateX(0);
+
+}
+
+@media(min-width: 768px){
+    .navLinks {
+       position: static;
+       transform: translateX(0);
+       flex-direction: row;
+       transition: none;
+    }
+}
+
+.navbar {
+    background: red;
 }
