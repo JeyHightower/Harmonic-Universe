@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useAppSelector } from "../../hooks/useSetterToolbox";
 import { Spinner } from "../Universal/Spinner";
 import { getProfile } from "../../features/User/userActions";
-import { ConnectionGallery } from "../ConnectionGallery";
+import { ConnectionGallery } from "../Universal/ConnectionGallery";
 import styles from './Dashboard.module.css';
 
 
