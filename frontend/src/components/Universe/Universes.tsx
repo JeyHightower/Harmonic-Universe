@@ -39,6 +39,13 @@ export const Universes = () => {
 
     const handleUniverseEnter = (e: React.MouseEvent, universe: Universe) => {
         e.stopPropagation();
+        console.log('UNIVERSE OBJECT:',  universe)
+        console.log('UNIVERSE ID', universe.universe_id)
+
+        if(!universe.universe_id){
+            console.log('NO UNIVERSE ID FOUND')
+            return;
+        }
         dispatch(setCurrentUniverse(universe));
         navigate(`/universes/${universe.universe_id}`);
 
@@ -67,12 +74,13 @@ export const Universes = () => {
                 data={allUniverses}
                 status={status}
                 error={error}
-                onAdd={universeHandleCreate}
-                onEdit={universeHandleEdit}
-                onEnter={handleUniverseEnter}
+                onAdd={() => universeHandleCreate()}
+                onEdit={(universe) => universeHandleEdit(universe)}
+                onEnter={(e, universe) => handleUniverseEnter(e,universe)}
                 onRetry={() => dispatch(getAllUniverses())}
                 idField="universe_id"
                 renderCardContent={(u) => (
+                
                     <>
                         <h3>{u.name}</h3>
                         <p>{u.description?.substring(30)}</p>

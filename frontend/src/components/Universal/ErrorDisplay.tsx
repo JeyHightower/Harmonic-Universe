@@ -1,5 +1,5 @@
 import { type ErrorDisplayProps } from "../../types/errorDisplayProps"
-
+import styles from '../General.module.css'
 export const ErrorDisplay = ({ message, onRetry }: ErrorDisplayProps) => {
 
     return (

@@ -12,6 +12,11 @@ export interface Note {
     locations: AppLocation[] | null;
 }
 
+export interface NoteResponse {
+    Message:string;
+    note:Note;
+}
+
 export type NoteDraft = Omit<Note, 'note_id'>
 
 export interface NoteState {

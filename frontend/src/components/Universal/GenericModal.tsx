@@ -10,14 +10,17 @@ export const GenericModal: React.FC<DynamicModalProps> = ({ isOpen, onClose, typ
     const fields = (FORM_CONFIG as any)[type];
 
     if (!isOpen || !fields) return null;
+    console.log('fields:', fields);
+    console.log('formData:', formData);
 
     return (
         <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
-                <h2>{formData.id ? `Edit ${type}` : `Create ${type}`}</h2>
+                <h2>{formData?.id ? `Edit ${type}` : `Create ${type}`}</h2>
 
                 <form onSubmit={(e) => { e.preventDefault(); handleSave(); onClose(); }}>
                     {fields.map((field: FormField) => (
+                        
                         <div key={field.name} className="field-group">
                             <label>{field.label}</label>
                             {field.type === 'textarea' ? (

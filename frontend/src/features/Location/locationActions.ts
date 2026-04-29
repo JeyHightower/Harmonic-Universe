@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppLocation, LocationDraft } from "../../types/location";
+import type { AppLocation, LocationDraft, LocationResponse } from "../../types/location";
 import { apiRequest } from "../../helpers";
 
 
@@ -7,52 +7,56 @@ import { apiRequest } from "../../helpers";
 export const createLocation = createAsyncThunk(
     'location/create',
     async ({locationData, universe_id}:{locationData:LocationDraft, universe_id:number}, thunkAPI) => {
-        return await apiRequest<AppLocation>({
+        const response = await apiRequest<LocationResponse>({
             url:`/api/universes/${universe_id}/locations`,
             method:'POST',
             signal: thunkAPI.signal,
             body: locationData,
             thunkAPI
         });
+        return response.location;
     }
 )
 
 export const getAllLocationsInUniverse = createAsyncThunk(
     'locations/get', 
     async(universe_id:number, thunkAPI) => {
-        return await apiRequest<AppLocation[]>({
+        const response = await apiRequest<{Message:string, location:AppLocation[]}>({
             url: `/api/universes/${universe_id}/locations`,
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
             thunkAPI
         })
+        return response.location;
     }
 )
 
 export const getLocation = createAsyncThunk(
     'location/get',
     async (location_id:number, thunkAPI) => {
-        return await apiRequest<AppLocation>({
+        const response = await apiRequest<LocationResponse>({
             url: `/api/locations/${location_id}`,
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
             thunkAPI
         })
+        return response.location;
     }
 )
 
 export const updateLocation = createAsyncThunk(
     'location/update',
     async({locationData,location_id}: {locationData:LocationDraft, location_id:number}, thunkAPI) => {
-        return await apiRequest<AppLocation>({
+        const response = await apiRequest<LocationResponse>({
             url: `api/locations/${location_id}`,
             method: 'PATCH',
             signal: thunkAPI.signal,
             body:locationData,
             thunkAPI
         });
+        return response.location;
     }
 )
 

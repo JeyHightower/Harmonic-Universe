@@ -48,16 +48,27 @@ export const EntityManager = <T,>({
 
                 {status === 'success' && (
                     <section className={styles.grid}>
-                        {data.map((item) => (
+                        {data.map((item:any) => (
                             <div
                                 key={String(item[idField])}
-                                className={styles.card}
+                                className={styles.card}>
+                                <div className={styles.cardPreview}
                                 onClick={() => onEdit(item)}
                             >
                                 {renderCardContent(item)}
-                                <button type='button' onClick={(e) => onEnter(e, item)}>
+                                </div>
+                                <footer className={styles.cardFooter}>
+                                <button 
+                                    type='button' 
+                                    className={styles.viewButton}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onEnter(e, item)}}
+                                        >
                                     View {type}
                                 </button>
+
+                                </footer>
                             </div>
                         ))}
                     </section>

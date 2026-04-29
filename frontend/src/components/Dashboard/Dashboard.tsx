@@ -1,53 +1,151 @@
 import { useEffect, useMemo } from "react";
-import { useAppSelector } from "../../hooks/useSetterToolbox";
+import { useAppDispatch, useAppSelector } from "../../hooks/useSetterToolbox";
 import { Spinner } from "../Universal/Spinner";
 import { getProfile } from "../../features/User/userActions";
 import { ConnectionGallery } from "../Universal/ConnectionGallery";
 import styles from './Dashboard.module.css';
+import { getAllUniverses } from "../../features/Universe/universeActions";
+import { getAllCharacters } from "../../features/Character/characterActions";
+import { getAllNotes } from "../../features/Note/noteActions";
+import { getAllLocationsInUniverse } from "../../features/Location/locationActions";
+
 
 
 export const Dashboard = () => {
+    const dispatch = useAppDispatch();
+    const { user, isLoading: authLoading } = useAppSelector(state => state.auth);
+    
+    // Selectors
+    const { allUniverses, isLoading: uniLoading } = useAppSelector(state => state.universe);
+    const { allCharacters, isLoading: charLoading } = useAppSelector(state => state.character);
+    const { allNotes, isLoading: noteLoading } = useAppSelector(state => state.note);
+    const { allLocations, isLoading: locLoading } = useAppSelector(state => state.location);
+    const { currentUniverse } = useAppSelector(state => state.universe);
 
-    const { user, isLoading: authLoading, error: authError } = useAppSelector(state => state.auth);
-    const { allUniverses, isLoading: uniLoading, error: uniError } = useAppSelector(state => state.universe);
-    const { allCharacters, isLoading: charLoading, error: charError } = useAppSelector(state => state.character);
-    const { allNotes, isLoading: noteLoading, error: noteError } = useAppSelector(state => state.note);
-    const { allLocations, isLoading: locLoading, error: locError } = useAppSelector(state => state.location);
+    // 1. THE SYSTEM GUARD (Crucial)
+    // This stops the component from running the rest of the code if Redux isn't ready.
+    const isEngineReady = allUniverses && allCharacters && allNotes && allLocations;
 
-    const userUniverses = useMemo(() => allUniverses.filter((u) => u.user_id === user?.user_id), [allUniverses, user]);
-    const userCharacters = useMemo(() => allCharacters.filter((c) => c.user_id === user?.user_id), [allCharacters, user]);
-    const userNotes = useMemo(() => allNotes.filter((n) => n.user_id === user?.user_id), [allNotes, user]);
-    const userLocations = useMemo(() => allLocations.filter((l) => l.user_id === user?.user_id), [allLocations, user]);
+    // 2. Fetching Logic (The Engine Trigger)
+    useEffect(() => {
+        if (!isEngineReady) return; // Wait until slices exist
 
-    const sections = [
+        if (allUniverses.length === 0) dispatch(getAllUniverses());
+        if (allCharacters.length === 0) dispatch(getAllCharacters());
+        if (allNotes.length === 0) dispatch(getAllNotes());
+        
+        if (currentUniverse?.universe_id && allLocations.length === 0) {
+            dispatch(getAllLocationsInUniverse(currentUniverse.universe_id));
+        }
+    }, [dispatch, isEngineReady, allUniverses?.length, allCharacters?.length, allNotes?.length, allLocations?.length, currentUniverse]);
+
+    // 3. Data Filtering (The Logic)
+    // Because of the Guard above, we know these arrays exist here.
+    const userUniverses = useMemo(() => (allUniverses ?? []).filter((u) => u.user_id === user?.user_id), [allUniverses, user]);
+    const userCharacters = useMemo(() => (allCharacters ?? []).filter((c) => c.user_id === user?.user_id), [allCharacters, user]);
+    const userNotes = useMemo(() => (allNotes ?? []).filter((n) => n.user_id === user?.user_id), [allNotes, user]);
+    const userLocations = useMemo(() => (allLocations ?? []).filter((l) => l.user_id === user?.user_id), [allLocations, user]);
+
+    // 4. UI Mapping (The System)
+    const sections = useMemo(() => [
         { title: 'Your Universes', items: userUniverses, type: 'universe', loading: uniLoading },
         { title: 'Your Characters', items: userCharacters, type: 'character', loading: charLoading },
         { title: 'Your Notes', items: userNotes, type: 'note', loading: noteLoading },
         { title: 'Your Locations', items: userLocations, type: 'location', loading: locLoading }
-    ] as const;
-
-    useEffect(() => {
-        if (!user) {
-            getProfile();
-        }
-    }, [user]);
+    ], [userUniverses, userCharacters, userNotes, userLocations, uniLoading, charLoading, noteLoading, locLoading]);
 
 
-    if (authLoading) return <Spinner />;
+    // Loading State
+    if (authLoading || !isEngineReady) return <Spinner />;
 
     return (
         <>
             <h1>{user ? `Welcome ${user.name}` : 'Welcome Demo-user'}</h1>
             {sections.map(({ title, items, type, loading }) => (
                 <div key={type} className={styles.container}>
-                    {!loading ? (<ConnectionGallery title={title} items={items} type={type} />) : (<Spinner />)}
+                    {!loading ? (
+                        <ConnectionGallery title={title} items={items} type={type} />
+                    ) : (
+                        <Spinner />
+                    )}
                 </div>
             ))}
         </>
-
     );
-
 };
+
+
+
+
+
+
+// export const Dashboard = () => {
+
+//     const { user, isLoading: authLoading, error: authError } = useAppSelector(state => state.auth);
+//     const { allUniverses, isLoading: uniLoading, error: uniError } = useAppSelector(state => state.universe);
+//     const { allCharacters, isLoading: charLoading, error: charError } = useAppSelector(state => state.character);
+//     const { allNotes, isLoading: noteLoading, error: noteError } = useAppSelector(state => state.note);
+//     const { allLocations, isLoading: locLoading, error: locError } = useAppSelector(state => state.location);
+//     const { currentUniverse } = useAppSelector(state => state.universe);
+//     const dispatch = useAppDispatch();
+
+
+//     useEffect(() => {
+//         // RULE: Guard against undefined by providing an empty array fallback
+//         if ((allUniverses ?? []).length === 0) dispatch(getAllUniverses());
+//         if ((allCharacters ?? []).length === 0) dispatch(getAllCharacters());
+//         if ((allNotes ?? []).length === 0) dispatch(getAllNotes());
+//         if (currentUniverse?.universe_id) {
+//             if ((allLocations ?? []).length === 0) {
+//                 dispatch(getAllLocationsInUniverse(currentUniverse.universe_id));
+//             }
+//         }
+//     }, [
+//         dispatch, 
+//         allUniverses?.length,  
+//         allCharacters?.length, 
+//         allNotes?.length,      
+//         allLocations?.length,  
+//         currentUniverse
+//     ]);
+        
+
+//     const userUniverses = useMemo(() => (allUniverses ?? []).filter((u) => u.user_id === user?.user_id), [allUniverses, user]);
+//     const userCharacters = useMemo(() => (allCharacters ?? []).filter((c) => c.user_id === user?.user_id), [allCharacters, user]);
+//     const userNotes = useMemo(() => (allNotes ?? []).filter((n) => n.user_id === user?.user_id), [allNotes, user]);
+//     const userLocations = useMemo(() => (allLocations ?? []).filter((l) => l.user_id === user?.user_id), [allLocations, user]);
+
+//     const sections = [
+//         { title: 'Your Universes', items: userUniverses, type: 'universe', loading: uniLoading },
+//         { title: 'Your Characters', items: userCharacters, type: 'character', loading: charLoading },
+//         { title: 'Your Notes', items: userNotes, type: 'note', loading: noteLoading },
+//         { title: 'Your Locations', items: userLocations, type: 'location', loading: locLoading }
+//     ] as const;
+
+//     useEffect(() => {
+//         if (!user) {
+//             getProfile();
+//         }
+//     }, [user]);
+
+   
+
+
+//     if (authLoading) return <Spinner />;
+
+//     return (
+//         <>
+//             <h1>{user ? `Welcome ${user.name}` : 'Welcome Demo-user'}</h1>
+//             {sections.map(({ title, items, type, loading }) => (
+//                 <div key={type} className={styles.container}>
+//                     {!loading ? (<ConnectionGallery title={title} items={items} type={type} />) : (<Spinner />)}
+//                 </div>
+//             ))}
+//         </>
+
+//     );
+
+// };
 
 
 

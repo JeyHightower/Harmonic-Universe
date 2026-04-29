@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useSetterToolbox';
 import { useSetterToolbox } from '../../hooks/useSetterToolbox';
 import { useAuthToolbox } from '../../hooks/useAuthToolbox';
+import { Search } from '../Search/Search';
 
 export const Navbar = () => {
     const { logout } = useAuthToolbox();
@@ -10,6 +11,7 @@ export const Navbar = () => {
     const { useBooleanSetter, useListSetter } = useSetterToolbox();
 
     const menu = useBooleanSetter(false);
+    const search = useBooleanSetter(false);
     const activity = useListSetter<string>([]);
     
 
@@ -67,6 +69,8 @@ export const Navbar = () => {
                         {/* 3. Quick Tools Section */}
                         <div className={styles.navSection}>
                             <span className={styles.sectionLabel}>Quick Tools</span>
+                            <li className={styles.Search}>Search <Search onClose={search.setFalse}/></li>
+                        
                             <li>
                                 <button onClick={handleLogout} className={styles.logoutBtn}>
                                     Logout

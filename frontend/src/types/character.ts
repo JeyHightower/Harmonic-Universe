@@ -18,6 +18,11 @@ export interface Character {
 
 }
 
+export interface CharacterResponse {
+    Message:string;
+    character:Character;
+}
+
 export type CharacterDraft = Omit<Character, 'character_id'>;
 
 export interface CharacterState {

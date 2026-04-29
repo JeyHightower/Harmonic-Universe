@@ -6,11 +6,12 @@ import { createUniverse, deleteUniverse, updateUniverse } from "../features/Univ
 import { createNote, deleteNote, updateNote } from "../features/Note/noteActions";
 
 
-export const useModalToolbox = <T extends object>(item: T, type: string) => {
+export const useModalToolbox = <T extends object>(item: T | null, type: string) => {
     const dispatch = useAppDispatch();
 
+
     const { useObjectSetter } = useSetterToolbox();
-    const { updateField, reset, object: formData } = useObjectSetter(item || {});
+    const { updateField, reset, object: formData } = useObjectSetter(item || null );
 
     const actionMap: Record<string, { create: any, update: any, delete: any, idKey: string }> = {
         character: { create: createCharacter, update: updateCharacter, delete: deleteCharacter, idKey: 'character_id' },
@@ -19,21 +20,30 @@ export const useModalToolbox = <T extends object>(item: T, type: string) => {
         location: { create: createLocation, update: updateLocation, delete: deleteLocation, idKey: 'location_id' }
     } as const;
 
-    const handleSave = async (parentId: string | number) => {
+    const handleSave = async (extraData: Record<string, any> = {}) => {
+
         const modelActions = actionMap[type];
+        
+        if(!modelActions) return;
         try {
-            if (item) {
-                const id = (item as any)[modelActions.idKey];
-                await dispatch(modelActions.update({ id, ...formData })).unwrap();
+            const id = item ? (item as any)[modelActions.idKey] : null;
+            if (id) {
+                if(!id) throw new Error("Missing ID for Update");
+                await dispatch(modelActions.update({ 
+                    [modelActions.idKey]: id,
+                    [`${type}Data`]:formData })).unwrap();
             }
             else {
-                const payload = type === 'universe' ? formData : { ...formData, universe_id: parentId }
+                const payload = { ...formData, ...extraData }
                 await dispatch(modelActions.create(payload)).unwrap();
             }
+
             reset();
+            return {success:true};
 
         } catch (error) {
             console.error(`Failed to save ${type}:`, error);
+            return {success: false, error}
         }
 
     }

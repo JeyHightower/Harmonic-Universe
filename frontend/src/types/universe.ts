@@ -13,6 +13,10 @@ export interface Universe {
         notes: Note[] | null;
 };
 
+export interface UniverseResponse {
+    Message:string;
+    universe:Universe;
+}
 
 export interface UniverseState {
     currentUniverse: Universe | null;

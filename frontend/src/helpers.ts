@@ -6,6 +6,7 @@ import type { AuthState, LoginResponse, RegisterResponse } from "./types/auth";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { Note } from "./types/note";
 import type { AppLocation } from "./types/location";
+import type { RootState } from "./types/universal";
 
 
 
@@ -22,11 +23,12 @@ export const getInitialUser = (): User | null => {
 
 export const apiRequest = async <T>(config: ApiRequestConfig): Promise<T> => {
     const { url, method, body, thunkAPI, signal } = config;
-    const token = getInitialToken();
+    const state = thunkAPI.getState() as RootState;
+    const token = state.auth.token;
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
     };
-    if (token) {
+    if (token && token !== "undefined" && token !== "null") {
         headers['Authorization'] = `Bearer ${token}`;
     }
     if (!token && method !== 'POST') {
@@ -62,8 +64,8 @@ export const handleAuthSuccess = (state: AuthState, action: PayloadAction<LoginR
     state.isLoading = false;
     state.isAuthenticated = true;
     state.user = action.payload.user;
-    state.token = action.payload.token;
-    localStorage.setItem('token', action.payload.token)
+    state.token = action.payload.access_token;
+    localStorage.setItem('token', action.payload.access_token)
 }
 
 export const getCurrentUniverse = (): Universe | null => {

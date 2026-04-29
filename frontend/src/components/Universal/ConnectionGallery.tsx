@@ -1,6 +1,6 @@
 import { useNavigationToolbox } from "../../hooks/useNavigationToolbox"
 import type { Gallery } from "../../types/gallery";
-import styles from './Home/Home.module.css';
+import styles from '../Home/Home.module.css';
 import { EmptyState } from "./EmptyState";
 import { useState } from "react";
 import { useModalToolbox } from "../../hooks/useModalToolbox";
