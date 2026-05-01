@@ -29,7 +29,7 @@ export const Universes = () => {
             setStatus('error')
             return;
         }
-        if (allUniverses.length === 0) {
+        if (allUniverses?.length === 0) {
             setStatus('empty')
             return;
         }

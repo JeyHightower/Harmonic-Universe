@@ -48,7 +48,7 @@ export const EntityManager = <T,>({
 
                 {status === 'success' && (
                     <section className={styles.grid}>
-                        {data.map((item:any) => (
+                        {data?.map((item:any) => (
                             <div
                                 key={String(item[idField])}
                                 className={styles.card}>

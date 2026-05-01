@@ -1,6 +1,5 @@
 import type { User } from "./types/user";
 import type { ApiRequestConfig } from "./types/api";
-import type { Universe } from "./types/universe";
 import type { Character } from "./types/character";
 import type { AuthState, LoginResponse, RegisterResponse } from "./types/auth";
 import type { PayloadAction } from "@reduxjs/toolkit";
@@ -68,17 +67,7 @@ export const handleAuthSuccess = (state: AuthState, action: PayloadAction<LoginR
     localStorage.setItem('token', action.payload.access_token)
 }
 
-export const getCurrentUniverse = (): Universe | null => {
-    const universe = localStorage.getItem('activeUniverse');
-    if (!universe) return null;
-    try {
-        return JSON.parse(universe) as Universe;
-    }
-    catch (error) {
-        console.error('failed to parse universe data', error);
-        return null;
-    }
-}
+
 
 export const getCurrentCharacter = (): Character | null => {
     const character = localStorage.getItem('activeCharacter')

@@ -35,7 +35,7 @@ export const Search = ({ onClose }: SearchProps) => {
             return;
         }
 
-        if (allUniverses.length === 0 && allCharacters.length === 0 && allNotes.length === 0 && allLocations.length === 0) {
+        if (allUniverses?.length === 0 && allCharacters?.length === 0 && allNotes?.length === 0 && allLocations?.length === 0) {
             setStatus('empty')
             return;
         }

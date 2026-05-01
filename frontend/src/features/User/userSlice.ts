@@ -27,7 +27,7 @@ const initialState:AuthState = {
         .addCase(getProfile.fulfilled, (state, action: PayloadAction<LoginResponse>) => {
             state.isLoading = false;
             state.user = action.payload.user;
-            state.token = action.payload.token || state.token;
+            state.token = action.payload.access_token
         })
         .addCase(getProfile.rejected, (state,action) => {
             if(action.error.name === 'AbortError'){

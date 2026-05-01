@@ -22,23 +22,34 @@ export const Dashboard = () => {
     const { allLocations, isLoading: locLoading } = useAppSelector(state => state.location);
     const { currentUniverse } = useAppSelector(state => state.universe);
 
-    // 1. THE SYSTEM GUARD (Crucial)
-    // This stops the component from running the rest of the code if Redux isn't ready.
-    const isEngineReady = allUniverses && allCharacters && allNotes && allLocations;
+
+   
+
+
+    useEffect(() => {
+                if (!user) {
+                    dispatch(getProfile());
+                }
+            }, [user,dispatch]);
+
+            
 
     // 2. Fetching Logic (The Engine Trigger)
     useEffect(() => {
-        if (!isEngineReady) return; // Wait until slices exist
+        if(!user) return; // Wait until slices exist
 
-        if (allUniverses.length === 0) dispatch(getAllUniverses());
-        if (allCharacters.length === 0) dispatch(getAllCharacters());
-        if (allNotes.length === 0) dispatch(getAllNotes());
-        
-        if (currentUniverse?.universe_id && allLocations.length === 0) {
-            dispatch(getAllLocationsInUniverse(currentUniverse.universe_id));
+        if(!allUniverses?.length) dispatch(getAllUniverses());
+        if(!allCharacters?.length) dispatch(getAllCharacters());
+        if(!allNotes?.length) dispatch(getAllNotes());
+        if(currentUniverse?.universe_id && !allLocations?.length){
+            dispatch(getAllLocationsInUniverse(currentUniverse?.universe_id))
         }
-    }, [dispatch, isEngineReady, allUniverses?.length, allCharacters?.length, allNotes?.length, allLocations?.length, currentUniverse]);
+    }, [dispatch, user]);
 
+    const isLoading = authLoading || uniLoading || charLoading || noteLoading || locLoading;
+
+    
+    console.log('ALL UNIVERSES', allUniverses);
     // 3. Data Filtering (The Logic)
     // Because of the Guard above, we know these arrays exist here.
     const userUniverses = useMemo(() => (allUniverses ?? []).filter((u) => u.user_id === user?.user_id), [allUniverses, user]);
@@ -56,7 +67,25 @@ export const Dashboard = () => {
 
 
     // Loading State
-    if (authLoading || !isEngineReady) return <Spinner />;
+
+
+
+    console.log('Dashboard data:', {
+        userUniverses: userUniverses.length,
+        userCharacters: userCharacters.length,
+        userId: user?.user_id
+    });
+
+    // Add this RIGHT NOW
+console.log('FULL USER OBJECT:', user);
+console.log('USER KEYS:', Object.keys(user || {}));
+console.log('Sample Universe Object Keys:', allUniverses?.[0] ? Object.keys(allUniverses[0]) : 'No data');
+
+if(isLoading || !user){
+    return <Spinner />
+}
+
+
 
     return (
         <>
@@ -64,7 +93,7 @@ export const Dashboard = () => {
             {sections.map(({ title, items, type, loading }) => (
                 <div key={type} className={styles.container}>
                     {!loading ? (
-                        <ConnectionGallery title={title} items={items} type={type} />
+                        <ConnectionGallery title={title} items={items} type={type as 'universe' | 'character' | 'note' | 'location'} />
                     ) : (
                         <Spinner />
                     )}

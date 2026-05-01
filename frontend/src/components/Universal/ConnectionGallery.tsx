@@ -53,3 +53,5 @@ export const ConnectionGallery = ({ title, items, type }: Gallery) => {
         </section>
     )
 }
+
+
