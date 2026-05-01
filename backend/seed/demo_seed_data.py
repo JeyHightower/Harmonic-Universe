@@ -52,6 +52,7 @@ def demo_seed_data():
     demo_character_1.universes.append(demo_universe_1)
     demo_universe_1.locations.append(demo_location)
     demo_note.characters.append(demo_character_1)
+    demo_universe_2.locations.append(demo_location)
 
     try: 
         db.session.add_all([demo_user, demo_universe_1, demo_universe_2, demo_character_1, demo_location])
