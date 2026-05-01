@@ -20,7 +20,7 @@ export interface Character {
 
 export interface CharacterResponse {
     Message:string;
-    character:Character;
+    Character:Character;
 }
 
 export type CharacterDraft = Omit<Character, 'character_id'>;

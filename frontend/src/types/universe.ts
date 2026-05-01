@@ -15,7 +15,7 @@ export interface Universe {
 
 export interface UniverseResponse {
     Message:string;
-    universe:Universe;
+    Universe:Universe;
 }
 
 export interface UniverseState {

@@ -14,7 +14,7 @@ export interface Note {
 
 export interface NoteResponse {
     Message:string;
-    note:Note;
+    Note:Note;
 }
 
 export type NoteDraft = Omit<Note, 'note_id'>

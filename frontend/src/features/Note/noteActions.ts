@@ -14,21 +14,21 @@ export const createNote = createAsyncThunk(
             body: noteData,
             thunkAPI
         });
-        return response.note;
+        return response.Note;
     }
 )
 
 export const getAllNotes = createAsyncThunk(
     'notes/get',
     async(_, thunkAPI) => {
-        const response = await apiRequest<{Message:string, note:Note[]}>({
+        const response = await apiRequest<{Message:string, Notes:Note[]}>({
             url: '/api/notes/',
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
             thunkAPI
         });
-        return response.note;
+        return response.Notes;
     }
 )
 
@@ -42,7 +42,7 @@ export const getNote = createAsyncThunk(
             body: null,
             thunkAPI
         });
-        return response.note;
+        return response.Note;
     }
 )
 
@@ -56,7 +56,7 @@ export const updateNote = createAsyncThunk(
             body: noteData,
             thunkAPI
         });
-        return response.note;
+        return response.Note;
     }
 )
 

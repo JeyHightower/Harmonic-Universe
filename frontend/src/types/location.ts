@@ -16,7 +16,7 @@ export interface AppLocation {
 
 export interface LocationResponse {
     Message:string;
-    location:AppLocation;
+    Location:AppLocation;
 }
 
 export type LocationDraft = Omit<AppLocation, 'location_id'>

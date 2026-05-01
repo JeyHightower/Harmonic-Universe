@@ -52,10 +52,10 @@ export const Dashboard = () => {
     console.log('ALL UNIVERSES', allUniverses);
     // 3. Data Filtering (The Logic)
     // Because of the Guard above, we know these arrays exist here.
-    const userUniverses = useMemo(() => (allUniverses ?? []).filter((u) => u.user_id === user?.user_id), [allUniverses, user]);
-    const userCharacters = useMemo(() => (allCharacters ?? []).filter((c) => c.user_id === user?.user_id), [allCharacters, user]);
-    const userNotes = useMemo(() => (allNotes ?? []).filter((n) => n.user_id === user?.user_id), [allNotes, user]);
-    const userLocations = useMemo(() => (allLocations ?? []).filter((l) => l.user_id === user?.user_id), [allLocations, user]);
+    const userUniverses = useMemo(() => allUniverses ?? [],[allUniverses]);
+    const userCharacters = useMemo(() => allCharacters ?? [], [allCharacters, user]);
+    const userNotes = useMemo(() => allNotes ?? [], [allNotes]);
+    const userLocations = useMemo(() => allLocations ?? [], [allLocations, user]);
 
     // 4. UI Mapping (The System)
     const sections = useMemo(() => [

@@ -14,21 +14,21 @@ export const createLocation = createAsyncThunk(
             body: locationData,
             thunkAPI
         });
-        return response.location;
+        return response.Location;
     }
 )
 
 export const getAllLocationsInUniverse = createAsyncThunk(
     'locations/get', 
     async(universe_id:number, thunkAPI) => {
-        const response = await apiRequest<{Message:string, location:AppLocation[]}>({
+        const response = await apiRequest<{Message:string, Locations:AppLocation[]}>({
             url: `/api/universes/${universe_id}/locations`,
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
             thunkAPI
         })
-        return response.location;
+        return response.Locations;
     }
 )
 
@@ -42,7 +42,7 @@ export const getLocation = createAsyncThunk(
             body: null,
             thunkAPI
         })
-        return response.location;
+        return response.Location;
     }
 )
 
@@ -56,7 +56,7 @@ export const updateLocation = createAsyncThunk(
             body:locationData,
             thunkAPI
         });
-        return response.location;
+        return response.Location;
     }
 )
 

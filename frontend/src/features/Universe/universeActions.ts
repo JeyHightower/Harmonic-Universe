@@ -13,22 +13,22 @@ export const createUniverse = createAsyncThunk(
             body: universeData,
             thunkAPI
         });
-        return response.universe;
+        return response.Universe;
     }
 )
 
 
 export const getAllUniverses = createAsyncThunk<Universe[], void>(
-    'universes/get',
+    'universes/getUniverses',
     async(_, thunkAPI) => {
-        const response =  await apiRequest<{Message:string; universes:Universe[]}>({
+        const response =  await apiRequest<{Message:string; Universes:Universe[]}>({
             url: '/api/universes/',
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
             thunkAPI
         });
-        return response.universes
+        return response.Universes
     }
 )
 
@@ -42,7 +42,7 @@ export const getUniverse = createAsyncThunk(
             body: null,
             thunkAPI
         });
-        return response.universe;
+        return response.Universe;
     }
 )
 
@@ -56,7 +56,7 @@ export const updateUniverse = createAsyncThunk(
             body: universeData,
             thunkAPI
         });
-      return  response.universe;
+      return  response.Universe;
     }
 )
 

@@ -12,21 +12,21 @@ export const createCharacter = createAsyncThunk(
             body: characterData,
             thunkAPI
         });
-        return response.character;
+        return response.Character;
     }
 )
 
 export const getAllCharacters = createAsyncThunk(
     'characters/get',
     async (_, thunkAPI) => {
-        const response =  await apiRequest<{Message:string, character:Character[]}>({
+        const response =  await apiRequest<{Message:string, Characters:Character[]}>({
             url: '/api/characters/',
             method: 'GET',
             signal: thunkAPI.signal,
             body: null,
             thunkAPI
         });
-        return response.character
+        return response.Characters
     }
 )
 
@@ -40,7 +40,7 @@ export const getCharacter = createAsyncThunk(
             body: null,
             thunkAPI
         });
-        return response.character;
+        return response.Character;
     }
 )
 
@@ -54,7 +54,7 @@ export const updateCharacter = createAsyncThunk(
             body: characterData,
             thunkAPI
         });
-       return response.character;
+       return response.Character;
     }
 )
 
