@@ -15,7 +15,6 @@ export const Universes = () => {
     const universeModalInfo = useModalToolbox(activeModal.item || {}, 'universe');
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-
     const [status, setStatus] = useState<ComponentStatus>('idle');
 
 
@@ -39,13 +38,6 @@ export const Universes = () => {
 
     const handleUniverseEnter = (e: React.MouseEvent, universe: Universe) => {
         e.stopPropagation();
-        console.log('UNIVERSE OBJECT:',  universe)
-        console.log('UNIVERSE ID', universe.universe_id)
-
-        if(!universe.universe_id){
-            console.log('NO UNIVERSE ID FOUND')
-            return;
-        }
         dispatch(setCurrentUniverse(universe));
         navigate(`/universes/${universe.universe_id}`);
 
@@ -82,8 +74,8 @@ export const Universes = () => {
                 renderCardContent={(u) => (
                 
                     <>
-                        <h3>{u.name}</h3>
-                        <p>{u.description?.substring(30)}</p>
+                        <h3>{u?.name}</h3>
+                        <p>{u?.description?.substring(30)}</p>
                     </>
                 )}
             />

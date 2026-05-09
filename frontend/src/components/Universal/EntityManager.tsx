@@ -50,7 +50,7 @@ export const EntityManager = <T,>({
                     <section className={styles.grid}>
                         {data?.map((item:any) => (
                             <div
-                                key={String(item[idField])}
+                                key={String(item?.[idField])}
                                 className={styles.card}>
                                 <div className={styles.cardPreview}
                                 onClick={() => onEdit(item)}

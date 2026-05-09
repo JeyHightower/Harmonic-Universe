@@ -23,9 +23,6 @@ export const Dashboard = () => {
     const { currentUniverse } = useAppSelector(state => state.universe);
 
 
-   
-
-
     useEffect(() => {
                 if (!user) {
                     dispatch(getProfile());
@@ -33,10 +30,8 @@ export const Dashboard = () => {
             }, [user,dispatch]);
 
             
-
-    // 2. Fetching Logic (The Engine Trigger)
     useEffect(() => {
-        if(!user) return; // Wait until slices exist
+        if(!user) return;
 
         if(!allUniverses?.length) dispatch(getAllUniverses());
         if(!allCharacters?.length) dispatch(getAllCharacters());
@@ -48,16 +43,14 @@ export const Dashboard = () => {
 
     const isLoading = authLoading || uniLoading || charLoading || noteLoading || locLoading;
 
-    
-    console.log('ALL UNIVERSES', allUniverses);
+
     // 3. Data Filtering (The Logic)
     // Because of the Guard above, we know these arrays exist here.
-    const userUniverses = useMemo(() => allUniverses ?? [],[allUniverses]);
+    const userUniverses = useMemo(() => allUniverses ?? [],[allUniverses, user]);
     const userCharacters = useMemo(() => allCharacters ?? [], [allCharacters, user]);
-    const userNotes = useMemo(() => allNotes ?? [], [allNotes]);
+    const userNotes = useMemo(() => allNotes ?? [], [allNotes, user]);
     const userLocations = useMemo(() => allLocations ?? [], [allLocations, user]);
 
-    // 4. UI Mapping (The System)
     const sections = useMemo(() => [
         { title: 'Your Universes', items: userUniverses, type: 'universe', loading: uniLoading },
         { title: 'Your Characters', items: userCharacters, type: 'character', loading: charLoading },
@@ -66,37 +59,22 @@ export const Dashboard = () => {
     ], [userUniverses, userCharacters, userNotes, userLocations, uniLoading, charLoading, noteLoading, locLoading]);
 
 
-    // Loading State
-
-
-
-    console.log('Dashboard data:', {
-        userUniverses: userUniverses.length,
-        userCharacters: userCharacters.length,
-        userId: user?.user_id
-    });
-
-    // Add this RIGHT NOW
-console.log('FULL USER OBJECT:', user);
-console.log('USER KEYS:', Object.keys(user || {}));
-console.log('Sample Universe Object Keys:', allUniverses?.[0] ? Object.keys(allUniverses[0]) : 'No data');
-
 if(isLoading || !user){
     return <Spinner />
 }
-
-
 
     return (
         <>
             <h1>{user ? `Welcome ${user.name}` : 'Welcome Demo-user'}</h1>
             {sections.map(({ title, items, type, loading }) => (
                 <div key={type} className={styles.container}>
+                    <div className={styles.displayCard}>
                     {!loading ? (
                         <ConnectionGallery title={title} items={items} type={type as 'universe' | 'character' | 'note' | 'location'} />
                     ) : (
                         <Spinner />
                     )}
+                    </div>
                 </div>
             ))}
         </>

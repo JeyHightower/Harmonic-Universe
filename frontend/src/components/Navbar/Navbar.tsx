@@ -61,6 +61,7 @@ export const Navbar = () => {
                         <div className={styles.navSection}>
                             <span className={styles.sectionLabel}>Explore</span>
                             <li><Link to='/universes' onClick={() => handleNavClick('Nav to Universes')}>Universes</Link></li>
+                            <li><Link to='/notes' onClick={() => handleNavClick('Nav to Notes')}>Notes</Link></li>
                             <li><Link to='/locations' onClick={() => handleNavClick('Nav to Locations')}>Locations</Link></li>
                             <li><Link to='/characters' onClick={() => handleNavClick('Nav to Characters')}>Characters</Link></li>
                             <li><Link to='/dashboard' onClick={() => handleNavClick('Nav to Dash')}>Dashboard</Link></li>

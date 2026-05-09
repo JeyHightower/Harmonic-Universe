@@ -12,9 +12,9 @@ class Character(db.Model):
     name: Mapped[str] = mapped_column('name', String(100), nullable = False)
     age: Mapped[int] = mapped_column(nullable = True)
     origin: Mapped[str] = mapped_column(String(200), nullable = True)
-    main_power_set: Mapped[str] = mapped_column(String(100), nullable = False, unique = True)
-    secondary_power_set: Mapped[str] = mapped_column(String(100), nullable = False, unique = True)
-    skills: Mapped[List[str]] = mapped_column(JSON, nullable = False, default = 'list')
+    main_power_set: Mapped[str] = mapped_column(String(100), nullable = False)
+    secondary_power_set: Mapped[str] = mapped_column(String(100), nullable = False)
+    skills: Mapped[str] = mapped_column(String(500), nullable = False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     universes: Mapped[List['Universe']] = relationship(secondary = 'character_universes', back_populates = 'characters')
@@ -41,19 +41,34 @@ class Character(db.Model):
                 raise ValueError(f'{key.replace("_", " ").capitalize()} cannot be less than 3 characters.')
             return value.strip().capitalize()
         elif key == 'skills':
-            if not isinstance(value, list):
-                raise TypeError('skills must be a list')
-            if not all(isinstance(w, str) and len(w.strip()) > 2 for w in value):
-                raise ValueError('Each skill  must be 3 or more characters long.')
-            if not all(w.strip()[0].isalpha() for w in value):
-                raise ValueError('Each skill must start with a letter')
-            return [w.strip().capitalize() for w in value]
+            if not isinstance(value, str):
+                raise TypeError('skill must be a string')
+            if len(value) < 3:
+                    raise ValueError('Each skill must be 3 or more characters long.')
+            if not value[0].isalpha():
+                    raise ValueError('Each skill must start with a letter')
+            return value
         elif key == 'user_id':
             if not isinstance(value, int):
                 raise TypeError('user_id must be an integer')
             if value <= 0:
                 raise ValueError('user_id must be greater than 0')
             return int(value)
+        return value
+
+    @validates('age')
+    def validate_age(self, key, value):
+        if value is None or value == "": 
+            return None
+        
+        if isinstance(value,str):
+            if value.isdigit():
+                value = int(value)
+            else:
+                raise ValueError("Age must be a valid number.")
+        if not isinstance(value,int):
+            raise TypeError("Age must be an integer.")
+
         return value
 
 

@@ -31,7 +31,7 @@ def demo_seed_data():
         origin= 'unknown',
         main_power_set= 'paper manipulation',
         secondary_power_set= 'nature manipulation',
-        skills = ['Master Strategist']
+        skills = 'Master Strategist'
 
     )
 

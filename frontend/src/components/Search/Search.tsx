@@ -45,10 +45,10 @@ export const Search = ({ onClose }: SearchProps) => {
 
     const allItems = useMemo((): SearchItem[] => {
         return [
-            ...(allUniverses ?? []).map((u) => ({ id: u.universe_id, label: u.name, category: 'Universe', path: `/universes/${u.universe_id}` })),
-            ...(allCharacters ?? []).map((c) => ({ id: c.character_id, label: c.name, category: 'Character', path: `/characters/${c.character_id}` })),
-            ...(allNotes ?? []).map((n) => ({ id: n.note_id, label: n.title, category: 'Note', path: `/notes/${n.note_id}` })),
-            ...(allLocations ?? []).map((l) => ({ id: l.location_id, label: l.name, category: 'Location', path: `/locations/${l.location_id}` }))
+            ...(allUniverses ?? []).map((u) => ({ id: u?.universe_id, label: u?.name, category: 'Universe', path: `/universes/${u?.universe_id}` })),
+            ...(allCharacters ?? []).map((c) => ({ id: c?.character_id, label: c?.name, category: 'Character', path: `/characters/${c?.character_id}` })),
+            ...(allNotes ?? []).map((n) => ({ id: n?.note_id, label: n?.title, category: 'Note', path: `/notes/${n?.note_id}` })),
+            ...(allLocations ?? []).map((l) => ({ id: l?.location_id, label: l?.name, category: 'Location', path: `/locations/${l?.location_id}` }))
         ]
     }, [allUniverses, allCharacters, allNotes, allLocations])
 

@@ -6,12 +6,13 @@ import { apiRequest } from "../../helpers";
 
 export const createLocation = createAsyncThunk(
     'location/create',
-    async ({locationData, universe_id}:{locationData:LocationDraft, universe_id:number}, thunkAPI) => {
+    async (payload:LocationDraft & {universe_id:number}, thunkAPI) => {
+        const { universe_id, ...locationData } = payload;
         const response = await apiRequest<LocationResponse>({
             url:`/api/universes/${universe_id}/locations`,
             method:'POST',
             signal: thunkAPI.signal,
-            body: locationData,
+            body: {...locationData, universe_id},
             thunkAPI
         });
         return response.Location;

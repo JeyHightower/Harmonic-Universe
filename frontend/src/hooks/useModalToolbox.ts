@@ -11,7 +11,7 @@ export const useModalToolbox = <T extends object>(item: T | null, type: string) 
 
 
     const { useObjectSetter } = useSetterToolbox();
-    const { updateField, reset, object: formData } = useObjectSetter(item || null );
+    const { updateField, reset, addFields, object: formData } = useObjectSetter(item || null );
 
     const actionMap: Record<string, { create: any, update: any, delete: any, idKey: string }> = {
         character: { create: createCharacter, update: updateCharacter, delete: deleteCharacter, idKey: 'character_id' },
@@ -25,16 +25,17 @@ export const useModalToolbox = <T extends object>(item: T | null, type: string) 
         const modelActions = actionMap[type];
         
         if(!modelActions) return;
+
+        
         try {
             const id = item ? (item as any)[modelActions.idKey] : null;
             if (id) {
-                if(!id) throw new Error("Missing ID for Update");
                 await dispatch(modelActions.update({ 
                     [modelActions.idKey]: id,
                     [`${type}Data`]:formData })).unwrap();
             }
             else {
-                const payload = { ...formData, ...extraData }
+                const payload = { ...formData, ...extraData };
                 await dispatch(modelActions.create(payload)).unwrap();
             }
 
@@ -56,7 +57,7 @@ export const useModalToolbox = <T extends object>(item: T | null, type: string) 
             await dispatch(modelActions.delete(id)).unwrap();
         }
     }
-    return { formData, handleSave, reset, updateField, handleDelete }
+    return { formData, handleSave, reset, updateField, addFields,handleDelete }
 };
 
 
