@@ -10,31 +10,28 @@ import { setCurrentUniverse } from '../../features/Universe/universeSlice';
 import { EntityManager } from '../Universal/EntityManager';
 
 export const Universes = () => {
-    const { allUniverses, isLoading, error } = useAppSelector((state) => state.universe);
+    const { allUniverses, currentUniverse, isLoading, error } = useAppSelector((state) => state.universe);
     const [activeModal, setActiveModal] = useState<{item:Universe | null, type:string}>({item:null, type:''});
     const universeModalInfo = useModalToolbox(activeModal.item || {}, 'universe');
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [status, setStatus] = useState<ComponentStatus>('idle');
 
+
+    const status: ComponentStatus = (() => {
+        if(isLoading) return 'loading';
+        if(error) return 'error';
+        if(allUniverses.length === 0 && !currentUniverse) return 'empty';
+        return 'success' 
+
+    })();
 
     useEffect(() => {
-        if (isLoading) {
-            setStatus('loading')
-            return;
+        if(allUniverses.length === 0){
+            dispatch(getAllUniverses());
         }
+    }, [allUniverses])
 
-        if (error) {
-            setStatus('error')
-            return;
-        }
-        if (allUniverses?.length === 0) {
-            setStatus('empty')
-            return;
-        }
-        
-        setStatus('success')
-    }, [isLoading, error, allUniverses])
+
 
     const handleUniverseEnter = (e: React.MouseEvent, universe: Universe) => {
         e.stopPropagation();
@@ -47,12 +44,15 @@ export const Universes = () => {
     const universeHandleCreate = () => {
         setActiveModal({item:null, type:'universe'});
         universeModalInfo.reset();
-        
-
     }
 
     const universeHandleEdit = (universe: Universe) => {
         setActiveModal({item:universe, type:'universe'});
+    }
+
+    const universeHandleDelete = (universe:Universe) => {
+        setActiveModal({item:universe, type:'universe'});
+        universeModalInfo.handleDelete();
     }
 
     const handleClose = () => {
@@ -69,6 +69,7 @@ export const Universes = () => {
                 onAdd={() => universeHandleCreate()}
                 onEdit={(universe) => universeHandleEdit(universe)}
                 onEnter={(e, universe) => handleUniverseEnter(e,universe)}
+                onDelete={(universe) => universeHandleDelete(universe)}
                 onRetry={() => dispatch(getAllUniverses())}
                 idField="universe_id"
                 renderCardContent={(u) => (

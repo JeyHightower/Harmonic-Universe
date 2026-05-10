@@ -13,6 +13,7 @@ export const EntityManager = <T,>({
     onAdd,
     onEdit,
     onEnter,
+    onDelete,
     onRetry,
     renderCardContent,
     idField
@@ -53,7 +54,7 @@ export const EntityManager = <T,>({
                                 key={String(item?.[idField])}
                                 className={styles.card}>
                                 <div className={styles.cardPreview}
-                                onClick={() => onEdit(item)}
+                                // onClick={() => onEdit(item)}
                             >
                                 {renderCardContent(item)}
                                 </div>
@@ -66,6 +67,24 @@ export const EntityManager = <T,>({
                                         onEnter(e, item)}}
                                         >
                                     View {type}
+                                </button>
+                                <button 
+                                    type='button' 
+                                    className={styles.editButton}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onEdit(item)}}
+                                        >
+                                    Edit {type}
+                                </button>
+                                <button 
+                                    type='button' 
+                                    className={styles.deleteButton}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(item)}}
+                                        >
+                                    Delete {type}
                                 </button>
 
                                 </footer>

@@ -49,7 +49,12 @@ export const Characters = () => {
     }
 
     const characterHandleEdit = (character: Character) => {
-       setActiveModal({type:'character', item:character})
+       setActiveModal({type:'character', item:character});
+    }
+
+    const characterHandleDelete = (character:Character) => {
+        setActiveModal({type:'character', item: character});
+        characterModalInfo.handleDelete();
     }
 
     const handleClose = () => {
@@ -65,9 +70,10 @@ export const Characters = () => {
                 data={allCharacters}
                 status={status}
                 error={error}
-                onAdd={characterHandleCreate}
-                onEdit={characterHandleEdit}
-                onEnter={handleCharacterEnter}
+                onAdd={() => characterHandleCreate()}
+                onEdit={(character) => characterHandleEdit(character)}
+                onEnter={(e,character) => handleCharacterEnter(e, character)}
+                onDelete={(character) => characterHandleDelete(character)}
                 onRetry={() => dispatch(getAllCharacters())}
                 idField="character_id"
                 renderCardContent={(c) => (
