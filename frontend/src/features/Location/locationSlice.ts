@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { getCurrentLocation } from "../../helpers";
 import type { LocationState } from "../../types/location";
-import { createLocation, deleteLocation, getAllLocationsInUniverse, getLocation, updateLocation } from "./locationActions";
+import { createLocation, deleteLocation, getAllLocations, getAllLocationsInUniverse, getLocation, updateLocation } from "./locationActions";
 
 
 const initialState: LocationState = {
@@ -51,6 +51,24 @@ const locationSlice = createSlice ({
             state.allLocations = action.payload;
         })
         .addCase(getAllLocationsInUniverse.rejected, (state, action) => {
+            if(action.error.name === 'AbortError'){
+                state.isLoading = false;
+                return;
+            }
+            state.isLoading = false;
+            state.error = action.payload as string;
+        })
+        .addCase(getAllLocations.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+
+        })
+        .addCase(getAllLocations.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.error = null;
+            state.allLocations = action.payload;
+        })
+        .addCase(getAllLocations.rejected, (state, action) => {
             if(action.error.name === 'AbortError'){
                 state.isLoading = false;
                 return;
@@ -120,4 +138,4 @@ const locationSlice = createSlice ({
 
 export default locationSlice.reducer;
 export const { setCurrentLocation } = locationSlice.actions;
-export { createLocation, getAllLocationsInUniverse, getLocation, updateLocation, deleteLocation }
+export { createLocation, getAllLocationsInUniverse, getLocation, updateLocation, deleteLocation, getAllLocations }

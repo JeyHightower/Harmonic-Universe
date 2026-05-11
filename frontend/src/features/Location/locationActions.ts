@@ -33,6 +33,21 @@ export const getAllLocationsInUniverse = createAsyncThunk(
     }
 )
 
+export const getAllLocations = createAsyncThunk(
+    'allLocations/get',
+    async(_, thunkAPI) => {
+        const response = await apiRequest<{Message:String, Locations:AppLocation[]}>({
+            url:'/api/locations/',
+            method: 'GET',
+            signal: thunkAPI.signal,
+            body:null,
+            thunkAPI
+        });
+
+        return response.Locations
+    }
+)
+
 export const getLocation = createAsyncThunk(
     'location/get',
     async (location_id:number, thunkAPI) => {

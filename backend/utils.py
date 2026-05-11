@@ -669,6 +669,16 @@ def locations_with_authorization_in_universe(user,universe_id):
     return locations
 
 
+def locations_with_authorization(user):
+    query = select(Location).where(
+        Location.user_id == user.user_id
+    ).options(
+        selectinload(Location.notes),
+        selectinload(Location.characters)
+    )
+    locations = db.session.execute(query).scalars().all()
+    return locations
+
 def load_location_with_relationships(user,location_id):
     query = select(Location).where(
         Location.location_id == location_id,

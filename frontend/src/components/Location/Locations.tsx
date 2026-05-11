@@ -3,16 +3,16 @@ import type { ComponentStatus } from "../../types/componentStatus";
 import { useModalToolbox } from "../../hooks/useModalToolbox";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllLocationsInUniverse, setCurrentLocation } from "../../features/Location/locationSlice";
+import { getAllLocations, getAllLocationsInUniverse, setCurrentLocation } from "../../features/Location/locationSlice";
 import type { AppLocation } from "../../types/location";
 import { GenericModal } from "../Universal/GenericModal";
 import { EntityManager } from "../Universal/EntityManager";
 import { getAllUniverses, getCurrentUniverse, setCurrentUniverse } from "../../features/Universe/universeSlice";
-import { FORM_CONFIG } from "../../helpers";
+import { FORM_CONFIG, getCurrentLocation } from "../../helpers";
 
 export const Locations = () => {
 
-    const { allLocations, isLoading, error } = useAppSelector((state) => state.location);
+    const { allLocations, currentLocation, isLoading, error } = useAppSelector((state) => state.location);
     const { user, isLoading: userLoading, error: userError } = useAppSelector(state => state.auth);
     const { currentUniverse, allUniverses, isLoading: uniLoading, error: uniError } = useAppSelector((state) => state.universe);
     const [activeModal, setActiveModal] = useState<{ type: string, item: AppLocation | null }>({ type: "", item: null })
@@ -23,32 +23,32 @@ export const Locations = () => {
 
 
     const status: ComponentStatus = (() => {
-        if (isLoading || uniLoading || userLoading) return 'loading';
-        if (error || uniError || userError) return 'error';
+        if (isLoading || userLoading) return 'loading';
+        if (error || userError) return 'error';
         if (!user) return 'empty';
-        if (allUniverses?.length === 0) return 'empty';
-        if (!currentUniverse) return 'empty';
+        if (!allLocations?.length) return 'empty';
         return 'success';
     })();
 
 
+
     useEffect(() => {
-        if (!currentUniverse) {
-            const universe = getCurrentUniverse();
-            if (universe) {
-                dispatch(setCurrentUniverse(universe))
-            } else {
-                console.log('No universe found in storage. ')
+        if (!allLocations?.length) {
+            dispatch(getAllLocations());
+        }
+        if (!currentLocation) {
+            const location = getCurrentLocation();
+            if (location) {
+                dispatch(setCurrentLocation(location));
             }
         }
-    }, [currentUniverse, dispatch])
-
+    }, [currentLocation, allLocations, dispatch]);
 
     useEffect(() => {
-        if (!allUniverses?.length) {
-            dispatch(getAllUniverses())
+        if (!allUniverses.length) {
+            dispatch(getAllUniverses());
         }
-    }, [allUniverses, dispatch])
+    }, [allUniverses, uniError, uniLoading])
 
 
     const universeOptions: { value: number | null; label: string | null }[] = useMemo(() => {
@@ -62,7 +62,7 @@ export const Locations = () => {
         FORM_CONFIG.location.map((field: any) => {
             switch (field.name) {
                 case 'universe_id':
-                    return { ...field, options: universeOptions, defaultValue:currentUniverse?.universe_id };
+                    return { ...field, options: universeOptions, defaultValue: currentUniverse?.universe_id };
                 default:
                     return field;
             }
@@ -77,18 +77,26 @@ export const Locations = () => {
         navigate(`/locations/${location.location_id}`);
     }
 
-    const locationHandleCreate = () => {
 
+    const locationHandleCreate = () => {
         if (!user || !allUniverses.length) return;
         locationModalInfo.reset();
         setActiveModal({ type: 'location', item: null });
         (locationModalInfo as any).updateField('user_id', user_id);
     }
 
+
     const locationHandleEdit = (location: AppLocation) => {
         if (!user || !allUniverses.length) return;
         setActiveModal({ type: 'location', item: location });
+
     }
+
+
+    const locationHandleDelete = (location:AppLocation) => {
+        setActiveModal({type: 'location', item:location});
+    }
+
 
     const handleClose = () => {
         setActiveModal({ type: '', item: null })
@@ -104,9 +112,10 @@ export const Locations = () => {
                 data={allLocations}
                 status={status}
                 error={error}
-                onAdd={locationHandleCreate}
-                onEdit={locationHandleEdit}
-                onEnter={handleLocationEnter}
+                onDelete={(location) => locationHandleDelete(location)}
+                onAdd={() => locationHandleCreate()}
+                onEdit={(location) => locationHandleEdit(location)}
+                onEnter={(e, location) => handleLocationEnter(e, location)}
                 onRetry={() => {
                     if (currentUniverse?.universe_id) {
                         dispatch(getAllLocationsInUniverse(currentUniverse.universe_id))
@@ -135,3 +144,21 @@ export const Locations = () => {
     )
 
 }
+
+// useEffect(() => {
+//     if (!currentUniverse) {
+//         const universe = getCurrentUniverse();
+//         if (universe) {
+//             dispatch(setCurrentUniverse(universe))
+//         } else {
+//             console.log('No universe found in storage. ')
+//         }
+//     }
+// }, [currentUniverse, dispatch])
+
+
+// useEffect(() => {
+//     if (!allUniverses?.length) {
+//         dispatch(getAllUniverses())
+//     }
+// }, [allUniverses, dispatch])

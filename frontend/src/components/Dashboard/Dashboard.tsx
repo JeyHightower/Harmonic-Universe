@@ -7,8 +7,7 @@ import styles from './Dashboard.module.css';
 import { getAllUniverses } from "../../features/Universe/universeActions";
 import { getAllCharacters } from "../../features/Character/characterActions";
 import { getAllNotes } from "../../features/Note/noteActions";
-import { getAllLocationsInUniverse } from "../../features/Location/locationActions";
-
+import { getAllLocations } from "../../features/Location/locationActions";
 
 
 export const Dashboard = () => {
@@ -20,7 +19,6 @@ export const Dashboard = () => {
     const { allCharacters, isLoading: charLoading } = useAppSelector(state => state.character);
     const { allNotes, isLoading: noteLoading } = useAppSelector(state => state.note);
     const { allLocations, isLoading: locLoading } = useAppSelector(state => state.location);
-    const { currentUniverse } = useAppSelector(state => state.universe);
 
 
     useEffect(() => {
@@ -36,9 +34,7 @@ export const Dashboard = () => {
         if(!allUniverses?.length) dispatch(getAllUniverses());
         if(!allCharacters?.length) dispatch(getAllCharacters());
         if(!allNotes?.length) dispatch(getAllNotes());
-        if(currentUniverse?.universe_id && !allLocations?.length){
-            dispatch(getAllLocationsInUniverse(currentUniverse?.universe_id))
-        }
+        if(!allLocations?.length) dispatch(getAllLocations());
     }, [dispatch, user]);
 
     const isLoading = authLoading || uniLoading || charLoading || noteLoading || locLoading;
