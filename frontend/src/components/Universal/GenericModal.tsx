@@ -6,7 +6,7 @@ import styles from '../General.module.css'
 
 export const GenericModal: React.FC<DynamicModalProps> = ({ isOpen, onClose, type, toolbox, fields:customFields, item }) => {
 
-    const { formData, updateField, handleSave, handleDelete } = toolbox;
+    const { formData, updateField, handleSave} = toolbox;
 
     const fields = customFields || (FORM_CONFIG as any)[type];
 
@@ -54,14 +54,6 @@ export const GenericModal: React.FC<DynamicModalProps> = ({ isOpen, onClose, typ
 
                     <div className="modal-actions">
                         <button type="button" onClick={onClose}>Cancel</button>
-                        {item && (
-                            <button
-                                type="button"
-                                onClick={async () => { await handleDelete(); onClose(); }}
-                                >
-                                    Delete
-                                    </button>
-                        )}
                         <button type="submit">Save</button>
                     </div>
                 </form>

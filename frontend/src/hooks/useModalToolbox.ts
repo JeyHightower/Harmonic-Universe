@@ -49,10 +49,11 @@ export const useModalToolbox = <T extends object>(item: T | null, type: string) 
 
     }
 
-    const handleDelete = async () => {
-        if (!item) return;
+    const handleDelete = async (overrideItem?: T) => {
+        const target = overrideItem || item;
+        if (!target) return;
         const modelActions = actionMap[type];
-        const id = (item as any)[modelActions.idKey];
+        const id = (target as any)[modelActions.idKey];
         if (window.confirm(`Are you sure you want to delete this ${type}?`)) {
             await dispatch(modelActions.delete(id)).unwrap();
         }

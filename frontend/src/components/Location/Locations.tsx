@@ -7,7 +7,7 @@ import { getAllLocations, getAllLocationsInUniverse, setCurrentLocation } from "
 import type { AppLocation } from "../../types/location";
 import { GenericModal } from "../Universal/GenericModal";
 import { EntityManager } from "../Universal/EntityManager";
-import { getAllUniverses, getCurrentUniverse, setCurrentUniverse } from "../../features/Universe/universeSlice";
+import { getAllUniverses } from "../../features/Universe/universeSlice";
 import { FORM_CONFIG, getCurrentLocation } from "../../helpers";
 
 export const Locations = () => {
@@ -94,7 +94,7 @@ export const Locations = () => {
 
 
     const locationHandleDelete = (location:AppLocation) => {
-        setActiveModal({type: 'location', item:location});
+        locationModalInfo.handleDelete(location);
     }
 
 
