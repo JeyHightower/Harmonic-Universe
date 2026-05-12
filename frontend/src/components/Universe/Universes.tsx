@@ -51,8 +51,7 @@ export const Universes = () => {
     }
 
     const universeHandleDelete = (universe:Universe) => {
-        setActiveModal({item:universe, type:'universe'});
-        universeModalInfo.handleDelete();
+        universeModalInfo.handleDelete(universe);
     }
 
     const handleClose = () => {

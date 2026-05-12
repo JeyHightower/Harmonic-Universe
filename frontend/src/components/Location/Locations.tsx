@@ -79,7 +79,6 @@ export const Locations = () => {
 
 
     const locationHandleCreate = () => {
-        if (!user || !allUniverses.length) return;
         locationModalInfo.reset();
         setActiveModal({ type: 'location', item: null });
         (locationModalInfo as any).updateField('user_id', user_id);
@@ -87,7 +86,6 @@ export const Locations = () => {
 
 
     const locationHandleEdit = (location: AppLocation) => {
-        if (!user || !allUniverses.length) return;
         setActiveModal({ type: 'location', item: location });
 
     }
@@ -144,21 +142,3 @@ export const Locations = () => {
     )
 
 }
-
-// useEffect(() => {
-//     if (!currentUniverse) {
-//         const universe = getCurrentUniverse();
-//         if (universe) {
-//             dispatch(setCurrentUniverse(universe))
-//         } else {
-//             console.log('No universe found in storage. ')
-//         }
-//     }
-// }, [currentUniverse, dispatch])
-
-
-// useEffect(() => {
-//     if (!allUniverses?.length) {
-//         dispatch(getAllUniverses())
-//     }
-// }, [allUniverses, dispatch])

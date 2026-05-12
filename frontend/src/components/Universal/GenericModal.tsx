@@ -1,6 +1,6 @@
 import { FORM_CONFIG } from "../../helpers";
 import type { DynamicModalProps, FormField } from "../../types/dynamicForm";
-import styles from '../General.module.css'
+
 
 
 
@@ -13,8 +13,8 @@ export const GenericModal: React.FC<DynamicModalProps> = ({ isOpen, onClose, typ
 
     if (!isOpen || !fields) return null;
     return (
-        <div className={styles.modalOverlay}>
-            <div className={styles.modalContent}>
+        <div className="modalOverlay">
+            <div className="modalContent">
                 <h2>{item ? `Edit ${type}` : `Create ${type}`}</h2>
 
                 <form onSubmit={(e) => { e.preventDefault(); handleSave(); onClose(); }}>
@@ -24,7 +24,7 @@ export const GenericModal: React.FC<DynamicModalProps> = ({ isOpen, onClose, typ
                             <label>{field.label}</label>
                             {field.type === 'textarea' ? (
                                 <textarea
-                                    value={formData[field.name] || ''}
+                                    value={formData?.[field.name] || ''}
                                     onChange={(e) => updateField(field.name, e.target.value)}
                                     placeholder={field.placeholder}
                                 />
@@ -44,7 +44,7 @@ export const GenericModal: React.FC<DynamicModalProps> = ({ isOpen, onClose, typ
                             ) : (
                                 <input
                                     type={field.type || 'text'}
-                                    value={formData[field?.name] || ''}
+                                    value={formData?.[field?.name] || ''}
                                     onChange={(e) => updateField(field.name, e.target.value)}
                                     placeholder={field.placeholder}
                                 />

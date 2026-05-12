@@ -53,6 +53,10 @@ export const Login = () => {
     }
 
     return (
+        <div className="loginPage">
+            <div className="loginCard">
+                <h2>Welcome Back</h2>
+                <p className="subtitle">Sign in to your Universe.</p>
         <form onSubmit={handleLogin}>
             <select
                 value={loginMethod}
@@ -65,14 +69,14 @@ export const Login = () => {
                 placeholder={loginMethod}
                 value={loginMethod === 'username' ? (credentials.username || '') : (credentials.email || '')}
                 onChange={(e) => setLoginIdentifier(loginMethod, e.target.value)}
-            />
+                />
 
             <input
                 type="password"
                 placeholder="Password"
                 value={credentials.password}
                 onChange={(e) => updateField('password', e.target.value)}
-            />
+                />
 
             <button type="submit" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
@@ -82,12 +86,14 @@ export const Login = () => {
                 onClick={handleDemoLogin}
                 disabled={isLoading}
                 style={{ marginTop: '10px', backgroundColor: '#ddd' }}
-            >
+                >
                 Demo Login
             </button>
 
             {error && <p style={{ color: 'red' }}>{error}</p>}
         </form>
+                </div>
+            </div>
 
     );
 };

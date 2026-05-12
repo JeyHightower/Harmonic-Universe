@@ -22,20 +22,20 @@ export const LocationDetail = () => {
     const [noteStatus, setNoteStatus] = useState<ComponentStatus>('idle');
     const { useBooleanSetter } = useSetterToolbox();
     const { boolean: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBooleanSetter(false)
-    const [activeModal, setActiveModal] = useState<{ item: any | null, type: string }>({ item: null, type: '' })
+    const [activeModal, setActiveModal] = useState<{ item: any | null, type: 'location' | 'universe' | 'character' | 'note' | ''; }>({ item: null, type: '' })
     const currentToolbox = useModalToolbox(activeModal.item, activeModal.type);
     const location_id = currentLocation?.location_id;
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
 
-    const handleCreate = (type: string) => {
+    const handleCreate = (type: 'location' | 'universe' | 'character' | 'note' | '') => {
         setActiveModal({ item: null, type });
         currentToolbox.reset();
         openModal();
     }
 
-    const handleEdit = (item: any, type: string) => {
+    const handleEdit = (item: any, type: 'location' | 'universe' | 'character' | 'note' | '') => {
         setActiveModal({ item, type });
         openModal();
     }
@@ -52,6 +52,12 @@ export const LocationDetail = () => {
         dispatch(setCurrentNote(note));
         navigate(`/notes/${note.note_id}`);
     }
+
+    const handleDelete = (type:'location' | 'universe' | 'character' | 'note' | '', item: any) => {
+        setActiveModal({type, item});
+        currentToolbox.handleDelete(item);
+    }
+
 
 
 
@@ -102,6 +108,7 @@ export const LocationDetail = () => {
                         error={locError}
                         status={charStatus}
                         onAdd={() => handleCreate('character')}
+                        onDelete={(character) => handleDelete('character', character)}
                         onEdit={(item: Character) => handleEdit(item, 'character')}
                         onEnter={handleCharacterEnter}
                         onRetry={() => location_id && dispatch(getLocation(location_id))}
@@ -120,6 +127,7 @@ export const LocationDetail = () => {
                         status={noteStatus}
                         error={locError}
                         onAdd={() => handleCreate("note")}
+                        onDelete={(note) => handleDelete('note', note)}
                         onEdit={(item: Note) => handleEdit(item, "note")}
                         onEnter={handleNoteEnter}
                         onRetry={() => location_id && dispatch(getLocation(location_id))}
@@ -135,13 +143,18 @@ export const LocationDetail = () => {
                 </>
 
             )}
-            <GenericModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                type={activeModal.type}
-                toolbox={currentToolbox}
-                item={activeModal.item}
-            />
+            {
+                activeModal.type !== '' && (
+
+                    <GenericModal
+                        isOpen={isModalOpen}
+                        onClose={closeModal}
+                        type={activeModal.type}
+                        toolbox={currentToolbox}
+                        item={activeModal.item}
+                    />
+                )
+            }
 
         </main>
 

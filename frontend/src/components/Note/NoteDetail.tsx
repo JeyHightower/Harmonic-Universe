@@ -27,19 +27,19 @@ export const NoteDetail = () => {
     const { boolean: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBooleanSetter(false);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [activeModal, setActiveModal] = useState<{ item: any | null, type: string }>({ type: '', item: null });
+    const [activeModal, setActiveModal] = useState<{ item: any | null,  type: 'location' | 'universe' | 'character' | 'note' | ''; }>({ type: '', item: null });
     const currentToolbox = useModalToolbox(activeModal.item, activeModal.type);
 
     const note_id = currentNote?.note_id;
 
 
-    const handleCreate = (type: string) => {
+    const handleCreate = (type:'location' | 'universe' | 'character' | 'note' | '') => {
         setActiveModal({ type, item: null })
         currentToolbox.reset();
         openModal();
     }
 
-    const handleEdit = (type: string, item: any) => {
+    const handleEdit = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
         setActiveModal({ type, item })
         openModal();
     }
@@ -61,6 +61,12 @@ export const NoteDetail = () => {
         e.stopPropagation();
         dispatch(setCurrentLocation(location));
         navigate(`/locations/${location.location_id}`)
+    }
+
+
+    const handleDelete = (type:'location' | 'universe' | 'character' | 'note' | '', item: any) => {
+        setActiveModal({type, item});
+        currentToolbox.handleDelete(item);
     }
 
 
@@ -118,9 +124,10 @@ export const NoteDetail = () => {
                         data={linkedCharacters}
                         error={noteError}
                         status={charStatus}
+                        onDelete={(character) => handleDelete('character', character)}
                         onAdd={() => handleCreate("character")}
                         onEdit={(item: Character) => handleEdit("character", item)}
-                        onEnter={handleCharacterEnter}
+                        onEnter={() => handleCharacterEnter}
                         onRetry={() => note_id && dispatch(getNote(note_id))}
                         idField="character_id"
                         renderCardContent={(c) => (
@@ -138,7 +145,8 @@ export const NoteDetail = () => {
                         error={noteError}
                         onAdd={() => handleCreate("universe")}
                         onEdit={(item: Universe) => handleEdit("universe", item)}
-                        onEnter={handleUniverseEnter}
+                        onDelete={(universe) => handleDelete('universe', universe)}
+                        onEnter={() => handleUniverseEnter}
                         onRetry={() => note_id && dispatch(getNote(note_id))}
                         idField="universe_id"
                         renderCardContent={(u) => (
@@ -157,7 +165,8 @@ export const NoteDetail = () => {
                         error={noteError}
                         onAdd={() => handleCreate("location")}
                         onEdit={(item: AppLocation) => handleEdit("location", item)}
-                        onEnter={handleLocationEnter}
+                        onEnter={() => handleLocationEnter}
+                        onDelete={(location) => handleDelete('location', location)}
                         onRetry={() => note_id && dispatch(getNote(note_id))}
                         idField="location_id"
                         renderCardContent={(l) => (
@@ -168,7 +177,7 @@ export const NoteDetail = () => {
                         )}
                     />
                 </>)}
-
+            {activeModal.type !== '' && (
             <GenericModal
                 isOpen={isModalOpen}
                 onClose={closeModal}
@@ -176,6 +185,7 @@ export const NoteDetail = () => {
                 toolbox={currentToolbox}
                 item={activeModal.item}
             />
+            )}
         </main>
     )
 

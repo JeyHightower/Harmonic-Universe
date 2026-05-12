@@ -42,11 +42,13 @@ export const Notes = () => {
         navigate(`/notes/${note.note_id}`)
     }
 
+
     const noteHandleCreate = () => {
         setActiveModal({item:null, type:'note'});
         noteModalInfo.reset();
         
     }
+
 
     const noteHandleEdit = (note: Note) => {
         setActiveModal({item:note, type:'note'});
@@ -54,6 +56,10 @@ export const Notes = () => {
 
     const handleClose = () => {
         setActiveModal({item:null, type:''})
+    }
+
+    const handleNoteDelete = (note:Note) => {
+        noteModalInfo.handleDelete(note);
     }
 
 
@@ -65,9 +71,10 @@ export const Notes = () => {
                 data={allNotes}
                 status={status}
                 error={error}
-                onAdd={noteHandleCreate}
-                onEdit={noteHandleEdit}
-                onEnter={handleNoteEnter}
+                onDelete={(note) => handleNoteDelete(note)}
+                onAdd={() => noteHandleCreate()}
+                onEdit={(note) => noteHandleEdit(note)}
+                onEnter={(e, note) => handleNoteEnter(e,note)}
                 onRetry={() => dispatch(getAllNotes())}
                 idField="note_id"
                 renderCardContent={(n) => (

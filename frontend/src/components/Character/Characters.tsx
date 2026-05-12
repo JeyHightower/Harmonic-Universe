@@ -53,8 +53,7 @@ export const Characters = () => {
     }
 
     const characterHandleDelete = (character:Character) => {
-        setActiveModal({type:'character', item: character});
-        characterModalInfo.handleDelete();
+        characterModalInfo.handleDelete(character);
     }
 
     const handleClose = () => {

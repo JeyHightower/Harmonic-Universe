@@ -27,21 +27,26 @@ export const UniverseDetail = () => {
     const { boolean: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBooleanSetter(false);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [activeModal, setActiveModal] = useState<{ item: any | null, type: string }>({ type: '', item: null });
+    const [activeModal, setActiveModal] = useState<{ item: any | null, type: 'location' | 'universe' | 'character' | 'note' | '' }>({ type: '', item: null });
     const currentToolbox = useModalToolbox(activeModal.item, activeModal.type);
 
     const universe_id = currentUniverse?.universe_id;
 
 
-    const handleCreate = (type: string) => {
+    const handleCreate = (type: 'location' | 'universe' | 'character' | 'note' | '') => {
         setActiveModal({ type, item: null })
         currentToolbox.reset();
         openModal();
     }
 
-    const handleEdit = (type: string, item: any) => {
+    const handleEdit = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
         setActiveModal({ type, item })
         openModal();
+    }
+
+    const handleDelete = (type:'location' | 'universe' | 'character' | 'note' | '', item: any) => {
+        setActiveModal({type, item});
+        currentToolbox.handleDelete(item);
     }
 
 
@@ -120,6 +125,7 @@ export const UniverseDetail = () => {
                         status={charStatus}
                         onAdd={() => handleCreate("character")}
                         onEdit={(item: Character) => handleEdit("character", item)}
+                        onDelete={(character) => handleDelete('character', character)}
                         onEnter={handleCharacterEnter}
                         onRetry={() => universe_id && dispatch(getUniverse(universe_id))}
                         idField="character_id"
@@ -138,6 +144,7 @@ export const UniverseDetail = () => {
                         error={uniError}
                         onAdd={() => handleCreate("note")}
                         onEdit={(item: Note) => handleEdit("note", item)}
+                        onDelete={(note) => handleDelete('note', note)}
                         onEnter={handleNoteEnter}
                         onRetry={() => universe_id && dispatch(getUniverse(universe_id))}
                         idField="note_id"
@@ -157,6 +164,7 @@ export const UniverseDetail = () => {
                         error={uniError}
                         onAdd={() => handleCreate("location")}
                         onEdit={(item: AppLocation) => handleEdit("location", item)}
+                        onDelete={(location) => handleDelete('location', location)}
                         onEnter={handleLocationEnter}
                         onRetry={() => universe_id && dispatch(getAllLocationsInUniverse(universe_id))}
                         idField="location_id"
@@ -168,7 +176,8 @@ export const UniverseDetail = () => {
                         )}
                     />
                 </>)}
-
+                {
+                activeModal.type !== '' && (
             <GenericModal
                 isOpen={isModalOpen}
                 onClose={closeModal}
@@ -176,6 +185,7 @@ export const UniverseDetail = () => {
                 toolbox={currentToolbox}
                 item={activeModal.item}
             />
+                )}
         </main>
     )
 

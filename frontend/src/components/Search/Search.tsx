@@ -4,7 +4,6 @@ import type { ComponentStatus } from "../../types/componentStatus";
 import type { SearchItem, SearchProps } from "../../types/searchItem";
 import { useNavigate } from "react-router-dom";
 import { Spinner } from "../Universal/Spinner";
-import styles from '../General.module.css'
 
 
 
@@ -81,8 +80,8 @@ export const Search = ({ onClose }: SearchProps) => {
 
     return (
 
-        <div className={styles.search} onClick={handleClose}>
-            <div className={styles.searchContainer} onClick={(e) => e.stopPropagation()}>
+        <div className="search" onClick={handleClose}>
+            <div className="searchContainer" onClick={(e) => e.stopPropagation()}>
 
 
                 <input
@@ -94,7 +93,7 @@ export const Search = ({ onClose }: SearchProps) => {
                     placeholder="Search Here..."
                 />
 
-                <div className={styles.resultList}>
+                <div className="resultList">
                     {status === 'loading' && <Spinner />}
                     {status === 'error' && (
                         <p> There was an Error.</p>
@@ -107,7 +106,7 @@ export const Search = ({ onClose }: SearchProps) => {
                             {results.map((item) => (
                                 <div
                                     key={`${item.category}-${item.id}`}
-                                    className={styles.resultItem}
+                                    className="resultItem"
                                     onClick={() => handleNavigate(item.path)}
                                 >
 
@@ -118,7 +117,7 @@ export const Search = ({ onClose }: SearchProps) => {
 
 
                             {query && results.length === 0 && (
-                                <p className={styles.emptyResults}>No matches for "{query}"</p>
+                                <p className="emptyResults">No matches for "{query}"</p>
                             )}
                         </>
                     )}

@@ -1,4 +1,3 @@
-import styles from './Navbar.module.css';
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useSetterToolbox';
 import { useSetterToolbox } from '../../hooks/useSetterToolbox';
@@ -32,17 +31,17 @@ export const Navbar = () => {
     };
 
     return (
-        <nav className={styles.navbar}>
-            <div className={styles.navLogo}>
+        <nav className="navbar">
+            <div className="navLogo">
                 <Link to='/' onClick={() => handleNavClick('Clicked Logo')}>MyApp</Link>
             </div>
 
-            <button className={styles.menuBurger} onClick={menu.toggle}>
+            <button className="menuBurger" onClick={menu.toggle}>
                 {/* Changed to 'X' for better UX/Stability when open */}
                 {menu.boolean ? '✕' : '☰'}
             </button>
 
-            <ul className={`${styles.navLinks} ${menu.boolean ? styles.open : ''}`}>
+            <ul className={`navLinks ${menu.boolean ? "open" : ''}`}>
                 <li>
                     <Link to='/' onClick={() => handleNavClick('Nav to Home')}>Home</Link>
                 </li>
@@ -50,16 +49,16 @@ export const Navbar = () => {
                 {isAuthenticated ? (
                     <>
                         {/* 1. Identity Section */}
-                        <li className={styles.navProfileHeader}>
+                        <li className="navProfileHeader">
                             <div>
-                                <p className={styles.userName}>{user?.username}</p>
-                                <span className={styles.userRole}>{user?.is_admin}</span>
+                                <p className="userName">{user?.username}</p>
+                                <span className="userRole">{user?.is_admin}</span>
                             </div>
                         </li>
 
                         {/* 2. Explore Section */}
-                        <div className={styles.navSection}>
-                            <span className={styles.sectionLabel}>Explore</span>
+                        <div className="navSection">
+                            <span className="sectionLabel">Explore</span>
                             <li><Link to='/universes' onClick={() => handleNavClick('Nav to Universes')}>Universes</Link></li>
                             <li><Link to='/notes' onClick={() => handleNavClick('Nav to Notes')}>Notes</Link></li>
                             <li><Link to='/locations' onClick={() => handleNavClick('Nav to Locations')}>Locations</Link></li>
@@ -68,12 +67,12 @@ export const Navbar = () => {
                         </div>
 
                         {/* 3. Quick Tools Section */}
-                        <div className={styles.navSection}>
-                            <span className={styles.sectionLabel}>Quick Tools</span>
-                            <li className={styles.Search}>Search <Search onClose={search.setFalse}/></li>
+                        <div className="navSection">
+                            <span className="sectionLabel">Quick Tools</span>
+                            <li className="search">Search <Search onClose={search.setFalse}/></li>
                         
                             <li>
-                                <button onClick={handleLogout} className={styles.logoutBtn}>
+                                <button onClick={handleLogout} className="logoutBtn">
                                     Logout
                                 </button>
                             </li>
@@ -87,16 +86,16 @@ export const Navbar = () => {
                 )}
             </ul>
 
-            <div className={styles.activityDropdown}>
+            <div className="activityDropdown">
                 <span>Recent Activity ({activity.list.length})</span>
-                <div className={styles.dropdownContent}>
+                <div className="dropdownContent">
                     {activity.list.map((item, i) => (
-                        <p key={i} className={styles.activityItem}>
+                        <p key={i} className="activityItem">
                             {new Date().toLocaleTimeString()} - {item}
                         </p>
                     ))}
                     {activity.list.length > 0 && (
-                        <button className={styles.clearBtn} onClick={activity.clear}>
+                        <button className="clearBtn" onClick={activity.clear}>
                             Clear
                         </button>
                     )}

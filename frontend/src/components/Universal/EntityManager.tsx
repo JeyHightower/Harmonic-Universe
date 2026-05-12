@@ -2,7 +2,6 @@ import type { EntityManagerProps } from "../../types/entityManager";
 import { EmptyState } from "./EmptyState";
 import { ErrorDisplay } from "./ErrorDisplay";
 import { Spinner } from "./Spinner";
-import styles from '../General.module.css'
 
 export const EntityManager = <T,>({
     isSection = false,
@@ -24,14 +23,14 @@ export const EntityManager = <T,>({
 
     return (
 
-        <Wrapper className={isSection ? styles.sectionContainer : styles.pageContainer}>
+        <Wrapper className={isSection ? "sectionContainer" : "pageContainer"}>
             {!isSection && (
                 <header>
                     <h1> Your {type}s</h1>
                     <button onClick={onAdd}>+ CREATE {type.toUpperCase()}</button>
                 </header>
             )}
-            <div className={styles.contentArea}>
+            <div className="contentArea">
                 {status === 'loading' && <Spinner />}
 
                 {status === 'error' && error && (
@@ -48,20 +47,20 @@ export const EntityManager = <T,>({
                 )}
 
                 {status === 'success' && (
-                    <section className={styles.grid}>
+                    <section className="grid">
                         {data?.map((item:any) => (
                             <div
                                 key={String(item?.[idField])}
-                                className={styles.card}>
-                                <div className={styles.cardPreview}
+                                className="card">
+                                <div className="cardPreview"
                                 // onClick={() => onEdit(item)}
                             >
                                 {renderCardContent(item)}
                                 </div>
-                                <footer className={styles.cardFooter}>
+                                <footer className="cardFooter">
                                 <button 
                                     type='button' 
-                                    className={styles.viewButton}
+                                    className="viewButton"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onEnter(e, item)}}
@@ -70,7 +69,7 @@ export const EntityManager = <T,>({
                                 </button>
                                 <button 
                                     type='button' 
-                                    className={styles.editButton}
+                                    className="editButton"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onEdit(item)}}
@@ -79,7 +78,7 @@ export const EntityManager = <T,>({
                                 </button>
                                 <button 
                                     type='button' 
-                                    className={styles.deleteButton}
+                                    className="deleteButton"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onDelete(item)}}

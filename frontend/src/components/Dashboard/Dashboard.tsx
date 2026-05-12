@@ -3,7 +3,6 @@ import { useAppDispatch, useAppSelector } from "../../hooks/useSetterToolbox";
 import { Spinner } from "../Universal/Spinner";
 import { getProfile } from "../../features/User/userActions";
 import { ConnectionGallery } from "../Universal/ConnectionGallery";
-import styles from './Dashboard.module.css';
 import { getAllUniverses } from "../../features/Universe/universeActions";
 import { getAllCharacters } from "../../features/Character/characterActions";
 import { getAllNotes } from "../../features/Note/noteActions";
@@ -63,8 +62,8 @@ if(isLoading || !user){
         <>
             <h1>{user ? `Welcome ${user.name}` : 'Welcome Demo-user'}</h1>
             {sections.map(({ title, items, type, loading }) => (
-                <div key={type} className={styles.container}>
-                    <div className={styles.displayCard}>
+                <div key={type} className="container">
+                    <div className="displayCard">
                     {!loading ? (
                         <ConnectionGallery title={title} items={items} type={type as 'universe' | 'character' | 'note' | 'location'} />
                     ) : (

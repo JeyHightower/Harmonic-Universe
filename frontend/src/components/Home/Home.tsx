@@ -1,5 +1,4 @@
 import { useAudioTrigger } from '../../hooks/useAudioToolbox';
-import styles from './Home.module.css';
 import hoverSound from '../../assets/mixkit-sci-fi-confirmation-914.wav';
 import { useNavigate } from 'react-router-dom';
 
@@ -48,31 +47,31 @@ export const Home = () => {
 
     return (
 
-        <main className={styles.homeContainer}>
-            <header className={styles.hero}>
-                <h1 className={styles.logoText}>Harmonic Universe</h1>
+        <main className="homeContainer">
+            <header className="hero">
+                <h1 className="logoText">Harmonic Universe</h1>
                 <p>Where the symphony of creation begins.</p>
             </header>
 
-            <section className={styles.grid}>
+            <section className="grid">
                 {NAV_MODULES.map((module) => (
                     <div
                         key={module.id}
-                        className={`${styles.card} ${!module.isAvailable ? styles.comingSoon : ''}`}
+                        className={`card ${!module.isAvailable ? "comingSoon" : ""}`}
                         onMouseEnter={() => module.isAvailable && playHover()}
                     >
-                        <div className={styles.icon}>{module.icon}</div>
+                        <div className="icon">{module.icon}</div>
                         <h3>{module.title}</h3>
                         <p>{module.description}</p>
 
                         {module.isAvailable ? (
                             <button
-                                className={styles.enterBtn}
+                                className="enterBtn"
                                 onClick={() => navigate(`/${module.id}`)}>
                                     Open {module.title}
                                     </button>
                         ) : (
-                            <div className={styles.badge}>Coming Soon</div>
+                            <div className="badge">Coming Soon</div>
                         )}
 
                     </div>    

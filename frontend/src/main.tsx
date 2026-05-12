@@ -5,6 +5,7 @@ import { store, persistor } from './store/store.ts';
 import { PersistGate } from 'redux-persist/integration/react';
 import App from './App.tsx'
 import { Spinner } from './components/Universal/Spinner.tsx';
+import './harmonic-universe.css'
 
 
 createRoot(document.getElementById('root')!).render(
