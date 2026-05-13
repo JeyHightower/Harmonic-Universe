@@ -48,47 +48,54 @@ export const EntityManager = <T,>({
 
                 {status === 'success' && (
                     <section className="grid">
-                        {data?.map((item:any) => (
+                        {data?.map((item: any) => (
                             <div
                                 key={String(item?.[idField])}
                                 className="card">
                                 <div className="cardPreview"
-                                // onClick={() => onEdit(item)}
-                            >
-                                {renderCardContent(item)}
+                                >
+                                    {renderCardContent(item)}
                                 </div>
                                 <footer className="cardFooter">
-                                <button 
-                                    type='button' 
-                                    className="viewButton"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onEnter(e, item)}}
-                                        >
-                                    View {type}
-                                </button>
-                                <button 
-                                    type='button' 
-                                    className="editButton"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onEdit(item)}}
-                                        >
-                                    Edit {type}
-                                </button>
-                                <button 
-                                    type='button' 
-                                    className="deleteButton"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDelete(item)}}
-                                        >
-                                    Delete {type}
-                                </button>
+                                    <button
+                                        type='button'
+                                        className="viewButton"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEnter(e, item)
+                                        }}
+                                    >
+                                        View {type}
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className="editButton"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEdit(item)
+                                        }}
+                                    >
+                                        Edit {type}
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className="deleteButton"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(item)
+                                        }}
+                                    >
+                                        Delete {type}
+                                    </button>
 
                                 </footer>
                             </div>
                         ))}
+                        <div className="card addCard" onClick={onAdd}>
+                            <div className="cardPreview" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                                <span>+ {type}</span>
+                            </div>
+                        </div>
                     </section>
                 )}
 

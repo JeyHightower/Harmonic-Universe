@@ -27,13 +27,13 @@ export const NoteDetail = () => {
     const { boolean: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBooleanSetter(false);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [activeModal, setActiveModal] = useState<{ item: any | null,  type: 'location' | 'universe' | 'character' | 'note' | ''; }>({ type: '', item: null });
+    const [activeModal, setActiveModal] = useState<{ item: any | null, type: 'location' | 'universe' | 'character' | 'note' | ''; }>({ type: '', item: null });
     const currentToolbox = useModalToolbox(activeModal.item, activeModal.type);
 
     const note_id = currentNote?.note_id;
 
 
-    const handleCreate = (type:'location' | 'universe' | 'character' | 'note' | '') => {
+    const handleCreate = (type: 'location' | 'universe' | 'character' | 'note' | '') => {
         setActiveModal({ type, item: null })
         currentToolbox.reset();
         openModal();
@@ -42,6 +42,11 @@ export const NoteDetail = () => {
     const handleEdit = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
         setActiveModal({ type, item })
         openModal();
+    }
+
+    const handleDelete = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
+        setActiveModal({ type, item });
+        currentToolbox.handleDelete(item);
     }
 
 
@@ -64,10 +69,7 @@ export const NoteDetail = () => {
     }
 
 
-    const handleDelete = (type:'location' | 'universe' | 'character' | 'note' | '', item: any) => {
-        setActiveModal({type, item});
-        currentToolbox.handleDelete(item);
-    }
+
 
 
 
@@ -98,9 +100,9 @@ export const NoteDetail = () => {
             return;
         }
         setNoteStatus('success')
-        setCharStatus(currentNote.characters?.length ? 'success' : 'empty')
-        setUniStatus(currentNote.universes?.length ? 'success' : 'empty')
-        setLocStatus(currentNote.locations?.length ? 'success' : 'empty')
+        setCharStatus(currentNote?.characters?.length ? 'success' : 'empty')
+        setUniStatus(currentNote?.universes?.length ? 'success' : 'empty')
+        setLocStatus(currentNote?.locations?.length ? 'success' : 'empty')
 
     }, [noteLoading, noteError, currentNote])
 
@@ -115,7 +117,7 @@ export const NoteDetail = () => {
             }
             {noteStatus === 'empty' && <EmptyState type={'note'} onAdd={() => handleCreate("note")} />}
 
-            {uniStatus === 'success' && (
+            {noteStatus === 'success' && (
                 <>
                     <h1>{currentNote?.title}</h1>
                     <EntityManager
@@ -132,8 +134,8 @@ export const NoteDetail = () => {
                         idField="character_id"
                         renderCardContent={(c) => (
                             <>
-                                <h3>{c.name}</h3>
-                                <p>Age:{c.age || 'Unknown'}</p>
+                                <h3>{c?.name}</h3>
+                                <p>Age:{c?.age || 'Unknown'}</p>
                             </>
                         )}
                     />
@@ -151,8 +153,8 @@ export const NoteDetail = () => {
                         idField="universe_id"
                         renderCardContent={(u) => (
                             <>
-                                <h3>{u.name}</h3>
-                                <p>{u.description?.substring(30)}</p>
+                                <h3>{u?.name}</h3>
+                                <p>{u?.description?.substring(30)}</p>
                             </>
                         )}
                     />
@@ -171,20 +173,21 @@ export const NoteDetail = () => {
                         idField="location_id"
                         renderCardContent={(l) => (
                             <>
-                                <h3>{l.name}</h3>
-                                <p>Description: {l.description || '...'}</p>
+                                <h3>{l?.name}</h3>
+                                <p>Description: {l?.description || '...'}</p>
                             </>
                         )}
                     />
-                </>)}
-            {activeModal.type !== '' && (
-            <GenericModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                type={activeModal.type}
-                toolbox={currentToolbox}
-                item={activeModal.item}
-            />
+                    {activeModal.type !== '' && (
+                        <GenericModal
+                            isOpen={isModalOpen}
+                            onClose={closeModal}
+                            type={activeModal.type}
+                            toolbox={currentToolbox}
+                            item={activeModal.item}
+                        />
+                    )}
+                </>
             )}
         </main>
     )

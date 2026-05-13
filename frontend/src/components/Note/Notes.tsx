@@ -14,26 +14,22 @@ export const Notes = () => {
     const { allNotes, isLoading, error } = useAppSelector((state) => state.note);
     const [activeModal, setActiveModal] = useState<{item:Note | null, type:string}>({item:null, type:''})
     const noteModalInfo = useModalToolbox(activeModal.item || {}, 'note');
-    const [status, setStatus] = useState<ComponentStatus>('idle');
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (isLoading) {
-            setStatus('loading');
-            return;
-        }
-        if (error) {
-            setStatus('error')
-            return;
-        }
-        if (allNotes.length === 0) {
-            setStatus('empty')
-            return;
-        }
-        setStatus('success')
+    const status: ComponentStatus = (() => {
+        if (isLoading) return 'loading';
+        if (error) return 'error';
+        if (!allNotes?.length) return 'empty';
+        return 'success';
 
-    }, [isLoading, error, allNotes])
+    })();
+
+    useEffect(() => {
+        if(!allNotes.length){
+            dispatch(getAllNotes())
+        }
+    }, [dispatch])
 
 
     const handleNoteEnter = (e: React.MouseEvent, note: Note) => {

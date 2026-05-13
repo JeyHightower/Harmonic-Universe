@@ -53,8 +53,8 @@ export const LocationDetail = () => {
         navigate(`/notes/${note.note_id}`);
     }
 
-    const handleDelete = (type:'location' | 'universe' | 'character' | 'note' | '', item: any) => {
-        setActiveModal({type, item});
+    const handleDelete = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
+        setActiveModal({ type, item });
         currentToolbox.handleDelete(item);
     }
 
@@ -81,9 +81,10 @@ export const LocationDetail = () => {
             return;
         }
 
-        if (!currentLocation)
+        if (!currentLocation) {
             setLocStatus('empty')
-        return;
+            return;
+        }
 
         setLocStatus('success')
         setCharStatus(currentLocation?.characters?.length ? 'success' : 'empty')
@@ -140,21 +141,20 @@ export const LocationDetail = () => {
                         )}
                     />
 
+                    {
+                        activeModal.type !== '' && (
+
+                            <GenericModal
+                                isOpen={isModalOpen}
+                                onClose={closeModal}
+                                type={activeModal.type}
+                                toolbox={currentToolbox}
+                                item={activeModal.item}
+                            />
+                        )
+                    }
                 </>
-
             )}
-            {
-                activeModal.type !== '' && (
-
-                    <GenericModal
-                        isOpen={isModalOpen}
-                        onClose={closeModal}
-                        type={activeModal.type}
-                        toolbox={currentToolbox}
-                        item={activeModal.item}
-                    />
-                )
-            }
 
         </main>
 

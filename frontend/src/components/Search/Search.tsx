@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { useAppSelector } from "../../hooks/useSetterToolbox";
 import type { ComponentStatus } from "../../types/componentStatus";
 import type { SearchItem, SearchProps } from "../../types/searchItem";
@@ -11,7 +11,6 @@ import { Spinner } from "../Universal/Spinner";
 export const Search = ({ onClose }: SearchProps) => {
 
     const [query, setQuery] = useState('');
-    const [status, setStatus] = useState<ComponentStatus>('idle');
     const navigate = useNavigate();
 
 
@@ -20,28 +19,14 @@ export const Search = ({ onClose }: SearchProps) => {
     const { allNotes, isLoading: noteLoading, error: noteError } = useAppSelector((state) => state.note);
     const { allLocations, isLoading: locLoading, error: locError } = useAppSelector((state) => state.location);
 
-
+    const status: ComponentStatus = (() => {
+        if (uniLoading || charLoading || noteLoading || locLoading) return 'loading';
+        if (uniError && charError && noteError && locError) return 'error';
+        if (!allUniverses?.length && !allCharacters?.length && !allNotes?.length && !allLocations?.length) return 'empty';
+        return 'success';
+    })();
     
-    useEffect(() => {
-
-        if (uniLoading || charLoading || noteLoading || locLoading) {
-            setStatus('loading');
-            return;
-        }
-
-        if (uniError && charError && noteError && locError) {
-            setStatus('error');
-            return;
-        }
-
-        if (allUniverses?.length === 0 && allCharacters?.length === 0 && allNotes?.length === 0 && allLocations?.length === 0) {
-            setStatus('empty')
-            return;
-        }
-
-        setStatus('success')
-    }, [allUniverses, allCharacters, allNotes, allLocations, uniLoading, charLoading, noteLoading, locLoading, uniError, charError, noteError, locError])
-
+    
     const allItems = useMemo((): SearchItem[] => {
         return [
             ...(allUniverses ?? []).map((u) => ({ id: u?.universe_id, label: u?.name, category: 'Universe', path: `/universes/${u?.universe_id}` })),

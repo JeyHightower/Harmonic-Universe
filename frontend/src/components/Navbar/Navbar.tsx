@@ -33,7 +33,9 @@ export const Navbar = () => {
     return (
         <nav className="navbar">
             <div className="navLogo">
-                <Link to='/' onClick={() => handleNavClick('Clicked Logo')}>MyApp</Link>
+                <Link to='/' onClick={() => handleNavClick('Clicked Logo')}>
+                    <img src="/harmonic-universe-logo.svg" alt="Harmonic Universe" height="100" />
+                </Link>
             </div>
 
             <button className="menuBurger" onClick={menu.toggle}>
@@ -51,7 +53,7 @@ export const Navbar = () => {
                         {/* 1. Identity Section */}
                         <li className="navProfileHeader">
                             <div>
-                                <p className="userName">{user?.username}</p>
+                                <p className="userName">Current User: {user?.username}</p>
                                 <span className="userRole">{user?.is_admin}</span>
                             </div>
                         </li>

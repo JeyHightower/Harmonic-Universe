@@ -1084,3 +1084,16 @@
     background: rgba(201, 146, 42, 0.2);
     border-color: rgba(201, 146, 42, 0.55);
   }
+
+  .addCard {
+    border-style: dashed;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: border-color var(--transition), color var(--transition);
+    min-height: 100px;
+}
+
+.addCard:hover {
+    border-color: var(--accent-dim);
+    color: var(--accent);
+}

@@ -42,13 +42,14 @@ export const Locations = () => {
                 dispatch(setCurrentLocation(location));
             }
         }
-    }, [currentLocation, allLocations, dispatch]);
+    }, [dispatch]);
+
 
     useEffect(() => {
-        if (!allUniverses.length) {
+        if (!allUniverses?.length) {
             dispatch(getAllUniverses());
         }
-    }, [allUniverses, uniError, uniLoading])
+    }, [dispatch]);
 
 
     const universeOptions: { value: number | null; label: string | null }[] = useMemo(() => {
@@ -91,7 +92,7 @@ export const Locations = () => {
     }
 
 
-    const locationHandleDelete = (location:AppLocation) => {
+    const locationHandleDelete = (location: AppLocation) => {
         locationModalInfo.handleDelete(location);
     }
 

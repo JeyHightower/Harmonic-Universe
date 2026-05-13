@@ -10,7 +10,7 @@ import { setCurrentUniverse } from '../../features/Universe/universeSlice';
 import { EntityManager } from '../Universal/EntityManager';
 
 export const Universes = () => {
-    const { allUniverses, currentUniverse, isLoading, error } = useAppSelector((state) => state.universe);
+    const { allUniverses, isLoading, error } = useAppSelector((state) => state.universe);
     const [activeModal, setActiveModal] = useState<{item:Universe | null, type:string}>({item:null, type:''});
     const universeModalInfo = useModalToolbox(activeModal.item || {}, 'universe');
     const dispatch = useAppDispatch();
@@ -20,16 +20,16 @@ export const Universes = () => {
     const status: ComponentStatus = (() => {
         if(isLoading) return 'loading';
         if(error) return 'error';
-        if(allUniverses.length === 0 && !currentUniverse) return 'empty';
+        if(!allUniverses?.length) return 'empty';
         return 'success' 
 
     })();
 
     useEffect(() => {
-        if(allUniverses.length === 0){
+        if(!allUniverses.length){
             dispatch(getAllUniverses());
         }
-    }, [allUniverses])
+    }, [dispatch])
 
 
 

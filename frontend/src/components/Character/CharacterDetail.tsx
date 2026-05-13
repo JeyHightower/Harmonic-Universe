@@ -30,13 +30,13 @@ export const CharacterDetail = () => {
     const { boolean: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBooleanSetter(false);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [activeModal, setActiveModal] = useState<{ item: any | null, type:'location' | 'universe' | 'character' | 'note' | '' }>({ item: null, type: '' });
+    const [activeModal, setActiveModal] = useState<{ item: any | null, type: 'location' | 'universe' | 'character' | 'note' | '' }>({ item: null, type: '' });
     const currentToolbox = useModalToolbox(activeModal.item, activeModal.type);
 
     const character_id = currentCharacter?.character_id;
 
 
-    const handleCreate = (type:'location' | 'universe' | 'character' | 'note' | '') => {
+    const handleCreate = (type: 'location' | 'universe' | 'character' | 'note' | '') => {
         setActiveModal({ type, item: null });
         currentToolbox.reset();
         openModal();
@@ -47,8 +47,8 @@ export const CharacterDetail = () => {
         openModal();
     }
 
-    const handleDelete = (type:'location' | 'universe' | 'character' | 'note' | '', item: any) => {
-        setActiveModal({type, item});
+    const handleDelete = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
+        setActiveModal({ type, item });
         currentToolbox.handleDelete(item);
     }
 
@@ -132,8 +132,8 @@ export const CharacterDetail = () => {
                         renderCardContent={(u) => (
                             <>
 
-                                <h3>{u.name}</h3>
-                                <p>{u.description?.substring(30)}</p>
+                                <h3>{u?.name}</h3>
+                                <p>{u?.description?.substring(30)}</p>
                             </>
                         )}
                     />
@@ -152,8 +152,8 @@ export const CharacterDetail = () => {
                         idField="note_id"
                         renderCardContent={(n) => (
                             <>
-                                <h3>{n.title}</h3>
-                                <p>Content:{n.content || '...'}</p>
+                                <h3>{n?.title}</h3>
+                                <p>Content:{n?.content || '...'}</p>
                             </>
                         )}
                     />
@@ -171,8 +171,8 @@ export const CharacterDetail = () => {
                         idField="location_id"
                         renderCardContent={(l) => (
                             <>
-                                <h3>{l.name}</h3>
-                                <p>Description: {l.description || '...'}</p>
+                                <h3>{l?.name}</h3>
+                                <p>Description: {l?.description || '...'}</p>
                             </>
                         )}
                     />
