@@ -1,37 +1,20 @@
 import { useNavigationToolbox } from "../../hooks/useNavigationToolbox"
 import type { Gallery } from "../../types/gallery";
 import { EmptyState } from "./EmptyState";
-import { useMemo, useState } from "react";
 import { useModalToolbox } from "../../hooks/useModalToolbox";
 import { GenericModal } from "./GenericModal";
-import { useAppSelector } from "../../hooks/useSetterToolbox";
-import { FORM_CONFIG } from "../../helpers";
+import { useHydratedFields } from "../../hooks/useHydratedFields";
+import { useState } from "react";
 
 export const ConnectionGallery = ({ title, items, type }: Gallery) => {
 
     const { handleModelAction } = useNavigationToolbox();
-    const { allUniverses } = useAppSelector(state => state.universe);
-    const [activeModal, setActiveModal] = useState<{ item: any, type: string }>({ item: null, type: '' })
-    const modalInfo = useModalToolbox(activeModal.item || {}, type)
+    const [activeModal, setActiveModal] = useState<{ item: any, type: string }>({ item: null, type: '' });
+    const modalInfo = useModalToolbox(activeModal.item || {}, type);
+    const hydratedFields = useHydratedFields(type)
 
 
-    const universeOptions = useMemo(() => {
-       return allUniverses?.map((u) => ({
-            value: u?.universe_id,
-            label: u?.name
-        }))
-    }, [allUniverses])
 
-    const hydratedFields = useMemo(() => {
-        const fields = (FORM_CONFIG as any)[type];
-        if(!fields) return [];
-        return fields.map((field:any) => {
-            if(field.name === 'universe_id'){
-                return { ... field, options: universeOptions};
-            }
-            return field;
-        })
-    }, [type, universeOptions]);
 
     const handleCreate = () => {
         modalInfo.reset();

@@ -1,14 +1,15 @@
 import { useAppDispatch, useAppSelector } from "../../hooks/useSetterToolbox"
 import type { ComponentStatus } from "../../types/componentStatus";
 import { useModalToolbox } from "../../hooks/useModalToolbox";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllLocations, getAllLocationsInUniverse, setCurrentLocation } from "../../features/Location/locationSlice";
 import type { AppLocation } from "../../types/location";
 import { GenericModal } from "../Universal/GenericModal";
 import { EntityManager } from "../Universal/EntityManager";
 import { getAllUniverses } from "../../features/Universe/universeSlice";
-import { FORM_CONFIG, getCurrentLocation } from "../../helpers";
+import { getCurrentLocation } from "../../helpers";
+import { useHydratedFields } from "../../hooks/useHydratedFields";
 
 export const Locations = () => {
 
@@ -20,11 +21,12 @@ export const Locations = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const user_id = user?.user_id;
+    const hydratedFields = useHydratedFields('location');
 
 
     const status: ComponentStatus = (() => {
-        if (isLoading || userLoading) return 'loading';
-        if (error || userError) return 'error';
+        if (isLoading || userLoading || uniLoading ) return 'loading';
+        if (error || userError || uniError) return 'error';
         if (!user) return 'empty';
         if (!allLocations?.length) return 'empty';
         return 'success';
@@ -50,26 +52,6 @@ export const Locations = () => {
             dispatch(getAllUniverses());
         }
     }, [dispatch]);
-
-
-    const universeOptions: { value: number | null; label: string | null }[] = useMemo(() => {
-        return allUniverses?.map((u) => ({
-            value: u.universe_id,
-            label: u.name
-        }));
-    }, [allUniverses]);
-
-    const hydratedLocationFields = useMemo(() =>
-        FORM_CONFIG.location.map((field: any) => {
-            switch (field.name) {
-                case 'universe_id':
-                    return { ...field, options: universeOptions, defaultValue: currentUniverse?.universe_id };
-                default:
-                    return field;
-            }
-        }), [universeOptions, currentUniverse]
-    );
-
 
 
     const handleLocationEnter = (e: React.MouseEvent, location: AppLocation) => {
@@ -135,7 +117,7 @@ export const Locations = () => {
                 onClose={handleClose}
                 toolbox={locationModalInfo}
                 item={activeModal.item}
-                fields={hydratedLocationFields}
+                fields={hydratedFields}
             />
         </>
 
