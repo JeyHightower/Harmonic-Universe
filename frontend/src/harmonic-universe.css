@@ -1,0 +1,1099 @@
+/* ============================================================
+   HARMONIC UNIVERSE — Global Design System
+   Theme: Dark cosmic editorial with warm amber accents
+   ============================================================ */
+
+   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
+
+   /* ── Tokens ─────────────────────────────────────────────── */
+   :root {
+     --bg-base:        #0d0d0f;
+     --bg-surface:     #13131a;
+     --bg-raised:      #1a1a24;
+     --bg-hover:       #21212e;
+   
+     --accent:         #c9922a;
+     --accent-dim:     #8a611a;
+     --accent-glow:    rgba(201, 146, 42, 0.12);
+   
+     --text-primary:   #f0ede6;
+     --text-secondary: #8c8a84;
+     --text-muted:     #52514e;
+   
+     --border:         rgba(255,255,255,0.07);
+     --border-hover:   rgba(201,146,42,0.35);
+   
+     --radius-sm:      6px;
+     --radius-md:      10px;
+     --radius-lg:      16px;
+   
+     --font-display:   'Playfair Display', Georgia, serif;
+     --font-body:      'DM Sans', system-ui, sans-serif;
+     --font-mono:      'DM Mono', monospace;
+   
+     --transition:     180ms cubic-bezier(0.4, 0, 0.2, 1);
+   }
+   
+   /* ── Reset ───────────────────────────────────────────────── */
+   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+   
+   html { font-size: 16px; scroll-behavior: smooth; }
+   
+   body {
+     font-family: var(--font-body);
+     font-weight: 400;
+     background: var(--bg-base);
+     color: var(--text-primary);
+     line-height: 1.6;
+     min-height: 100vh;
+     -webkit-font-smoothing: antialiased;
+   }
+   
+   /* ── Typography ──────────────────────────────────────────── */
+   h1, h2, h3, h4 {
+     font-family: var(--font-display);
+     font-weight: 500;
+     line-height: 1.25;
+     letter-spacing: -0.01em;
+     color: var(--text-primary);
+   }
+   
+   h1 { font-size: clamp(2rem, 5vw, 3.25rem); }
+   h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); }
+   h3 { font-size: 1.2rem; }
+   h4 { font-size: 1rem; font-family: var(--font-body); font-weight: 500; }
+   
+   p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; }
+   
+   a { color: var(--accent); text-decoration: none; transition: opacity var(--transition); }
+   a:hover { opacity: 0.75; }
+   
+   /* ── Navbar ──────────────────────────────────────────────── */
+   .navbar {
+     position: sticky;
+     top: 0;
+     z-index: 100;
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     padding: 0 2rem;
+     height: 60px;
+     background: rgba(13,13,15,0.85);
+     backdrop-filter: blur(20px);
+     -webkit-backdrop-filter: blur(20px);
+     border-bottom: 1px solid var(--border);
+   }
+   
+   .navbar .navLogo a {
+     font-family: var(--font-display);
+     font-size: 1.25rem;
+     font-weight: 500;
+     color: var(--text-primary);
+     letter-spacing: 0.02em;
+   }
+   
+   .navbar .navLinks {
+     display: flex;
+     align-items: center;
+     gap: 0.25rem;
+     list-style: none;
+   }
+   
+   .navbar .navLinks li a {
+     font-size: 0.875rem;
+     font-weight: 400;
+     color: var(--text-secondary);
+     padding: 0.4rem 0.75rem;
+     border-radius: var(--radius-sm);
+     transition: color var(--transition), background var(--transition);
+   }
+   
+   .navbar .navLinks li a:hover {
+     color: var(--text-primary);
+     background: var(--bg-hover);
+     opacity: 1;
+   }
+   
+   .navbar .sectionLabel {
+     display: block;
+     font-size: 0.7rem;
+     font-weight: 500;
+     letter-spacing: 0.1em;
+     text-transform: uppercase;
+     color: var(--text-muted);
+     padding: 0.25rem 0.75rem;
+     margin-top: 0.5rem;
+   }
+   
+   .navbar .navSection {
+     display: flex;
+     align-items: center;
+     gap: 0.1rem;
+   }
+   
+   .navbar .logoutBtn {
+     font-family: var(--font-body);
+     font-size: 0.875rem;
+     color: var(--text-secondary);
+     background: transparent;
+     border: none;
+     padding: 0.4rem 0.75rem;
+     border-radius: var(--radius-sm);
+     cursor: pointer;
+     transition: color var(--transition), background var(--transition);
+   }
+   
+   .navbar .logoutBtn:hover {
+     color: #e05a5a;
+     background: rgba(224,90,90,0.08);
+   }
+   
+   .navbar .menuBurger {
+     display: none;
+     background: transparent;
+     border: none;
+     color: var(--text-secondary);
+     font-size: 1.25rem;
+     cursor: pointer;
+     padding: 0.5rem;
+   }
+   
+   /* Activity dropdown */
+   .navbar .activityDropdown {
+     position: relative;
+     font-size: 0.8rem;
+     color: var(--text-muted);
+     cursor: pointer;
+     padding: 0.4rem 0.75rem;
+     border-radius: var(--radius-sm);
+     border: 1px solid var(--border);
+     transition: border-color var(--transition);
+   }
+   
+   .navbar .activityDropdown:hover { border-color: var(--border-hover); }
+   
+   .navbar .dropdownContent {
+     display: none;
+     position: absolute;
+     top: calc(100% + 8px);
+     right: 0;
+     min-width: 220px;
+     background: var(--bg-raised);
+     border: 1px solid var(--border);
+     border-radius: var(--radius-md);
+     padding: 0.5rem;
+     z-index: 200;
+   }
+   
+   .navbar .activityDropdown:hover .dropdownContent { display: block; }
+   
+   .navbar .activityItem {
+     font-size: 0.8rem;
+     color: var(--text-secondary);
+     padding: 0.35rem 0.5rem;
+     border-radius: var(--radius-sm);
+   }
+
+   .navLinks li:has(.logoutBtn) {
+    padding: 0;
+    list-style: none;
+  }
+  
+  .logoutBtn {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color var(--transition), background var(--transition);
+    width: 100%;
+    text-align: left;
+  }
+  
+  .logoutBtn:hover {
+    color: #e05a5a;
+    background: rgba(224, 90, 90, 0.08);
+  }
+
+  .navProfileHeader {
+    padding: 0.5rem 0.75rem;
+    list-style: none;
+  }
+  
+  .userName {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary) !important;
+  }
+  
+  .userRole {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+   
+   .navbar .clearBtn {
+     width: 100%;
+     margin-top: 0.5rem;
+     font-size: 0.8rem;
+     font-family: var(--font-body);
+     background: transparent;
+     border: 1px solid var(--border);
+     color: var(--text-muted);
+     padding: 0.3rem;
+     border-radius: var(--radius-sm);
+     cursor: pointer;
+     transition: color var(--transition), border-color var(--transition);
+   }
+   
+   .navbar .clearBtn:hover { color: #e05a5a; border-color: rgba(224,90,90,0.3); }
+   
+   /* ── Home Page ───────────────────────────────────────────── */
+   .homeContainer {
+     max-width: 1100px;
+     margin: 0 auto;
+     padding: 5rem 2rem 4rem;
+   }
+   
+   .hero {
+     text-align: center;
+     margin-bottom: 4rem;
+   }
+   
+   .hero .logoText {
+     font-family: var(--font-display);
+     font-size: clamp(2.5rem, 6vw, 4rem);
+     font-weight: 400;
+     letter-spacing: -0.02em;
+     color: var(--text-primary);
+     margin-bottom: 0.75rem;
+   }
+   
+   .hero p {
+     font-size: 1.05rem;
+     color: var(--text-secondary);
+     font-style: italic;
+     font-family: var(--font-display);
+   }
+   
+   /* Home grid */
+   .homeContainer .grid {
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+     gap: 1px;
+     background: var(--border);
+     border: 1px solid var(--border);
+     border-radius: var(--radius-lg);
+     overflow: hidden;
+   }
+   
+   .homeContainer .card {
+     background: var(--bg-surface);
+     padding: 2rem 1.5rem;
+     display: flex;
+     flex-direction: column;
+     gap: 0.75rem;
+     transition: background var(--transition);
+     cursor: pointer;
+   }
+   
+   .homeContainer .card:hover { background: var(--bg-hover); }
+   
+   .homeContainer .card.comingSoon { opacity: 0.45; cursor: default; }
+   .homeContainer .card.comingSoon:hover { background: var(--bg-surface); }
+   
+   .homeContainer .card .icon {
+     font-size: 1.75rem;
+     line-height: 1;
+     margin-bottom: 0.25rem;
+   }
+   
+   .homeContainer .card h3 {
+     font-size: 1rem;
+     font-family: var(--font-body);
+     font-weight: 500;
+     color: var(--text-primary);
+   }
+   
+   .homeContainer .card p {
+     font-size: 0.85rem;
+     color: var(--text-muted);
+     flex: 1;
+   }
+   
+   .enterBtn {
+     align-self: flex-start;
+     margin-top: 0.5rem;
+     font-family: var(--font-body);
+     font-size: 0.8rem;
+     font-weight: 500;
+     color: var(--accent);
+     background: var(--accent-glow);
+     border: 1px solid rgba(201,146,42,0.25);
+     padding: 0.4rem 0.9rem;
+     border-radius: var(--radius-sm);
+     cursor: pointer;
+     transition: background var(--transition), border-color var(--transition);
+   }
+   
+   .enterBtn:hover {
+     background: rgba(201,146,42,0.2);
+     border-color: rgba(201,146,42,0.5);
+   }
+   
+   .badge {
+     align-self: flex-start;
+     font-size: 0.75rem;
+     font-weight: 500;
+     color: var(--text-muted);
+     border: 1px solid var(--border);
+     padding: 0.3rem 0.75rem;
+     border-radius: 999px;
+     letter-spacing: 0.03em;
+   }
+   
+   /* ── Dashboard ───────────────────────────────────────────── */
+   .dashboardPage {
+     max-width: 1100px;
+     margin: 0 auto;
+     padding: 3rem 2rem;
+   }
+   
+   .dashboardPage > h1 {
+     font-size: 1.5rem;
+     font-weight: 400;
+     color: var(--text-secondary);
+     margin-bottom: 2.5rem;
+     border-bottom: 1px solid var(--border);
+     padding-bottom: 1.25rem;
+   }
+   
+   .dashboardPage > h1 span {
+     color: var(--text-primary);
+     font-family: var(--font-display);
+   }
+   
+   .container {
+     margin-bottom: 2.5rem;
+   }
+   
+   .displayCard {
+     background: var(--bg-surface);
+     border: 1px solid var(--border);
+     border-radius: var(--radius-lg);
+     padding: 1.5rem;
+   }
+   
+   /* ── Connection Gallery ──────────────────────────────────── */
+   .galleryGrid {
+     display: grid;
+     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+     gap: 0.75rem;
+     margin-top: 1rem;
+   }
+   
+   .connectionCard {
+     background: var(--bg-raised);
+     border: 1px solid var(--border);
+     border-radius: var(--radius-md);
+     padding: 0.875rem 1rem;
+     cursor: pointer;
+     transition: border-color var(--transition), background var(--transition);
+     font-size: 0.875rem;
+     color: var(--text-primary);
+     font-weight: 400;
+   }
+   
+   .connectionCard:hover {
+     border-color: var(--border-hover);
+     background: var(--bg-hover);
+   }
+   
+   /* ── Entity Manager (full page) ──────────────────────────── */
+   .pageContainer {
+     max-width: 1100px;
+     margin: 0 auto;
+     padding: 2.5rem 2rem;
+   }
+   
+   .pageContainer header {
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     margin-bottom: 2rem;
+     padding-bottom: 1.25rem;
+     border-bottom: 1px solid var(--border);
+   }
+   
+   .pageContainer header h1 {
+     font-size: 1.75rem;
+     font-weight: 400;
+   }
+   
+   .pageContainer header button {
+     font-family: var(--font-body);
+     font-size: 0.8rem;
+     font-weight: 500;
+     letter-spacing: 0.06em;
+     text-transform: uppercase;
+     color: var(--accent);
+     background: var(--accent-glow);
+     border: 1px solid rgba(201,146,42,0.3);
+     padding: 0.5rem 1.25rem;
+     border-radius: var(--radius-sm);
+     cursor: pointer;
+     transition: background var(--transition), border-color var(--transition);
+   }
+   
+   .pageContainer header button:hover {
+     background: rgba(201,146,42,0.2);
+     border-color: rgba(201,146,42,0.55);
+   }
+   
+   .contentArea { min-height: 300px; }
+   
+   .grid {
+     display: grid;
+     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+     gap: 1rem;
+   }
+   
+   /* Entity card */
+   .card {
+     background: var(--bg-surface);
+     border: 1px solid var(--border);
+     border-radius: var(--radius-lg);
+     overflow: hidden;
+     display: flex;
+     flex-direction: column;
+     transition: border-color var(--transition);
+   }
+   
+   .card:hover { border-color: rgba(255,255,255,0.14); }
+   
+   .cardPreview {
+     padding: 1.25rem 1.25rem 1rem;
+     flex: 1;
+   }
+   
+   .cardPreview h3 {
+     font-size: 1rem;
+     font-family: var(--font-body);
+     font-weight: 500;
+     color: var(--text-primary);
+     margin-bottom: 0.4rem;
+   }
+   
+   .cardPreview p {
+     font-size: 0.825rem;
+     color: var(--text-muted);
+     line-height: 1.5;
+   }
+   
+   .cardFooter {
+     display: flex;
+     gap: 0;
+     border-top: 1px solid var(--border);
+   }
+   
+   .cardFooter button {
+     flex: 1;
+     font-family: var(--font-body);
+     font-size: 0.775rem;
+     font-weight: 400;
+     padding: 0.6rem 0.25rem;
+     background: transparent;
+     border: none;
+     cursor: pointer;
+     transition: background var(--transition), color var(--transition);
+     color: var(--text-muted);
+   }
+   
+   .cardFooter button + button {
+     border-left: 1px solid var(--border);
+   }
+   
+   .cardFooter .viewButton:hover   { background: var(--bg-hover); color: var(--text-primary); }
+   .cardFooter .editButton:hover   { background: var(--bg-hover); color: var(--accent); }
+   .cardFooter .deleteButton:hover { background: rgba(224,90,90,0.07); color: #e05a5a; }
+   
+   /* ── Generic Modal ───────────────────────────────────────── */
+   .modalOverlay {
+     position: fixed;
+     inset: 0;
+     z-index: 500;
+     background: rgba(0,0,0,0.7);
+     backdrop-filter: blur(6px);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     padding: 1rem;
+   }
+   
+   .modalContent {
+     background: var(--bg-raised);
+     border: 1px solid rgba(255,255,255,0.1);
+     border-radius: var(--radius-lg);
+     padding: 2rem;
+     width: 100%;
+     max-width: 460px;
+     max-height: 90vh;
+     overflow-y: auto;
+   }
+   
+   .modalContent h2 {
+     font-size: 1.25rem;
+     font-weight: 500;
+     text-transform: capitalize;
+     margin-bottom: 1.5rem;
+     padding-bottom: 1rem;
+     border-bottom: 1px solid var(--border);
+     color: var(--text-primary);
+   }
+   
+   /* Field groups */
+   .field-group {
+     margin-bottom: 1.1rem;
+     display: flex;
+     flex-direction: column;
+     gap: 0.4rem;
+   }
+   
+   .field-group label {
+     font-size: 0.775rem;
+     font-weight: 500;
+     letter-spacing: 0.04em;
+     text-transform: uppercase;
+     color: var(--text-muted);
+   }
+   
+   .field-group input,
+   .field-group textarea,
+   .field-group select {
+     font-family: var(--font-body);
+     font-size: 0.9rem;
+     color: var(--text-primary);
+     background: var(--bg-surface);
+     border: 1px solid var(--border);
+     border-radius: var(--radius-sm);
+     padding: 0.6rem 0.875rem;
+     width: 100%;
+     outline: none;
+     transition: border-color var(--transition), background var(--transition);
+     appearance: none;
+     -webkit-appearance: none;
+   }
+   
+   .field-group input::placeholder,
+   .field-group textarea::placeholder {
+     color: var(--text-muted);
+   }
+   
+   .field-group input:focus,
+   .field-group textarea:focus,
+   .field-group select:focus {
+     border-color: rgba(201,146,42,0.5);
+     background: var(--bg-hover);
+   }
+   
+   .field-group select {
+     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2352514e' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+     background-repeat: no-repeat;
+     background-position: right 0.875rem center;
+     padding-right: 2rem;
+     cursor: pointer;
+   }
+   
+   .field-group select option {
+     background: var(--bg-raised);
+     color: var(--text-primary);
+   }
+   
+   .field-group textarea {
+     resize: vertical;
+     min-height: 100px;
+     line-height: 1.6;
+   }
+   
+   /* Modal actions */
+   .modal-actions {
+     display: flex;
+     justify-content: flex-end;
+     gap: 0.6rem;
+     margin-top: 1.5rem;
+     padding-top: 1.25rem;
+     border-top: 1px solid var(--border);
+   }
+   
+   .modal-actions button {
+     font-family: var(--font-body);
+     font-size: 0.85rem;
+     font-weight: 500;
+     padding: 0.55rem 1.25rem;
+     border-radius: var(--radius-sm);
+     cursor: pointer;
+     transition: background var(--transition), border-color var(--transition);
+   }
+   
+   .modal-actions button[type="button"] {
+     background: transparent;
+     border: 1px solid var(--border);
+     color: var(--text-secondary);
+   }
+   
+   .modal-actions button[type="button"]:hover {
+     background: var(--bg-hover);
+     color: var(--text-primary);
+   }
+   
+   .modal-actions button[type="submit"] {
+     background: var(--accent-glow);
+     border: 1px solid rgba(201,146,42,0.35);
+     color: var(--accent);
+   }
+   
+   .modal-actions button[type="submit"]:hover {
+     background: rgba(201,146,42,0.2);
+     border-color: rgba(201,146,42,0.6);
+   }
+   
+   /* ── Spinner ─────────────────────────────────────────────── */
+   .spinner {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     padding: 3rem;
+   }
+   
+   .spinner::after {
+     content: '';
+     width: 28px;
+     height: 28px;
+     border: 2px solid var(--border);
+     border-top-color: var(--accent);
+     border-radius: 50%;
+     animation: spin 0.7s linear infinite;
+   }
+   
+   @keyframes spin { to { transform: rotate(360deg); } }
+   
+   /* ── Empty State ─────────────────────────────────────────── */
+   .emptyState {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     padding: 4rem 2rem;
+     text-align: center;
+     gap: 1rem;
+   }
+   
+   .emptyState p {
+     font-size: 0.9rem;
+     color: var(--text-muted);
+   }
+   
+   .emptyState button {
+     font-family: var(--font-body);
+     font-size: 0.85rem;
+     font-weight: 500;
+     color: var(--accent);
+     background: var(--accent-glow);
+     border: 1px solid rgba(201,146,42,0.3);
+     padding: 0.5rem 1.25rem;
+     border-radius: var(--radius-sm);
+     cursor: pointer;
+     transition: background var(--transition);
+   }
+   
+   .emptyState button:hover { background: rgba(201,146,42,0.2); }
+   
+   /* ── Error Display ───────────────────────────────────────── */
+   .errorDisplay {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     gap: 1rem;
+     padding: 3rem;
+     text-align: center;
+   }
+   
+   .errorDisplay p {
+     font-size: 0.9rem;
+     color: #e05a5a;
+   }
+   
+   .errorDisplay button {
+     font-family: var(--font-body);
+     font-size: 0.85rem;
+     background: transparent;
+     border: 1px solid rgba(224,90,90,0.3);
+     color: #e05a5a;
+     padding: 0.45rem 1rem;
+     border-radius: var(--radius-sm);
+     cursor: pointer;
+     transition: background var(--transition);
+   }
+   
+   .errorDisplay button:hover { background: rgba(224,90,90,0.08); }
+   
+   /* ── Section container (for embedded EntityManager) ─────── */
+   .sectionContainer {
+     padding: 1.25rem 0;
+   }
+   
+   .sectionContainer header {
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     margin-bottom: 1rem;
+   }
+   
+   /* ── Auth pages (Login/Register) ─────────────────────────── */
+   .authPage {
+     min-height: 100vh;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     padding: 2rem;
+   }
+   
+   .authCard {
+     background: var(--bg-surface);
+     border: 1px solid var(--border);
+     border-radius: var(--radius-lg);
+     padding: 2.5rem;
+     width: 100%;
+     max-width: 400px;
+   }
+   
+   .authCard h2 {
+     margin-bottom: 1.75rem;
+     font-weight: 400;
+     font-size: 1.5rem;
+   }
+   
+   .authCard .field-group { margin-bottom: 1rem; }
+   
+   .authCard .submitBtn {
+     width: 100%;
+     margin-top: 0.5rem;
+     font-family: var(--font-body);
+     font-size: 0.9rem;
+     font-weight: 500;
+     color: var(--accent);
+     background: var(--accent-glow);
+     border: 1px solid rgba(201,146,42,0.3);
+     padding: 0.7rem;
+     border-radius: var(--radius-sm);
+     cursor: pointer;
+     transition: background var(--transition);
+   }
+   
+   .authCard .submitBtn:hover { background: rgba(201,146,42,0.2); }
+   
+   /* ── Scrollbar ───────────────────────────────────────────── */
+   ::-webkit-scrollbar { width: 6px; }
+   ::-webkit-scrollbar-track { background: transparent; }
+   ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 999px; }
+   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+   
+   /* ── Responsive ──────────────────────────────────────────── */
+   @media (max-width: 768px) {
+     .navbar { padding: 0 1.25rem; }
+   
+     .navbar .menuBurger { display: block; }
+   
+     .navbar .navLinks {
+       display: none;
+       position: absolute;
+       top: 60px;
+       left: 0;
+       right: 0;
+       flex-direction: column;
+       align-items: flex-start;
+       background: var(--bg-raised);
+       border-bottom: 1px solid var(--border);
+       padding: 1rem 1.25rem;
+       gap: 0.15rem;
+     }
+   
+     .navbar .navLinks.open { display: flex; }
+   
+     .navbar .navSection { flex-direction: column; align-items: flex-start; }
+   
+     .navbar .activityDropdown { display: none; }
+   
+     .homeContainer { padding: 3rem 1.25rem; }
+   
+     .pageContainer { padding: 1.5rem 1.25rem; }
+   
+     .grid { grid-template-columns: 1fr; }
+   
+     .homeContainer .grid { grid-template-columns: 1fr 1fr; }
+   
+     .modalContent { padding: 1.5rem; }
+   }
+   
+   @media (max-width: 480px) {
+     .homeContainer .grid { grid-template-columns: 1fr; }
+     .cardFooter { flex-wrap: wrap; }
+     .cardFooter button { flex: 1 1 50%; }
+   }
+
+   /* ── Login ───────────────────────────────────────────────── */
+.loginPage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  .loginCard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .loginCard h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+  
+  .loginCard .subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+  
+  .loginCard form,
+  .registrationForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .loginCard select,
+  .loginCard input,
+  .registrationForm input {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.875rem;
+    width: 100%;
+    outline: none;
+    transition: border-color var(--transition), background var(--transition);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  
+  .loginCard select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2352514e' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.875rem center;
+    background-color: var(--bg-raised);
+    padding-right: 2rem;
+    cursor: pointer;
+  }
+  
+  .loginCard select option,
+  .registrationForm select option {
+    background: var(--bg-raised);
+    color: var(--text-primary);
+  }
+  
+  .loginCard input::placeholder,
+  .registrationForm input::placeholder {
+    color: var(--text-muted);
+  }
+  
+  .loginCard input:focus,
+  .loginCard select:focus,
+  .registrationForm input:focus {
+    border-color: rgba(201, 146, 42, 0.5);
+    background: var(--bg-hover);
+  }
+  
+  .loginCard .primaryBtn {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(201, 146, 42, 0.3);
+    padding: 0.65rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition);
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+  
+  .loginCard .primaryBtn:hover {
+    background: rgba(201, 146, 42, 0.2);
+    border-color: rgba(201, 146, 42, 0.55);
+  }
+  
+  .loginCard .primaryBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  
+  .loginCard .demoBtn {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 0.65rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+    width: 100%;
+  }
+  
+  .loginCard .demoBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  
+  .loginCard .demoBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  
+  .loginCard .errorMsg {
+    font-size: 0.825rem;
+    color: #e05a5a;
+    padding: 0.5rem 0.75rem;
+    background: rgba(224, 90, 90, 0.08);
+    border: 1px solid rgba(224, 90, 90, 0.2);
+    border-radius: var(--radius-sm);
+  }
+  
+  .loginCard .switchLink {
+    text-align: center;
+    font-size: 0.825rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+  }
+  
+  .loginCard .switchLink a {
+    color: var(--accent);
+  }
+  
+  /* ── Register ────────────────────────────────────────────── */
+  .registerPage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  .registerCard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 440px;
+  }
+  
+  .registerCard h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+  
+  .registerCard .subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+  
+  .inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  
+  .inputGroup label {
+    font-size: 0.775rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  
+  /* Checkbox row */
+  .inputGroup:has(input[type="checkbox"]) {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  
+  .inputGroup:has(input[type="checkbox"]) label {
+    font-size: 0.875rem;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--text-secondary);
+    cursor: pointer;
+    order: 2;
+  }
+  
+  .inputGroup input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  
+  .registrationForm button[type="submit"] {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(201, 146, 42, 0.3);
+    padding: 0.65rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition);
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  
+  .registrationForm button[type="submit"]:hover {
+    background: rgba(201, 146, 42, 0.2);
+    border-color: rgba(201, 146, 42, 0.55);
+  }
+
+  .addCard {
+    border-style: dashed;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: border-color var(--transition), color var(--transition);
+    min-height: 100px;
+}
+
+.addCard:hover {
+    border-color: var(--accent-dim);
+    color: var(--accent);
+}

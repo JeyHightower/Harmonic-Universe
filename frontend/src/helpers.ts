@@ -1,11 +1,11 @@
 import type { User } from "./types/user";
 import type { ApiRequestConfig } from "./types/api";
-import type { Universe } from "./types/universe";
 import type { Character } from "./types/character";
 import type { AuthState, LoginResponse, RegisterResponse } from "./types/auth";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { Note } from "./types/note";
 import type { AppLocation } from "./types/location";
+import type { RootState } from "./types/universal";
 
 
 
@@ -22,11 +22,12 @@ export const getInitialUser = (): User | null => {
 
 export const apiRequest = async <T>(config: ApiRequestConfig): Promise<T> => {
     const { url, method, body, thunkAPI, signal } = config;
-    const token = getInitialToken();
+    const state = thunkAPI.getState() as RootState;
+    const token = state.auth.token;
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
     };
-    if (token) {
+    if (token && token !== "undefined" && token !== "null") {
         headers['Authorization'] = `Bearer ${token}`;
     }
     if (!token && method !== 'POST') {
@@ -62,21 +63,11 @@ export const handleAuthSuccess = (state: AuthState, action: PayloadAction<LoginR
     state.isLoading = false;
     state.isAuthenticated = true;
     state.user = action.payload.user;
-    state.token = action.payload.token;
-    localStorage.setItem('token', action.payload.token)
+    state.token = action.payload.access_token;
+    localStorage.setItem('token', action.payload.access_token)
 }
 
-export const getCurrentUniverse = (): Universe | null => {
-    const universe = localStorage.getItem('activeUniverse');
-    if (!universe) return null;
-    try {
-        return JSON.parse(universe) as Universe;
-    }
-    catch (error) {
-        console.error('failed to parse universe data', error);
-        return null;
-    }
-}
+
 
 export const getCurrentCharacter = (): Character | null => {
     const character = localStorage.getItem('activeCharacter')
@@ -120,15 +111,15 @@ export const getCurrentLocation = (): AppLocation | null => {
 
 export const FORM_CONFIG = {
     user: [
-        { name: 'name', label: 'User Name', type: 'text', placeholder: 'e.g John Smith' },
-        { name: 'username', label: 'Username', type: 'text', placeholder: 'e.g JohnnyBoy' },
-        { name: 'email', label: 'Email', type: 'text', placeholder: 'e.g John@example.com' },
-        { name: 'password', label: 'Password', type: 'text', placeholder: 'e.g password0001' },
-        { name: 'bio', label: 'Biography', type: 'textarea', placeholder: 'e.g Hello my name is John and I like sports.' }
+        { name: 'name', label: 'Name:', type: 'text', placeholder: 'e.g John Smith' },
+        { name: 'username', label: 'Username:', type: 'text', placeholder: 'e.g JohnnyBoy' },
+        { name: 'email', label: 'Email:', type: 'text', placeholder: 'e.g John@example.com' },
+        { name: 'password', label: 'Password:', type: 'text', placeholder: 'e.g password0001' },
+        { name: 'bio', label: 'Biography:', type: 'textarea', placeholder: 'e.g Hello my name is John and I like sports.' }
     ],
     universe: [
-        { name: 'name', label: 'Universe Name', type: 'text', placeholder: 'e.g Milky Way' },
-        { name: 'description', label: 'Description of Universe', type: 'textarea', placeholder: 'e.g Milky Way contains billions of stars.' },
+        { name: 'name', label: 'Name:', type: 'text', placeholder: 'e.g Milky Way' },
+        { name: 'description', label: 'Description:', type: 'textarea', placeholder: 'e.g Milky Way contains billions of stars.' },
         {
             name: 'alignment', label: 'Choose if your Universe is good, bad, neutral', type: 'select', options: [
                 { value: 'good', label: 'Good' },
@@ -139,21 +130,23 @@ export const FORM_CONFIG = {
         },
     ],
     character: [
-        { name: 'name', label: 'Character Name', type: 'text', placeholder: 'e.g Jane Smith' },
-        { name: 'age', label: 'Characters age', type: 'number', placeholder: 'e.g 20' },
-        { name: 'origin', label: 'Origin Story', type: 'textarea', placeholder: 'e.g From the city of...gained abilities through...' },
-        { name: 'main_power_set', label: 'Primary Power/Ability', placeholder: 'e.g Fire' },
-        { name: 'secondary_power_set', label: 'Secondary Power/Ability', placeholder: 'e.g Telekenesis' },
-        { name: 'skills', label: 'List of specialized skills', placeholder: 'e.g Hacking, Manipulation' }
+        { name: 'name', label: 'Name:', type: 'text', placeholder: 'e.g Jane Smith' },
+        { name: 'age', label: 'Age:', type: 'number', placeholder: 'e.g 20' },
+        { name: 'origin', label: 'Origin:', type: 'textarea', placeholder: 'e.g From the city of...gained abilities through...' },
+        { name: 'main_power_set', label: 'Primary Power/Ability:', type:'text',  placeholder: 'e.g Fire' },
+        { name: 'secondary_power_set', label: 'Secondary Power/Ability:', type: 'text', placeholder: 'e.g Telekenesis' },
+        { name: 'skills', label: 'Skills:', type: 'text',  placeholder: 'e.g Hacking, Manipulation' }
     ],
     note: [
-        { name: 'title', label: 'Note Title', type: 'text', placeholder: 'e.g Future Ideas' },
-        { name: 'content', label: 'Content of the note', type: 'textarea', placeholder: 'write whatever you wish' }
+        { name: 'title', label: 'Title:', type: 'text', placeholder: 'e.g Future Ideas' },
+        { name: 'content', label: 'Content:', type: 'textarea', placeholder: 'write whatever you wish' }
     ],
     location: [
-        { name: 'name', label: 'Name of Location', type: 'text', placeholder: 'e.g Central Park' },
+        // {name: 'user_id', label: 'Owner_Id:', type: 'text', disabled:true, readonly:true},
+        { name: 'universe_id', label: 'Select Universe:', type: 'select', options: [], placeholder: 'Select Universe'},
+        { name: 'name', label: 'Name:', type: 'text', placeholder: 'e.g Central Park' },
         {
-            name: 'location_type', label: 'Type of Location', type: 'select', options: [
+            name: 'location_type', label: 'Type:', type: 'select', options: [
                 { value: 'galaxy', label: 'Galaxy' },
                 { value: 'system', label: 'System' },
                 { value: 'planet', label: 'Planet' },
@@ -169,5 +162,6 @@ export const FORM_CONFIG = {
                 { value: 'landmark', label: 'Landmark' }
             ], placeholder: 'Pick your location type.'
         },
+        {name: 'description', label: 'Description:', type: 'text', placeholder: 'e.g A Hauted place'}
     ]
 };

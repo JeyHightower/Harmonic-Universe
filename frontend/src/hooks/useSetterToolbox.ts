@@ -1,6 +1,6 @@
 import { type TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../types/universal';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ListSetterEngine, BooleanSetterEngine, ObjectSetterEngine } from '../types/setter';
 import type { LoginMethod } from '../types/auth';
 
@@ -88,6 +88,10 @@ const useBooleanSetter = (initialValue: boolean = false) => {
 const useObjectSetter = <T>(initialValue: T) => {
     const [object, setObject] = useState<T>(initialValue);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        setObject(initialValue);
+    }, [JSON.stringify(initialValue)])
 
 
 

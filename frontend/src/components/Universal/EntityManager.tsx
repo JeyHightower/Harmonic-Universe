@@ -12,6 +12,7 @@ export const EntityManager = <T,>({
     onAdd,
     onEdit,
     onEnter,
+    onDelete,
     onRetry,
     renderCardContent,
     idField
@@ -22,14 +23,14 @@ export const EntityManager = <T,>({
 
     return (
 
-        <Wrapper className={isSection ? styles.sectionContainer : styles.pageContainer}>
+        <Wrapper className={isSection ? "sectionContainer" : "pageContainer"}>
             {!isSection && (
                 <header>
                     <h1> Your {type}s</h1>
                     <button onClick={onAdd}>+ CREATE {type.toUpperCase()}</button>
                 </header>
             )}
-            <div className={styles.contentArea}>
+            <div className="contentArea">
                 {status === 'loading' && <Spinner />}
 
                 {status === 'error' && error && (
@@ -46,19 +47,55 @@ export const EntityManager = <T,>({
                 )}
 
                 {status === 'success' && (
-                    <section className={styles.grid}>
-                        {data.map((item) => (
+                    <section className="grid">
+                        {data?.map((item: any) => (
                             <div
-                                key={String(item[idField])}
-                                className={styles.card}
-                                onClick={() => onEdit(item)}
-                            >
-                                {renderCardContent(item)}
-                                <button type='button' onClick={(e) => onEnter(e, item)}>
-                                    View {type}
-                                </button>
+                                key={String(item?.[idField])}
+                                className="card">
+                                <div className="cardPreview"
+                                >
+                                    {renderCardContent(item)}
+                                </div>
+                                <footer className="cardFooter">
+                                    <button
+                                        type='button'
+                                        className="viewButton"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEnter(e, item)
+                                        }}
+                                    >
+                                        View {type}
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className="editButton"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEdit(item)
+                                        }}
+                                    >
+                                        Edit {type}
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className="deleteButton"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(item)
+                                        }}
+                                    >
+                                        Delete {type}
+                                    </button>
+
+                                </footer>
                             </div>
                         ))}
+                        <div className="card addCard" onClick={onAdd}>
+                            <div className="cardPreview" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                                <span>+ {type}</span>
+                            </div>
+                        </div>
                     </section>
                 )}
 

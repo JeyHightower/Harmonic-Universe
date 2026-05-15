@@ -2,7 +2,7 @@ import {type  User } from './user';
 
 export interface LoginResponse {
     user: User;
-    token: string
+    access_token: string
 }
 
 export type LoginRequest = {
@@ -19,7 +19,7 @@ export interface AuthState {
 
 export interface RegisterResponse { 
     user: User;
-    token: string;
+    access_token: string;
 }
 
 export type Password = string;

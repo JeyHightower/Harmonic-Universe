@@ -44,6 +44,8 @@ class Location (db.Model):
     def to_dict(self, summary=True):
         data = {
             'location_id': self.location_id,
+            'user_id': self.user_id,
+            'universe_id': self.universe_id,
             'name': self.name,
             'location_type': self.location_type.value,
             'group': self.location_type.grouping

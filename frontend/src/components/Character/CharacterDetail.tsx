@@ -30,21 +30,26 @@ export const CharacterDetail = () => {
     const { boolean: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBooleanSetter(false);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [activeModal, setActiveModal] = useState<{ item: any | null, type: string }>({ item: null, type: '' });
+    const [activeModal, setActiveModal] = useState<{ item: any | null, type: 'location' | 'universe' | 'character' | 'note' | '' }>({ item: null, type: '' });
     const currentToolbox = useModalToolbox(activeModal.item, activeModal.type);
 
     const character_id = currentCharacter?.character_id;
 
 
-    const handleCreate = (type: string) => {
+    const handleCreate = (type: 'location' | 'universe' | 'character' | 'note' | '') => {
         setActiveModal({ type, item: null });
         currentToolbox.reset();
         openModal();
     }
 
-    const handleEdit = (type: string, item: any) => {
+    const handleEdit = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
         setActiveModal({ type, item });
         openModal();
+    }
+
+    const handleDelete = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
+        setActiveModal({ type, item });
+        currentToolbox.handleDelete(item);
     }
 
     const handleUniverseEnter = (e: React.MouseEvent, universe: Universe) => {
@@ -119,6 +124,7 @@ export const CharacterDetail = () => {
                         error={charError}
                         status={uniStatus}
                         onAdd={() => handleCreate("universe")}
+                        onDelete={(universe) => handleDelete('universe', universe)}
                         onEdit={(item: Universe) => handleEdit("universe", item)}
                         onEnter={handleUniverseEnter}
                         onRetry={() => character_id && dispatch(getCharacter(character_id))}
@@ -126,8 +132,8 @@ export const CharacterDetail = () => {
                         renderCardContent={(u) => (
                             <>
 
-                                <h3>{u.name}</h3>
-                                <p>{u.description?.substring(30)}</p>
+                                <h3>{u?.name}</h3>
+                                <p>{u?.description?.substring(30)}</p>
                             </>
                         )}
                     />
@@ -140,13 +146,14 @@ export const CharacterDetail = () => {
                         status={noteStatus}
                         onAdd={() => handleCreate("note")}
                         onEdit={(item: Note) => handleEdit("note", item)}
+                        onDelete={(note) => handleDelete('note', note)}
                         onEnter={handleNoteEnter}
                         onRetry={() => character_id && dispatch(getCharacter(character_id))}
                         idField="note_id"
                         renderCardContent={(n) => (
                             <>
-                                <h3>{n.title}</h3>
-                                <p>Content:{n.content || '...'}</p>
+                                <h3>{n?.title}</h3>
+                                <p>Content:{n?.content || '...'}</p>
                             </>
                         )}
                     />
@@ -158,23 +165,29 @@ export const CharacterDetail = () => {
                         status={locStatus}
                         onAdd={() => handleCreate("location")}
                         onEdit={(item: AppLocation) => handleEdit("location", item)}
+                        onDelete={(location) => handleDelete('location', location)}
                         onEnter={handleLocationEnter}
                         onRetry={() => character_id && dispatch(getCharacter(character_id))}
                         idField="location_id"
                         renderCardContent={(l) => (
                             <>
-                                <h3>{l.name}</h3>
-                                <p>Description: {l.description || '...'}</p>
+                                <h3>{l?.name}</h3>
+                                <p>Description: {l?.description || '...'}</p>
                             </>
                         )}
                     />
-                    <GenericModal
-                        isOpen={isModalOpen}
-                        onClose={closeModal}
-                        type={activeModal.type}
-                        toolbox={currentToolbox}
-                        item={activeModal.item}
-                    />
+                    {
+                        activeModal.type !== '' && (
+
+                            <GenericModal
+                                isOpen={isModalOpen}
+                                onClose={closeModal}
+                                type={activeModal.type}
+                                toolbox={currentToolbox}
+                                item={activeModal.item}
+                            />
+                        )
+                    }
 
                 </>
             )}

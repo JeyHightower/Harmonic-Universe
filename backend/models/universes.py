@@ -42,7 +42,7 @@ class Universe(db.Model):
             'universe_id': self.universe_id,
             'name': self.name,
             'alignment': self.alignment.value if self.alignment else None,
-            'owner_id': self.user_id,
+            'user_id': self.user_id,
             'created_at': self.created_at.isoformat()
         }
         if not summary:

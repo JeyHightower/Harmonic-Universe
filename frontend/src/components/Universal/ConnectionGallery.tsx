@@ -1,20 +1,24 @@
 import { useNavigationToolbox } from "../../hooks/useNavigationToolbox"
 import type { Gallery } from "../../types/gallery";
-import styles from './Home/Home.module.css';
 import { EmptyState } from "./EmptyState";
-import { useState } from "react";
 import { useModalToolbox } from "../../hooks/useModalToolbox";
 import { GenericModal } from "./GenericModal";
+import { useHydratedFields } from "../../hooks/useHydratedFields";
+import { useState } from "react";
 
 export const ConnectionGallery = ({ title, items, type }: Gallery) => {
 
     const { handleModelAction } = useNavigationToolbox();
-    const [activeModal, setActiveModal] = useState<{ item: any, type: string }>({ item: null, type: '' })
-    const modalInfo = useModalToolbox(activeModal.item || {}, type)
+    const [activeModal, setActiveModal] = useState<{ item: any, type: string }>({ item: null, type: '' });
+    const modalInfo = useModalToolbox(activeModal.item || {}, type);
+    const hydratedFields = useHydratedFields(type)
+
+
+
 
     const handleCreate = () => {
-        modalInfo.reset()
-        setActiveModal({ type: type, item: null })
+        modalInfo.reset();
+        setActiveModal({ type: type, item: null });
     }
 
     const handleClose = () => {
@@ -24,7 +28,7 @@ export const ConnectionGallery = ({ title, items, type }: Gallery) => {
     return (
         <section>
             <h2>{title}</h2>
-            <div className={styles.galleryGrid}>
+            <div className="galleryGrid">
                 {items.length > 0 ? (
                     items.map((item) => {
                         const id = item.id || item.character_id || item.universe_id || item.note_id || item.location_id;
@@ -32,7 +36,7 @@ export const ConnectionGallery = ({ title, items, type }: Gallery) => {
                         return (
                             <div
                                 key={`${type}-${id}`}
-                                className={styles.connectionCard}
+                                className="connectionCard"
                                 onClick={() => handleModelAction(item, type)}
                             >
                                 <strong>{label}</strong>
@@ -48,8 +52,11 @@ export const ConnectionGallery = ({ title, items, type }: Gallery) => {
                 onClose={handleClose}
                 toolbox={modalInfo}
                 item={activeModal.item}
+                fields={hydratedFields}
             />
 
         </section>
     )
 }
+
+

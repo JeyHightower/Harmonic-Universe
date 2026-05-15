@@ -5,6 +5,7 @@ export interface DynamicFormProps {
     onClose: () => void;
     isOpen: boolean;
     toolbox?: any;
+    fields?: any;
 
 }
 
@@ -20,6 +21,7 @@ export interface FormOption {
 export interface FormField {
     name: string;
     label: string;
+    defaultValue?: string | number;
     type?: 'text' | 'textarea' | 'select' | 'number' | 'password';
     placeholder?: string;
     options?: FormOption[]; // Only needed for 'select' types

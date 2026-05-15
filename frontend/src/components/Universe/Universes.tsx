@@ -16,26 +16,22 @@ export const Universes = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const [status, setStatus] = useState<ComponentStatus>('idle');
 
+    const status: ComponentStatus = (() => {
+        if(isLoading) return 'loading';
+        if(error) return 'error';
+        if(!allUniverses?.length) return 'empty';
+        return 'success' 
+
+    })();
 
     useEffect(() => {
-        if (isLoading) {
-            setStatus('loading')
-            return;
+        if(!allUniverses.length){
+            dispatch(getAllUniverses());
         }
+    }, [dispatch])
 
-        if (error) {
-            setStatus('error')
-            return;
-        }
-        if (allUniverses.length === 0) {
-            setStatus('empty')
-            return;
-        }
-        
-        setStatus('success')
-    }, [isLoading, error, allUniverses])
+
 
     const handleUniverseEnter = (e: React.MouseEvent, universe: Universe) => {
         e.stopPropagation();
@@ -48,12 +44,14 @@ export const Universes = () => {
     const universeHandleCreate = () => {
         setActiveModal({item:null, type:'universe'});
         universeModalInfo.reset();
-        
-
     }
 
     const universeHandleEdit = (universe: Universe) => {
         setActiveModal({item:universe, type:'universe'});
+    }
+
+    const universeHandleDelete = (universe:Universe) => {
+        universeModalInfo.handleDelete(universe);
     }
 
     const handleClose = () => {
@@ -67,15 +65,17 @@ export const Universes = () => {
                 data={allUniverses}
                 status={status}
                 error={error}
-                onAdd={universeHandleCreate}
-                onEdit={universeHandleEdit}
-                onEnter={handleUniverseEnter}
+                onAdd={() => universeHandleCreate()}
+                onEdit={(universe) => universeHandleEdit(universe)}
+                onEnter={(e, universe) => handleUniverseEnter(e,universe)}
+                onDelete={(universe) => universeHandleDelete(universe)}
                 onRetry={() => dispatch(getAllUniverses())}
                 idField="universe_id"
                 renderCardContent={(u) => (
+                
                     <>
-                        <h3>{u.name}</h3>
-                        <p>{u.description?.substring(30)}</p>
+                        <h3>{u?.name}</h3>
+                        <p>{u?.description?.substring(30)}</p>
                     </>
                 )}
             />

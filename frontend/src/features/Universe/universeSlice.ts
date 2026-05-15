@@ -1,8 +1,19 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getCurrentUniverse } from "../../helpers";
-import type { UniverseState } from "../../types/universe";
+import type { Universe, UniverseState } from "../../types/universe";
 import { createUniverse, deleteUniverse, getAllUniverses, getUniverse, updateUniverse } from "./universeActions";
 
+
+const getCurrentUniverse = (): Universe | null => {
+    const universe = localStorage.getItem('activeUniverse');
+    if (!universe) return null;
+    try {
+        return JSON.parse(universe) as Universe;
+    }
+    catch (error) {
+        console.error('failed to parse universe data', error);
+        return null;
+    }
+}
 
 const initialState: UniverseState = {
     currentUniverse: getCurrentUniverse(),

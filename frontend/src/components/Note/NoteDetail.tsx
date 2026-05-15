@@ -27,21 +27,26 @@ export const NoteDetail = () => {
     const { boolean: isModalOpen, setTrue: openModal, setFalse: closeModal } = useBooleanSetter(false);
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [activeModal, setActiveModal] = useState<{ item: any | null, type: string }>({ type: '', item: null });
+    const [activeModal, setActiveModal] = useState<{ item: any | null, type: 'location' | 'universe' | 'character' | 'note' | ''; }>({ type: '', item: null });
     const currentToolbox = useModalToolbox(activeModal.item, activeModal.type);
 
     const note_id = currentNote?.note_id;
 
 
-    const handleCreate = (type: string) => {
+    const handleCreate = (type: 'location' | 'universe' | 'character' | 'note' | '') => {
         setActiveModal({ type, item: null })
         currentToolbox.reset();
         openModal();
     }
 
-    const handleEdit = (type: string, item: any) => {
+    const handleEdit = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
         setActiveModal({ type, item })
         openModal();
+    }
+
+    const handleDelete = (type: 'location' | 'universe' | 'character' | 'note' | '', item: any) => {
+        setActiveModal({ type, item });
+        currentToolbox.handleDelete(item);
     }
 
 
@@ -62,6 +67,9 @@ export const NoteDetail = () => {
         dispatch(setCurrentLocation(location));
         navigate(`/locations/${location.location_id}`)
     }
+
+
+
 
 
 
@@ -92,9 +100,9 @@ export const NoteDetail = () => {
             return;
         }
         setNoteStatus('success')
-        setCharStatus(currentNote.characters?.length ? 'success' : 'empty')
-        setUniStatus(currentNote.universes?.length ? 'success' : 'empty')
-        setLocStatus(currentNote.locations?.length ? 'success' : 'empty')
+        setCharStatus(currentNote?.characters?.length ? 'success' : 'empty')
+        setUniStatus(currentNote?.universes?.length ? 'success' : 'empty')
+        setLocStatus(currentNote?.locations?.length ? 'success' : 'empty')
 
     }, [noteLoading, noteError, currentNote])
 
@@ -109,7 +117,7 @@ export const NoteDetail = () => {
             }
             {noteStatus === 'empty' && <EmptyState type={'note'} onAdd={() => handleCreate("note")} />}
 
-            {uniStatus === 'success' && (
+            {noteStatus === 'success' && (
                 <>
                     <h1>{currentNote?.title}</h1>
                     <EntityManager
@@ -118,15 +126,16 @@ export const NoteDetail = () => {
                         data={linkedCharacters}
                         error={noteError}
                         status={charStatus}
+                        onDelete={(character) => handleDelete('character', character)}
                         onAdd={() => handleCreate("character")}
                         onEdit={(item: Character) => handleEdit("character", item)}
-                        onEnter={handleCharacterEnter}
+                        onEnter={() => handleCharacterEnter}
                         onRetry={() => note_id && dispatch(getNote(note_id))}
                         idField="character_id"
                         renderCardContent={(c) => (
                             <>
-                                <h3>{c.name}</h3>
-                                <p>Age:{c.age || 'Unknown'}</p>
+                                <h3>{c?.name}</h3>
+                                <p>Age:{c?.age || 'Unknown'}</p>
                             </>
                         )}
                     />
@@ -138,13 +147,14 @@ export const NoteDetail = () => {
                         error={noteError}
                         onAdd={() => handleCreate("universe")}
                         onEdit={(item: Universe) => handleEdit("universe", item)}
-                        onEnter={handleUniverseEnter}
+                        onDelete={(universe) => handleDelete('universe', universe)}
+                        onEnter={() => handleUniverseEnter}
                         onRetry={() => note_id && dispatch(getNote(note_id))}
                         idField="universe_id"
                         renderCardContent={(u) => (
                             <>
-                                <h3>{u.name}</h3>
-                                <p>{u.description?.substring(30)}</p>
+                                <h3>{u?.name}</h3>
+                                <p>{u?.description?.substring(30)}</p>
                             </>
                         )}
                     />
@@ -157,25 +167,28 @@ export const NoteDetail = () => {
                         error={noteError}
                         onAdd={() => handleCreate("location")}
                         onEdit={(item: AppLocation) => handleEdit("location", item)}
-                        onEnter={handleLocationEnter}
+                        onEnter={() => handleLocationEnter}
+                        onDelete={(location) => handleDelete('location', location)}
                         onRetry={() => note_id && dispatch(getNote(note_id))}
                         idField="location_id"
                         renderCardContent={(l) => (
                             <>
-                                <h3>{l.name}</h3>
-                                <p>Description: {l.description || '...'}</p>
+                                <h3>{l?.name}</h3>
+                                <p>Description: {l?.description || '...'}</p>
                             </>
                         )}
                     />
-                </>)}
-
-            <GenericModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                type={activeModal.type}
-                toolbox={currentToolbox}
-                item={activeModal.item}
-            />
+                    {activeModal.type !== '' && (
+                        <GenericModal
+                            isOpen={isModalOpen}
+                            onClose={closeModal}
+                            type={activeModal.type}
+                            toolbox={currentToolbox}
+                            item={activeModal.item}
+                        />
+                    )}
+                </>
+            )}
         </main>
     )
 

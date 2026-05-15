@@ -14,6 +14,11 @@ export interface AppLocation {
     universe: Universe | null;
 }
 
+export interface LocationResponse {
+    Message:string;
+    Location:AppLocation;
+}
+
 export type LocationDraft = Omit<AppLocation, 'location_id'>
 
 export interface LocationState{

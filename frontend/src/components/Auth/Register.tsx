@@ -1,7 +1,7 @@
 import { registerUser } from '../../features/Auth/authActions';
 import { useAppDispatch, useSetterToolbox } from '../../hooks/useSetterToolbox';
 import type { UserDraft } from '../../types/user';
-import styles from './Auth.module.css';
+
 
 export const Register = () => {
     const dispatch = useAppDispatch();
@@ -33,9 +33,13 @@ export const Register = () => {
     }
 
     return (
-        <form className={styles.registrationForm} onSubmit={handleSubmit}>
+        <div className="registerPage">
+            <div className="registerCard">
+                <h2> Create Account</h2>
+                <p className="subtitle">Start Building Your Universe. </p>
+        <form className="registrationForm" onSubmit={handleSubmit}>
             {registrationFields.map((field) => (
-                <div key={field.id} className={styles.inputGroup}>
+                <div key={field.id} className="inputGroup">
                     <label htmlFor={field.label}>{field.label}</label>
                     <input
                         id={field.id}
@@ -47,12 +51,14 @@ export const Register = () => {
                             const val = field.type === 'checkbox' ? e.target.checked : e.target.value;
                             updateField(field.id as keyof UserDraft, val)
                         }}
-                    />
+                        />
 
                 </div>
             ))}
             <button type='submit'>Register</button>
         </form>
+            </div>
+        </div>
 
     );
 };

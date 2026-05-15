@@ -12,29 +12,26 @@ import { EntityManager } from "../Universal/EntityManager";
 export const Characters = () => {
 
     const { allCharacters, isLoading, error } = useAppSelector((state) => state.character);
-    const [activeModal, setActiveModal] = useState<{item:Character | null, type:string}>({item:null, type:''});
-    const [status, setStatus] = useState<ComponentStatus>('idle');
+    const [activeModal, setActiveModal] = useState<{ item: Character | null, type: string }>({ item: null, type: '' });
     const characterModalInfo = useModalToolbox(activeModal.item || {}, 'character');
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
 
-    useEffect(() => {
-        if (isLoading) {
-            setStatus('loading')
-            return;
-        }
-        if (error) {
-            setStatus('error')
-            return;
-        }
-        if (allCharacters.length === 0) {
-            setStatus('empty')
-            return;
-        }
-        setStatus('success')
+    const status: ComponentStatus = (() => {
+        if (isLoading) return 'loading';
+        if (error) return 'error';
+        if (!allCharacters?.length) return 'empty';
+        return 'success';
 
-    }, [isLoading, error, allCharacters])
+    })();
+
+    useEffect(() => {
+        if(!allCharacters.length){
+            dispatch(getAllCharacters())
+        }
+    }, [dispatch])
+
 
     const handleCharacterEnter = (e: React.MouseEvent, character: Character) => {
         e.stopPropagation();
@@ -43,17 +40,21 @@ export const Characters = () => {
     }
 
     const characterHandleCreate = () => {
-        setActiveModal({type:'character', item:null});
+        setActiveModal({ type: 'character', item: null });
         characterModalInfo.reset();
-       
+
     }
 
     const characterHandleEdit = (character: Character) => {
-       setActiveModal({type:'character', item:character})
+        setActiveModal({ type: 'character', item: character });
+    }
+
+    const characterHandleDelete = (character: Character) => {
+        characterModalInfo.handleDelete(character);
     }
 
     const handleClose = () => {
-        setActiveModal({type:'', item:null})
+        setActiveModal({ type: '', item: null })
     }
 
 
@@ -65,9 +66,10 @@ export const Characters = () => {
                 data={allCharacters}
                 status={status}
                 error={error}
-                onAdd={characterHandleCreate}
-                onEdit={characterHandleEdit}
-                onEnter={handleCharacterEnter}
+                onAdd={() => characterHandleCreate()}
+                onEdit={(character) => characterHandleEdit(character)}
+                onEnter={(e, character) => handleCharacterEnter(e, character)}
+                onDelete={(character) => characterHandleDelete(character)}
                 onRetry={() => dispatch(getAllCharacters())}
                 idField="character_id"
                 renderCardContent={(c) => (

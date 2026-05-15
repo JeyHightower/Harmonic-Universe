@@ -3,7 +3,7 @@ from flask import jsonify, Blueprint, request
 from flask_jwt_extended import jwt_required
 from models import Location
 from sqlalchemy import select
-from utils import get_current_user, validate_location_data, load_location_with_relationships, token_and_user_required, resource_owner_required, execute_location_creation, add_characters_to_location, add_notes_to_location, locations_with_authorization_in_universe, execute_location_update
+from utils import get_current_user, locations_with_authorization, validate_location_data, load_location_with_relationships, token_and_user_required, resource_owner_required, execute_location_creation, add_characters_to_location, add_notes_to_location, locations_with_authorization_in_universe, execute_location_update
 
 location_bp = Blueprint('locations', __name__)
 
@@ -34,6 +34,21 @@ def create_location(user,universe_id):
         return jsonify({
             'Error': 'Server Error'
         }), 500
+
+
+@location_bp.route('/locations/', methods = ['GET'])
+@token_and_user_required
+def get_all_locations(user):
+    locations = locations_with_authorization(user)
+    if not locations:
+        return jsonify({
+            'Message': 'No Locations found.'
+        }), 404
+
+    return jsonify({
+        'Message': 'All Locations have been found.',
+        'Locations': [l.to_dict() for l in locations]
+    }), 200
 
 @location_bp.route('/universes/<int:universe_id>/locations', methods=['GET'])
 @token_and_user_required

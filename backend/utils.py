@@ -177,18 +177,33 @@ def validate_character_data(data, partial = False):
         for field in required_fields:
             if field not in data:
                 return False, f'{field.replace("_", " ").capitalize()} is required.'
+                
     for field in ['name', 'main_power_set', 'secondary_power_set', 'skills']:
         if field in data and data[field] is None:
             return False, f'{field.replace("_", " ").capitalize()} cannot be null.'
-    for field in ['universe_ids', 'note_ids', 'skills']:
+            
+    for field in ['universe_ids', 'note_ids']: 
         if field in data and not isinstance(data[field], list):
             return False, f'{field.replace("_", " ").capitalize()} must be a list.'
+            
+    if 'skills' in data:
+        if not isinstance(data['skills'], str):
+            return False, 'Skills must be a string.'
+        if len(data['skills'].strip()) < 3:
+            return False, 'Skills must be at least 3 characters long.'
+
     if 'origin' in data:
         if not isinstance(data['origin'], str) or len(data['origin']) > 200:
             return False, 'Origin must be a string and must be less than 200 characters long.'
+            
     if 'age' in data:
+        # If your frontend is sending "30", convert it here or change the check
+        if isinstance(data['age'], str) and data['age'].isdigit():
+            data['age'] = int(data['age'])
+            
         if not isinstance(data['age'], int):
             return False, 'Age must be an integer.'
+            
     return True, None
 
 
@@ -653,6 +668,16 @@ def locations_with_authorization_in_universe(user,universe_id):
     locations = db.session.execute(query).scalars().all()
     return locations
 
+
+def locations_with_authorization(user):
+    query = select(Location).where(
+        Location.user_id == user.user_id
+    ).options(
+        selectinload(Location.notes),
+        selectinload(Location.characters)
+    )
+    locations = db.session.execute(query).scalars().all()
+    return locations
 
 def load_location_with_relationships(user,location_id):
     query = select(Location).where(

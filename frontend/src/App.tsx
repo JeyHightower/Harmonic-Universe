@@ -19,31 +19,32 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />} >
-          <Route index element={<Home />} />
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
-
-          <Route element={<ProtectedRoute />}>
-
-            <Route path="dashboard" element={<Dashboard />}>
-              <Route path="universes" element={<Universes />} />
-              <Route path="locations" element={<Locations />} />
-              <Route path="characters" element={<Characters />} />
-              <Route path="notes" element={<Notes />} />
-
-              <Route path="universes/:uniId" element={<UniverseDetail />} />
-              <Route path="locations/:locId" element={<LocationDetail />} />
-              <Route path="characters/:charId" element={<CharacterDetail />} />
-              <Route path="notes/:noteId" element={<NoteDetail />} />
-
-
-            </Route>
-          </Route>
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+  
+        <Route element={<ProtectedRoute />}>
+          {/* Dashboard is its own page */}
+          <Route path="dashboard" element={<Dashboard />} />
+  
+          {/* These are now siblings to dashboard. URL: /universes */}
+          <Route path="universes" element={<Universes />} />
+          <Route path="locations" element={<Locations />} />
+          <Route path="characters" element={<Characters />} />
+          <Route path="notes" element={<Notes />} />
+  
+          {/* Detail views. URL: /universes/123 */}
+          <Route path="universes/:uniId" element={<UniverseDetail />} />
+          <Route path="locations/:locId" element={<LocationDetail />} />
+          <Route path="characters/:charId" element={<CharacterDetail />} />
+          <Route path="notes/:noteId" element={<NoteDetail />} />
         </Route>
-      </Routes>
-    </BrowserRouter>
+        
+      </Route>
+    </Routes>
+  </BrowserRouter>
   )
 }
 

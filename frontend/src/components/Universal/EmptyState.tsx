@@ -1,5 +1,4 @@
 import type { EmptyStateProps } from '../../types/emptyStateProps';
-import './Universal.css';
 
 export const EmptyState = ({type , onAdd}: EmptyStateProps) => (
     <div className="emptyStateContainer">
