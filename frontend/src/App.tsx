@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Login } from './components/Auth/Login';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { Layout } from './components/Layout';
+import { ProtectedRoute } from './components/Universal/ProtectedRoute';
+import { Layout } from './components/Universal/Layout';
 import { Register } from './components/Auth/Register';
 import { Home } from './components/Home/Home';
 import { CharacterDetail } from './components/Character/CharacterDetail';
