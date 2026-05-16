@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { AuthResponse, LoginRequest } from '../types/auth';
+import type { LoginResponse, LoginRequest } from '../types/auth';
 import type { User } from '../types/user';
 import { type RootState } from '../store/store';
 
@@ -22,7 +22,7 @@ export const apislice = createApi({
         getUsers: builder.query<User[], void>({
             query: () => '/users',
         }),
-        login: builder.mutation<AuthResponse, LoginRequest>({
+        login: builder.mutation<LoginResponse, LoginRequest>({
             query:(credentials) => ({
                 url:'/login',
                 method: 'POST',
