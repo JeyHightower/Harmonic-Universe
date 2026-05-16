@@ -7,7 +7,7 @@ export interface AppLocation {
     universe_id: number;
     user_id: number;
     name: string;
-    location_type: LocationTypes;
+    location_type: LocationType | null;
     description: string | null;
     characters: Character[] | null;
     notes: Note[] | null;
@@ -29,21 +29,24 @@ export interface LocationState{
 }
 
 
-export enum LocationTypes {
-    GALAXY = 'Galaxy',
-    SYSTEM = 'System',
-    PLANET = 'Planet',
+export const  LocationTypes = {
+    GALAXY : 'Galaxy',
+    SYSTEM : 'System',
+    PLANET : 'Planet',
 
-    CONTINENT = 'Continent',
-    KINGDOM = 'Kingdom',
-    STATE = 'State',
+    CONTINENT : 'Continent',
+    KINGDOM : 'Kingdom',
+    STATE : 'State',
 
-    CITY = 'City',
-    TOWN = 'Town',
-    VILLAGE = 'Village',
+    CITY : 'City',
+    TOWN : 'Town',
+    VILLAGE : 'Village',
 
-    STREET = 'Street',
-    BUILDING = 'Building',
-    ROOM = 'Room',
-    LANDMARK = 'Landmark'
-}
+    STREET : 'Street',
+    BUILDING : 'Building',
+    ROOM : 'Room',
+    LANDMARK : 'Landmark'
+} as const;
+
+
+export type LocationType = typeof LocationTypes[keyof typeof LocationTypes];

@@ -6,7 +6,7 @@ export interface Universe {
         universe_id: number | null;
         user_id: number | null;
         name: string | null;
-        alignment: AlignmentType | null;
+        alignment: Alignment | null;
         description: string | null;
         characters: Character[] | null;
         locations: AppLocation[] | null;
@@ -28,10 +28,13 @@ export interface UniverseState {
 
 export type UniverseDraft = Omit<Universe, 'universe_id'>;
 
-export enum AlignmentType {
-    GOOD = 'good',
-    BAD = 'bad',
-    NEUTRAL = 'neutral',
-    CHAOTIC  = 'chaotic',
-    LAWFUL = 'lawful'
-}
+export const AlignmentType = {
+    GOOD : 'good',
+    BAD : 'bad',
+    NEUTRAL : 'neutral',
+    CHAOTIC  : 'chaotic',
+    LAWFUL : 'lawful'
+} as const ;
+
+
+export type Alignment = typeof AlignmentType[keyof typeof AlignmentType];
