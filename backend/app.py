@@ -32,20 +32,20 @@ for bp, prefix in all_blueprints:
     app.register_blueprint(bp, url_prefix=prefix)
 
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        print("Database tables checked/created successfully!")
+with app.app_context():
+    db.create_all()
+    print("Database tables checked/created successfully!")
 
-        from models import User
-        try:
-            if User.query.count() == 0:
-                demo_seed_data()
-                print("Demo seed data created successfully!")
-            else:
-                print("Database already contains data. Skipping seeding.")
-        except Exception as e:
-            print(f"seeding skipped or encountered an error: {e}")
+    from models import User
+    try:
+        if User.query.count() == 0:
+            demo_seed_data()
+            print("Demo seed data created successfully!")
+        else:
+            print("Database already contains data. Skipping seeding.")
+    except Exception as e:
+        print(f"seeding skipped or encountered an error: {e}")
         
-        app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
         
