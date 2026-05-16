@@ -20,8 +20,15 @@ export const getInitialUser = (): User | null => {
     return user ? JSON.parse(user) : null
 };
 
+
+const BASE_URL = import.meta.env.MODE === 'development' 
+    ? ''
+    : import.meta.env.VITE_API_URL || '';
+
 export const apiRequest = async <T>(config: ApiRequestConfig): Promise<T> => {
     const { url, method, body, thunkAPI, signal } = config;
+    const targetUrl = url.startsWith('http') ? url : `${BASE_URL}${url}`;
+
     const state = thunkAPI.getState() as RootState;
     const token = state.auth.token;
     const headers: HeadersInit = {
@@ -34,7 +41,7 @@ export const apiRequest = async <T>(config: ApiRequestConfig): Promise<T> => {
         return thunkAPI.rejectWithValue('No Authorization token found.');
     }
     try {
-        const response = await fetch(url, {
+        const response = await fetch(targetUrl, {
             method,
             signal,
             headers,

@@ -7,14 +7,17 @@ flask-cors==6.0.2
 Flask-JWT-Extended==4.7.1
 Flask-Login==0.6.3
 Flask-SQLAlchemy==3.1.1
+gunicorn==26.0.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.3
 marshmallow==4.2.2
 marshmallow-sqlalchemy==1.4.2
+packaging==26.2
 PyJWT==2.11.0
 PyMySQL==1.1.2
 python-dotenv==1.2.1
 SQLAlchemy==2.0.46
 typing_extensions==4.15.0
 Werkzeug==3.1.5
+cryptography==46.0.6

@@ -9,7 +9,7 @@ db = SQLAlchemy()
 jwt = JWTManager()
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///harmonic.db'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'mysql+pymysql://root@localhost/harmonic_universe'
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'default-secret'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'super-secret-jwt-key'
