@@ -34,14 +34,18 @@ for bp, prefix in all_blueprints:
 
 if __name__ == '__main__':
     with app.app_context():
-        # TokenBlocklist.query.delete()
-        # db.session.commit()
-        # print('Blocklist Deleted')
-  
-        # db.drop_all()
-        # print("Tables have been droped!!")
-        # db.create_all()
-        # print("Tables have been created!!")
-        # demo_seed_data()
-        # print("Demo seed data created!!")
+        db.create_all()
+        print("Database tables checked/created successfully!")
+
+        from models import User
+        try:
+            if User.query.count() == 0:
+                demo_seed_data()
+                print("Demo seed data created successfully!")
+            else:
+                print("Database already contains data. Skipping seeding.")
+        except Exception as e:
+            print(f"seeding skipped or encountered an error: {e}")
+        
         app.run(debug=True)
+        
