@@ -1,7 +1,7 @@
 from flask import session, request, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_bcrypt import generate_password_hash, check_password_hash
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.orm import selectinload
 from models import User, bcrypt, Character, Universe, Note, Location, TokenBlocklist, LocationType, AlignmentType, character_universes, character_notes, character_universes, note_universes, location_notes
 from config import  jwt, db
@@ -155,14 +155,18 @@ def authenticate_user(data):
     identifier = data.get('email') or data.get('username')
     if not identifier or not password:
         return None
-
+    
+    identifier = identifier.strip().lower()
+    
     query = select(User).where(
-        or_(User.email == identifier, User.username == identifier)
+        or_(
+            func.lower(User.email) == identifier,
+            func.lower(User.username) == identifier
+        )
     )
     user = db.session.execute(query).scalar_one_or_none()
     if not user:
         return None
-
     if bcrypt.check_password_hash(user.password_hash, password):
         return user
     return None
