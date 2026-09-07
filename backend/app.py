@@ -8,7 +8,7 @@ from routes import auth_bp, universe_bp, character_bp, note_bp, location_bp, use
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app)
+CORS(app, origins=["https://harmonic-universe-2.onrender.com"])
 db.init_app(app)
 jwt.init_app(app)
 
