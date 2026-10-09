@@ -1,5 +1,7 @@
 # 🌌 Harmonic Universe
 
+free hosting, first load may take about a minute
+
 A high-performance, full-stack world-building and multiverse synchronization platform. The application allows users to generate complex fictional universes, establish relational data bindings between entities (characters, locations, and narrative notes), and render data states dynamically. Built on a decoupled stack, it pairs an immutable Rule-Engine-System (RES) framework on the frontend with a scalable relational persistence layer on the backend.
 
 ---
@@ -32,7 +34,7 @@ The platform is engineered using a highly predictable, data-driven Rule-Engine-S
 - **Language & Core:** Python (RESTful API generation)
 - **Database Engine:** MySQL via MySQL Workbench (Relational constraint management and foreign key normalization mapping)
 - **Security Layer:** Stateful JSON Web Token (JWT) tracking with server-side validation and database-backed revoking (`token_blocklist.py`)
-- **Deployment:** Railway (Containerized environment)
+- **Deployment:** Render & Supabase (Containerized environment)
 
 ---
 
