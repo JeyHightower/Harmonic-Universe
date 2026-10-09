@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_cors import CORS
 from config import Config, db, jwt
@@ -8,7 +10,13 @@ from routes import auth_bp, universe_bp, character_bp, note_bp, location_bp, use
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app, origins=["https://harmonic-universe-2.onrender.com"])
+origins = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    if o.strip()
+]
+
+CORS(app, origins=origins)
 db.init_app(app)
 jwt.init_app(app)
 
@@ -25,6 +33,8 @@ all_blueprints = [
 
 for bp, prefix in all_blueprints:
     app.register_blueprint(bp, url_prefix=prefix)
+
+
 
 
 with app.app_context():
