@@ -4,3 +4,4 @@ backend/.harmonic-env
 **/.harmonic-env/
 **/__pycache__/
 **/.py[cod]
+backend/.env
